@@ -17,8 +17,11 @@ built and tested; the server that would send those pages to a terminal is not.
 ```
 Atom feed  --> ingest --> SQLite --> content blocks --> frames --> session --> transport --> BBC
              (polite)    (archive)    (semantic)       (40x24)    (Prestel)     (TCP)
-                done        done         done            done       next        next
+                done        done         done            done       done        done
 ```
+
+It answers calls. What remains is a poller that keeps the archive fed without
+being asked, and the presentation refinements that only a real screen reveals.
 
 ## Trying it
 
@@ -39,6 +42,14 @@ uv run sextile render --page 8 --frame 1    # its second frame
 `render --page` also prints, to standard error, where each digit key would
 lead — which is the quickest way to check a menu is wired up correctly.
 
+```sh
+uv run sextile serve                        # answer calls on port 6850
+nc localhost 6850                           # and call it
+```
+
+Port 6850 is the Motorola MC6850 ACIA, which drives the BBC Micro's serial
+port.
+
 ## Connecting a BBC Micro
 
 Sextile is a plain TCP server, reached exactly as any other viewdata board is:
@@ -46,11 +57,26 @@ Sextile is a plain TCP server, reached exactly as any other viewdata board is:
 emulator connects to, and the guest dials out through it.
 
 ```sh
-tcpser -v 25232 -s 9600 -l 4 -t sS -n 1=localhost:6502
+tcpser -v 25232 -s 9600 -l 4 -t sS -n 1=localhost:6850
 ```
 
 Then, in Commstar's Prestel mode, enter chat with `<C>`, type `ATDT1` and press
 `CTRL-M`. `-t sS` traces the bytes, which is the best debugging tool available.
+
+## Getting about
+
+```
+*nnn#     go to a page          #      the next frame
+*0#       back                  *00#   show this frame again
+*09#      fetch it afresh       **     abandon a part-typed request
+0-9       select from the menu
+```
+
+Keyword jumps work too: `*MAIN#`, `*LATEST#`, `*DAYS#`, `*FORUMS#`, `*WHO#`,
+`*ABOUT#`, `*BYE#`.
+
+Page numbers follow the board's own identifiers, so `*82489493#` here is post
+489493 there. See [docs/page-numbering.md](docs/page-numbering.md).
 
 ## What was measured rather than assumed
 

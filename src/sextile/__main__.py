@@ -2,8 +2,10 @@
 
 import argparse
 import asyncio
+import logging
 import sys
 from collections.abc import Sequence
+from contextlib import suppress
 from pathlib import Path
 
 from sextile import __version__
@@ -15,6 +17,7 @@ from sextile.model import Post
 from sextile.pages.demo import demo_frame
 from sextile.pages.numbering import UnknownPageError, format_page_number, parse_page_number
 from sextile.pages.router import resolve
+from sextile.server import DEFAULT_PORT, serve
 from sextile.store.repository import Repository
 from sextile.viewdata.ansi import render_ansi
 from sextile.viewdata.frame import Frame
@@ -53,6 +56,13 @@ def build_parser() -> argparse.ArgumentParser:
     archive = subcommands.add_parser("archive", help="Report what the archive holds")
     _add_database_argument(archive)
 
+    serve_command = subcommands.add_parser("serve", help="Answer calls from terminals")
+    serve_command.add_argument("--host", default="127.0.0.1", help="Address to listen on")
+    serve_command.add_argument(
+        "--port", type=int, default=DEFAULT_PORT, help=f"Port to listen on (default {DEFAULT_PORT})"
+    )
+    _add_database_argument(serve_command)
+
     return parser
 
 
@@ -76,6 +86,8 @@ def main(argv: Sequence[str] | None = None) -> int:
             return asyncio.run(_ingest(arguments))
         case "archive":
             return _archive(arguments)
+        case "serve":
+            return asyncio.run(_serve(arguments))
         case _:
             parser.print_help()
             return 0
@@ -160,6 +172,24 @@ def _ingest_note(result: IngestResult) -> str:
     if result.window_may_have_drained:
         return "every post was new, so the feed window may have drained between polls"
     return "the archive was already up to date" if result.added == 0 else "archive extended"
+
+
+async def _serve(arguments: argparse.Namespace) -> int:
+    logging.basicConfig(level=logging.INFO, format="%(asctime)s  %(message)s")
+    with Repository.open(arguments.database_filepath) as repository:
+        server = await serve(repository, host=arguments.host, port=arguments.port)
+        print(
+            f"Sextile answering on {arguments.host}:{arguments.port}, "
+            f"{repository.count_posts()} posts held.\n"
+            f"Dial it with:  tcpser -v 25232 -s 9600 -l 4 -t sS "
+            f"-n 1={arguments.host}:{arguments.port}\n"
+            f"Or try it with:  nc {arguments.host} {arguments.port}",
+            file=sys.stderr,
+        )
+        async with server:
+            with suppress(KeyboardInterrupt, asyncio.CancelledError):
+                await server.serve_forever()
+    return 0
 
 
 def _archive(arguments: argparse.Namespace) -> int:

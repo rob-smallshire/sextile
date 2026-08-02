@@ -1,0 +1,139 @@
+"""Laying blocks out as frames.
+
+Blocks are flattened into a stream of rendered rows first, then dealt onto
+frames. Doing it in that order keeps the two hard parts apart: deciding what a
+quotation four deep should look like, and deciding where a screen ends.
+
+Colour carries structure. Someone reading in monochrome still follows the text;
+someone reading in colour can tell at a glance whose words they are looking at.
+A quotation is cyan, a listing green, an image or attachment magenta, and the
+author's own words white.
+
+A page has frames a-z and no more, so a post long enough to exhaust them says so
+rather than ending mid-sentence with nothing to explain it.
+"""
+
+from dataclasses import dataclass
+from typing import Final
+
+from sextile.content.blocks import (
+    Attachment,
+    Block,
+    Code,
+    Image,
+    ListItem,
+    Paragraph,
+    PostContent,
+    Quote,
+)
+from sextile.viewdata.canvas import Canvas
+from sextile.viewdata.controls import Colour
+from sextile.viewdata.frame import COLUMNS, ROWS, Frame
+from sextile.viewdata.wrapping import wrap_text
+
+#: Rows a frame gives to the post itself, the rest being chrome.
+BODY_ROWS: Final = ROWS - 3
+
+#: A page's frames are lettered a-z.
+MAX_FRAMES: Final = 26
+
+_QUOTE_INDENT: Final = 2
+
+#  Beyond this the indent costs more than it conveys, so deeper quotations stop
+#  moving right and rely on colour alone.
+_MAX_QUOTE_DEPTH: Final = 4
+
+_TRUNCATION_NOTICE: Final = "... TRUNCATED, POST TOO LONG"
+
+
+@dataclass(frozen=True)
+class Row:
+    """One rendered row of body text, with the colour that says what it is."""
+
+    text: str
+    colour: Colour
+    indent: int = 0
+
+
+def lay_out(content: PostContent) -> list[Frame]:
+    """Render a post's content as frames."""
+    rows = list(_rows_for(content.blocks, depth=0))
+    rows.extend(_link_rows(content))
+    return _deal(rows)
+
+
+def _rows_for(blocks: tuple[Block, ...], depth: int) -> list[Row]:
+    rows: list[Row] = []
+    indent = min(depth, _MAX_QUOTE_DEPTH) * _QUOTE_INDENT
+    width = COLUMNS - indent - 1  # one cell for the colour attribute
+    colour = Colour.CYAN if depth else Colour.WHITE
+
+    for block in blocks:
+        if rows:
+            rows.append(Row("", colour, indent))
+        match block:
+            case Paragraph(lines):
+                for line in lines:
+                    rows.extend(
+                        Row(text, colour, indent) for text in wrap_text(line, width)
+                    )
+            case Quote(inner):
+                rows.extend(_rows_for(inner, depth + 1))
+            case Code(lines):
+                for line in lines:
+                    rows.extend(
+                        Row(text, Colour.GREEN, indent) for text in wrap_text(line, width)
+                    )
+            case ListItem(text):
+                wrapped = wrap_text(text, width - 2)
+                rows.extend(
+                    Row(f"{'*' if index == 0 else ' '} {piece}", colour, indent)
+                    for index, piece in enumerate(wrapped)
+                )
+            case Image(description):
+                rows.append(Row(f"[IMAGE: {description}]", Colour.MAGENTA, indent))
+            case Attachment(name):
+                rows.append(Row(f"[FILE: {name}]", Colour.MAGENTA, indent))
+
+    return _without_leading_blanks(rows)
+
+
+def _link_rows(content: PostContent) -> list[Row]:
+    if not content.links:
+        return []
+    rows = [Row("", Colour.WHITE), Row("LINKS", Colour.YELLOW)]
+    for link in content.links:
+        wrapped = wrap_text(link.url, COLUMNS - 5)
+        for index, piece in enumerate(wrapped):
+            marker = f"[{link.number}] " if index == 0 else "    "
+            rows.append(Row(f"{marker}{piece}", Colour.YELLOW))
+    return rows
+
+
+def _deal(rows: list[Row]) -> list[Frame]:
+    """Deal rendered rows onto frames, a screenful at a time."""
+    pages = [rows[start : start + BODY_ROWS] for start in range(0, len(rows), BODY_ROWS)] or [[]]
+
+    truncated = len(pages) > MAX_FRAMES
+    if truncated:
+        pages = pages[:MAX_FRAMES]
+        pages[-1] = pages[-1][: BODY_ROWS - 1]
+        pages[-1].append(Row(_TRUNCATION_NOTICE, Colour.RED))
+
+    return [_frame_for(page) for page in pages]
+
+
+def _frame_for(rows: list[Row]) -> Frame:
+    canvas = Canvas()
+    for offset, row in enumerate(rows):
+        if not row.text:
+            continue
+        canvas.row(offset).skip(row.indent).text(row.text, row.colour)
+    return canvas.frame
+
+
+def _without_leading_blanks(rows: list[Row]) -> list[Row]:
+    index = 0
+    while index < len(rows) and not rows[index].text:
+        index += 1
+    return rows[index:]

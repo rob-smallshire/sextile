@@ -7,13 +7,16 @@ from collections.abc import Sequence
 from pathlib import Path
 
 from sextile import __version__
+from sextile.content.html import parse_post_body
 from sextile.feed.client import FeedClient
 from sextile.feed.ingest import IngestResult, ingest_once
 from sextile.feed.source import STARDOT_BASE_URL, AtomFeedSource
+from sextile.model import Post
 from sextile.pages.demo import demo_frame
 from sextile.store.repository import Repository
 from sextile.viewdata.ansi import render_ansi
 from sextile.viewdata.frame import Frame
+from sextile.viewdata.layout import lay_out
 
 DEFAULT_DATABASE_FILEPATH = Path("sextile.sqlite")
 
@@ -25,6 +28,9 @@ def build_parser() -> argparse.ArgumentParser:
 
     render = subcommands.add_parser("render", help="Show a frame without a BBC Micro")
     render.add_argument("--demo", action="store_true", help="Render the demonstration frame")
+    render.add_argument("--post", type=int, help="Render a post from the archive, by its id")
+    render.add_argument("--frame", type=int, default=0, help="Which frame of it (0 for the first)")
+    _add_database_argument(render)
     render.add_argument(
         "--form",
         choices=["ansi", "grid", "bytes"],
@@ -73,11 +79,37 @@ def main(argv: Sequence[str] | None = None) -> int:
 
 
 def _render(arguments: argparse.Namespace) -> int:
-    if not arguments.demo:
-        print("Nothing to render yet: pass --demo.", file=sys.stderr)
+    if arguments.demo:
+        frame = demo_frame()
+    elif arguments.post is not None:
+        found = _post_frame(arguments)
+        if found is None:
+            return 2
+        frame = found
+    else:
+        print("Nothing to render: pass --demo or --post <id>.", file=sys.stderr)
         return 2
-    print(_rendered(demo_frame(), arguments.form, colour=not arguments.no_colour))
+    print(_rendered(frame, arguments.form, colour=not arguments.no_colour))
     return 0
+
+
+def _post_frame(arguments: argparse.Namespace) -> Frame | None:
+    with Repository.open(arguments.database_filepath) as repository:
+        post: Post | None = repository.post(arguments.post)
+    if post is None:
+        print(f"No post {arguments.post} in the archive.", file=sys.stderr)
+        return None
+    frames = lay_out(parse_post_body(post.content_html))
+    index = int(arguments.frame)
+    if not 0 <= index < len(frames):
+        print(f"That post has {len(frames)} frame(s).", file=sys.stderr)
+        return None
+    print(
+        f"{post.subject}  -- {post.author_name}, "
+        f"frame {index + 1} of {len(frames)}  *82{post.post_id}#",
+        file=sys.stderr,
+    )
+    return frames[index]
 
 
 async def _ingest(arguments: argparse.Namespace) -> int:

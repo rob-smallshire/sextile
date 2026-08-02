@@ -1,0 +1,163 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom" xml:lang="en-gb">
+	<link rel="self" type="application/atom+xml" href="https://stardot.org.uk/forums/app.php/feed" />
+
+	<title>stardot.org.uk</title>
+	<subtitle>for users of Acorn computers and emulators</subtitle>
+	<link href="https://stardot.org.uk/forums/index.php" />
+	<updated>2026-08-02T21:20:27+01:00</updated>
+
+	<author><name><![CDATA[stardot.org.uk]]></name></author>
+	<id>https://stardot.org.uk/forums/app.php/feed</id>
+
+		<entry>
+		<author><name><![CDATA[Iapetus]]></name></author>
+		<updated>2026-08-02T21:20:27+01:00</updated>
+
+		<published>2026-08-02T21:20:27+01:00</published>
+		<id>https://stardot.org.uk/forums/viewtopic.php?p=489493#p489493</id>
+		<link href="https://stardot.org.uk/forums/viewtopic.php?p=489493#p489493"/>
+		<title type="html"><![CDATA[new projects in development: games • Re: Head over Heels]]></title>
+
+					<category term="new projects in development: games" scheme="https://stardot.org.uk/forums/viewforum.php?f=53" label="new projects in development: games"/>
+		
+		<content type="html" xml:base="https://stardot.org.uk/forums/viewtopic.php?p=489493#p489493"><![CDATA[
+What a great project! I love this game from Jon Ritman and also Batman.<br><br>Perhaps you know about these issues already: The C64 version was a translation from the original z80 code into 6502, I don't know how far the coder went when optimizing the code. Another thing is that the C64 game is a bit different, I read somewhere that some rooms had less baddies due to speed. I don't know if the Plus4 version is different.<br><br>I will keep an eye here to see your progress. At one point I wanted to convert these isometric games to other computers so this might help me.<p>Statistics: Posted by <a href="https://stardot.org.uk/forums/memberlist.php?mode=viewprofile&amp;u=10058">Iapetus</a> — Sun Aug 02, 2026 9:20 pm</p><hr />
+]]></content>
+	</entry>
+		<entry>
+		<author><name><![CDATA[Rapunzel]]></name></author>
+		<updated>2026-08-02T21:08:01+01:00</updated>
+
+		<published>2026-08-02T21:08:01+01:00</published>
+		<id>https://stardot.org.uk/forums/viewtopic.php?p=489492#p489492</id>
+		<link href="https://stardot.org.uk/forums/viewtopic.php?p=489492#p489492"/>
+		<title type="html"><![CDATA[programming • Re: Writing games for the Tube]]></title>
+
+					<category term="programming" scheme="https://stardot.org.uk/forums/viewforum.php?f=54" label="programming"/>
+		
+		<content type="html" xml:base="https://stardot.org.uk/forums/viewtopic.php?p=489492#p489492"><![CDATA[
+Hey @SamSkivington.<br><br>Are you saying that you're not actually calling &amp;406 when you run code on the parasite but retain control on the host? Sounds like you've kinda copied what the standard host code does for most of it but then let the parasite go off and run, and return to your own code instead of the normal loop?<br><br>But if you do that, how do normal file operations and things like OSWRCH, OSBYTE and OSWORD continue to work?<br><br>A bit confused.  <img class="smilies" src="https://stardot.org.uk/forums/images/smilies/icon_smile.gif" width="15" height="15" alt=":)" title="Smile"><p>Statistics: Posted by <a href="https://stardot.org.uk/forums/memberlist.php?mode=viewprofile&amp;u=16436">Rapunzel</a> — Sun Aug 02, 2026 9:08 pm</p><hr />
+]]></content>
+	</entry>
+		<entry>
+		<author><name><![CDATA[lizzythedog]]></name></author>
+		<updated>2026-08-02T20:33:46+01:00</updated>
+
+		<published>2026-08-02T20:33:46+01:00</published>
+		<id>https://stardot.org.uk/forums/viewtopic.php?p=489491#p489491</id>
+		<link href="https://stardot.org.uk/forums/viewtopic.php?p=489491#p489491"/>
+		<title type="html"><![CDATA[archive submissions • Re: Master 512 DOS+ Software]]></title>
+
+					<category term="archive submissions" scheme="https://stardot.org.uk/forums/viewforum.php?f=32" label="archive submissions"/>
+		
+		<content type="html" xml:base="https://stardot.org.uk/forums/viewtopic.php?p=489491#p489491"><![CDATA[
+Thank you very much. You're right about Winimage.<br>I now have Worperfect 4.2 working on my M12 -- amazing!<br><br>Best<br>Sean<p>Statistics: Posted by <a href="https://stardot.org.uk/forums/memberlist.php?mode=viewprofile&amp;u=9694">lizzythedog</a> — Sun Aug 02, 2026 8:33 pm</p><hr />
+]]></content>
+	</entry>
+		<entry>
+		<author><name><![CDATA[danielj]]></name></author>
+		<updated>2026-08-02T20:20:23+01:00</updated>
+
+		<published>2026-08-02T20:20:23+01:00</published>
+		<id>https://stardot.org.uk/forums/viewtopic.php?p=489490#p489490</id>
+		<link href="https://stardot.org.uk/forums/viewtopic.php?p=489490#p489490"/>
+		<title type="html"><![CDATA[Introduce Yourself • Re: Hello from London]]></title>
+
+					<category term="Introduce Yourself" scheme="https://stardot.org.uk/forums/viewforum.php?f=13" label="Introduce Yourself"/>
+		
+		<content type="html" xml:base="https://stardot.org.uk/forums/viewtopic.php?p=489490#p489490"><![CDATA[
+We can do that, but I'd really suggest posting queries in public as you'd be surprised at the number of people who know answers, and it also means that information becomes available for all - other people probably have the same question you do. If you can't work out where it should live just ask.<p>Statistics: Posted by <a href="https://stardot.org.uk/forums/memberlist.php?mode=viewprofile&amp;u=8951">danielj</a> — Sun Aug 02, 2026 8:20 pm</p><hr />
+]]></content>
+	</entry>
+		<entry>
+		<author><name><![CDATA[1024MAK]]></name></author>
+		<updated>2026-08-02T20:11:24+01:00</updated>
+
+		<published>2026-08-02T20:11:24+01:00</published>
+		<id>https://stardot.org.uk/forums/viewtopic.php?p=489489#p489489</id>
+		<link href="https://stardot.org.uk/forums/viewtopic.php?p=489489#p489489"/>
+		<title type="html"><![CDATA[Introduce Yourself • Re: Hello from London]]></title>
+
+					<category term="Introduce Yourself" scheme="https://stardot.org.uk/forums/viewforum.php?f=13" label="Introduce Yourself"/>
+		
+		<content type="html" xml:base="https://stardot.org.uk/forums/viewtopic.php?p=489489#p489489"><![CDATA[
+You currently don't have enough posts so, as new user, sending messages (including replying) is disabled.<br><br>Please wait until an administrator enables access for you. I've made the request for you.<br><br><strong class="text-strong"><em class="text-italics">Mark</em></strong><p>Statistics: Posted by <a href="https://stardot.org.uk/forums/memberlist.php?mode=viewprofile&amp;u=9320">1024MAK</a> — Sun Aug 02, 2026 8:11 pm</p><hr />
+]]></content>
+	</entry>
+		<entry>
+		<author><name><![CDATA[guesser]]></name></author>
+		<updated>2026-08-02T20:02:07+01:00</updated>
+
+		<published>2026-08-02T20:02:07+01:00</published>
+		<id>https://stardot.org.uk/forums/viewtopic.php?p=489488#p489488</id>
+		<link href="https://stardot.org.uk/forums/viewtopic.php?p=489488#p489488"/>
+		<title type="html"><![CDATA[econet and other acorn specific networking • Re: vbit2 teletext &amp; PEB]]></title>
+
+					<category term="econet and other acorn specific networking" scheme="https://stardot.org.uk/forums/viewforum.php?f=87" label="econet and other acorn specific networking"/>
+		
+		<content type="html" xml:base="https://stardot.org.uk/forums/viewtopic.php?p=489488#p489488"><![CDATA[
+<blockquote class="uncited"><div>Anyhow, can anyone share the vbit2 TCP protocol with me?</div></blockquote>There isn't really a protocol as such, you just open a socket and start reading fields of 672 bytes. i.e. 16 × 42 byte packets. i.e. <a href="https://teletext.wiki.zxnet.co.uk/wiki/Teletext_packets" class="postlink">teletext packet</a> minus clock run in and framing.<br>The server immediately begins throwing frames of teletext at the client until it either disconnects, or the buffer clogs the data not being consumed fast enough.<p>Statistics: Posted by <a href="https://stardot.org.uk/forums/memberlist.php?mode=viewprofile&amp;u=611">guesser</a> — Sun Aug 02, 2026 8:02 pm</p><hr />
+]]></content>
+	</entry>
+		<entry>
+		<author><name><![CDATA[BeebMaster]]></name></author>
+		<updated>2026-08-02T19:55:53+01:00</updated>
+
+		<published>2026-08-02T19:55:53+01:00</published>
+		<id>https://stardot.org.uk/forums/viewtopic.php?p=489487#p489487</id>
+		<link href="https://stardot.org.uk/forums/viewtopic.php?p=489487#p489487"/>
+		<title type="html"><![CDATA[programming • Re: ADFS stuffs &amp;CA into keyboard buffer at boot]]></title>
+
+					<category term="programming" scheme="https://stardot.org.uk/forums/viewforum.php?f=54" label="programming"/>
+		
+		<content type="html" xml:base="https://stardot.org.uk/forums/viewtopic.php?p=489487#p489487"><![CDATA[
+It does auto-repeat on OS 1.20 when the keypress doesn't select a filing system.  I suppose that could interfere with a Key 10 definition being inserted at that point and maybe that's why the buffer is always cleared in the Master MOS.<p>Statistics: Posted by <a href="https://stardot.org.uk/forums/memberlist.php?mode=viewprofile&amp;u=9053">BeebMaster</a> — Sun Aug 02, 2026 7:55 pm</p><hr />
+]]></content>
+	</entry>
+		<entry>
+		<author><name><![CDATA[BigEd]]></name></author>
+		<updated>2026-08-02T19:35:17+01:00</updated>
+
+		<published>2026-08-02T19:35:17+01:00</published>
+		<id>https://stardot.org.uk/forums/viewtopic.php?p=489486#p489486</id>
+		<link href="https://stardot.org.uk/forums/viewtopic.php?p=489486#p489486"/>
+		<title type="html"><![CDATA[programming • Re: ADFS stuffs &amp;CA into keyboard buffer at boot]]></title>
+
+					<category term="programming" scheme="https://stardot.org.uk/forums/viewforum.php?f=54" label="programming"/>
+		
+		<content type="html" xml:base="https://stardot.org.uk/forums/viewtopic.php?p=489486#p489486"><![CDATA[
+It sounds about right, as it would be untidy if the held-down-to-select-filesystem-key ended up being kept as if it were intended user input.  Especially if it had auto-repeated (if that's possible)<p>Statistics: Posted by <a href="https://stardot.org.uk/forums/memberlist.php?mode=viewprofile&amp;u=9120">BigEd</a> — Sun Aug 02, 2026 7:35 pm</p><hr />
+]]></content>
+	</entry>
+		<entry>
+		<author><name><![CDATA[Rapunzel]]></name></author>
+		<updated>2026-08-02T19:25:39+01:00</updated>
+
+		<published>2026-08-02T19:25:39+01:00</published>
+		<id>https://stardot.org.uk/forums/viewtopic.php?p=489485#p489485</id>
+		<link href="https://stardot.org.uk/forums/viewtopic.php?p=489485#p489485"/>
+		<title type="html"><![CDATA[Introduce Yourself • Re: Hello from London]]></title>
+
+					<category term="Introduce Yourself" scheme="https://stardot.org.uk/forums/viewforum.php?f=13" label="Introduce Yourself"/>
+		
+		<content type="html" xml:base="https://stardot.org.uk/forums/viewtopic.php?p=489485#p489485"><![CDATA[
+Hello again everyone.<br><br>How can I DM people on here? I have a technical question I want to ask someone that I suspect will know the answer immediately but it doesn't really belong on a board I don't think.<br><br>I've gone to their page but there doesn't seem to be a way to send a message.<br><br> <img class="smilies" src="https://stardot.org.uk/forums/images/smilies/icon_smile.gif" width="15" height="15" alt=":)" title="Smile"><p>Statistics: Posted by <a href="https://stardot.org.uk/forums/memberlist.php?mode=viewprofile&amp;u=16436">Rapunzel</a> — Sun Aug 02, 2026 7:25 pm</p><hr />
+]]></content>
+	</entry>
+		<entry>
+		<author><name><![CDATA[brianmartin_2001]]></name></author>
+		<updated>2026-08-02T18:47:05+01:00</updated>
+
+		<published>2026-08-02T18:47:05+01:00</published>
+		<id>https://stardot.org.uk/forums/viewtopic.php?p=489484#p489484</id>
+		<link href="https://stardot.org.uk/forums/viewtopic.php?p=489484#p489484"/>
+		<title type="html"><![CDATA[other events + general event chat • Re: Vintage Computer Festival West, Mountain View California, August 1-2 2026]]></title>
+
+					<category term="other events + general event chat" scheme="https://stardot.org.uk/forums/viewforum.php?f=61" label="other events + general event chat"/>
+		
+		<content type="html" xml:base="https://stardot.org.uk/forums/viewtopic.php?p=489484#p489484"><![CDATA[
+Hope its a terrific event , great to see Teletext viewdata<br>getting a look in ...<br><br> <img class="smilies" src="https://stardot.org.uk/forums/images/smilies/eusa_clap.gif" width="19" height="16" alt="=D&gt;" title="Applause"><br><br>I left the Night Owl BBS running so some folks can login via Telstar.<br><br>Did Steve Wozniak arrive on the Saturday then ?<p>Statistics: Posted by <a href="https://stardot.org.uk/forums/memberlist.php?mode=viewprofile&amp;u=13234">brianmartin_2001</a> — Sun Aug 02, 2026 6:47 pm</p><hr />
+]]></content>
+	</entry>
+	</feed>

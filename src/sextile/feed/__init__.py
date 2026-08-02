@@ -1,0 +1,1 @@
+"""Obtaining posts from Stardot."""

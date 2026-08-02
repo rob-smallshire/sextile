@@ -1,0 +1,163 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom" xml:lang="en-gb">
+	<link rel="self" type="application/atom+xml" href="https://stardot.org.uk/forums/app.php/feed/forum/53" />
+
+	<title>stardot.org.uk</title>
+	<subtitle>for users of Acorn computers and emulators</subtitle>
+	<link href="https://stardot.org.uk/forums/index.php" />
+	<updated>2026-08-02T22:09:07+01:00</updated>
+
+	<author><name><![CDATA[stardot.org.uk]]></name></author>
+	<id>https://stardot.org.uk/forums/app.php/feed/forum/53</id>
+
+		<entry>
+		<author><name><![CDATA[RobC]]></name></author>
+		<updated>2026-08-02T22:09:07+01:00</updated>
+
+		<published>2026-08-02T22:09:07+01:00</published>
+		<id>https://stardot.org.uk/forums/viewtopic.php?p=489500#p489500</id>
+		<link href="https://stardot.org.uk/forums/viewtopic.php?p=489500#p489500"/>
+		<title type="html"><![CDATA[new projects in development: games • Re: Head over Heels]]></title>
+
+					<category term="new projects in development: games" scheme="https://stardot.org.uk/forums/viewforum.php?f=53" label="new projects in development: games"/>
+		
+		<content type="html" xml:base="https://stardot.org.uk/forums/viewtopic.php?p=489500#p489500"><![CDATA[
+Thanks - I'm aware that some screens have fewer moving enemies. This will be the same on the Plus4 version as it's effectively a patched version of the C64 original. This is why comparing the two versions has been so effective in discovering where the Beeb-specific changes need to be made.<br><br>My experience with Pentagram was that there were no performance issues on the M128 even though the code was automatically converted from the Z80. So, I'll hopefully be able to reinstate the enemies.<p>Statistics: Posted by <a href="https://stardot.org.uk/forums/memberlist.php?mode=viewprofile&amp;u=1543">RobC</a> — Sun Aug 02, 2026 10:09 pm</p><hr />
+]]></content>
+	</entry>
+		<entry>
+		<author><name><![CDATA[Iapetus]]></name></author>
+		<updated>2026-08-02T21:20:27+01:00</updated>
+
+		<published>2026-08-02T21:20:27+01:00</published>
+		<id>https://stardot.org.uk/forums/viewtopic.php?p=489493#p489493</id>
+		<link href="https://stardot.org.uk/forums/viewtopic.php?p=489493#p489493"/>
+		<title type="html"><![CDATA[new projects in development: games • Re: Head over Heels]]></title>
+
+					<category term="new projects in development: games" scheme="https://stardot.org.uk/forums/viewforum.php?f=53" label="new projects in development: games"/>
+		
+		<content type="html" xml:base="https://stardot.org.uk/forums/viewtopic.php?p=489493#p489493"><![CDATA[
+What a great project! I love this game from Jon Ritman and also Batman.<br><br>Perhaps you know about these issues already: The C64 version was a translation from the original z80 code into 6502, I don't know how far the coder went when optimizing the code. Another thing is that the C64 game is a bit different, I read somewhere that some rooms had less baddies due to speed. I don't know if the Plus4 version is different.<br><br>I will keep an eye here to see your progress. At one point I wanted to convert these isometric games to other computers so this might help me.<p>Statistics: Posted by <a href="https://stardot.org.uk/forums/memberlist.php?mode=viewprofile&amp;u=10058">Iapetus</a> — Sun Aug 02, 2026 9:20 pm</p><hr />
+]]></content>
+	</entry>
+		<entry>
+		<author><name><![CDATA[RobC]]></name></author>
+		<updated>2026-08-02T15:02:45+01:00</updated>
+
+		<published>2026-08-02T15:02:45+01:00</published>
+		<id>https://stardot.org.uk/forums/viewtopic.php?p=489455#p489455</id>
+		<link href="https://stardot.org.uk/forums/viewtopic.php?p=489455#p489455"/>
+		<title type="html"><![CDATA[new projects in development: games • Head over Heels]]></title>
+
+					<category term="new projects in development: games" scheme="https://stardot.org.uk/forums/viewforum.php?f=53" label="new projects in development: games"/>
+		
+		<content type="html" xml:base="https://stardot.org.uk/forums/viewtopic.php?p=489455#p489455"><![CDATA[
+I've been working on this for a little while. It's a M128 port of the isometric classic Head over Heels:<div class="inline-attachment"><dl class="thumbnail"><dt><a href="https://stardot.org.uk/forums/download/file.php?id=120172&amp;mode=view"><img src="https://stardot.org.uk/forums/download/file.php?id=120172&amp;t=1" class="postimage" alt="hoh_beeb.png" title="hoh_beeb.png (31.57 KiB) Viewed 102 times" /></a></dt></dl></div>It's not a game I'm overly familiar with but my wife played it loads on the Amstrad PCW and it's one of her favourites.<br><br>It's based on a disassembly of the unofficial Plus4 port although I've also been using the C64 version (which the Plus4 version was based on) to identify which areas need changing to run on the Master. I have made some use of AI to help with identifying differences between the two versions.<br><br>This is still at a very early stage - I haven't sorted out all of the keyboard mapping yet and it's currently using mode 4. It'll probably stay like this for a while but I'd really like to get it running in mode 1 using the graphics from the Amstrad version. <br><br>Also, the Plus4 version has no music or sound but Negative Charge has already done a wonderful job of converting the SID tunes for me.<p>Statistics: Posted by <a href="https://stardot.org.uk/forums/memberlist.php?mode=viewprofile&amp;u=1543">RobC</a> — Sun Aug 02, 2026 3:02 pm</p><hr />
+]]></content>
+	</entry>
+		<entry>
+		<author><name><![CDATA[Michael Brown]]></name></author>
+		<updated>2026-08-01T16:59:57+01:00</updated>
+
+		<published>2026-08-01T16:59:57+01:00</published>
+		<id>https://stardot.org.uk/forums/viewtopic.php?p=489382#p489382</id>
+		<link href="https://stardot.org.uk/forums/viewtopic.php?p=489382#p489382"/>
+		<title type="html"><![CDATA[new projects in development: games • Re: Unfinished new games]]></title>
+
+					<category term="new projects in development: games" scheme="https://stardot.org.uk/forums/viewforum.php?f=53" label="new projects in development: games"/>
+		
+		<content type="html" xml:base="https://stardot.org.uk/forums/viewtopic.php?p=489382#p489382"><![CDATA[
+Thanks for the update<br><br>Mick.<p>Statistics: Posted by <a href="https://stardot.org.uk/forums/memberlist.php?mode=viewprofile&amp;u=9157">Michael Brown</a> — Sat Aug 01, 2026 4:59 pm</p><hr />
+]]></content>
+	</entry>
+		<entry>
+		<author><name><![CDATA[komadori]]></name></author>
+		<updated>2026-08-01T16:06:09+01:00</updated>
+
+		<published>2026-08-01T16:06:09+01:00</published>
+		<id>https://stardot.org.uk/forums/viewtopic.php?p=489378#p489378</id>
+		<link href="https://stardot.org.uk/forums/viewtopic.php?p=489378#p489378"/>
+		<title type="html"><![CDATA[new projects in development: games • Re: Unfinished new games]]></title>
+
+					<category term="new projects in development: games" scheme="https://stardot.org.uk/forums/viewforum.php?f=53" label="new projects in development: games"/>
+		
+		<content type="html" xml:base="https://stardot.org.uk/forums/viewtopic.php?p=489378#p489378"><![CDATA[
+<blockquote class="uncited"><div>On, just found another one!<br>Japanese Military Chess V0.2.0 by Robin Kay. <br>Not sure if this is now complete or not?</div></blockquote>Now I don't feel left out <img class="smilies" src="https://stardot.org.uk/forums/images/smilies/icon_wink.gif" width="15" height="15" alt=";-)" title="Wink">.<br><br>v0.2.0 is still the latest release, corresponding to part 5 of the blog series (<a href="https://www.robinkay.uk/posts/2025/05/20/jmc-part-5/" class="postlink">https://www.robinkay.uk/posts/2025/05/20/jmc-part-5/</a>) and it definitely not finished yet. The code for the next instalment is close to ready, but write up will take me a bit longer. Before the end of the year!<p>Statistics: Posted by <a href="https://stardot.org.uk/forums/memberlist.php?mode=viewprofile&amp;u=13965">komadori</a> — Sat Aug 01, 2026 4:06 pm</p><hr />
+]]></content>
+	</entry>
+		<entry>
+		<author><name><![CDATA[Michael Brown]]></name></author>
+		<updated>2026-08-01T11:27:43+01:00</updated>
+
+		<published>2026-08-01T11:27:43+01:00</published>
+		<id>https://stardot.org.uk/forums/viewtopic.php?p=489360#p489360</id>
+		<link href="https://stardot.org.uk/forums/viewtopic.php?p=489360#p489360"/>
+		<title type="html"><![CDATA[new projects in development: games • Re: Unfinished new games]]></title>
+
+					<category term="new projects in development: games" scheme="https://stardot.org.uk/forums/viewforum.php?f=53" label="new projects in development: games"/>
+		
+		<content type="html" xml:base="https://stardot.org.uk/forums/viewtopic.php?p=489360#p489360"><![CDATA[
+On, just found another one!<br>Japanese Military Chess V0.2.0 by Robin Kay. <br>Not sure if this is now complete or not?<br><br>Mick.<p>Statistics: Posted by <a href="https://stardot.org.uk/forums/memberlist.php?mode=viewprofile&amp;u=9157">Michael Brown</a> — Sat Aug 01, 2026 11:27 am</p><hr />
+]]></content>
+	</entry>
+		<entry>
+		<author><name><![CDATA[Michael Brown]]></name></author>
+		<updated>2026-08-01T09:02:00+01:00</updated>
+
+		<published>2026-08-01T09:02:00+01:00</published>
+		<id>https://stardot.org.uk/forums/viewtopic.php?p=489354#p489354</id>
+		<link href="https://stardot.org.uk/forums/viewtopic.php?p=489354#p489354"/>
+		<title type="html"><![CDATA[new projects in development: games • Re: Unfinished new games]]></title>
+
+					<category term="new projects in development: games" scheme="https://stardot.org.uk/forums/viewforum.php?f=53" label="new projects in development: games"/>
+		
+		<content type="html" xml:base="https://stardot.org.uk/forums/viewtopic.php?p=489354#p489354"><![CDATA[
+Hi Tricky<br>Thanks<br>Mick<br><br>PS. Keep up the good work!<p>Statistics: Posted by <a href="https://stardot.org.uk/forums/memberlist.php?mode=viewprofile&amp;u=9157">Michael Brown</a> — Sat Aug 01, 2026 9:02 am</p><hr />
+]]></content>
+	</entry>
+		<entry>
+		<author><name><![CDATA[tricky]]></name></author>
+		<updated>2026-08-01T14:31:32+01:00</updated>
+
+		<published>2026-08-01T08:29:45+01:00</published>
+		<id>https://stardot.org.uk/forums/viewtopic.php?p=489353#p489353</id>
+		<link href="https://stardot.org.uk/forums/viewtopic.php?p=489353#p489353"/>
+		<title type="html"><![CDATA[new projects in development: games • Re: Unfinished new games]]></title>
+
+					<category term="new projects in development: games" scheme="https://stardot.org.uk/forums/viewforum.php?f=53" label="new projects in development: games"/>
+		
+		<content type="html" xml:base="https://stardot.org.uk/forums/viewtopic.php?p=489353#p489353"><![CDATA[
+DigDug is 99% and has (at least) one bug.<br><br>Moon Patrol is 90% which may or may not include sloping sections with rolling boulders. It has one graphical glitch.<br><br>PS<br><br>Pinball first demo table 90%, just needs some physics tweaks.<br>Full table designer will need more work but it already runs on the PC and AI might be able to help with the editor.<br><br>B-Type shoot-em-up demo level 60%, needs the rest of the level adding and an end of level boss.<br>Full shoot-em-up designer needs creating along with some code gen.<br><br>PPS<br><br>There are about a dozen others that are mostly just proof of concept so I wouldn't call them unfinished, more barely started <img class="smilies" src="https://stardot.org.uk/forums/images/smilies/icon_wink.gif" width="15" height="15" alt=";)" title="Wink"><p>Statistics: Posted by <a href="https://stardot.org.uk/forums/memberlist.php?mode=viewprofile&amp;u=9365">tricky</a> — Sat Aug 01, 2026 8:29 am</p><hr />
+]]></content>
+	</entry>
+		<entry>
+		<author><name><![CDATA[tricky]]></name></author>
+		<updated>2026-08-01T08:25:37+01:00</updated>
+
+		<published>2026-08-01T08:25:37+01:00</published>
+		<id>https://stardot.org.uk/forums/viewtopic.php?p=489352#p489352</id>
+		<link href="https://stardot.org.uk/forums/viewtopic.php?p=489352#p489352"/>
+		<title type="html"><![CDATA[new projects in development: games • Re: BBC Pooyan]]></title>
+
+					<category term="new projects in development: games" scheme="https://stardot.org.uk/forums/viewforum.php?f=53" label="new projects in development: games"/>
+		
+		<content type="html" xml:base="https://stardot.org.uk/forums/viewtopic.php?p=489352#p489352"><![CDATA[
+Which bus of no os are a problem, is it just multi-load?<p>Statistics: Posted by <a href="https://stardot.org.uk/forums/memberlist.php?mode=viewprofile&amp;u=9365">tricky</a> — Sat Aug 01, 2026 8:25 am</p><hr />
+]]></content>
+	</entry>
+		<entry>
+		<author><name><![CDATA[j_groenendaal]]></name></author>
+		<updated>2026-07-31T12:16:29+01:00</updated>
+
+		<published>2026-07-31T12:16:29+01:00</published>
+		<id>https://stardot.org.uk/forums/viewtopic.php?p=489311#p489311</id>
+		<link href="https://stardot.org.uk/forums/viewtopic.php?p=489311#p489311"/>
+		<title type="html"><![CDATA[new projects in development: games • Re: JOS - RISCOS Platform game]]></title>
+
+					<category term="new projects in development: games" scheme="https://stardot.org.uk/forums/viewforum.php?f=53" label="new projects in development: games"/>
+		
+		<content type="html" xml:base="https://stardot.org.uk/forums/viewtopic.php?p=489311#p489311"><![CDATA[
+It's finished.<br>The RISC-OS version is ready.<br>I tired to get the game running smoothly on all RISC-OS machines. But I couldn't run it smoothly enough for ARM 2 processors.<br>Mainly because I use the standard Acorn sprite routines and kept the BBC BASIC uncompiled.<br><br>You can download the game via:<br><a href="https://pixelbroder.groenendaal.one/project.php?g=jos" class="postlink">https://pixelbroder.groenendaal.one/project.php?g=jos</a><br><br>Archive file :<br><a href="https://pixelbroder.groenendaal.one/games/jos/jos-v100.arc" class="postlink">https://pixelbroder.groenendaal.one/gam ... s-v100.arc</a><br><br>ADF disc image:<br><a href="https://pixelbroder.groenendaal.one/games/jos/jos-v100.adf" class="postlink">https://pixelbroder.groenendaal.one/gam ... s-v100.adf</a><p>Statistics: Posted by <a href="https://stardot.org.uk/forums/memberlist.php?mode=viewprofile&amp;u=15590">j_groenendaal</a> — Fri Jul 31, 2026 12:16 pm</p><hr />
+]]></content>
+	</entry>
+	</feed>

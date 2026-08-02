@@ -21,11 +21,15 @@ class PageFrame:
     """One screen of a page, and what a digit key does while it is showing."""
 
     frame: Frame
-    choices: Mapping[int, PageRef] = field(default_factory=dict)
+    choices: Mapping[str, PageRef] = field(default_factory=dict)
 
-    def destination(self, digit: int) -> PageRef | None:
-        """Where a digit key leads, or None if it leads nowhere here."""
-        return self.choices.get(digit)
+    def destination(self, key: str) -> PageRef | None:
+        """Where a key leads, or None if it leads nowhere here.
+
+        Keyed by character rather than by digit so that a page can offer `N`
+        for next or `R` for reply without this type changing.
+        """
+        return self.choices.get(key)
 
 
 @dataclass(frozen=True)

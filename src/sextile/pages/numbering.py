@@ -138,6 +138,26 @@ PageRef = (
     | Logoff
 )
 
+#  Named jumps. Prestel itself was almost entirely numeric, but other viewdata
+#  services accepted keywords and there is no reason for our own server to be
+#  bound by Prestel's database conventions. `*MAIN#` is easier to remember than
+#  `*1#`, and costs nothing to offer alongside it.
+_KEYWORDS: Final[dict[str, "PageRef"]] = {}
+
+
+def parse_page_target(target: str) -> "PageRef":
+    """The page a typed request names, whether by number or by keyword."""
+    keyword = _KEYWORDS.get(target.strip().upper())
+    if keyword is not None:
+        return keyword
+    return parse_page_number(target)
+
+
+def keywords() -> dict[str, "PageRef"]:
+    """The named jumps, for a page that wants to list them."""
+    return dict(_KEYWORDS)
+
+
 def parse_page_number(number: str) -> PageRef:
     """The page a number names, or raise ``UnknownPageError``."""
     if not number or not number.isdigit() or not number.isascii():
@@ -249,3 +269,24 @@ def _identifier(number: str, rest: str) -> int:
     if rest.startswith("0"):
         raise UnknownPageError(f"{number!r} has a leading zero in its identifier")
     return int(rest)
+
+
+_KEYWORDS.update(
+    {
+        "MAIN": MainIndex(),
+        "INDEX": MainIndex(),
+        "HOME": MainIndex(),
+        "LATEST": PostsIndex(),
+        "NEW": PostsIndex(),
+        "POSTS": PostsIndex(),
+        "DAYS": DaysIndex(),
+        "FORUMS": ForumsIndex(),
+        "WHO": ContributorsIndex(),
+        "USERS": ContributorsIndex(),
+        "TOPICS": TopicsIndex(),
+        "ABOUT": About(),
+        "HELP": About(),
+        "BYE": Logoff(),
+        "OFF": Logoff(),
+    }
+)

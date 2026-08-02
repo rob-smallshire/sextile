@@ -75,7 +75,7 @@ def repository() -> Iterator[Repository]:
 
 def _selectable(frame: PageFrame) -> set[PageRef]:
     """The numbered choices, excluding 0, which is the way back on every frame."""
-    return {destination for digit, destination in frame.choices.items() if digit != 0}
+    return {destination for digit, destination in frame.choices.items() if digit != "0"}
 
 
 def text_of(page: Page, index: int = 0) -> str:
@@ -142,14 +142,14 @@ class TestMenus:
     def test_choices_are_numbered_from_one(self, repository: Repository) -> None:
         found = resolve(PostsIndex(), repository).frame(0)
         assert found is not None
-        assert set(found.choices) >= {1, 2, 3}
-        assert 10 not in found.choices
+        assert set(found.choices) >= {"1", "2", "3"}
+        assert "10" not in found.choices
 
     def test_a_choice_leads_to_the_thing_it_names(self, repository: Repository) -> None:
         found = resolve(PostsIndex(), repository).frame(0)
         assert found is not None
         #  Latest first, so choice 1 is the newest post.
-        assert found.choices[1] == PostPage(489024)
+        assert found.choices["1"] == PostPage(489024)
 
     def test_later_frames_offer_the_later_items(self, repository: Repository) -> None:
         #  Only the numbered choices differ: 0 is the way back on every frame.
@@ -169,7 +169,7 @@ class TestMenus:
         for reference in references:
             found = resolve(reference, repository).frame(0)
             assert found is not None
-            assert found.choices[0] == MainIndex()
+            assert found.choices["0"] == MainIndex()
 
     def test_a_long_menu_spills_onto_further_frames(self, repository: Repository) -> None:
         #  Twenty-five posts at nine a frame.
@@ -216,12 +216,12 @@ class TestContentPages:
     def test_a_forum_lists_its_posts(self, repository: Repository) -> None:
         found = resolve(Forum(53), repository).frame(0)
         assert found is not None
-        assert found.choices[1] is not None
+        assert found.choices["1"] is not None
 
     def test_a_contributor_lists_their_posts(self, repository: Repository) -> None:
         found = resolve(Contributor(10058), repository).frame(0)
         assert found is not None
-        assert found.choices[1] is not None
+        assert found.choices["1"] is not None
 
 
 class TestEveryFrameIsSendable:

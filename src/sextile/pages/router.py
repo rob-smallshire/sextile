@@ -244,10 +244,10 @@ def _menu_frame(
     if preamble:
         row += 1
 
-    choices: dict[int, PageRef] = {0: MainIndex()}
+    choices: dict[str, PageRef] = {"0": MainIndex()}
     for offset, item in enumerate(batch):
         digit = offset + 1
-        choices[digit] = item.destination
+        choices[str(digit)] = item.destination
         canvas.row(row).text(f"{digit} ", Colour.YELLOW).text(
             _fitted(item.text, COLUMNS - 4), Colour.WHITE
         )
@@ -298,13 +298,13 @@ def _post_page(reference: PageRef, post_id: int, repository: Repository) -> Page
     return Page(reference=reference, frames=tuple(frames))
 
 
-def _post_choices(post: Post) -> dict[int, PageRef]:
-    choices: dict[int, PageRef] = {0: MainIndex()}
+def _post_choices(post: Post) -> dict[str, PageRef]:
+    choices: dict[str, PageRef] = {"0": MainIndex()}
     if post.forum_id is not None:
-        choices[1] = Forum(post.forum_id)
+        choices["1"] = Forum(post.forum_id)
     if post.author_id is not None:
-        choices[2] = Contributor(post.author_id)
-    choices[3] = Day(post.published.astimezone(BOARD_TIMEZONE).date())
+        choices["2"] = Contributor(post.author_id)
+    choices["3"] = Day(post.published.astimezone(BOARD_TIMEZONE).date())
     return choices
 
 
@@ -339,7 +339,7 @@ def _notice(reference: PageRef, title: str, lines: list[str]) -> Page:
             canvas.row(CONTENT_FIRST_ROW + offset).text(_fitted(line, COLUMNS - 1), Colour.WHITE)
     return Page(
         reference=reference,
-        frames=(PageFrame(frame=canvas.frame, choices={0: MainIndex()}),),
+        frames=(PageFrame(frame=canvas.frame, choices={"0": MainIndex()}),),
     )
 
 

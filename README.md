@@ -11,8 +11,8 @@ on a real BBC Micro running period comms software.
 
 ## State
 
-Read-only and feed-driven. Everything from the feed to a renderable page is
-built and tested; the server that would send those pages to a terminal is not.
+Read-only and feed-driven, and it answers calls: the whole path from Stardot's
+Atom feed to frames on a terminal is built and tested.
 
 ```
 Atom feed  --> ingest --> SQLite --> content blocks --> frames --> session --> transport --> BBC

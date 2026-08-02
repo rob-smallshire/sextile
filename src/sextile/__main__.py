@@ -11,7 +11,13 @@ from pathlib import Path
 from sextile import __version__
 from sextile.content.html import parse_post_body
 from sextile.feed.client import FeedClient
-from sextile.feed.ingest import IngestResult, ingest_once
+from sextile.feed.ingest import (
+    DEFAULT_POLL_INTERVAL,
+    IngestResult,
+    ingest_once,
+    poll,
+    seed,
+)
 from sextile.feed.source import STARDOT_BASE_URL, AtomFeedSource
 from sextile.model import Post
 from sextile.pages.demo import demo_frame
@@ -51,6 +57,17 @@ def build_parser() -> argparse.ArgumentParser:
 
     ingest = subcommands.add_parser("ingest", help="Fetch the feed into the archive")
     ingest.add_argument("--once", action="store_true", help="Poll once and stop")
+    ingest.add_argument(
+        "--seed",
+        action="store_true",
+        help="Sweep every route the board publishes, to fill a new archive",
+    )
+    ingest.add_argument(
+        "--interval",
+        type=float,
+        default=DEFAULT_POLL_INTERVAL,
+        help=f"Seconds between polls (default {DEFAULT_POLL_INTERVAL:.0f})",
+    )
     _add_database_argument(ingest)
 
     archive = subcommands.add_parser("archive", help="Report what the archive holds")
@@ -154,24 +171,49 @@ def _post_frame(arguments: argparse.Namespace) -> Frame | None:
 
 
 async def _ingest(arguments: argparse.Namespace) -> int:
-    if not arguments.once:
-        print("Continuous polling is not built yet: pass --once.", file=sys.stderr)
-        return 2
-
     with Repository.open(arguments.database_filepath) as repository:
         async with FeedClient(STARDOT_BASE_URL) as client:
-            result = await ingest_once(AtomFeedSource(client), repository)
-
-    print(f"{result.seen} posts offered, {result.added} new, {_ingest_note(result)}")
-    for problem in result.problems:
-        print(f"  problem: {problem}", file=sys.stderr)
+            source = AtomFeedSource(client)
+            if arguments.seed:
+                print(
+                    "Seeding from every route the board publishes. The site asks for "
+                    "60 seconds\nbetween requests, so this takes a few minutes.",
+                    file=sys.stderr,
+                )
+                await seed(source, repository, on_result=_report)
+            elif arguments.once:
+                _report(await ingest_once(source, repository))
+            else:
+                print(
+                    f"Polling every {arguments.interval:.0f}s. Interrupt to stop.",
+                    file=sys.stderr,
+                )
+                with suppress(KeyboardInterrupt, asyncio.CancelledError):
+                    await poll(
+                        source, repository, interval=arguments.interval, on_result=_report
+                    )
+        print(f"{repository.count_posts()} posts held.", file=sys.stderr)
     return 0
+
+
+def _report(result: IngestResult) -> None:
+    #  Seeding and polling both run for minutes at a time, so progress has to
+    #  appear as it happens rather than when the buffer decides.
+    if result.failed:
+        print(f"  {result.route}: could not be fetched: {result.failure}", file=sys.stderr)
+        return
+    print(
+        f"  {result.route}: {result.seen} offered, {result.added} new{_ingest_note(result)}",
+        flush=True,
+    )
+    for problem in result.problems:
+        print(f"    problem: {problem}", file=sys.stderr, flush=True)
 
 
 def _ingest_note(result: IngestResult) -> str:
     if result.window_may_have_drained:
-        return "every post was new, so the feed window may have drained between polls"
-    return "the archive was already up to date" if result.added == 0 else "archive extended"
+        return "  (all new -- the window may have drained between polls)"
+    return ""
 
 
 async def _serve(arguments: argparse.Namespace) -> int:

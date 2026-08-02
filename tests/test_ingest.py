@@ -30,6 +30,12 @@ class FakeSource:
         self.calls += 1
         return self._feeds[min(self.calls - 1, len(self._feeds) - 1)]
 
+    async def newest_topics(self) -> Feed:  # pragma: no cover - unused
+        raise NotImplementedError
+
+    async def active_topics(self) -> Feed:  # pragma: no cover - unused
+        raise NotImplementedError
+
     async def posts_in_forum(self, forum_id: int) -> Feed:  # pragma: no cover - unused
         raise NotImplementedError
 

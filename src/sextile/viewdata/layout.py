@@ -55,11 +55,31 @@ class Row:
     indent: int = 0
 
 
-def lay_out(content: PostContent) -> list[Frame]:
-    """Render a post's content as frames."""
+def paginate(content: PostContent, rows_per_frame: int = BODY_ROWS) -> list[list[Row]]:
+    """Render a post's content and deal it into frame-sized pages of rows.
+
+    Stops short of drawing, so a page builder can place these rows beneath its
+    own chrome and title block without this module knowing either exists.
+    """
     rows = list(_rows_for(content.blocks, depth=0))
     rows.extend(_link_rows(content))
-    return _deal(rows)
+    return _deal(rows, rows_per_frame)
+
+
+def draw_rows(canvas: Canvas, first_row: int, rows: list[Row]) -> None:
+    """Draw rendered rows onto a canvas, starting at a row."""
+    for offset, row in enumerate(rows):
+        if row.text:
+            canvas.row(first_row + offset).skip(row.indent).text(row.text, row.colour)
+
+
+def lay_out(content: PostContent) -> list[Frame]:
+    """Render a post's content as bare frames, with no chrome.
+
+    Used by the tests and by `sextile render --post`, where the content is the
+    only thing of interest.
+    """
+    return [_frame_for(page) for page in paginate(content)]
 
 
 def _rows_for(blocks: tuple[Block, ...], depth: int) -> list[Row]:
@@ -110,25 +130,25 @@ def _link_rows(content: PostContent) -> list[Row]:
     return rows
 
 
-def _deal(rows: list[Row]) -> list[Frame]:
-    """Deal rendered rows onto frames, a screenful at a time."""
-    pages = [rows[start : start + BODY_ROWS] for start in range(0, len(rows), BODY_ROWS)] or [[]]
+def _deal(rows: list[Row], rows_per_frame: int) -> list[list[Row]]:
+    """Deal rendered rows into frame-sized pages."""
+    pages = [
+        rows[start : start + rows_per_frame] for start in range(0, len(rows), rows_per_frame)
+    ] or [[]]
 
-    truncated = len(pages) > MAX_FRAMES
-    if truncated:
+    if len(pages) > MAX_FRAMES:
+        #  A page has frames a-z and no more. Running out must be said, not
+        #  silently swallowed.
         pages = pages[:MAX_FRAMES]
-        pages[-1] = pages[-1][: BODY_ROWS - 1]
+        pages[-1] = pages[-1][: rows_per_frame - 1]
         pages[-1].append(Row(_TRUNCATION_NOTICE, Colour.RED))
 
-    return [_frame_for(page) for page in pages]
+    return pages
 
 
 def _frame_for(rows: list[Row]) -> Frame:
     canvas = Canvas()
-    for offset, row in enumerate(rows):
-        if not row.text:
-            continue
-        canvas.row(offset).skip(row.indent).text(row.text, row.colour)
+    draw_rows(canvas, 0, rows)
     return canvas.frame
 
 

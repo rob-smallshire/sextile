@@ -1,0 +1,362 @@
+"""Building the page a reference names.
+
+Menus are the shape most pages take. A viewdata reader selects with a single
+keypress, so a menu offers at most nine choices on a frame and `#` moves to the
+next nine. Digit 0 always returns to the main index: it is the one key a reader
+who has lost their bearings can rely on.
+
+Where the archive has nothing to show, the page says so. An empty menu with no
+explanation looks like a fault, and on a service that deliberately answers
+slowly a reader has no way to tell the difference.
+"""
+
+from dataclasses import dataclass
+from datetime import date, datetime
+from typing import Final
+
+from sextile.content.html import parse_post_body
+from sextile.model import Post
+from sextile.pages import numbering
+from sextile.pages.numbering import (
+    About,
+    Contributor,
+    ContributorsIndex,
+    Day,
+    DaysIndex,
+    Forum,
+    ForumsIndex,
+    Logoff,
+    MainIndex,
+    PageRef,
+    PostsIndex,
+    Topic,
+    TopicsIndex,
+)
+from sextile.pages.page import Page, PageFrame
+from sextile.store.repository import BOARD_TIMEZONE, Repository
+from sextile.viewdata.canvas import Canvas
+from sextile.viewdata.chrome import (
+    CONTENT_FIRST_ROW,
+    CONTENT_ROWS,
+    SERVICE_NAME,
+    draw_chrome,
+)
+from sextile.viewdata.controls import Colour
+from sextile.viewdata.encoding import cell_count
+from sextile.viewdata.frame import COLUMNS
+from sextile.viewdata.layout import draw_rows, paginate
+
+#: A reader selects with one keypress, so nine is the most a frame can offer.
+CHOICES_PER_FRAME: Final = 9
+
+#: Each menu entry takes a line of its own plus a line of detail beneath.
+_ROWS_PER_CHOICE: Final = 2
+
+#: Rows a post frame gives to its subject and byline before the body begins.
+_POST_HEADING_ROWS: Final = 3
+
+_MENU_PROMPT: Final = "Select 1-9, 0 index"
+_MORE_PROMPT: Final = "Select 1-9, # more, 0 index"
+_READING_PROMPT: Final = "# next frame, 0 index"
+
+
+@dataclass(frozen=True)
+class MenuItem:
+    """One selectable line of a menu."""
+
+    text: str
+    detail: str
+    destination: PageRef
+
+
+def resolve(reference: PageRef, repository: Repository) -> Page:
+    """Build the page a reference names. Always returns something showable."""
+    match reference:
+        case MainIndex():
+            return _main_index(repository)
+        case PostsIndex():
+            return _posts_menu(reference, "LATEST POSTS", repository.latest_posts(limit=60))
+        case DaysIndex():
+            return _days_menu(reference, repository)
+        case Day(day):
+            return _posts_menu(reference, _day_title(day), repository.posts_on(day))
+        case ForumsIndex():
+            return _forums_menu(reference, repository)
+        case Forum(forum_id):
+            return _forum_page(reference, forum_id, repository)
+        case ContributorsIndex():
+            return _contributors_menu(reference, repository)
+        case Contributor(user_id):
+            return _contributor_page(reference, user_id, repository)
+        case numbering.Post(post_id):
+            return _post_page(reference, post_id, repository)
+        case About():
+            return _about(reference, repository)
+        case Logoff():
+            return _notice(
+                reference, "GOODBYE", ["Thank you for calling Sextile.", "", "Ring off."]
+            )
+        case TopicsIndex() | Topic():
+            return _notice(
+                reference,
+                "TOPICS",
+                [
+                    "Thread browsing is NOT AVAILABLE.",
+                    "",
+                    "The board's feed does not carry topic",
+                    "identifiers, and the page that would",
+                    "reveal them is disallowed to us by the",
+                    "site's robots.txt.",
+                    "",
+                    "Posts may still be read by day, by",
+                    "forum, and by contributor.",
+                ],
+            )
+
+
+# -- menus ------------------------------------------------------------------
+
+
+def _main_index(repository: Repository) -> Page:
+    held = repository.count_posts()
+    items = [
+        MenuItem("Latest posts", "the newest first", PostsIndex()),
+        MenuItem("By day", "browse by date", DaysIndex()),
+        MenuItem("By forum", "browse by section", ForumsIndex()),
+        MenuItem("By contributor", "browse by poster", ContributorsIndex()),
+        MenuItem("About this service", "", About()),
+    ]
+    return _menu(
+        MainIndex(),
+        title=SERVICE_NAME,
+        items=items,
+        preamble=["Stardot, for users of Acorn computers.", f"{held} posts held."],
+    )
+
+
+def _posts_menu(reference: PageRef, title: str, posts: list[Post]) -> Page:
+    if not posts:
+        return _notice(reference, title, ["NO POSTS held for this page."])
+    items = [
+        MenuItem(
+            post.subject,
+            f"{post.author_name}  {_time_of(post)}",
+            numbering.Post(post.post_id),
+        )
+        for post in posts
+    ]
+    return _menu(reference, title=title, items=items)
+
+
+def _days_menu(reference: PageRef, repository: Repository) -> Page:
+    days = repository.days(limit=60)
+    if not days:
+        return _notice(reference, "BY DAY", ["NO POSTS held yet."])
+    items = [
+        MenuItem(_day_title(day), f"{count} post{'' if count == 1 else 's'}", Day(day))
+        for day, count in days
+    ]
+    return _menu(reference, title="BY DAY", items=items)
+
+
+def _forums_menu(reference: PageRef, repository: Repository) -> Page:
+    forums = repository.forums()
+    if not forums:
+        return _notice(reference, "BY FORUM", ["NO POSTS held yet."])
+    items = [
+        MenuItem(name, f"{count} post{'' if count == 1 else 's'}", Forum(forum_id))
+        for forum_id, name, count in forums
+    ]
+    return _menu(reference, title="BY FORUM", items=items)
+
+
+def _contributors_menu(reference: PageRef, repository: Repository) -> Page:
+    contributors = repository.contributors()
+    if not contributors:
+        return _notice(reference, "BY CONTRIBUTOR", ["NO POSTS held yet."])
+    items = [
+        MenuItem(name, f"{count} post{'' if count == 1 else 's'}", Contributor(user_id))
+        for user_id, name, count in contributors
+    ]
+    return _menu(reference, title="BY CONTRIBUTOR", items=items)
+
+
+def _forum_page(reference: PageRef, forum_id: int, repository: Repository) -> Page:
+    posts = repository.posts_in_forum(forum_id)
+    title = posts[0].forum_name if posts else f"FORUM {forum_id}"
+    return _posts_menu(reference, title, posts)
+
+
+def _contributor_page(reference: PageRef, user_id: int, repository: Repository) -> Page:
+    posts = repository.posts_by_author(user_id)
+    title = posts[0].author_name if posts else f"USER {user_id}"
+    return _posts_menu(reference, title, posts)
+
+
+def _menu(
+    reference: PageRef,
+    *,
+    title: str,
+    items: list[MenuItem],
+    preamble: list[str] | None = None,
+) -> Page:
+    """Build a menu, dealing its items nine to a frame."""
+    lead = preamble or []
+    first_frame_capacity = (CONTENT_ROWS - len(lead) - (1 if lead else 0)) // _ROWS_PER_CHOICE
+    per_frame = min(CHOICES_PER_FRAME, max(first_frame_capacity, 1))
+
+    batches = [items[start : start + per_frame] for start in range(0, len(items), per_frame)] or [
+        []
+    ]
+    frames = []
+    for index, batch in enumerate(batches):
+        last = index == len(batches) - 1
+        frames.append(
+            _menu_frame(
+                reference,
+                index,
+                title=title,
+                batch=batch,
+                preamble=lead,
+                prompt=_MENU_PROMPT if last else _MORE_PROMPT,
+            )
+        )
+    return Page(reference=reference, frames=tuple(frames))
+
+
+def _menu_frame(
+    reference: PageRef,
+    index: int,
+    *,
+    title: str,
+    batch: list[MenuItem],
+    preamble: list[str],
+    prompt: str,
+) -> PageFrame:
+    canvas = Canvas()
+    number = f"{numbering.format_page_number(reference)}{numbering.frame_letter(index)}"
+    draw_chrome(canvas, title=title, page_number=number, prompt=prompt)
+
+    row = CONTENT_FIRST_ROW
+    for line in preamble:
+        canvas.row(row).text(_fitted(line, COLUMNS - 1), Colour.WHITE)
+        row += 1
+    if preamble:
+        row += 1
+
+    choices: dict[int, PageRef] = {0: MainIndex()}
+    for offset, item in enumerate(batch):
+        digit = offset + 1
+        choices[digit] = item.destination
+        canvas.row(row).text(f"{digit} ", Colour.YELLOW).text(
+            _fitted(item.text, COLUMNS - 4), Colour.WHITE
+        )
+        row += 1
+        if item.detail and row < CONTENT_FIRST_ROW + CONTENT_ROWS:
+            canvas.row(row).skip(2).text(_fitted(item.detail, COLUMNS - 4), Colour.GREEN)
+        row += 1
+
+    return PageFrame(frame=canvas.frame, choices=choices)
+
+
+# -- content pages ----------------------------------------------------------
+
+
+def _post_page(reference: PageRef, post_id: int, repository: Repository) -> Page:
+    post = repository.post(post_id)
+    if post is None:
+        return _notice(
+            reference,
+            "POST",
+            [
+                f"Post {post_id} is NOT in the archive.",
+                "",
+                "Sextile holds what it has seen in the",
+                "board's feed, which reaches back only a",
+                "little way.",
+            ],
+        )
+
+    body_rows = CONTENT_ROWS - _POST_HEADING_ROWS
+    pages = paginate(parse_post_body(post.content_html), body_rows)
+    frames = []
+    for index, rows in enumerate(pages):
+        canvas = Canvas()
+        number = f"{numbering.format_page_number(reference)}{numbering.frame_letter(index)}"
+        draw_chrome(
+            canvas,
+            title=post.forum_name or SERVICE_NAME,
+            page_number=number,
+            prompt=_READING_PROMPT,
+        )
+        canvas.row(CONTENT_FIRST_ROW).text(_fitted(post.subject, COLUMNS - 1), Colour.YELLOW)
+        byline = canvas.row(CONTENT_FIRST_ROW + 1)
+        byline.text(_fitted(post.author_name, COLUMNS - 8), Colour.GREEN)
+        canvas.right(CONTENT_FIRST_ROW + 1, _time_of(post), Colour.GREEN)
+        draw_rows(canvas, CONTENT_FIRST_ROW + _POST_HEADING_ROWS, rows)
+        frames.append(PageFrame(frame=canvas.frame, choices=_post_choices(post)))
+    return Page(reference=reference, frames=tuple(frames))
+
+
+def _post_choices(post: Post) -> dict[int, PageRef]:
+    choices: dict[int, PageRef] = {0: MainIndex()}
+    if post.forum_id is not None:
+        choices[1] = Forum(post.forum_id)
+    if post.author_id is not None:
+        choices[2] = Contributor(post.author_id)
+    choices[3] = Day(post.published.astimezone(BOARD_TIMEZONE).date())
+    return choices
+
+
+def _about(reference: PageRef, repository: Repository) -> Page:
+    return _notice(
+        reference,
+        "ABOUT SEXTILE",
+        [
+            "A Viewdata service carrying posts from",
+            "stardot.org.uk, for users of Acorn",
+            "computers and emulators.",
+            "",
+            f"{repository.count_posts()} posts held.",
+            "",
+            "Page numbers follow the board's own",
+            "identifiers, so *82489493# here is post",
+            "489493 there.",
+            "",
+            "Named after the star key on a viewdata",
+            "keypad.",
+        ],
+    )
+
+
+def _notice(reference: PageRef, title: str, lines: list[str]) -> Page:
+    """A page that simply says something, with no choices but the way back."""
+    canvas = Canvas()
+    number = f"{numbering.format_page_number(reference)}{numbering.frame_letter(0)}"
+    draw_chrome(canvas, title=title, page_number=number, prompt="0 for the main index")
+    for offset, line in enumerate(lines[:CONTENT_ROWS]):
+        if line:
+            canvas.row(CONTENT_FIRST_ROW + offset).text(_fitted(line, COLUMNS - 1), Colour.WHITE)
+    return Page(
+        reference=reference,
+        frames=(PageFrame(frame=canvas.frame, choices={0: MainIndex()}),),
+    )
+
+
+# -- helpers ----------------------------------------------------------------
+
+
+def _day_title(day: date) -> str:
+    return day.strftime("%a %d %b %Y").upper()
+
+
+def _time_of(post: Post) -> str:
+    local: datetime = post.published.astimezone(BOARD_TIMEZONE)
+    return local.strftime("%H:%M")
+
+
+def _fitted(text: str, cells: int) -> str:
+    fitted = text
+    while cell_count(fitted) > cells:
+        fitted = fitted[:-1]
+    return fitted

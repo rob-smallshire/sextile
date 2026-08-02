@@ -13,6 +13,8 @@ from sextile.feed.ingest import IngestResult, ingest_once
 from sextile.feed.source import STARDOT_BASE_URL, AtomFeedSource
 from sextile.model import Post
 from sextile.pages.demo import demo_frame
+from sextile.pages.numbering import UnknownPageError, format_page_number, parse_page_number
+from sextile.pages.router import resolve
 from sextile.store.repository import Repository
 from sextile.viewdata.ansi import render_ansi
 from sextile.viewdata.frame import Frame
@@ -29,6 +31,7 @@ def build_parser() -> argparse.ArgumentParser:
     render = subcommands.add_parser("render", help="Show a frame without a BBC Micro")
     render.add_argument("--demo", action="store_true", help="Render the demonstration frame")
     render.add_argument("--post", type=int, help="Render a post from the archive, by its id")
+    render.add_argument("--page", help="Render a page by its number, such as 1 or 82489493")
     render.add_argument("--frame", type=int, default=0, help="Which frame of it (0 for the first)")
     _add_database_argument(render)
     render.add_argument(
@@ -81,16 +84,42 @@ def main(argv: Sequence[str] | None = None) -> int:
 def _render(arguments: argparse.Namespace) -> int:
     if arguments.demo:
         frame = demo_frame()
+    elif arguments.page is not None:
+        found_page = _page_frame(arguments)
+        if found_page is None:
+            return 2
+        frame = found_page
     elif arguments.post is not None:
         found = _post_frame(arguments)
         if found is None:
             return 2
         frame = found
     else:
-        print("Nothing to render: pass --demo or --post <id>.", file=sys.stderr)
+        print("Nothing to render: pass --demo, --page <number> or --post <id>.", file=sys.stderr)
         return 2
     print(_rendered(frame, arguments.form, colour=not arguments.no_colour))
     return 0
+
+
+def _page_frame(arguments: argparse.Namespace) -> Frame | None:
+    try:
+        reference = parse_page_number(arguments.page)
+    except UnknownPageError as error:
+        print(error, file=sys.stderr)
+        return None
+    with Repository.open(arguments.database_filepath) as repository:
+        page = resolve(reference, repository)
+    index = int(arguments.frame)
+    found = page.frame(index)
+    if found is None:
+        print(f"That page has {len(page.frames)} frame(s).", file=sys.stderr)
+        return None
+    choices = ", ".join(
+        f"{digit}->*{format_page_number(destination)}#"
+        for digit, destination in sorted(found.choices.items())
+    )
+    print(f"*{page.frame_number(index)}#   choices: {choices}", file=sys.stderr)
+    return found.frame
 
 
 def _post_frame(arguments: argparse.Namespace) -> Frame | None:

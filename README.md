@@ -11,14 +11,13 @@ on a real BBC Micro running period comms software.
 
 ## State
 
-Read-only and feed-driven. The display engine, the page numbering and the feed
-ingest are built and tested; the rendering of posts and the server itself are
-not yet.
+Read-only and feed-driven. Everything from the feed to a renderable page is
+built and tested; the server that would send those pages to a terminal is not.
 
 ```
 Atom feed  --> ingest --> SQLite --> content blocks --> frames --> session --> transport --> BBC
              (polite)    (archive)    (semantic)       (40x24)    (Prestel)     (TCP)
-                done        done         next            done       next        next
+                done        done         done            done       next        next
 ```
 
 ## Trying it
@@ -30,7 +29,15 @@ uv run sextile render --demo --form bytes   # the wire stream
 
 uv run sextile ingest --once                # fetch the feed into the archive
 uv run sextile archive                      # what the archive holds
+
+uv run sextile render --page 1              # the main index
+uv run sextile render --page 8              # latest posts
+uv run sextile render --page 82489493       # one post, by its Stardot id
+uv run sextile render --page 8 --frame 1    # its second frame
 ```
+
+`render --page` also prints, to standard error, where each digit key would
+lead — which is the quickest way to check a menu is wired up correctly.
 
 ## Connecting a BBC Micro
 

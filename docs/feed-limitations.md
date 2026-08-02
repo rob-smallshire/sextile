@@ -21,7 +21,12 @@ listing that was written as
 ```
 
 arrives as one run-on line, its original breaks recoverable only by eye, from
-the `;;` comment markers. This is phpBB's feed generation, not our parsing.
+the `;;` comment markers. This is phpBB's feed generation, not our parsing: the
+web page for the same post keeps its line breaks.
+
+It is a defect rather than a design choice, and it is fixable. See
+[phpbb-feed-code-newlines.md](phpbb-feed-code-newlines.md) for the evidence, the
+cause and a one-line patch.
 
 Sextile renders what it is given. Inventing line breaks — splitting before `;;`,
 or on runs of spaces — would fabricate structure that might be wrong, and being

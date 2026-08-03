@@ -44,6 +44,7 @@ from sextile.viewdata.chrome import (
 )
 from sextile.viewdata.controls import Colour
 from sextile.viewdata.encoding import cell_count
+from sextile.viewdata.footer import FooterItem, Priority, render_footer
 from sextile.viewdata.frame import COLUMNS
 from sextile.viewdata.layout import draw_rows, paginate
 
@@ -72,6 +73,9 @@ NEXT_ITEM_KEY: Final = keys.NEXT_ITEM
 _BEFORE: Final = "\u2190"  # LEFTWARDS ARROW, G0 0x5B
 _AFTER: Final = "\u2192"  # RIGHTWARDS ARROW, G0 0x5D
 _BETWEEN: Final = "\u2015"  # HORIZONTAL BAR, G0 0x60
+
+#  The footer is written in one colour, which costs a cell of the forty.
+_FOOTER_ATTRIBUTE: Final = 1
 
 
 
@@ -484,27 +488,36 @@ def _neighbour_choices(neighbours: Neighbours) -> dict[str, PageRef]:
 def _prompt(moving: dict[str, str], *, selecting: bool) -> str:
     """Name every key that does something here, and no key that does not.
 
-    At its longest -- both axes, or a menu with more frames either side -- this
-    comes to exactly forty cells including its colour attribute. There is a test
-    to that effect, because there is no room at all to spare.
+    Composed as items with priorities rather than as a string, so that when the
+    row will not hold them all the footer sheds what the reader can best spare.
+    At its longest today it fills the row exactly, so the next axis added will
+    need that.
     """
-    parts = ["1-9 select"] if selecting else []
-    parts.append(_axis(moving, PREVIOUS_FRAME_KEY, NEXT_FRAME_KEY, "frame"))
-    parts.append(_axis(moving, PREVIOUS_ITEM_KEY, NEXT_ITEM_KEY, "post"))
+    items = []
+    if selecting:
+        items.append(FooterItem("1-9", "select", Priority.PRIMARY))
+    for before, after, what in (
+        (PREVIOUS_FRAME_KEY, NEXT_FRAME_KEY, "frame"),
+        (PREVIOUS_ITEM_KEY, NEXT_ITEM_KEY, "post"),
+    ):
+        axis = _axis(moving, before, after)
+        if axis:
+            items.append(FooterItem(axis, what, Priority.SECONDARY))
     if NEXT_FRAME_KEY in moving:
-        #  Named, so that the conventional viewdata key is discoverable rather
-        #  than merely working.
-        parts.append(f"{CONVENTIONAL_NEXT_FRAME_KEY} next")
-    parts.append("0 menu")
-    return ", ".join(part for part in parts if part)
+        #  Named so the conventional viewdata key is discoverable rather than
+        #  merely working -- and first to lose its label, since `S` already says
+        #  the same thing.
+        items.append(FooterItem(CONVENTIONAL_NEXT_FRAME_KEY, "next", Priority.REDUNDANT))
+    items.append(FooterItem("0", "menu", Priority.ESSENTIAL))
+    return render_footer(items, COLUMNS - _FOOTER_ATTRIBUTE)
 
 
-def _axis(moving: dict[str, str], before: str, after: str, what: str) -> str:
+def _axis(moving: dict[str, str], before: str, after: str) -> str:
     """One axis of movement, with an arrow beside each key that is available."""
     if before in moving and after in moving:
-        return f"{_BEFORE}{before}{_BETWEEN}{after}{_AFTER} {what}"
+        return f"{_BEFORE}{before}{_BETWEEN}{after}{_AFTER}"
     if after in moving:
-        return f"{after}{_AFTER} {what}"
+        return f"{after}{_AFTER}"
     if before in moving:
-        return f"{_BEFORE}{before} {what}"
+        return f"{_BEFORE}{before}"
     return ""

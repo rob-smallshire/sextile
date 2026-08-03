@@ -62,6 +62,14 @@ cell. A row that changes colour twice has thirty-eight columns for text, not
 forty. Canvas does that accounting so nothing above it has to, which is also why
 colour could not be deferred to a later version.
 
+**`viewdata/footer.py`** decides what the prompt gives up when the row will
+not hold it all. Forty cells is not many and the longest prompt already fills
+the row exactly, so the next key added will not fit. Each item carries a
+priority and the renderer sheds labels first, from the least important upward,
+then whole items — the key last, because the key is what the reader presses and
+the label only teaches it. `0 menu` outlasts everything: a reader who cannot
+read the screen still needs to leave it.
+
 **`viewdata/encoding.py`** guards the fact that the wire has two namespaces
 sharing the C0 range: a bare `0x0C` clears the screen, while `ESC 0x4C` selects
 normal height. Confusing them produces a display wrong in ways that look like

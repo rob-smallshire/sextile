@@ -3,6 +3,8 @@ name = "sextile"
 version = "0.1.0"
 description = "A Prestel-style Viewdata service presenting the Stardot forum to 1980s Acorn computers"
 readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
 authors = [
     { name = "Robert Smallshire", email = "robert@smallshire.org.uk" }
 ]

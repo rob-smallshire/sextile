@@ -135,3 +135,11 @@ answered.
 
 `CLAUDE.md` records how the project is built, for anyone — human or otherwise —
 picking it up.
+
+## Licence
+
+MIT — see [LICENSE](LICENSE).
+
+The test fixtures under `tests/data/` are Atom documents captured from Stardot
+and contain posts written by members of that forum. Those words are their
+authors' own and are not covered by the grant; see [NOTICE.md](NOTICE.md).

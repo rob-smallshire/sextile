@@ -14,6 +14,7 @@ from dataclasses import dataclass
 from datetime import date, datetime
 from typing import Final
 
+from sextile import keys
 from sextile.content.html import parse_post_body
 from sextile.model import Post
 from sextile.pages import numbering
@@ -55,24 +56,14 @@ _ROWS_PER_CHOICE: Final = 2
 #: Rows a post frame gives to its subject and byline before the body begins.
 _POST_HEADING_ROWS: Final = 3
 
-#  Moving about is two-dimensional, and the keys say so:
-#
-#            W   the frame above
-#       A         D     the item before, the item after
-#            S   the frame below
-#
-#  Vertical within an item, because a document reads top to bottom; horizontal
-#  between items, because that is shuffling sideways through a drawer of them.
-#
-#  Deliberately anachronistic. WASD postdates viewdata by a decade and more,
-#  and everything else here is period-correct to the byte. `#` therefore keeps
-#  its conventional meaning alongside `S`, because it is the one key a viewdata
-#  reader will try without being told.
-PREVIOUS_FRAME_KEY: Final = "W"
-NEXT_FRAME_KEY: Final = "S"
-CONVENTIONAL_NEXT_FRAME_KEY: Final = "#"
-PREVIOUS_ITEM_KEY: Final = "A"
-NEXT_ITEM_KEY: Final = "D"
+#  The four movement keys, and the conventional viewdata one. They are named in
+#  sextile.keys, where the BBC's own cursor keys are mapped onto the same four
+#  operations.
+PREVIOUS_FRAME_KEY: Final = keys.PREVIOUS_FRAME
+NEXT_FRAME_KEY: Final = keys.NEXT_FRAME
+CONVENTIONAL_NEXT_FRAME_KEY: Final = keys.CONVENTIONAL_NEXT_FRAME
+PREVIOUS_ITEM_KEY: Final = keys.PREVIOUS_ITEM
+NEXT_ITEM_KEY: Final = keys.NEXT_ITEM
 
 
 @dataclass(frozen=True)

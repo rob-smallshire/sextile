@@ -27,11 +27,6 @@ Beeb for half an hour.
 
 - **Subjects and menu items truncate mid-word.** Wrapping to a second line or
   eliding would both cost rows. Which is better depends on how it reads.
-- **Do the BBC's cursor keys reach us?** They transmit 0x88-0x8B, and at 7E1 the
-  top bit is stripped, leaving 0x08-0x0B — precisely the viewdata cursor-control
-  codes. If Commstar passes them through in Prestel chat mode rather than
-  consuming them locally, arrows could work alongside WASD, and would be more
-  authentic than either. Measurable with the existing spike harness.
 - **Code listings now keep their line breaks**, since the board fixed its feed,
   but they are still not wrapped for forty columns. A listing indented to
   column eight has little room left.

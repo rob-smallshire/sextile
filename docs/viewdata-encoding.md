@@ -128,6 +128,28 @@ character at 75 baud — and the header space needed to display it.
 The trailing `_` is 0x5F, the viewdata `#`, confirming that a page request
 terminates with 0x5F and not 0x23.
 
+## The cursor keys reach us
+
+Commstar passes the BBC's cursor keys straight through in Prestel chat mode,
+measured by `docs/spikes/spike_cursor_keys.py`:
+
+| Key | Transmits | As viewdata |
+|---|---|---|
+| LEFT | 0x08 | cursor left |
+| RIGHT | 0x09 | cursor right |
+| DOWN | 0x0A | cursor down |
+| UP | 0x0B | cursor up |
+| COPY | nothing | consumed locally |
+
+They are the MOS codes 0x88-0x8B with the eighth bit taken by the 7E1 line,
+which lands them exactly on the viewdata cursor-control codes. So a reader has
+real arrow keys, and Sextile reads them as the same four movements as WASD.
+
+One consequence worth knowing: 0x0A is both the cursor-down key and the second
+half of a terminal's CR LF. The parser tells them apart by position -- a line
+feed directly after a carriage return is the rest of that terminator, and on its
+own it is the key.
+
 ## A testing gotcha
 
 Beebium's `teletext_screen().text` maps cell codes to ASCII, not to the glyph the

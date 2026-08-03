@@ -12,6 +12,9 @@ else typed on its own is an immediate keypress:
     <term>             the next frame
     <key>              select
 
+The BBC's cursor keys arrive as the viewdata cursor-control codes 0x08-0x0B
+and are read as the movement keys they correspond to; see `sextile.keys`.
+
 This module recognises syntax and nothing else. Whether `MAIN` or `82489493`
 names anything is the numbering layer's business, and whether `N` does anything
 is the current frame's -- which is what keeps viewdata's numeric keypad from
@@ -21,16 +24,24 @@ Three bytes terminate a request. Prestel's RETURN transmits 0x5F, measured
 against Commstar; 0x23 is what an ordinary terminal sends for `#`; and 0x0D is
 what its RETURN sends. Accepting all three costs nothing and means the service
 can be driven equally from a BBC Micro and from `nc`.
+
+A line feed following a carriage return is the other half of that terminator and
+is swallowed. On its own it is 0x0A, the BBC's cursor-down key -- which is why
+the two have to be told apart rather than one of them simply ignored.
 """
 
 from dataclasses import dataclass
 from typing import Final
 
+from sextile.keys import ARROWS
+
 #: Longest request we will accumulate before deciding the reader is lost.
 ENTRY_LIMIT: Final = 32
 
 _STAR: Final = "*"
-_TERMINATORS: Final = frozenset({"\x5f", "#", "\r"})
+_CARRIAGE_RETURN: Final = "\r"
+_LINE_FEED: Final = "\n"
+_TERMINATORS: Final = frozenset({"\x5f", "#", _CARRIAGE_RETURN})
 
 _BACK: Final = "0"
 _REDISPLAY: Final = "00"
@@ -87,6 +98,9 @@ class CommandParser:
         #  Set after abandoning a runaway request, so the rest of it is
         #  swallowed rather than arriving as a burst of keypresses.
         self._discarding = False
+        #  Set after a carriage return, so that the line feed following it is
+        #  read as the other half of one terminator rather than as cursor down.
+        self._after_carriage_return = False
 
     @property
     def entry(self) -> str:
@@ -103,6 +117,14 @@ class CommandParser:
         return commands
 
     def _read(self, character: str) -> Command | None:
+        after_carriage_return, self._after_carriage_return = self._after_carriage_return, False
+        if character == _LINE_FEED and after_carriage_return:
+            #  CR LF is one terminator, not a terminator and a cursor key. An
+            #  ordinary terminal sends both; a BBC sends the line feed only when
+            #  its cursor-down key is pressed.
+            return None
+        if character == _CARRIAGE_RETURN:
+            self._after_carriage_return = True
         if self._discarding:
             return self._discard(character)
         if character == _STAR:
@@ -113,6 +135,10 @@ class CommandParser:
             return self._accumulate(character)
         if character.isalnum():
             return Select(character.upper())
+        arrow = ARROWS.get(ord(character))
+        if arrow is not None:
+            #  The BBC's own cursor keys, which mean what WASD means.
+            return Select(arrow)
         #  Line feeds, escapes and other furniture mean nothing here.
         return None
 

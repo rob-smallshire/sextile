@@ -128,14 +128,14 @@ class TestArrivingInPieces:
 
 
 class TestNoise:
-    @pytest.mark.parametrize("noise", [b"\n", b"\x00", b"\x1b", b"\x7f", b" "])
+    @pytest.mark.parametrize("noise", [b"\x00", b"\x1b", b"\x7f", b" "])
     def test_bytes_that_are_not_keys_are_ignored(self, noise: bytes) -> None:
         #  A terminal sends line feeds and stray control bytes; none of them
         #  mean anything here.
         assert parse(noise) == []
 
     def test_noise_does_not_disturb_a_request_in_progress(self) -> None:
-        assert parse(b"*84\n89\x00493#") == [GoTo("8489493")]
+        assert parse(b"*84\x1b89\x00493#") == [GoTo("8489493")]
 
     def test_the_eighth_bit_is_ignored(self) -> None:
         #  A 7E1 line can deliver the parity bit set on a noisy connection.
@@ -173,3 +173,77 @@ class TestTheEntrySoFar:
         parser = CommandParser()
         parser.feed(b"3")
         assert parser.entry == ""
+
+
+class TestTheCursorKeys:
+    """The BBC's arrows arrive as viewdata cursor-control codes.
+
+    Measured against Commstar: LEFT, RIGHT, UP and DOWN transmit 0x88-0x8B, and
+    the 7E1 line strips the eighth bit, leaving 0x08-0x0B. They mean the same
+    four things as WASD, so they parse to the same commands.
+    """
+
+    @pytest.mark.parametrize(
+        ("code", "same_as"),
+        [
+            (0x08, "A"),  # cursor left
+            (0x09, "D"),  # cursor right
+            (0x0A, "S"),  # cursor down
+            (0x0B, "W"),  # cursor up
+        ],
+    )
+    def test_an_arrow_means_what_its_letter_means(self, code: int, same_as: str) -> None:
+        assert parse(bytes([code])) == parse(same_as.encode())
+
+    @pytest.mark.parametrize("code", [0x08, 0x09, 0x0A, 0x0B])
+    def test_an_arrow_with_its_eighth_bit_still_set_is_read(self, code: int) -> None:
+        #  A line that did not strip the parity bit delivers 0x88-0x8B.
+        assert parse(bytes([0x80 | code])) == parse(bytes([code]))
+
+    def test_the_four_arrows_together(self) -> None:
+        assert parse(bytes([0x0B, 0x0A, 0x08, 0x09])) == [
+            Select("W"),
+            Select("S"),
+            Select("A"),
+            Select("D"),
+        ]
+
+    def test_an_arrow_during_a_request_is_ignored(self) -> None:
+        #  Part-way through typing *824 an arrow means nothing; it must not
+        #  silently become part of the number.
+        assert parse(b"*82" + bytes([0x08]) + b"4#") == [GoTo("824")]
+
+    def test_copy_is_not_a_key_we_see(self) -> None:
+        #  Measured: Commstar consumes COPY locally and transmits nothing.
+        assert parse(bytes([0x0C])) == []
+
+
+class TestCarriageReturnAndLineFeed:
+    """CR LF is one terminator; a lone LF is the cursor-down key.
+
+    An ordinary terminal sends both bytes when RETURN is pressed. A BBC sends
+    0x0A only when its cursor-down key is pressed, that being the viewdata
+    cursor-control code. So they cannot simply be treated alike.
+    """
+
+    def test_a_terminator_typed_at_a_terminal_is_one_command(self) -> None:
+        assert parse(b"*8\r\n") == [GoTo("8")]
+
+    def test_the_line_feed_does_not_arrive_as_a_stray_keypress(self) -> None:
+        #  Otherwise every request from `nc` would be followed by a spurious
+        #  move to the next frame.
+        assert parse(b"*8\r\n") == [GoTo("8")]
+
+    def test_a_bare_line_feed_is_the_cursor_down_key(self) -> None:
+        assert parse(b"\n") == [Select("S")]
+
+    def test_a_line_feed_well_after_a_return_is_a_keypress_again(self) -> None:
+        assert parse(b"*8\r" + b"A" + b"\n") == [GoTo("8"), Select("A"), Select("S")]
+
+    def test_the_pair_split_across_two_reads_is_still_one_terminator(self) -> None:
+        parser = CommandParser()
+        assert parser.feed(b"*8\r") == [GoTo("8")]
+        assert parser.feed(b"\n") == []
+
+    def test_two_line_feeds_after_a_return_move_once(self) -> None:
+        assert parse(b"*8\r\n\n") == [GoTo("8"), Select("S")]

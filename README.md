@@ -74,6 +74,11 @@ Moving about is two-dimensional, and the keys say so:
         S                 #       the same as S, the conventional viewdata key
 ```
 
+**The BBC's own cursor keys do the same four things.** They transmit 0x88-0x8B,
+and the 7E1 line takes the eighth bit, landing them on the viewdata
+cursor-control codes 0x08-0x0B — so arrows and WASD are two spellings of one
+compass. Measured, not assumed: `docs/spikes/spike_cursor_keys.py`.
+
 Vertical within an item, because a document reads top to bottom; horizontal
 between items, because that is shuffling sideways through a drawer of them.
 

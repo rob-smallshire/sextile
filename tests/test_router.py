@@ -6,6 +6,7 @@ Digit 0 always returns to the main index, which is the one key a lost reader can
 rely on.
 """
 
+import re
 from collections.abc import Iterator
 from datetime import UTC, datetime, timedelta, timezone
 
@@ -282,3 +283,63 @@ class TestForumNamesFromElsewhere:
         with Repository.in_memory() as repository:
             repository.add_post(make_post(1, forum_id=54, forum_name=""))
             assert "FORUM 54" in text_of(resolve(Forum(54), repository))
+
+
+class TestNoEntityReferenceReachesTheScreen:
+    """The guard at the level the defect was noticed.
+
+    Subjects arrive HTML-escaped inside CDATA and used to reach the screen as
+    `&amp;CA` where the poster wrote `&CA`. A test on the parser alone would
+    not have caught it being reintroduced somewhere else, so this reads the
+    rendered frames.
+    """
+
+    @pytest.fixture
+    def escaped(self) -> Iterator[Repository]:
+        with Repository.in_memory() as repository:
+            repository.add_post(
+                make_post(
+                    1,
+                    subject="Re: ADFS stuffs &CA into buffer",
+                    forum_name="Tube & Econet",
+                    author_name="Rock & Roll",
+                    content_html=(
+                        "<p>Write &amp;70 then &quot;RUN&quot;, "
+                        "or &lt;BREAK&gt; for &#163;0.</p>"
+                        "<pre><code>lda &amp;b5fe</code></pre>"
+                    ),
+                )
+            )
+            yield repository
+
+    @pytest.mark.parametrize(
+        "reference",
+        [MainIndex(), PostsIndex(), ForumsIndex(), Forum(53), ContributorsIndex(), PostPage(1)],
+    )
+    def test_no_frame_shows_an_entity_reference(
+        self, reference: PageRef, escaped: Repository
+    ) -> None:
+        page = resolve(reference, escaped)
+        for index in range(len(page.frames)):
+            rendered = text_of(page, index)
+            assert not _ENTITY.search(rendered), rendered
+
+    def test_the_characters_themselves_are_shown(self, escaped: Repository) -> None:
+        rendered = text_of(resolve(PostPage(1), escaped))
+        assert "&70" in rendered
+        assert '"RUN"' in rendered
+        assert "<BREAK>" in rendered
+        assert "£0" in rendered
+        assert "lda &b5fe" in rendered
+
+    def test_an_ampersand_in_a_menu_entry_is_shown(self, escaped: Repository) -> None:
+        assert "&CA" in text_of(resolve(PostsIndex(), escaped))
+
+    def test_an_ampersand_survives_being_sent(self, escaped: Repository) -> None:
+        #  0x26 is an ordinary G0 position, so it needs no transliteration.
+        found = resolve(PostPage(1), escaped).frame(0)
+        assert found is not None
+        assert bytes([0x26]) in found.frame.to_bytes()
+
+
+_ENTITY = re.compile(r"&(?:[a-zA-Z][a-zA-Z0-9]{1,10}|#[0-9]{1,6}|#[xX][0-9a-fA-F]{1,5});")

@@ -262,3 +262,50 @@ def _text_of(content: PostContent) -> str:
 
     walk(content.blocks)
     return "\n".join(parts)
+
+
+class TestEntityReferences:
+    """A post body goes through an HTML parser, so entities resolve there.
+
+    Tested anyway, and across the awkward places -- inside a listing, inside an
+    attribute, in the numeric and hexadecimal forms -- because the same defect
+    reached the screen from the title, which does not.
+    """
+
+    @pytest.mark.parametrize(
+        ("escaped", "expected"),
+        [
+            ("A &amp; B", "A & B"),
+            ("&lt;tag&gt;", "<tag>"),
+            ("&quot;quoted&quot;", '"quoted"'),
+            ("Bob&apos;s", "Bob's"),
+            ("&#163;5", "£5"),
+            ("&#x26;80", "&80"),
+            ("&#38;81", "&81"),
+            ("6502&nbsp;CPU", "6502 CPU"),  # a no-break space is still a space
+        ],
+    )
+    def test_entities_in_running_text(self, escaped: str, expected: str) -> None:
+        assert parse_post_body(escaped).blocks == (Paragraph((expected,)),)
+
+    def test_entities_inside_a_listing(self) -> None:
+        #  6502 source is full of ampersands, so this is the common case.
+        body = "<pre><code>lda &amp;b5fe\ncmp #&amp;19</code></pre>"
+        assert parse_post_body(body).blocks == (Code(("lda &b5fe", "cmp #&19")),)
+
+    def test_entities_in_an_attribute(self) -> None:
+        #  A smiley's alt text is the emoticon the poster typed.
+        body = '<img class="smilies" src="x.gif" alt="=D&gt;" title="Applause">'
+        assert parse_post_body(body).blocks == (Paragraph(("=D>",)),)
+
+    def test_entities_in_an_image_description(self) -> None:
+        body = '<img class="postimage" src="x.png" alt="Tube &amp; Econet.png">'
+        assert parse_post_body(body).blocks == (Image("Tube & Econet.png"),)
+
+    @pytest.mark.parametrize("index", range(len(ALL_POSTS)))
+    def test_no_entity_reference_survives_a_captured_post(self, index: int) -> None:
+        rendered = _text_of(parse_post_body(ALL_POSTS[index].content_html))
+        assert not _ENTITY.search(rendered), rendered
+
+
+_ENTITY = re.compile(r"&(?:[a-zA-Z][a-zA-Z0-9]{1,10}|#[0-9]{1,6}|#[xX][0-9a-fA-F]{1,5});")

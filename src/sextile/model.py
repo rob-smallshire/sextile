@@ -19,7 +19,7 @@ class Post:
     """phpBB's own post id, which is also this post's page number."""
 
     forum_id: int | None
-    """Absent in per-topic feeds, which carry no category naming the forum."""
+    """Absent where the feed names no forum."""
 
     forum_name: str
 
@@ -37,6 +37,10 @@ class Post:
     content_html: str
     """The post body as the feed supplied it, kept verbatim so the rendering
     pipeline can be re-run over real historical input."""
+
+    topic_id: int | None = None
+    """phpBB's topic id, when a link in the entry carries one. Stardot's feed
+    does not offer one yet, which is why thread browsing is not built."""
 
     @property
     def is_reply(self) -> bool:

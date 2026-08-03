@@ -7,12 +7,17 @@ about all three so that nothing downstream has to:
 - the **forum id** is only in the category's `scheme` URL;
 - the **author's numeric id** is only in the `Statistics: Posted by ...` footer
   at the end of the post body -- markup the renderer later strips, so it has to
-  be read here first.
+  be read here first;
+- the **title and author name** are HTML-escaped inside CDATA, which the XML
+  parser takes literally, so `&amp;` arrives as five characters and has to be
+  unescaped here. The body escapes this only because it goes through an HTML
+  parser afterwards; these fields do not.
 
 An entry that cannot be understood is reported rather than dropped in silence:
 a feed whose shape has changed should be noisy, not quietly empty.
 """
 
+import html
 import re
 from datetime import datetime
 from typing import Final
@@ -27,6 +32,10 @@ _TITLE_SEPARATOR: Final = " • "
 
 _POST_ID: Final = re.compile(r"viewtopic\.php\?(?:[^\"#]*&(?:amp;)?)?p=(\d+)")
 _FORUM_ID: Final = re.compile(r"viewforum\.php\?(?:[^\"#]*&(?:amp;)?)?f=(\d+)")
+#  A topic id is recognised by the shape of the URL carrying it, not by the
+#  link's relation name. Whichever relation the board eventually chooses --
+#  `related`, `collection`, `up`, or a bespoke IRI -- this finds it.
+_TOPIC_ID: Final = re.compile(r"viewtopic\.php\?(?:[^\"#]*&(?:amp;)?)?t=(\d+)")
 #  The profile link survives XML parsing with its ampersand still escaped,
 #  because the body arrives inside a CDATA section.
 _AUTHOR_ID: Final = re.compile(r"memberlist\.php\?[^\"]*?[?&](?:amp;)?u=(\d+)")
@@ -76,8 +85,9 @@ def _parse_entry(entry: ElementTree.Element) -> Post:
         post_id=_post_id(entry, url),
         forum_id=forum_id,
         forum_name=forum_name,
-        author_name=_author_name(entry),
+        author_name=_unescaped(_author_name(entry)),
         author_id=_author_id(content),
+        topic_id=_topic_id(entry),
         subject=_subject(_text(entry, "title") or ""),
         published=published,
         updated=updated,
@@ -94,6 +104,20 @@ def _post_id(entry: ElementTree.Element, url: str) -> int:
         if match:
             return int(match.group(1))
     raise FeedFormatError(f"entry {url or '<unknown>'!r} carries no post id")
+
+
+def _topic_id(entry: ElementTree.Element) -> int | None:
+    """The topic a post belongs to, if any link says.
+
+    Stardot's feed does not carry one yet. Matching on the URL rather than on
+    the link's relation name means that whichever relation the board chooses
+    when it does, this will read it.
+    """
+    for link in entry.findall(f"{_ATOM}link"):
+        match = _TOPIC_ID.search(link.get("href", ""))
+        if match:
+            return int(match.group(1))
+    return None
 
 
 def _forum(entry: ElementTree.Element) -> tuple[int | None, str]:
@@ -150,7 +174,17 @@ def _subject(title: str) -> str:
     free to contain a bullet of its own.
     """
     _, separator, subject = title.partition(_TITLE_SEPARATOR)
-    return (subject if separator else title).strip()
+    return _unescaped(subject if separator else title).strip()
+
+
+def _unescaped(text: str) -> str:
+    """Resolve HTML entity references, exactly once.
+
+    The field arrived inside CDATA, so the XML parser left them alone. Once is
+    the right number of times: a poster who literally typed `&amp;` sends
+    `&amp;amp;`, and unescaping twice would silently rewrite what they wrote.
+    """
+    return html.unescape(text)
 
 
 def _link(entry: ElementTree.Element) -> str:

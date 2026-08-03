@@ -6,6 +6,7 @@ name, the identifiers hidden in URLs, and the author's numeric id buried in a
 statistics footer that the renderer will later throw away.
 """
 
+import re
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -280,3 +281,125 @@ _LINKS_ONLY = (
     '<link rel="up" type="text/html" '
     'href="https://stardot.org.uk/forums/viewforum.php?f=54" title="programming" />'
 )
+
+
+class TestTheTopicLink:
+    """Reading a topic id from whatever link carries one.
+
+    Stardot's feed does not offer one yet. When it does, the relation name it
+    chooses should not matter: a topic id is recognised by the shape of the URL
+    it appears in, so `related`, `collection`, `up` or a bespoke IRI all work.
+    These entries are therefore synthetic.
+    """
+
+    @pytest.mark.parametrize(
+        "rel",
+        [
+            'rel="related"',
+            'rel="collection"',
+            'rel="up"',
+            'rel="index"',
+            'rel="https://stardot.org.uk/rel/topic"',
+            "",  # no rel at all
+        ],
+    )
+    def test_any_relation_carrying_a_topic_url_is_read(self, rel: str) -> None:
+        document = _feed_with_entry(
+            _WHEN + '<link href="https://stardot.org.uk/forums/viewtopic.php?p=489542"/>'
+            f'<link {rel} href="https://stardot.org.uk/forums/viewtopic.php?t=33387"/>'
+        )
+        assert parse_feed(document).posts[0].topic_id == 33387
+
+    def test_a_topic_id_alongside_other_parameters_is_found(self) -> None:
+        document = _feed_with_entry(
+            _WHEN + '<link href="https://stardot.org.uk/forums/'
+            'viewtopic.php?f=3&amp;t=33387&amp;p=489542#p489542"/>'
+        )
+        post = parse_feed(document).posts[0]
+        assert post.topic_id == 33387
+        assert post.post_id == 489542
+
+    def test_a_post_link_alone_yields_no_topic(self) -> None:
+        document = _feed_with_entry(
+            _WHEN + '<link href="https://stardot.org.uk/forums/viewtopic.php?p=489542"/>'
+        )
+        assert parse_feed(document).posts[0].topic_id is None
+
+    def test_a_forum_link_is_not_mistaken_for_a_topic(self) -> None:
+        assert parse_feed(_feed_with_entry(_LINKS_ONLY)).posts[0].topic_id is None
+
+    def test_the_captured_feeds_still_carry_no_topic_id(self) -> None:
+        #  The gap this is waiting on. When it closes, this test says so.
+        for document in (BOARD_FEED, TOPIC_FEED, FORUM_FEED):
+            assert all(post.topic_id is None for post in parse_feed(document).posts)
+
+
+class TestEntityReferences:
+    """Titles and author names arrive HTML-escaped inside CDATA.
+
+    phpBB marks them `type="html"`, and CDATA is taken literally by the XML
+    parser, so `&amp;` survives as five characters. The body escapes this fate
+    only because it goes through an HTML parser; these fields do not, and were
+    reaching the screen as `&amp;CA` where the poster wrote `&CA`.
+    """
+
+    @pytest.mark.parametrize(
+        ("escaped", "expected"),
+        [
+            ("ADFS stuffs &amp;CA into the buffer", "ADFS stuffs &CA into the buffer"),
+            ('Windows &quot;Drag and Drop&quot; App', 'Windows "Drag and Drop" App'),
+            ("a &lt; b &gt; c", "a < b > c"),
+            ("Bob&apos;s ROM", "Bob's ROM"),
+            ("&#163;5 well spent", "£5 well spent"),
+            ("&#x26;80 and &#38;81", "&80 and &81"),
+            ("Tube &amp; Econet", "Tube & Econet"),
+        ],
+    )
+    def test_a_subject_is_unescaped(self, escaped: str, expected: str) -> None:
+        document = _feed_with_entry(
+            _WHEN
+            + '<link href="https://stardot.org.uk/forums/viewtopic.php?p=1"/>'
+            + f"<title type=\"html\"><![CDATA[programming • {escaped}]]></title>"
+        )
+        assert parse_feed(document).posts[0].subject == expected
+
+    def test_unescaping_happens_once(self) -> None:
+        #  A poster who literally typed `&amp;` arrives double-escaped, and must
+        #  not be unescaped twice into a bare ampersand.
+        document = _feed_with_entry(
+            _WHEN
+            + '<link href="https://stardot.org.uk/forums/viewtopic.php?p=1"/>'
+            + '<title type="html"><![CDATA[f • write &amp;amp; read]]></title>'
+        )
+        assert parse_feed(document).posts[0].subject == "write &amp; read"
+
+    def test_an_author_name_is_unescaped(self) -> None:
+        document = _feed_with_entry(
+            _WHEN
+            + '<link href="https://stardot.org.uk/forums/viewtopic.php?p=1"/>'
+            + "<author><name><![CDATA[Rock &amp; Roll]]></name></author>"
+        )
+        assert parse_feed(document).posts[0].author_name == "Rock & Roll"
+
+    def test_a_forum_name_from_an_attribute_needs_no_help(self) -> None:
+        #  XML attributes are unescaped by the parser itself; only CDATA is not.
+        document = _feed_with_entry(
+            _WHEN
+            + '<link href="https://stardot.org.uk/forums/viewtopic.php?p=1"/>'
+            + '<category term="x" label="Tube &amp; Econet" '
+            'scheme="https://stardot.org.uk/forums/viewforum.php?f=9"/>'
+        )
+        assert parse_feed(document).posts[0].forum_name == "Tube & Econet"
+
+    @pytest.mark.parametrize("document", ALL_FEEDS)
+    def test_no_entity_reference_survives_into_a_subject(self, document: str) -> None:
+        for post in parse_feed(document).posts:
+            assert not _ENTITY.search(post.subject), post.subject
+
+    @pytest.mark.parametrize("document", ALL_FEEDS)
+    def test_no_entity_reference_survives_into_an_author_name(self, document: str) -> None:
+        for post in parse_feed(document).posts:
+            assert not _ENTITY.search(post.author_name), post.author_name
+
+
+_ENTITY = re.compile(r"&(?:[a-zA-Z][a-zA-Z0-9]{1,10}|#[0-9]{1,6}|#[xX][0-9a-fA-F]{1,5});")

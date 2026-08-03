@@ -43,6 +43,17 @@ is empty, so the forum's *id* arrives but its *name* does not. The archive keeps
 whichever name any post supplies, so a forum picks up its name as soon as it is
 seen from another route.
 
+## Titles and author names arrive HTML-escaped
+
+phpBB marks `<title>` and `<author><name>` as `type="html"` and puts them inside
+CDATA, which the XML parser takes literally. So `&amp;` arrives as five
+characters, and a subject reading `ADFS stuffs &CA into the buffer` reaches us
+as `ADFS stuffs &amp;CA into the buffer`.
+
+The post body escapes this only because it goes through an HTML parser
+afterwards. These fields do not, so `feed/atom.py` unescapes them — exactly
+once, since a poster who literally typed `&amp;` sends `&amp;amp;`.
+
 ## Smaller things
 
 - The feed window is **ten posts** board-wide, fifteen for topic listings. At

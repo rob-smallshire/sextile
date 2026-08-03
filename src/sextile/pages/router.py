@@ -183,7 +183,11 @@ def _contributors_menu(reference: PageRef, repository: Repository) -> Page:
 
 def _forum_page(reference: PageRef, forum_id: int, repository: Repository) -> Page:
     posts = repository.posts_in_forum(forum_id)
-    title = posts[0].forum_name if posts else f"FORUM {forum_id}"
+    #  Ask the archive rather than the post: a post first seen in a per-topic
+    #  feed knows its forum's id but not its name, and the archive keeps
+    #  whichever name any post supplied.
+    named = {found_id: name for found_id, name, _ in repository.forums()}
+    title = named.get(forum_id) or f"FORUM {forum_id}"
     return _posts_menu(reference, title, posts)
 
 

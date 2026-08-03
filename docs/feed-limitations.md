@@ -8,32 +8,16 @@ read-only phpBB extension.
 Each limitation below is pinned by a test, so if the board's configuration ever
 changes we find out from a failure rather than by chance.
 
-## Code listings arrive without line breaks
+## Fixed: code listings used to arrive without line breaks
 
-Every `<pre><code>` block in the captured feeds contains **zero newlines**. A
-listing that was written as
+phpBB's feed stripped every character below 0x20 from a post body, so listings
+arrived as a single run-on line. Reported to the Stardot administrators, who
+narrowed the sanitiser to the characters XML actually forbids. Listings now
+arrive with their line breaks and tabs intact, and Sextile needed no change:
+the parser split on newlines all along.
 
-```
-;; Step 2: Test if that pre-existing rom image is SWMMFS
-;; so we re-use the same slot again and again
-        lda     &b5fe
-        cmp     #MAGIC0
-```
-
-arrives as one run-on line, its original breaks recoverable only by eye, from
-the `;;` comment markers. This is phpBB's feed generation, not our parsing: the
-web page for the same post keeps its line breaks.
-
-It is a defect rather than a design choice, and it is fixable. See
-[phpbb-feed-code-newlines.md](phpbb-feed-code-newlines.md) for the evidence, the
-cause and a one-line patch.
-
-Sextile renders what it is given. Inventing line breaks — splitting before `;;`,
-or on runs of spaces — would fabricate structure that might be wrong, and being
-confidently wrong about someone's assembler is worse than being awkward.
-
-On a board about 6502 programming this is the most costly limitation of the
-three.
+See [phpbb-feed-code-newlines.md](phpbb-feed-code-newlines.md) for the
+investigation, kept because the method of finding it is worth remembering.
 
 ## Posts do not know their topic
 
@@ -47,11 +31,17 @@ already know. We simply have no legitimate way to learn an id from the feed.
 
 This is why the page numbering reserves `72<topic>` rather than using it.
 
-## Per-topic feeds do not name their forum
+## Mostly fixed: per-topic feeds and their forum
 
 Board-wide and per-forum feeds carry a `<category>` naming the forum. Per-topic
-feeds carry none, and their entry titles are the bare subject with no forum name
-prepended. So a post first seen through a topic feed has no `forum_id`.
+feeds carry none, so a post first seen through one used to have no `forum_id`
+at all.
+
+Every entry now also has a `<link rel="up">` pointing at its forum, which fills
+that gap. One rough edge remains: in a topic feed that link's `title` attribute
+is empty, so the forum's *id* arrives but its *name* does not. The archive keeps
+whichever name any post supplies, so a forum picks up its name as soon as it is
+seen from another route.
 
 ## Smaller things
 
@@ -59,8 +49,8 @@ prepended. So a post first seen through a topic feed has no `forum_id`.
   the observed rate of roughly four posts an hour that is about two and a half
   hours of cover, so a poller that stops for an afternoon misses posts
   permanently.
-- Emphasis (`<strong>`, `<em>`) is present but rare — two occurrences in thirty
-  posts — and Sextile discards it. Colour on forty columns is better spent
-  distinguishing a quotation from a listing from the author's own words.
+- Emphasis (`<strong>`, `<em>`) is present but rare, and Sextile discards it.
+  Colour on forty columns is better spent distinguishing a quotation from a
+  listing from the author's own words.
 - Attachments are named but cannot be fetched: `robots.txt` disallows
   `/forums/download/file.php`, and a BBC Micro could do little with the file.

@@ -144,8 +144,12 @@ class Repository:
 
     def forums(self) -> list[tuple[int, str, int]]:
         """The forums seen, by id, with their post counts."""
+        #  MAX picks a name over the empty string, because a post first seen in
+        #  a per-topic feed knows its forum's id but not its name: the `rel=up`
+        #  link there has an empty title. Whichever post supplies the name, the
+        #  forum keeps it.
         rows = self._all(
-            "SELECT forum_id, forum_name, COUNT(*) AS total FROM posts "
+            "SELECT forum_id, MAX(forum_name) AS forum_name, COUNT(*) AS total FROM posts "
             "WHERE forum_id IS NOT NULL GROUP BY forum_id ORDER BY forum_id",
             (),
         )

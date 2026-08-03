@@ -1,7 +1,12 @@
 # phpBB's Atom feed strips newlines from code listings
 
+**Resolved.** The Stardot administrators applied the change below on
+2026-08-03, and listings now arrive with their line breaks intact. Kept because
+the way the defect was found — comparing the feed against the web page for the
+same post, and reading the signature of what survived — is worth remembering.
+
 A defect in phpBB's feed generation, found while building Sextile. Written up so
-it can be passed to the Stardot administrators, and upstream if they wish.
+it could be passed to the Stardot administrators, and upstream if they wish.
 
 ## Summary
 

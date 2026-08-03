@@ -17,11 +17,36 @@
 		<published>2023-11-23T08:23:04+01:00</published>
 		<id>https://stardot.org.uk/forums/viewtopic.php?p=409158#p409158</id>
 		<link href="https://stardot.org.uk/forums/viewtopic.php?p=409158#p409158"/>
+
+		<link rel="up" type="text/html" href="https://stardot.org.uk/forums/viewforum.php?f=3" title="" />
 		<title type="html"><![CDATA[Re: ROMs that copy themselves to SRAM? (ADFS E00?)]]></title>
 
 		
 		<content type="html" xml:base="https://stardot.org.uk/forums/viewtopic.php?p=409158#p409158"><![CDATA[
-<blockquote class="uncited"><div>Steve Picton (who runs IFEL) has just sent me an SSD image that contains some bootloaders he wrote a few ago:<blockquote class="uncited"><div>The attached SSD is a boot loader for ADFS 1.31, an 8271 DFS and ACP DFS for 1770 (all Model B). They work slightly differently to others in that there is no auto-RAM detection. The target RAM socket must be specified by the very first byte of the ROM. Eg with RAM in socket 7<br><br>*LOAD ADFSBL  2000<br>?&amp;2000 = 7<br>*SAVE ADFSBL 2000+4000<br><br>A real POR (or simulated with ?&amp;FE4E=127) is required.<br><br>You can freely upload this to Stardot. </div></blockquote>Here's the SSD containing these:<br>BtLoader 1.ssd<br>This works quite nicely, and gives the user explicit control over which sideways RAM slot is used:<br>cap1.png<br><br>Dave</div></blockquote>Oooh thank you both, will give this a whirl.  <img class="smilies" src="https://stardot.org.uk/forums/images/smilies/eusa_pray.gif" width="19" height="16" alt="[-o&lt;" title="Pray"> <br><br>Though I have started to think of some customizations I want to make that my own ROM enables. For example, in my case, the USB4VC device that I used to connect my keyboard, does not support the dip config on the keyboard. So I presently have to manually set the floppy drive access speed to its fastest setting. Will share where I land back here. Meanwhile thanks so much!  <img class="smilies" src="https://stardot.org.uk/forums/images/smilies/eusa_clap.gif" width="19" height="16" alt="=D&gt;" title="Applause"><p>Statistics: Posted by <a href="https://stardot.org.uk/forums/memberlist.php?mode=viewprofile&amp;u=13433">!FOZ!</a> — Thu Nov 23, 2023 7:23 am</p><hr />
+<blockquote class="uncited"><div>
+Steve Picton (who runs IFEL) has just sent me an SSD image that contains some bootloaders he wrote a few ago:
+<blockquote class="uncited"><div>
+The attached SSD is a boot loader for ADFS 1.31, an 8271 DFS and ACP DFS for 1770 (all Model B). They work slightly differently to others in that there is no auto-RAM detection. The target RAM socket must be specified by the very first byte of the ROM. Eg with RAM in socket 7<br>
+<br>
+*LOAD ADFSBL  2000<br>
+?&amp;2000 = 7<br>
+*SAVE ADFSBL 2000+4000<br>
+<br>
+A real POR (or simulated with ?&amp;FE4E=127) is required.<br>
+<br>
+You can freely upload this to Stardot. 
+</div></blockquote>
+Here's the SSD containing these:<br>
+BtLoader 1.ssd<br>
+This works quite nicely, and gives the user explicit control over which sideways RAM slot is used:<br>
+cap1.png<br>
+<br>
+Dave
+</div></blockquote>
+
+Oooh thank you both, will give this a whirl.  <img class="smilies" src="https://stardot.org.uk/forums/images/smilies/eusa_pray.gif" width="19" height="16" alt="[-o&lt;" title="Pray"> <br>
+<br>
+Though I have started to think of some customizations I want to make that my own ROM enables. For example, in my case, the USB4VC device that I used to connect my keyboard, does not support the dip config on the keyboard. So I presently have to manually set the floppy drive access speed to its fastest setting. Will share where I land back here. Meanwhile thanks so much!  <img class="smilies" src="https://stardot.org.uk/forums/images/smilies/eusa_clap.gif" width="19" height="16" alt="=D&gt;" title="Applause"><p>Statistics: Posted by <a href="https://stardot.org.uk/forums/memberlist.php?mode=viewprofile&amp;u=13433">!FOZ!</a> — Thu Nov 23, 2023 7:23 am</p><hr />
 ]]></content>
 	</entry>
 		<entry>
@@ -31,11 +56,47 @@
 		<published>2023-11-22T12:28:35+01:00</published>
 		<id>https://stardot.org.uk/forums/viewtopic.php?p=409119#p409119</id>
 		<link href="https://stardot.org.uk/forums/viewtopic.php?p=409119#p409119"/>
+
+		<link rel="up" type="text/html" href="https://stardot.org.uk/forums/viewforum.php?f=3" title="" />
 		<title type="html"><![CDATA[Re: ROMs that copy themselves to SRAM? (ADFS E00?)]]></title>
 
 		
 		<content type="html" xml:base="https://stardot.org.uk/forums/viewtopic.php?p=409119#p409119"><![CDATA[
-Steve Picton (who runs IFEL) has just sent me an SSD image that contains some bootloaders he wrote a few ago:<blockquote class="uncited"><div>The attached SSD is a boot loader for ADFS 1.31, an 8271 DFS and ACP DFS for 1770 (all Model B). They work slightly differently to others in that there is no auto-RAM detection. The target RAM socket must be specified by the very first byte of the ROM. Eg with RAM in socket 7<br><br>*LOAD ADFSBL  2000<br>?&amp;2000 = 7<br>*SAVE ADFSBL 2000+4000<br><br>A real POR (or simulated with ?&amp;FE4E=127) is required.<br><br>You can freely upload this to Stardot. </div></blockquote>Here's the SSD containing these:<div class="inline-attachment"><dl class="file"><dt><span class="imageset icon_topic_attach"></span> <a class="postlink" href="https://stardot.org.uk/forums/download/file.php?id=96852">BtLoader 1.ssd</a></dt></dl></div>This works quite nicely, and gives the user explicit control over which sideways RAM slot is used:<div class="inline-attachment"><dl class="thumbnail"><dt><a href="https://stardot.org.uk/forums/download/file.php?id=96853&amp;mode=view"><img src="https://stardot.org.uk/forums/download/file.php?id=96853&amp;t=1" class="postimage" alt="cap1.png" title="cap1.png (35.99 KiB) Viewed 2646 times" /></a></dt></dl></div>Dave<p>Statistics: Posted by <a href="https://stardot.org.uk/forums/memberlist.php?mode=viewprofile&amp;u=9657">hoglet</a> — Wed Nov 22, 2023 11:28 am</p><hr />
+Steve Picton (who runs IFEL) has just sent me an SSD image that contains some bootloaders he wrote a few ago:
+<blockquote class="uncited"><div>
+The attached SSD is a boot loader for ADFS 1.31, an 8271 DFS and ACP DFS for 1770 (all Model B). They work slightly differently to others in that there is no auto-RAM detection. The target RAM socket must be specified by the very first byte of the ROM. Eg with RAM in socket 7<br>
+<br>
+*LOAD ADFSBL  2000<br>
+?&amp;2000 = 7<br>
+*SAVE ADFSBL 2000+4000<br>
+<br>
+A real POR (or simulated with ?&amp;FE4E=127) is required.<br>
+<br>
+You can freely upload this to Stardot. 
+</div></blockquote>
+Here's the SSD containing these:
+<div class="inline-attachment">
+			
+		
+		
+				<dl class="file">
+			<dt><span class="imageset icon_topic_attach"></span> <a class="postlink" href="https://stardot.org.uk/forums/download/file.php?id=96852">BtLoader 1.ssd</a></dt>
+						
+		</dl>
+		
+			</div>
+This works quite nicely, and gives the user explicit control over which sideways RAM slot is used:
+<div class="inline-attachment">
+			
+				<dl class="thumbnail">
+			<dt><a href="https://stardot.org.uk/forums/download/file.php?id=96853&amp;mode=view"><img src="https://stardot.org.uk/forums/download/file.php?id=96853&amp;t=1" class="postimage" alt="cap1.png" title="cap1.png (35.99 KiB) Viewed 2647 times" /></a></dt>
+					</dl>
+		
+		
+		
+			</div>
+
+Dave<p>Statistics: Posted by <a href="https://stardot.org.uk/forums/memberlist.php?mode=viewprofile&amp;u=9657">hoglet</a> — Wed Nov 22, 2023 11:28 am</p><hr />
 ]]></content>
 	</entry>
 		<entry>
@@ -45,11 +106,17 @@ Steve Picton (who runs IFEL) has just sent me an SSD image that contains some bo
 		<published>2023-11-22T07:57:51+01:00</published>
 		<id>https://stardot.org.uk/forums/viewtopic.php?p=409106#p409106</id>
 		<link href="https://stardot.org.uk/forums/viewtopic.php?p=409106#p409106"/>
+
+		<link rel="up" type="text/html" href="https://stardot.org.uk/forums/viewforum.php?f=3" title="" />
 		<title type="html"><![CDATA[Re: ROMs that copy themselves to SRAM? (ADFS E00?)]]></title>
 
 		
 		<content type="html" xml:base="https://stardot.org.uk/forums/viewtopic.php?p=409106#p409106"><![CDATA[
-<blockquote class="uncited"><div>What version of ADFS are you using? 1.31?</div></blockquote>Yes 1.31.<p>Statistics: Posted by <a href="https://stardot.org.uk/forums/memberlist.php?mode=viewprofile&amp;u=13433">!FOZ!</a> — Wed Nov 22, 2023 6:57 am</p><hr />
+<blockquote class="uncited"><div>
+What version of ADFS are you using? 1.31?
+</div></blockquote>
+
+Yes 1.31.<p>Statistics: Posted by <a href="https://stardot.org.uk/forums/memberlist.php?mode=viewprofile&amp;u=13433">!FOZ!</a> — Wed Nov 22, 2023 6:57 am</p><hr />
 ]]></content>
 	</entry>
 		<entry>
@@ -59,6 +126,8 @@ Steve Picton (who runs IFEL) has just sent me an SSD image that contains some bo
 		<published>2023-11-21T08:31:35+01:00</published>
 		<id>https://stardot.org.uk/forums/viewtopic.php?p=409045#p409045</id>
 		<link href="https://stardot.org.uk/forums/viewtopic.php?p=409045#p409045"/>
+
+		<link rel="up" type="text/html" href="https://stardot.org.uk/forums/viewforum.php?f=3" title="" />
 		<title type="html"><![CDATA[Re: ROMs that copy themselves to SRAM? (ADFS E00?)]]></title>
 
 		
@@ -73,6 +142,8 @@ What version of ADFS are you using? 1.31?<p>Statistics: Posted by <a href="https
 		<published>2023-11-21T07:57:40+01:00</published>
 		<id>https://stardot.org.uk/forums/viewtopic.php?p=409043#p409043</id>
 		<link href="https://stardot.org.uk/forums/viewtopic.php?p=409043#p409043"/>
+
+		<link rel="up" type="text/html" href="https://stardot.org.uk/forums/viewforum.php?f=3" title="" />
 		<title type="html"><![CDATA[Re: ROMs that copy themselves to SRAM? (ADFS E00?)]]></title>
 
 		
@@ -87,11 +158,25 @@ Ok, I ran with ADFS for a bit and took a copy of it from SRAM. Comparing on my M
 		<published>2023-11-20T17:49:21+01:00</published>
 		<id>https://stardot.org.uk/forums/viewtopic.php?p=409012#p409012</id>
 		<link href="https://stardot.org.uk/forums/viewtopic.php?p=409012#p409012"/>
+
+		<link rel="up" type="text/html" href="https://stardot.org.uk/forums/viewforum.php?f=3" title="" />
 		<title type="html"><![CDATA[Re: ROMs that copy themselves to SRAM? (ADFS E00?)]]></title>
 
 		
 		<content type="html" xml:base="https://stardot.org.uk/forums/viewtopic.php?p=409012#p409012"><![CDATA[
-<blockquote class="uncited"><div><blockquote class="uncited"><div>What ROM/README copyright/author string would you recommend? <br><br>I do not require any credit, but want to acknowledge the original author for sure.<br><br>Currently has "(C) Based on work by Coeus"</div></blockquote>The original idea was mine and I came up with an initial implementation (I am Steve Fosdick in the (C) in MMFS bootstrap), but Dave (Hoglet) has significantly enhanced it by making it more reliable, able to work on an Electron, and faster so I think he should also receive credit.  The Martin Mather credit in the MMFS bootstrap (C) is for the MMFS payload: MMFS was originally written by Martin though more recently maintained by Hoglet.</div></blockquote>Hello, Coeus! First of all thank you very much for this brilliant idea. Secondly, thanks for the info on the acknowledgements. I'll work through some more testing and get things ready for further review on this thread. Thanks all!<p>Statistics: Posted by <a href="https://stardot.org.uk/forums/memberlist.php?mode=viewprofile&amp;u=13433">!FOZ!</a> — Mon Nov 20, 2023 4:49 pm</p><hr />
+<blockquote class="uncited"><div>
+<blockquote class="uncited"><div>
+What ROM/README copyright/author string would you recommend? <br>
+<br>
+I do not require any credit, but want to acknowledge the original author for sure.<br>
+<br>
+Currently has "(C) Based on work by Coeus"
+</div></blockquote>
+
+The original idea was mine and I came up with an initial implementation (I am Steve Fosdick in the (C) in MMFS bootstrap), but Dave (Hoglet) has significantly enhanced it by making it more reliable, able to work on an Electron, and faster so I think he should also receive credit.  The Martin Mather credit in the MMFS bootstrap (C) is for the MMFS payload: MMFS was originally written by Martin though more recently maintained by Hoglet.
+</div></blockquote>
+
+Hello, Coeus! First of all thank you very much for this brilliant idea. Secondly, thanks for the info on the acknowledgements. I'll work through some more testing and get things ready for further review on this thread. Thanks all!<p>Statistics: Posted by <a href="https://stardot.org.uk/forums/memberlist.php?mode=viewprofile&amp;u=13433">!FOZ!</a> — Mon Nov 20, 2023 4:49 pm</p><hr />
 ]]></content>
 	</entry>
 		<entry>
@@ -101,11 +186,49 @@ Ok, I ran with ADFS for a bit and took a copy of it from SRAM. Comparing on my M
 		<published>2023-11-20T17:46:40+01:00</published>
 		<id>https://stardot.org.uk/forums/viewtopic.php?p=409011#p409011</id>
 		<link href="https://stardot.org.uk/forums/viewtopic.php?p=409011#p409011"/>
+
+		<link rel="up" type="text/html" href="https://stardot.org.uk/forums/viewforum.php?f=3" title="" />
 		<title type="html"><![CDATA[Re: ROMs that copy themselves to SRAM? (ADFS E00?)]]></title>
 
 		
 		<content type="html" xml:base="https://stardot.org.uk/forums/viewtopic.php?p=409011#p409011"><![CDATA[
-<blockquote class="uncited"><div><blockquote class="uncited"><div>Actually when I press soft-break I get ...<br><br>'RAM/ROM comparison failed at'<br><br>I assume other some magic value needs changing in the code... will. keep looking.</div></blockquote>I guess you must already have updated the two-byte MAGIC number so it was correct for ADFS?<br>SYSVARS.asm:<div class="codebox"><p>Code: </p><pre><code>MAGIC0=&amp;19MAGIC1=&amp;67</code></pre></div>boostrap.asm:<div class="codebox"><p>Code: </p><pre><code>;; Step 2: Test if that pre-existing rom image is SWMMFS;; so we re-use the same slot again and again        lda     &amp;b5fe        cmp     #MAGIC0        bne     romnxt        lda     &amp;b5ff        cmp     #MAGIC1        bne     romnxt </code></pre></div>This is used so the bootstrap ROM can quickly identify the existing ROM as ADFS. You need to pick a couple of locations in ADFS to use for this. It doesn't have to be bf5e/b5ff, it can be anywhere in the ROM.<br><br>The other reasons for this error are:<br><br>1. You are including part of the workspace at the end of the ROM in the data being copied. When this changes, you will get this error. You need to exclude the workspace at the end.<br><br>2. E00 ADFS is writing to itself in a part of the ROM that is still covered by the check. Either because it's using self-modifying code, or becase it's storing data intermixed with code.<br><br>Dave</div></blockquote>Thanks yes, I changed the two magic values, otherwise it was replicating itself into my other sram's <br><br>I will review the other reason you have listed - most useful - thx!<p>Statistics: Posted by <a href="https://stardot.org.uk/forums/memberlist.php?mode=viewprofile&amp;u=13433">!FOZ!</a> — Mon Nov 20, 2023 4:46 pm</p><hr />
+<blockquote class="uncited"><div>
+<blockquote class="uncited"><div>
+Actually when I press soft-break I get ...<br>
+<br>
+'RAM/ROM comparison failed at'<br>
+<br>
+I assume other some magic value needs changing in the code... will. keep looking.
+</div></blockquote>
+I guess you must already have updated the two-byte MAGIC number so it was correct for ADFS?<br>
+SYSVARS.asm:
+<div class="codebox"><p>Code: </p><pre><code>MAGIC0=&amp;19
+MAGIC1=&amp;67
+</code></pre></div>
+boostrap.asm:
+<div class="codebox"><p>Code: </p><pre><code>;; Step 2: Test if that pre-existing rom image is SWMMFS
+;; so we re-use the same slot again and again
+        lda     &amp;b5fe
+        cmp     #MAGIC0
+        bne     romnxt
+        lda     &amp;b5ff
+        cmp     #MAGIC1
+        bne     romnxt
+ </code></pre></div>
+This is used so the bootstrap ROM can quickly identify the existing ROM as ADFS. You need to pick a couple of locations in ADFS to use for this. It doesn't have to be bf5e/b5ff, it can be anywhere in the ROM.<br>
+<br>
+The other reasons for this error are:<br>
+<br>
+1. You are including part of the workspace at the end of the ROM in the data being copied. When this changes, you will get this error. You need to exclude the workspace at the end.<br>
+<br>
+2. E00 ADFS is writing to itself in a part of the ROM that is still covered by the check. Either because it's using self-modifying code, or becase it's storing data intermixed with code.<br>
+<br>
+Dave
+</div></blockquote>
+
+Thanks yes, I changed the two magic values, otherwise it was replicating itself into my other sram's <br>
+<br>
+I will review the other reason you have listed - most useful - thx!<p>Statistics: Posted by <a href="https://stardot.org.uk/forums/memberlist.php?mode=viewprofile&amp;u=13433">!FOZ!</a> — Mon Nov 20, 2023 4:46 pm</p><hr />
 ]]></content>
 	</entry>
 		<entry>
@@ -115,11 +238,21 @@ Ok, I ran with ADFS for a bit and took a copy of it from SRAM. Comparing on my M
 		<published>2023-11-20T14:47:10+01:00</published>
 		<id>https://stardot.org.uk/forums/viewtopic.php?p=409006#p409006</id>
 		<link href="https://stardot.org.uk/forums/viewtopic.php?p=409006#p409006"/>
+
+		<link rel="up" type="text/html" href="https://stardot.org.uk/forums/viewforum.php?f=3" title="" />
 		<title type="html"><![CDATA[Re: ROMs that copy themselves to SRAM? (ADFS E00?)]]></title>
 
 		
 		<content type="html" xml:base="https://stardot.org.uk/forums/viewtopic.php?p=409006#p409006"><![CDATA[
-<blockquote class="uncited"><div>What ROM/README copyright/author string would you recommend? <br><br>I do not require any credit, but want to acknowledge the original author for sure.<br><br>Currently has "(C) Based on work by Coeus"</div></blockquote>The original idea was mine and I came up with an initial implementation (I am Steve Fosdick in the (C) in MMFS bootstrap), but Dave (Hoglet) has significantly enhanced it by making it more reliable, able to work on an Electron, and faster so I think he should also receive credit.  The Martin Mather credit in the MMFS bootstrap (C) is for the MMFS payload: MMFS was originally written by Martin though more recently maintained by Hoglet.<p>Statistics: Posted by <a href="https://stardot.org.uk/forums/memberlist.php?mode=viewprofile&amp;u=10708">Coeus</a> — Mon Nov 20, 2023 1:47 pm</p><hr />
+<blockquote class="uncited"><div>
+What ROM/README copyright/author string would you recommend? <br>
+<br>
+I do not require any credit, but want to acknowledge the original author for sure.<br>
+<br>
+Currently has "(C) Based on work by Coeus"
+</div></blockquote>
+
+The original idea was mine and I came up with an initial implementation (I am Steve Fosdick in the (C) in MMFS bootstrap), but Dave (Hoglet) has significantly enhanced it by making it more reliable, able to work on an Electron, and faster so I think he should also receive credit.  The Martin Mather credit in the MMFS bootstrap (C) is for the MMFS payload: MMFS was originally written by Martin though more recently maintained by Hoglet.<p>Statistics: Posted by <a href="https://stardot.org.uk/forums/memberlist.php?mode=viewprofile&amp;u=10708">Coeus</a> — Mon Nov 20, 2023 1:47 pm</p><hr />
 ]]></content>
 	</entry>
 		<entry>
@@ -129,11 +262,43 @@ Ok, I ran with ADFS for a bit and took a copy of it from SRAM. Comparing on my M
 		<published>2023-11-20T09:45:20+01:00</published>
 		<id>https://stardot.org.uk/forums/viewtopic.php?p=408994#p408994</id>
 		<link href="https://stardot.org.uk/forums/viewtopic.php?p=408994#p408994"/>
+
+		<link rel="up" type="text/html" href="https://stardot.org.uk/forums/viewforum.php?f=3" title="" />
 		<title type="html"><![CDATA[Re: ROMs that copy themselves to SRAM? (ADFS E00?)]]></title>
 
 		
 		<content type="html" xml:base="https://stardot.org.uk/forums/viewtopic.php?p=408994#p408994"><![CDATA[
-<blockquote class="uncited"><div>Actually when I press soft-break I get ...<br><br>'RAM/ROM comparison failed at'<br><br>I assume other some magic value needs changing in the code... will. keep looking.</div></blockquote>I guess you must already have updated the two-byte MAGIC number so it was correct for ADFS?<br>SYSVARS.asm:<div class="codebox"><p>Code: </p><pre><code>MAGIC0=&amp;19MAGIC1=&amp;67</code></pre></div>boostrap.asm:<div class="codebox"><p>Code: </p><pre><code>;; Step 2: Test if that pre-existing rom image is SWMMFS;; so we re-use the same slot again and again        lda     &amp;b5fe        cmp     #MAGIC0        bne     romnxt        lda     &amp;b5ff        cmp     #MAGIC1        bne     romnxt </code></pre></div>This is used so the bootstrap ROM can quickly identify the existing ROM as ADFS. You need to pick a couple of locations in ADFS to use for this. It doesn't have to be bf5e/b5ff, it can be anywhere in the ROM.<br><br>The other reasons for this error are:<br><br>1. You are including part of the workspace at the end of the ROM in the data being copied. When this changes, you will get this error. You need to exclude the workspace at the end.<br><br>2. E00 ADFS is writing to itself in a part of the ROM that is still covered by the check. Either because it's using self-modifying code, or becase it's storing data intermixed with code.<br><br>Dave<p>Statistics: Posted by <a href="https://stardot.org.uk/forums/memberlist.php?mode=viewprofile&amp;u=9657">hoglet</a> — Mon Nov 20, 2023 8:45 am</p><hr />
+<blockquote class="uncited"><div>
+Actually when I press soft-break I get ...<br>
+<br>
+'RAM/ROM comparison failed at'<br>
+<br>
+I assume other some magic value needs changing in the code... will. keep looking.
+</div></blockquote>
+I guess you must already have updated the two-byte MAGIC number so it was correct for ADFS?<br>
+SYSVARS.asm:
+<div class="codebox"><p>Code: </p><pre><code>MAGIC0=&amp;19
+MAGIC1=&amp;67
+</code></pre></div>
+boostrap.asm:
+<div class="codebox"><p>Code: </p><pre><code>;; Step 2: Test if that pre-existing rom image is SWMMFS
+;; so we re-use the same slot again and again
+        lda     &amp;b5fe
+        cmp     #MAGIC0
+        bne     romnxt
+        lda     &amp;b5ff
+        cmp     #MAGIC1
+        bne     romnxt
+ </code></pre></div>
+This is used so the bootstrap ROM can quickly identify the existing ROM as ADFS. You need to pick a couple of locations in ADFS to use for this. It doesn't have to be bf5e/b5ff, it can be anywhere in the ROM.<br>
+<br>
+The other reasons for this error are:<br>
+<br>
+1. You are including part of the workspace at the end of the ROM in the data being copied. When this changes, you will get this error. You need to exclude the workspace at the end.<br>
+<br>
+2. E00 ADFS is writing to itself in a part of the ROM that is still covered by the check. Either because it's using self-modifying code, or becase it's storing data intermixed with code.<br>
+<br>
+Dave<p>Statistics: Posted by <a href="https://stardot.org.uk/forums/memberlist.php?mode=viewprofile&amp;u=9657">hoglet</a> — Mon Nov 20, 2023 8:45 am</p><hr />
 ]]></content>
 	</entry>
 		<entry>
@@ -143,11 +308,17 @@ Ok, I ran with ADFS for a bit and took a copy of it from SRAM. Comparing on my M
 		<published>2023-11-20T08:15:35+01:00</published>
 		<id>https://stardot.org.uk/forums/viewtopic.php?p=408991#p408991</id>
 		<link href="https://stardot.org.uk/forums/viewtopic.php?p=408991#p408991"/>
+
+		<link rel="up" type="text/html" href="https://stardot.org.uk/forums/viewforum.php?f=3" title="" />
 		<title type="html"><![CDATA[Re: ROMs that copy themselves to SRAM? (ADFS E00?)]]></title>
 
 		
 		<content type="html" xml:base="https://stardot.org.uk/forums/viewtopic.php?p=408991#p408991"><![CDATA[
-Actually when I press soft-break I get ...<br><br>'RAM/ROM comparison failed at'<br><br>I assume other some magic value needs changing in the code... will. keep looking.<p>Statistics: Posted by <a href="https://stardot.org.uk/forums/memberlist.php?mode=viewprofile&amp;u=13433">!FOZ!</a> — Mon Nov 20, 2023 7:15 am</p><hr />
+Actually when I press soft-break I get ...<br>
+<br>
+'RAM/ROM comparison failed at'<br>
+<br>
+I assume other some magic value needs changing in the code... will. keep looking.<p>Statistics: Posted by <a href="https://stardot.org.uk/forums/memberlist.php?mode=viewprofile&amp;u=13433">!FOZ!</a> — Mon Nov 20, 2023 7:15 am</p><hr />
 ]]></content>
 	</entry>
 	</feed>

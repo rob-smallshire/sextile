@@ -201,3 +201,27 @@ class TestPersistence:
             pass
         with Repository.open(database_filepath) as reopened:
             assert reopened.count_posts() == 1
+
+
+class TestForumNamesArriveIncomplete:
+    """Per-topic feeds give a forum's id but not its name.
+
+    The `rel="up"` link in a topic feed has an empty title, so a post first seen
+    there knows only which forum it is in. The name arrives with posts from the
+    board or forum feeds, and must not be lost when it does.
+    """
+
+    def test_a_known_name_is_preferred_to_a_blank_one(self, repository: Repository) -> None:
+        repository.add_post(make_post(post_id=1, forum_id=54, forum_name=""))
+        repository.add_post(make_post(post_id=2, forum_id=54, forum_name="programming"))
+        assert repository.forums() == [(54, "programming", 2)]
+
+    def test_the_order_they_arrive_in_does_not_matter(self, repository: Repository) -> None:
+        repository.add_post(make_post(post_id=1, forum_id=54, forum_name="programming"))
+        repository.add_post(make_post(post_id=2, forum_id=54, forum_name=""))
+        assert repository.forums() == [(54, "programming", 2)]
+
+    def test_a_forum_known_only_by_number_is_still_listed(self, repository: Repository) -> None:
+        #  Better an unnamed forum than a missing one.
+        repository.add_post(make_post(post_id=1, forum_id=54, forum_name=""))
+        assert repository.forums() == [(54, "", 1)]

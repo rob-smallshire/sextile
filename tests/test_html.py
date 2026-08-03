@@ -134,14 +134,14 @@ class TestCode:
             Code(("  lda     &b5fe", "  cmp     #MAGIC0")),
         )
 
-    def test_the_feed_delivers_code_without_its_line_breaks(self) -> None:
-        """A limitation of the source, pinned so we notice if it ever changes.
+    def test_the_feed_preserves_the_line_breaks_in_a_listing(self) -> None:
+        """It did not always.
 
-        phpBB's feed strips newlines from `<pre><code>` blocks: every captured
-        listing arrives as a single run-on line, with the original line breaks
-        recoverable only by eye. Sextile renders what it is given rather than
-        inventing structure, so listings read poorly. Recovering them needs a
-        source other than the feed.
+        phpBB's feed used to strip every character below 0x20 from a post body,
+        so listings arrived as a single run-on line. Reported to the Stardot
+        administrators, who narrowed the sanitiser to the characters XML
+        actually forbids. This is the test that used to pin the defect, now
+        pinning the fix.
         """
         listings = [
             block
@@ -150,7 +150,17 @@ class TestCode:
             if isinstance(block, Code)
         ]
         assert listings, "the topic feed is expected to contain code"
-        assert all(len(block.lines) == 1 for block in listings)
+        assert any(len(block.lines) > 1 for block in listings)
+
+    def test_a_real_listing_keeps_its_own_lines(self) -> None:
+        listing = next(
+            block
+            for post in TOPIC_POSTS
+            for block in parse_post_body(post.content_html).blocks
+            if isinstance(block, Code) and len(block.lines) > 2
+        )
+        assert listing.lines[0].startswith(";; Step 2")
+        assert any("lda" in line for line in listing.lines)
 
     def test_the_code_label_is_not_treated_as_text(self) -> None:
         body = '<div class="codebox"><p>Code: </p><pre><code>NOP</code></pre></div>'

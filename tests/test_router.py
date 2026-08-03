@@ -267,3 +267,18 @@ def test_utc_is_displayed_in_the_boards_own_timezone() -> None:
     with Repository.in_memory() as repository:
         repository.add_post(make_post(1, published=datetime(2026, 8, 2, 20, 20, tzinfo=UTC)))
         assert "21:20" in text_of(resolve(PostPage(1), repository))
+
+
+class TestForumNamesFromElsewhere:
+    def test_a_forum_page_uses_the_name_the_archive_knows(self) -> None:
+        #  A post first seen in a per-topic feed carries its forum's id but a
+        #  blank name; the name arrives with a post from another route.
+        with Repository.in_memory() as repository:
+            repository.add_post(make_post(1, forum_id=54, forum_name=""))
+            repository.add_post(make_post(2, forum_id=54, forum_name="programming"))
+            assert "programming" in text_of(resolve(Forum(54), repository))
+
+    def test_a_forum_with_no_name_anywhere_is_shown_by_number(self) -> None:
+        with Repository.in_memory() as repository:
+            repository.add_post(make_post(1, forum_id=54, forum_name=""))
+            assert "FORUM 54" in text_of(resolve(Forum(54), repository))

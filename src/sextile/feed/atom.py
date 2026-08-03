@@ -65,7 +65,7 @@ def parse_feed(document: str) -> Feed:
 def _parse_entry(entry: ElementTree.Element) -> Post:
     url = _link(entry)
     content = _text(entry, "content") or ""
-    forum_id, forum_name = _category(entry)
+    forum_id, forum_name = _forum(entry)
     published = _timestamp(entry, "published") or _timestamp(entry, "updated")
     updated = _timestamp(entry, "updated") or published
 
@@ -96,18 +96,39 @@ def _post_id(entry: ElementTree.Element, url: str) -> int:
     raise FeedFormatError(f"entry {url or '<unknown>'!r} carries no post id")
 
 
-def _category(entry: ElementTree.Element) -> tuple[int | None, str]:
-    """The forum a post belongs to, when the feed says.
+def _forum(entry: ElementTree.Element) -> tuple[int | None, str]:
+    """The forum a post belongs to, from whichever element says so.
 
-    Board-wide and per-forum feeds carry a category naming the forum; per-topic
-    feeds do not, so a post from one simply does not know its forum.
+    Board-wide and per-forum feeds carry a `<category>` naming the forum.
+    Per-topic feeds carry none, but every entry now also has a
+    `<link rel="up">` pointing at the forum, which is what fills that gap.
+    The category is preferred where both are present, being the older and more
+    specific of the two.
     """
+    for found in (_forum_from_category(entry), _forum_from_up_link(entry)):
+        if found[0] is not None:
+            return found
+    return None, ""
+
+
+def _forum_from_category(entry: ElementTree.Element) -> tuple[int | None, str]:
     category = entry.find(f"{_ATOM}category")
     if category is None:
         return None, ""
     match = _FORUM_ID.search(category.get("scheme", ""))
     name = category.get("label") or category.get("term") or ""
     return (int(match.group(1)) if match else None), name
+
+
+def _forum_from_up_link(entry: ElementTree.Element) -> tuple[int | None, str]:
+    for link in entry.findall(f"{_ATOM}link"):
+        if link.get("rel") != "up":
+            continue
+        #  It names the forum today; anything else is not to be mistaken for one.
+        match = _FORUM_ID.search(link.get("href", ""))
+        if match:
+            return int(match.group(1)), link.get("title", "")
+    return None, ""
 
 
 def _author_name(entry: ElementTree.Element) -> str:

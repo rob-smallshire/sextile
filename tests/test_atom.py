@@ -26,7 +26,8 @@ ALL_FEEDS = [
     pytest.param(FORUM_FEED, id="forum"),
 ]
 
-#  Only these carry a category naming the forum; see TestForumIsNotAlwaysKnown.
+#  Only these carry a <category>; a topic feed names its forum only through
+#  the rel=up link. See TestTopicFeedsAreShapedDifferently.
 FEEDS_WITH_FORUMS = [pytest.param(BOARD_FEED, id="board"), pytest.param(FORUM_FEED, id="forum")]
 
 
@@ -40,7 +41,7 @@ class TestFeedLevel:
         assert board.title == "stardot.org.uk"
 
     def test_the_feed_reports_when_it_was_updated(self, board: Feed) -> None:
-        assert board.updated == datetime.fromisoformat("2026-08-02T21:20:27+01:00")
+        assert board.updated == datetime.fromisoformat("2026-08-03T10:42:17+01:00")
 
     def test_the_board_feed_holds_ten_posts(self, board: Feed) -> None:
         assert len(board.posts) == 10
@@ -56,19 +57,19 @@ class TestIdentifiers:
     """Everything the page numbering depends on."""
 
     def test_the_post_id_comes_from_the_link(self, board: Feed) -> None:
-        assert board.posts[0].post_id == 489493
+        assert board.posts[0].post_id == 489542
 
     def test_posts_appear_newest_first(self, board: Feed) -> None:
         ids = [post.post_id for post in board.posts]
         assert ids == sorted(ids, reverse=True)
 
     def test_the_forum_id_comes_from_the_category(self, board: Feed) -> None:
-        assert board.posts[0].forum_id == 53
+        assert board.posts[0].forum_id == 54
 
     def test_the_author_id_is_recovered_from_the_statistics_footer(self, board: Feed) -> None:
         #  The only place a numeric user id appears, and it is inside the very
         #  markup the renderer strips. It must be read before that happens.
-        assert board.posts[0].author_id == 10058
+        assert board.posts[0].author_id == 13965
 
     @pytest.mark.parametrize("document", ALL_FEEDS)
     def test_every_post_has_a_post_id_and_an_author_id(self, document: str) -> None:
@@ -84,29 +85,29 @@ class TestIdentifiers:
     def test_the_post_id_falls_back_to_the_id_element(self) -> None:
         #  The link and the id carry the same URL, so losing one is survivable.
         document = BOARD_FEED.replace(
-            '<link href="https://stardot.org.uk/forums/viewtopic.php?p=489493#p489493"/>',
+            '<link href="https://stardot.org.uk/forums/viewtopic.php?p=489542#p489542"/>',
             '<link href="https://stardot.org.uk/forums/index.php"/>',
             1,
         )
-        assert parse_feed(document).posts[0].post_id == 489493
+        assert parse_feed(document).posts[0].post_id == 489542
 
 
 class TestPostFields:
     def test_the_author_name(self, board: Feed) -> None:
-        assert board.posts[0].author_name == "Iapetus"
+        assert board.posts[0].author_name == "komadori"
 
     def test_the_forum_name(self, board: Feed) -> None:
-        assert board.posts[0].forum_name == "new projects in development: games"
+        assert board.posts[0].forum_name == "programming"
 
     def test_the_subject_has_the_forum_name_stripped(self, board: Feed) -> None:
         #  phpBB titles read "forum name - subject", joined by a bullet.
-        assert board.posts[0].subject == "Re: Head over Heels"
+        assert board.posts[0].subject == "Re: Writing games for the Tube"
 
     def test_a_reply_is_recognised(self, board: Feed) -> None:
         assert board.posts[0].is_reply
 
     def test_the_topic_title_drops_the_reply_marker(self, board: Feed) -> None:
-        assert board.posts[0].topic_title == "Head over Heels"
+        assert board.posts[0].topic_title == "Writing games for the Tube"
 
     def test_a_first_post_is_not_a_reply(self) -> None:
         forum = parse_feed(FORUM_FEED)
@@ -117,15 +118,15 @@ class TestPostFields:
     def test_timestamps_are_timezone_aware(self, board: Feed) -> None:
         post = board.posts[0]
         assert post.published.tzinfo is not None
-        assert post.published == datetime.fromisoformat("2026-08-02T21:20:27+01:00")
+        assert post.published == datetime.fromisoformat("2026-08-03T10:42:17+01:00")
 
     def test_the_url_is_the_canonical_post_link(self, board: Feed) -> None:
-        assert board.posts[0].url == "https://stardot.org.uk/forums/viewtopic.php?p=489493#p489493"
+        assert board.posts[0].url == "https://stardot.org.uk/forums/viewtopic.php?p=489542#p489542"
 
     def test_the_content_is_the_whole_post_body(self, board: Feed) -> None:
         content = board.posts[0].content_html
-        assert "What a great project!" in content
-        assert "Jon Ritman" in content
+        assert "According to" in content
+        assert "bbcelite.com" in content
 
     def test_the_content_is_not_truncated(self) -> None:
         #  phpBB can be configured to send an extract; this board sends it all,
@@ -134,19 +135,22 @@ class TestPostFields:
             assert "Statistics: Posted by" in post.content_html
 
 
-class TestForumIsNotAlwaysKnown:
-    """Per-topic feeds are shaped differently from the others.
-
-    They carry no `<category>`, so a post read from one does not know its
-    forum, and their titles are the bare subject with no forum name prepended.
-    This matters for thread browsing later: a topic feed alone will not tell us
-    which forum a thread lives in.
+class TestTopicFeedsAreShapedDifferently:
+    """Per-topic feeds carry no `<category>`, and their titles have no forum
+    name prepended. They used to leave a post not knowing its forum at all;
+    the `rel="up"` link the board added now supplies it.
     """
 
-    def test_a_topic_feed_names_no_forum(self) -> None:
+    def test_a_topic_feed_names_its_forum_through_the_up_link(self) -> None:
         topic = parse_feed(TOPIC_FEED)
         assert topic.posts
-        assert all(post.forum_id is None for post in topic.posts)
+        assert all(post.forum_id == 3 for post in topic.posts)
+
+    def test_but_the_up_link_there_carries_no_forum_name(self) -> None:
+        #  Its title attribute is empty in a topic feed, so the name has to
+        #  arrive with posts from another route. The store prefers a known name
+        #  to a blank one; see tests/test_store.py.
+        assert all(post.forum_name == "" for post in parse_feed(TOPIC_FEED).posts)
 
     def test_a_topic_feed_still_yields_usable_posts(self) -> None:
         post = parse_feed(TOPIC_FEED).posts[0]
@@ -186,7 +190,7 @@ class TestMalformedInput:
     def test_one_bad_entry_does_not_lose_the_others(self) -> None:
         #  Both the link and the id have to go before an entry is unusable.
         document = BOARD_FEED.replace(
-            "https://stardot.org.uk/forums/viewtopic.php?p=489493#p489493",
+            "https://stardot.org.uk/forums/viewtopic.php?p=489542#p489542",
             "https://stardot.org.uk/forums/index.php",
         )
         feed = parse_feed(document)
@@ -196,10 +200,10 @@ class TestMalformedInput:
     def test_a_missing_author_id_is_tolerated(self) -> None:
         #  A deleted or anonymised account has no profile link, which is a
         #  degraded post rather than an unusable one.
-        document = BOARD_FEED.replace("memberlist.php?mode=viewprofile&amp;u=10058", "index.php")
+        document = BOARD_FEED.replace("memberlist.php?mode=viewprofile&amp;u=13965", "index.php")
         post = parse_feed(document).posts[0]
         assert post.author_id is None
-        assert post.post_id == 489493
+        assert post.post_id == 489542
 
 
 def _feed_with_entry(entry_body: str) -> str:
@@ -224,3 +228,55 @@ def test_a_feed_may_legitimately_be_empty() -> None:
     feed = parse_feed(document)
     assert feed.posts == ()
     assert feed.updated == datetime(2026, 8, 2, 20, 20, 27, tzinfo=UTC)
+
+
+class TestTheForumLink:
+    """phpBB now offers `<link rel="up">` naming the entry's forum.
+
+    Board and forum feeds already carried a `<category>` saying the same thing,
+    so this matters most for per-topic feeds, which carry no category at all and
+    so produced posts that did not know their forum.
+    """
+
+    def test_the_forum_comes_from_an_up_link_when_there_is_no_category(self) -> None:
+        post = parse_feed(_feed_with_entry(_LINKS_ONLY)).posts[0]
+        assert post.forum_id == 54
+        assert post.forum_name == "programming"
+
+    def test_a_category_is_preferred_to_an_up_link(self) -> None:
+        #  Both name the forum; the category is the older and more specific.
+        document = _feed_with_entry(
+            _LINKS_ONLY
+            + '<category term="games" scheme="https://stardot.org.uk/forums/viewforum.php?f=53"'
+            ' label="games"/>'
+        )
+        post = parse_feed(document).posts[0]
+        assert post.forum_id == 53
+        assert post.forum_name == "games"
+
+    def test_an_up_link_pointing_elsewhere_is_ignored(self) -> None:
+        #  It names the forum today; it should not be mistaken for one if that
+        #  ever changes.
+        document = _feed_with_entry(
+            _WHEN + '<link href="https://stardot.org.uk/forums/viewtopic.php?p=489542"/>'
+            '<link rel="up" href="https://stardot.org.uk/forums/index.php" title="Board"/>'
+        )
+        post = parse_feed(document).posts[0]
+        assert post.forum_id is None
+
+    def test_an_entry_with_neither_still_parses(self) -> None:
+        document = _feed_with_entry(
+            _WHEN + '<link href="https://stardot.org.uk/forums/viewtopic.php?p=489542"/>'
+        )
+        post = parse_feed(document).posts[0]
+        assert post.post_id == 489542
+        assert post.forum_id is None
+
+
+_WHEN = "<updated>2026-08-03T10:53:00+01:00</updated>"
+
+_LINKS_ONLY = (
+    _WHEN + '<link href="https://stardot.org.uk/forums/viewtopic.php?p=489542#p489542"/>'
+    '<link rel="up" type="text/html" '
+    'href="https://stardot.org.uk/forums/viewforum.php?f=54" title="programming" />'
+)

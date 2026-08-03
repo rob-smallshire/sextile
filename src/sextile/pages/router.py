@@ -65,6 +65,15 @@ CONVENTIONAL_NEXT_FRAME_KEY: Final = keys.CONVENTIONAL_NEXT_FRAME
 PREVIOUS_ITEM_KEY: Final = keys.PREVIOUS_ITEM
 NEXT_ITEM_KEY: Final = keys.NEXT_ITEM
 
+#  The G0 set has left, right and up arrows but no down arrow -- those three
+#  are there for BBC BASIC and the line editor, not as a compass. So the two
+#  horizontal arrows do duty as generic `previous` and `next` markers on both
+#  axes, which needs no glyph the character set lacks.
+_BEFORE: Final = "\u2190"  # LEFTWARDS ARROW, G0 0x5B
+_AFTER: Final = "\u2192"  # RIGHTWARDS ARROW, G0 0x5D
+_BETWEEN: Final = "\u2015"  # HORIZONTAL BAR, G0 0x60
+
+
 
 @dataclass(frozen=True)
 class Neighbours:
@@ -455,15 +464,29 @@ def _neighbour_choices(neighbours: Neighbours) -> dict[str, PageRef]:
 
 
 def _prompt(moving: dict[str, str], *, selecting: bool) -> str:
-    """Name every key that does something here, and no key that does not."""
+    """Name every key that does something here, and no key that does not.
+
+    At its longest -- both axes, or a menu with more frames either side -- this
+    comes to exactly forty cells including its colour attribute. There is a test
+    to that effect, because there is no room at all to spare.
+    """
     parts = ["1-9 select"] if selecting else []
     parts.append(_axis(moving, PREVIOUS_FRAME_KEY, NEXT_FRAME_KEY, "frame"))
     parts.append(_axis(moving, PREVIOUS_ITEM_KEY, NEXT_ITEM_KEY, "post"))
-    parts.append("0 index")
+    if NEXT_FRAME_KEY in moving:
+        #  Named, so that the conventional viewdata key is discoverable rather
+        #  than merely working.
+        parts.append(f"{CONVENTIONAL_NEXT_FRAME_KEY} next")
+    parts.append("0 menu")
     return ", ".join(part for part in parts if part)
 
 
 def _axis(moving: dict[str, str], before: str, after: str, what: str) -> str:
-    """One axis of movement, named only as far as it is available."""
-    keys = [key for key in (before, after) if key in moving]
-    return f"{'/'.join(keys)} {what}" if keys else ""
+    """One axis of movement, with an arrow beside each key that is available."""
+    if before in moving and after in moving:
+        return f"{_BEFORE}{before}{_BETWEEN}{after}{_AFTER} {what}"
+    if after in moving:
+        return f"{after}{_AFTER} {what}"
+    if before in moving:
+        return f"{_BEFORE}{before} {what}"
+    return ""

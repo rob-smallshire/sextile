@@ -89,10 +89,20 @@ between items, because that is shuffling sideways through a drawer of them.
 *09#      fetch it afresh
 ```
 
-**A frame names only the keys that do something on it.** No `S` on the last
-frame, no `W` on the first, and no `A`/`D` unless the reader arrived through a
-sequence — from a day's index `D` walks that day, from a forum it walks that
-forum, and a page reached by typing its number belongs to no sequence at all.
+**A frame names only the keys that do something on it**, in a footer that says
+so compactly:
+
+```
+1-9 select, ←W―S→ frame, # next, 0 menu     a menu with frames either side
+S→ frame, ←A―D→ post, # next, 0 menu        a post reached through a sequence
+0 menu                                      a page reached by typing its number
+```
+
+The G0 set has left, right and up arrows but no down arrow — those three are
+there for BBC BASIC and the line editor, not as a compass — so the two
+horizontal arrows do duty as `previous` and `next` on both axes. At its longest
+the footer is exactly forty cells including its colour attribute, which is a
+whole row, and there is a test to keep it that way.
 
 WASD is deliberately anachronistic: it postdates viewdata by a decade, where
 everything else here is period-correct to the byte. `#` therefore keeps working

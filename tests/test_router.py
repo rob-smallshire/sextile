@@ -34,6 +34,8 @@ from sextile.pages.numbering import (
 from sextile.pages.page import Page, PageFrame
 from sextile.pages.router import CHOICES_PER_FRAME, Neighbours, resolve
 from sextile.store.repository import Repository
+from sextile.viewdata.chrome import FOOTER_ROW
+from sextile.viewdata.frame import COLUMNS
 
 BST = timezone(timedelta(hours=1))
 
@@ -365,12 +367,14 @@ class TestNavigationIsOfferedOnlyWhereItLeadsSomewhere:
     ) -> None:
         page = resolve(PostPage(1), long_post)
         assert len(page.frames) > 1
-        assert "S frame" in text_of(page, 0)
+        assert "S\u2192 frame" in text_of(page, 0)
 
     def test_but_not_on_its_last(self, long_post: Repository) -> None:
+        #  Going back is still offered there; only going on is not.
         page = resolve(PostPage(1), long_post)
-        last = len(page.frames) - 1
-        assert "S frame" not in text_of(page, last)
+        rendered = text_of(page, len(page.frames) - 1)
+        assert "S\u2192" not in rendered
+        assert "\u2190W frame" in rendered
 
     def test_a_single_frame_post_offers_no_frame_navigation(
         self, long_post: Repository
@@ -408,7 +412,7 @@ class TestNavigationIsOfferedOnlyWhereItLeadsSomewhere:
         self, repository: Repository
     ) -> None:
         page = resolve(PostsIndex(), repository)
-        assert "S frame" in text_of(page, 0)
+        assert "S\u2192 frame" in text_of(page, 0)
         assert "S frame" not in text_of(page, len(page.frames) - 1)
 
 
@@ -454,7 +458,7 @@ class TestMovingBetweenPosts:
             repository,
             neighbours=Neighbours(following=PostPage(489002), preceding=PostPage(489000)),
         )
-        assert "A/D post" in text_of(page)
+        assert "\u2190A\u2015D\u2192 post" in text_of(page)
 
     def test_neighbours_are_offered_on_every_frame_of_a_long_post(self) -> None:
         with Repository.in_memory() as repository:
@@ -469,3 +473,51 @@ class TestMovingBetweenPosts:
                 found = page.frame(index)
                 assert found is not None
                 assert found.choices["D"] == PostPage(2)
+
+
+class TestThePromptFitsTheRow:
+    """There is no room to spare, so this is measured rather than hoped for.
+
+    The longest prompt is a post offering both axes, or a menu with frames
+    either side of it. Either comes to exactly forty cells including the colour
+    attribute, which is the whole width of a frame.
+    """
+
+    @pytest.fixture
+    def crowded(self) -> Iterator[Repository]:
+        with Repository.in_memory() as repository:
+            body = "".join(f"<p>Paragraph number {n} of a long post.</p>" for n in range(90))
+            for post_id in (1, 2, 3):
+                repository.add_post(make_post(post_id, content_html=body))
+            yield repository
+
+    def test_the_busiest_post_frame_does_not_overflow(self, crowded: Repository) -> None:
+        page = resolve(
+            PostPage(2),
+            crowded,
+            neighbours=Neighbours(following=PostPage(3), preceding=PostPage(1)),
+        )
+        #  A middle frame: both frame directions and both post directions.
+        found = page.frame(1)
+        assert found is not None
+        characters, _ = found.frame.to_grid()
+        footer = characters[FOOTER_ROW]
+        assert len(footer) == COLUMNS
+        for expected in ("←W―S→ frame", "←A―D→ post", "0 menu"):
+            assert expected in footer, footer
+
+    def test_the_busiest_menu_frame_does_not_overflow(self, repository: Repository) -> None:
+        page = resolve(PostsIndex(), repository)
+        found = page.frame(1)  # a middle frame, with frames either side
+        assert found is not None
+        characters, _ = found.frame.to_grid()
+        footer = characters[FOOTER_ROW]
+        for expected in ("1-9 select", "←W―S→ frame", "# next", "0 menu"):
+            assert expected in footer, footer
+
+    def test_the_conventional_key_is_named_only_where_it_works(
+        self, crowded: Repository
+    ) -> None:
+        page = resolve(PostPage(1), crowded)
+        assert "# next" in text_of(page, 0)
+        assert "# next" not in text_of(page, len(page.frames) - 1)

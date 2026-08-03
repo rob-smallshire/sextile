@@ -30,10 +30,11 @@ Beeb for half an hour.
 - **Code listings now keep their line breaks**, since the board fixed its feed,
   but they are still not wrapped for forty columns. A listing indented to
   column eight has little room left.
-- **A full frame is 960 cells, resent on every keypress.** At 1200 baud that is
-  about eight seconds, which is authentic; at 9600 it is under a second.
-  Differential update is possible but needs cursor positioning, which has not
-  been measured, and nothing depends on it yet.
+- **Differential update** — sending only the cells that changed since the last
+  frame. Trailing blanks are already trimmed, which takes a third to three
+  quarters off; this would take most of the rest on a menu where only the middle
+  rows differ. It needs cursor positioning, which has been measured only as keys
+  arriving *from* the BBC, never as codes sent *to* it.
 - **`sextile render --post` draws no chrome**, unlike `--page`. It predates the
   chrome and is now only useful for inspecting body layout in isolation.
 

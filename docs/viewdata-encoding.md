@@ -151,6 +151,32 @@ half of a terminal's CR LF. The parser tells them apart by position -- a line
 feed directly after a carriage return is the rest of that terminator, and on its
 own it is the key.
 
+## Trailing blanks need not be sent
+
+A frame clears the screen before drawing, so a space at the end of a row
+overwrites nothing: it exists only to walk the cursor forward. `CR LF` does that
+in two bytes instead of up to forty, and after the last row with anything on it
+nothing need be sent at all.
+
+Measured by `docs/spikes/spike_trimmed_frames.py`, which sends the same frame
+both ways and compares the resolved SAA5050 cells:
+
+| Frame | Saved | Difference |
+|---|---|---|
+| the demonstration frame | 462 bytes | none |
+| blank rows between content | 897 bytes | none |
+| a row filled to column 40 | 842 bytes | none |
+| nothing after the first row | 947 bytes | none |
+| a trailing attribute | 942 bytes | none |
+| a wholly full frame | 0 bytes | none |
+
+Real pages save between a third and three quarters, which at 1200 baud is eight
+seconds down to two or three.
+
+The one case that would break it is a row filled to all forty columns: that
+wraps of its own accord, so a terminator after it would skip the row below. It
+is in the table above for that reason.
+
 ## A testing gotcha
 
 Beebium's `teletext_screen().text` maps cell codes to ASCII, not to the glyph the

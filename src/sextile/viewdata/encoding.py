@@ -37,10 +37,9 @@ class ScreenControl(IntEnum):
     All of these are known to be consumed as controls rather than displayed --
     `0x11 A B 0x14 C D` renders as `ABCD` with no gap, so neither takes a cell.
 
-    What CURSOR_ON and CURSOR_OFF *do* is viewdata convention rather than
-    measurement: the cursor flashes, so a single reading of the screen tells you
-    only which half of the blink you caught. That the cursor shows by default is
-    certain; which code suppresses it is being confirmed on real hardware.
+    CURSOR_ON and CURSOR_OFF follow viewdata convention, and were confirmed on
+    a real screen rather than by reading it back: the cursor flashes, so a
+    single sample tells you only which half of the blink you caught.
     """
 
     LINE_FEED = 0x0A

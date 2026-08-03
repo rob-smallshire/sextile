@@ -499,3 +499,27 @@ class TestTheCommandLineIsNotRepainted:
         #  Not merely echoed: a page request may name a keyword.
         session.receive(b"*MAIN")
         assert session.receive(b"X") == [b"X"]
+
+
+class TestDeletingTheStar:
+    def test_it_puts_the_footer_back(self, session: Session) -> None:
+        session.receive(b"*8")
+        session.receive(b"\x7f")
+        response = session.receive(b"\x7f")
+        assert response
+        assert "menu" in _text(response[-1])
+        assert "cancels" not in _text(response[-1])
+
+    def test_the_page_beneath_is_left_alone(self, session: Session) -> None:
+        session.receive(b"*8#")
+        before = session.reference
+        session.receive(b"*")
+        session.receive(b"\x7f")
+        assert session.reference == before
+
+    def test_a_digit_afterwards_selects_from_the_menu(self, session: Session) -> None:
+        session.receive(b"*8#")
+        session.receive(b"*")
+        session.receive(b"\x7f")
+        session.receive(b"1")
+        assert session.reference == PostPage(489024)

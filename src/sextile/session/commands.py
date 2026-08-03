@@ -8,7 +8,7 @@ else typed on its own is an immediate keypress:
     *0<term>           back
     *00<term>          show this frame again
     *09<term>          fetch it afresh
-    DELETE             rub out the last character typed
+    DELETE             rub out the last character; over the star, cancel
     *                  cancel it, if one is being typed
     **                 cancel and begin again, as Prestel's `**` did
     <term>             the next frame
@@ -138,11 +138,7 @@ class CommandParser:
             return self._terminate()
         if self._payload is not None:
             if character == _DELETE:
-                #  Rub out the last character typed. Deleting past the start
-                #  does nothing: `*` is how a reader cancels, and backing off
-                #  the end into a cancel would be too easy to do by accident.
-                self._payload = self._payload[:-1]
-                return None
+                return self._delete()
             return self._accumulate(character)
         if character.isalnum():
             return Select(character.upper())
@@ -170,6 +166,20 @@ class CommandParser:
             self._payload = None
             return Clear()
         self._payload = ""
+        return None
+
+    def _delete(self) -> Command | None:
+        """Rub out the last character typed.
+
+        The star that began the request is a character like any other, so
+        deleting it undoes the request altogether and the command line goes
+        away -- as though it had never been typed.
+        """
+        assert self._payload is not None
+        if not self._payload:
+            self._payload = None
+            return Clear()
+        self._payload = self._payload[:-1]
         return None
 
     def _discard(self, character: str) -> Command | None:

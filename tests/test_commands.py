@@ -280,12 +280,20 @@ class TestDelete:
         parser.feed(b"*824\x7f\x7f")
         assert parser.entry == "*8"
 
-    def test_deleting_past_the_start_does_not_cancel(self) -> None:
-        #  `*` is how a reader cancels; backing off the end into one would be
-        #  too easy to do by accident.
+    def test_deleting_the_star_cancels(self) -> None:
+        #  The star is a character like any other, so rubbing it out undoes the
+        #  request altogether, as though it had never been typed.
         parser = CommandParser()
-        parser.feed(b"*8\x7f\x7f\x7f\x7f")
-        assert parser.entry == "*"
+        assert parser.feed(b"*\x7f") == [Clear()]
+        assert parser.entry == ""
+
+    def test_deleting_back_through_everything_cancels(self) -> None:
+        parser = CommandParser()
+        assert parser.feed(b"*82\x7f\x7f\x7f") == [Clear()]
+        assert parser.entry == ""
+
+    def test_a_key_after_deleting_the_star_is_an_ordinary_keypress(self) -> None:
+        assert parse(b"*8\x7f\x7f1") == [Clear(), Select("1")]
 
     def test_what_is_left_is_still_a_usable_request(self) -> None:
         assert parse(b"*8249\x7f#") == [GoTo("824")]

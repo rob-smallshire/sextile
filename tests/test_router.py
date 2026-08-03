@@ -365,52 +365,51 @@ class TestNavigationIsOfferedOnlyWhereItLeadsSomewhere:
     ) -> None:
         page = resolve(PostPage(1), long_post)
         assert len(page.frames) > 1
-        assert "#" in text_of(page, 0)
+        assert "S frame" in text_of(page, 0)
 
     def test_but_not_on_its_last(self, long_post: Repository) -> None:
         page = resolve(PostPage(1), long_post)
         last = len(page.frames) - 1
-        assert "next frame" not in text_of(page, last).lower()
+        assert "S frame" not in text_of(page, last)
 
     def test_a_single_frame_post_offers_no_frame_navigation(
         self, long_post: Repository
     ) -> None:
-        rendered = text_of(resolve(PostPage(2), long_post)).lower()
-        assert "next frame" not in rendered
-        assert "back" not in rendered
+        rendered = text_of(resolve(PostPage(2), long_post))
+        assert "frame" not in rendered
 
     def test_a_later_frame_offers_going_back_one(self, long_post: Repository) -> None:
         page = resolve(PostPage(1), long_post)
         found = page.frame(1)
         assert found is not None
-        assert found.offers("B")
+        assert found.offers("W")
 
     def test_the_first_frame_does_not_offer_going_back(self, long_post: Repository) -> None:
         found = resolve(PostPage(1), long_post).frame(0)
         assert found is not None
-        assert not found.offers("B")
+        assert not found.offers("W")
 
     def test_a_menu_offers_going_back_a_frame_too(self, repository: Repository) -> None:
         page = resolve(PostsIndex(), repository)
         first = page.frame(0)
         second = page.frame(1)
         assert first is not None and second is not None
-        assert not first.offers("B")
-        assert second.offers("B")
+        assert not first.offers("W")
+        assert second.offers("W")
 
     def test_moving_within_a_page_names_no_destination(self, long_post: Repository) -> None:
         #  It is not a change of page, so it belongs among the moves.
         found = resolve(PostPage(1), long_post).frame(1)
         assert found is not None
-        assert "B" not in found.choices
-        assert "B" in found.moves
+        assert "W" not in found.choices
+        assert "W" in found.moves
 
     def test_a_menu_offers_more_only_while_there_is_more(
         self, repository: Repository
     ) -> None:
         page = resolve(PostsIndex(), repository)
-        assert "more" in text_of(page, 0).lower()
-        assert "more" not in text_of(page, len(page.frames) - 1).lower()
+        assert "S frame" in text_of(page, 0)
+        assert "S frame" not in text_of(page, len(page.frames) - 1)
 
 
 class TestMovingBetweenPosts:
@@ -420,8 +419,8 @@ class TestMovingBetweenPosts:
         #  Reached by typing a page number, so there is no "next" to speak of.
         found = resolve(PostPage(489000), repository).frame(0)
         assert found is not None
-        assert "N" not in found.choices
-        assert "P" not in found.choices
+        assert "D" not in found.choices
+        assert "A" not in found.choices
 
     def test_the_next_post_is_offered_when_one_is_known(
         self, repository: Repository
@@ -433,8 +432,8 @@ class TestMovingBetweenPosts:
         )
         found = page.frame(0)
         assert found is not None
-        assert found.choices["N"] == PostPage(489001)
-        assert "P" not in found.choices
+        assert found.choices["D"] == PostPage(489001)
+        assert "A" not in found.choices
 
     def test_the_previous_post_is_offered_when_one_is_known(
         self, repository: Repository
@@ -446,8 +445,8 @@ class TestMovingBetweenPosts:
         )
         found = page.frame(0)
         assert found is not None
-        assert found.choices["P"] == PostPage(489000)
-        assert "N" not in found.choices
+        assert found.choices["A"] == PostPage(489000)
+        assert "D" not in found.choices
 
     def test_both_are_named_in_the_prompt(self, repository: Repository) -> None:
         page = resolve(
@@ -455,9 +454,7 @@ class TestMovingBetweenPosts:
             repository,
             neighbours=Neighbours(following=PostPage(489002), preceding=PostPage(489000)),
         )
-        rendered = text_of(page).upper()
-        assert "N " in rendered
-        assert "P " in rendered
+        assert "A/D post" in text_of(page)
 
     def test_neighbours_are_offered_on_every_frame_of_a_long_post(self) -> None:
         with Repository.in_memory() as repository:
@@ -471,4 +468,4 @@ class TestMovingBetweenPosts:
             for index in range(len(page.frames)):
                 found = page.frame(index)
                 assert found is not None
-                assert found.choices["N"] == PostPage(2)
+                assert found.choices["D"] == PostPage(2)

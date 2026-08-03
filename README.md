@@ -66,19 +66,33 @@ Then, in Commstar's Prestel mode, enter chat with `<C>`, type `ATDT1` and press
 
 ## Getting about
 
+Moving about is two-dimensional, and the keys say so:
+
 ```
-*nnn#     go to a page          #      the next frame
-*0#       back a page           B      back a frame
-*00#      show this frame again N      the next post
-*09#      fetch it afresh       P      the previous post
-**        abandon a part-typed request
-1-9       select from the menu  0      the main index
+        W                 W, S    up and down the frames of this item
+   A    ·    D            A, D    back and forward through the items
+        S                 #       the same as S, the conventional viewdata key
 ```
 
-A frame names only the keys that do something on it. There is no `# next frame`
-on the last frame of a post, and no `N` unless the reader arrived through a
-sequence — from a day's index `N` walks that day, from a forum it walks that
-forum, and a page reached by typing its number has no sequence at all.
+Vertical within an item, because a document reads top to bottom; horizontal
+between items, because that is shuffling sideways through a drawer of them.
+
+```
+*nnn#     go to a page              1-9   select from the menu
+*0#       back, through history     0     the main index
+*00#      show this frame again     **    abandon a part-typed request
+*09#      fetch it afresh
+```
+
+**A frame names only the keys that do something on it.** No `S` on the last
+frame, no `W` on the first, and no `A`/`D` unless the reader arrived through a
+sequence — from a day's index `D` walks that day, from a forum it walks that
+forum, and a page reached by typing its number belongs to no sequence at all.
+
+WASD is deliberately anachronistic: it postdates viewdata by a decade, where
+everything else here is period-correct to the byte. `#` therefore keeps working
+alongside `S`, because it is the one key a viewdata reader will try without
+being told.
 
 Keyword jumps work too: `*MAIN#`, `*LATEST#`, `*DAYS#`, `*FORUMS#`, `*WHO#`,
 `*ABOUT#`, `*BYE#`.

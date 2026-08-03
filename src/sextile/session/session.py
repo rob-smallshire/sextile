@@ -22,8 +22,9 @@ from sextile.pages.numbering import (
 )
 from sextile.pages.page import Page, PageFrame
 from sextile.pages.router import (
-    BACK_FRAME_KEY,
+    CONVENTIONAL_NEXT_FRAME_KEY,
     NEXT_FRAME_KEY,
+    PREVIOUS_FRAME_KEY,
     Neighbours,
     resolve,
 )
@@ -202,9 +203,9 @@ class Session:
         return _Sequence(offered, offered.index(destination)) if destination in offered else None
 
     def _move(self, key: str) -> bytes | None:
-        if key == NEXT_FRAME_KEY:
+        if key in (NEXT_FRAME_KEY, CONVENTIONAL_NEXT_FRAME_KEY):
             return self._next_frame()
-        if key == BACK_FRAME_KEY:
+        if key == PREVIOUS_FRAME_KEY:
             return self._previous_frame()
         return None
 

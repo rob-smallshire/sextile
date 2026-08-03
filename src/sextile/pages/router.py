@@ -55,13 +55,24 @@ _ROWS_PER_CHOICE: Final = 2
 #: Rows a post frame gives to its subject and byline before the body begins.
 _POST_HEADING_ROWS: Final = 3
 
-#  Keys that move about, rather than selecting from a menu. `#` keeps its
-#  conventional viewdata meaning; the rest are ours, since viewdata never had a
-#  way back to the previous frame.
-NEXT_FRAME_KEY: Final = "#"
-BACK_FRAME_KEY: Final = "B"
-NEXT_POST_KEY: Final = "N"
-PREVIOUS_POST_KEY: Final = "P"
+#  Moving about is two-dimensional, and the keys say so:
+#
+#            W   the frame above
+#       A         D     the item before, the item after
+#            S   the frame below
+#
+#  Vertical within an item, because a document reads top to bottom; horizontal
+#  between items, because that is shuffling sideways through a drawer of them.
+#
+#  Deliberately anachronistic. WASD postdates viewdata by a decade and more,
+#  and everything else here is period-correct to the byte. `#` therefore keeps
+#  its conventional meaning alongside `S`, because it is the one key a viewdata
+#  reader will try without being told.
+PREVIOUS_FRAME_KEY: Final = "W"
+NEXT_FRAME_KEY: Final = "S"
+CONVENTIONAL_NEXT_FRAME_KEY: Final = "#"
+PREVIOUS_ITEM_KEY: Final = "A"
+NEXT_ITEM_KEY: Final = "D"
 
 
 @dataclass(frozen=True)
@@ -411,41 +422,57 @@ def _fitted(text: str, cells: int) -> str:
 
 
 def _frame_moves(index: int, total: int, *, more: str) -> dict[str, str]:
-    """Moving between the frames of this page."""
+    """Moving up and down the frames of this page."""
+    del more  # the wording is now the same wherever it appears
     moves: dict[str, str] = {}
-    if index + 1 < total:
-        moves[NEXT_FRAME_KEY] = more
     if index > 0:
-        moves[BACK_FRAME_KEY] = "back"
+        moves[PREVIOUS_FRAME_KEY] = "up"
+    if index + 1 < total:
+        moves[NEXT_FRAME_KEY] = "down"
     return moves
 
 
 def _post_moves(neighbours: Neighbours) -> dict[str, str]:
-    """Moving between posts, when the reader arrived through a sequence."""
+    """Moving sideways between posts, when the reader arrived through a sequence."""
     moves: dict[str, str] = {}
-    if neighbours.following is not None:
-        moves[NEXT_POST_KEY] = "next post"
     if neighbours.preceding is not None:
-        moves[PREVIOUS_POST_KEY] = "prev post"
+        moves[PREVIOUS_ITEM_KEY] = "prev"
+    if neighbours.following is not None:
+        moves[NEXT_ITEM_KEY] = "next"
     return moves
 
 
 def _moves(moving: dict[str, str]) -> frozenset[str]:
-    """The keys that move within this page rather than leaving it."""
-    return frozenset(key for key in moving if key in (NEXT_FRAME_KEY, BACK_FRAME_KEY))
+    """The keys that move within this page rather than leaving it.
+
+    `#` comes along wherever `S` does, so the conventional viewdata key keeps
+    working for a reader who never learns the rest.
+    """
+    keys = {key for key in moving if key in (PREVIOUS_FRAME_KEY, NEXT_FRAME_KEY)}
+    if NEXT_FRAME_KEY in keys:
+        keys.add(CONVENTIONAL_NEXT_FRAME_KEY)
+    return frozenset(keys)
 
 
 def _neighbour_choices(neighbours: Neighbours) -> dict[str, PageRef]:
     choices: dict[str, PageRef] = {}
     if neighbours.following is not None:
-        choices[NEXT_POST_KEY] = neighbours.following
+        choices[NEXT_ITEM_KEY] = neighbours.following
     if neighbours.preceding is not None:
-        choices[PREVIOUS_POST_KEY] = neighbours.preceding
+        choices[PREVIOUS_ITEM_KEY] = neighbours.preceding
     return choices
 
 
 def _prompt(moving: dict[str, str], *, selecting: bool) -> str:
+    """Name every key that does something here, and no key that does not."""
     parts = ["1-9 select"] if selecting else []
-    parts.extend(f"{key} {what}" for key, what in moving.items())
+    parts.append(_axis(moving, PREVIOUS_FRAME_KEY, NEXT_FRAME_KEY, "frame"))
+    parts.append(_axis(moving, PREVIOUS_ITEM_KEY, NEXT_ITEM_KEY, "post"))
     parts.append("0 index")
-    return ", ".join(parts)
+    return ", ".join(part for part in parts if part)
+
+
+def _axis(moving: dict[str, str], before: str, after: str, what: str) -> str:
+    """One axis of movement, named only as far as it is available."""
+    keys = [key for key in (before, after) if key in moving]
+    return f"{'/'.join(keys)} {what}" if keys else ""

@@ -7,6 +7,7 @@ CREATE TABLE IF NOT EXISTS posts (
     post_id      INTEGER PRIMARY KEY,
     forum_id     INTEGER,
     forum_name   TEXT    NOT NULL DEFAULT '',
+    topic_id     INTEGER,
     author_id    INTEGER,
     author_name  TEXT    NOT NULL DEFAULT '',
     subject      TEXT    NOT NULL DEFAULT '',
@@ -32,3 +33,4 @@ CREATE INDEX IF NOT EXISTS posts_by_time ON posts (published DESC);
 CREATE INDEX IF NOT EXISTS posts_by_day ON posts (local_date, published);
 CREATE INDEX IF NOT EXISTS posts_by_forum ON posts (forum_id, published DESC);
 CREATE INDEX IF NOT EXISTS posts_by_author ON posts (author_id, published DESC);
+CREATE INDEX IF NOT EXISTS posts_by_topic ON posts (topic_id, published);

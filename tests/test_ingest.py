@@ -86,10 +86,8 @@ async def test_only_the_new_posts_count_as_added(repository: Repository) -> None
 
 
 async def test_problems_in_the_feed_are_carried_through(repository: Repository) -> None:
-    document = BOARD_FEED.replace(
-        "https://stardot.org.uk/forums/viewtopic.php?p=489542#p489542",
-        "https://stardot.org.uk/forums/index.php",
-    )
+    first = parse_feed(BOARD_FEED).posts[0]
+    document = BOARD_FEED.replace(first.url, "https://stardot.org.uk/forums/index.php")
     result = await ingest_once(FakeSource(parse_feed(document)), repository)
     assert result.seen == 9
     assert len(result.problems) == 1

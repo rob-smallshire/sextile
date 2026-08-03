@@ -17,11 +17,10 @@
 		<published>2023-11-23T08:23:04+01:00</published>
 		<id>https://stardot.org.uk/forums/viewtopic.php?p=409158#p409158</id>
 		<link href="https://stardot.org.uk/forums/viewtopic.php?p=409158#p409158"/>
+		<link rel="category" type="text/html" href="https://stardot.org.uk/forums/viewforum.php?f=3" title="" />
 
-		<link rel="up" type="text/html" href="https://stardot.org.uk/forums/viewforum.php?f=3" title="" />
+		<link rel="topic" type="text/html" href="https://stardot.org.uk/forums/viewtopic.php?t=28000" title="Parent topic link" />
 		<title type="html"><![CDATA[Re: ROMs that copy themselves to SRAM? (ADFS E00?)]]></title>
-
-		
 		<content type="html" xml:base="https://stardot.org.uk/forums/viewtopic.php?p=409158#p409158"><![CDATA[
 <blockquote class="uncited"><div>
 Steve Picton (who runs IFEL) has just sent me an SSD image that contains some bootloaders he wrote a few ago:
@@ -56,11 +55,10 @@ Though I have started to think of some customizations I want to make that my own
 		<published>2023-11-22T12:28:35+01:00</published>
 		<id>https://stardot.org.uk/forums/viewtopic.php?p=409119#p409119</id>
 		<link href="https://stardot.org.uk/forums/viewtopic.php?p=409119#p409119"/>
+		<link rel="category" type="text/html" href="https://stardot.org.uk/forums/viewforum.php?f=3" title="" />
 
-		<link rel="up" type="text/html" href="https://stardot.org.uk/forums/viewforum.php?f=3" title="" />
+		<link rel="topic" type="text/html" href="https://stardot.org.uk/forums/viewtopic.php?t=28000" title="Parent topic link" />
 		<title type="html"><![CDATA[Re: ROMs that copy themselves to SRAM? (ADFS E00?)]]></title>
-
-		
 		<content type="html" xml:base="https://stardot.org.uk/forums/viewtopic.php?p=409119#p409119"><![CDATA[
 Steve Picton (who runs IFEL) has just sent me an SSD image that contains some bootloaders he wrote a few ago:
 <blockquote class="uncited"><div>
@@ -106,11 +104,10 @@ Dave<p>Statistics: Posted by <a href="https://stardot.org.uk/forums/memberlist.p
 		<published>2023-11-22T07:57:51+01:00</published>
 		<id>https://stardot.org.uk/forums/viewtopic.php?p=409106#p409106</id>
 		<link href="https://stardot.org.uk/forums/viewtopic.php?p=409106#p409106"/>
+		<link rel="category" type="text/html" href="https://stardot.org.uk/forums/viewforum.php?f=3" title="" />
 
-		<link rel="up" type="text/html" href="https://stardot.org.uk/forums/viewforum.php?f=3" title="" />
+		<link rel="topic" type="text/html" href="https://stardot.org.uk/forums/viewtopic.php?t=28000" title="Parent topic link" />
 		<title type="html"><![CDATA[Re: ROMs that copy themselves to SRAM? (ADFS E00?)]]></title>
-
-		
 		<content type="html" xml:base="https://stardot.org.uk/forums/viewtopic.php?p=409106#p409106"><![CDATA[
 <blockquote class="uncited"><div>
 What version of ADFS are you using? 1.31?
@@ -126,11 +123,10 @@ Yes 1.31.<p>Statistics: Posted by <a href="https://stardot.org.uk/forums/memberl
 		<published>2023-11-21T08:31:35+01:00</published>
 		<id>https://stardot.org.uk/forums/viewtopic.php?p=409045#p409045</id>
 		<link href="https://stardot.org.uk/forums/viewtopic.php?p=409045#p409045"/>
+		<link rel="category" type="text/html" href="https://stardot.org.uk/forums/viewforum.php?f=3" title="" />
 
-		<link rel="up" type="text/html" href="https://stardot.org.uk/forums/viewforum.php?f=3" title="" />
+		<link rel="topic" type="text/html" href="https://stardot.org.uk/forums/viewtopic.php?t=28000" title="Parent topic link" />
 		<title type="html"><![CDATA[Re: ROMs that copy themselves to SRAM? (ADFS E00?)]]></title>
-
-		
 		<content type="html" xml:base="https://stardot.org.uk/forums/viewtopic.php?p=409045#p409045"><![CDATA[
 What version of ADFS are you using? 1.31?<p>Statistics: Posted by <a href="https://stardot.org.uk/forums/memberlist.php?mode=viewprofile&amp;u=9657">hoglet</a> — Tue Nov 21, 2023 7:31 am</p><hr />
 ]]></content>
@@ -142,11 +138,10 @@ What version of ADFS are you using? 1.31?<p>Statistics: Posted by <a href="https
 		<published>2023-11-21T07:57:40+01:00</published>
 		<id>https://stardot.org.uk/forums/viewtopic.php?p=409043#p409043</id>
 		<link href="https://stardot.org.uk/forums/viewtopic.php?p=409043#p409043"/>
+		<link rel="category" type="text/html" href="https://stardot.org.uk/forums/viewforum.php?f=3" title="" />
 
-		<link rel="up" type="text/html" href="https://stardot.org.uk/forums/viewforum.php?f=3" title="" />
+		<link rel="topic" type="text/html" href="https://stardot.org.uk/forums/viewtopic.php?t=28000" title="Parent topic link" />
 		<title type="html"><![CDATA[Re: ROMs that copy themselves to SRAM? (ADFS E00?)]]></title>
-
-		
 		<content type="html" xml:base="https://stardot.org.uk/forums/viewtopic.php?p=409043#p409043"><![CDATA[
 Ok, I ran with ADFS for a bit and took a copy of it from SRAM. Comparing on my Mac with the ROM version. Its workspace/code appears to start/stop at B218 (or 3218). Which is not quite on page boundary (as it looks like MMFS uses) so the compare/copy code will need a tweak. Also it does appear to change 8001 (or 0001) for some reason. So that will need some special logic. It is late now, so I'll get to the code later in the week/weekend. Thanks for all the help folks.<p>Statistics: Posted by <a href="https://stardot.org.uk/forums/memberlist.php?mode=viewprofile&amp;u=13433">!FOZ!</a> — Tue Nov 21, 2023 6:57 am</p><hr />
 ]]></content>
@@ -158,11 +153,10 @@ Ok, I ran with ADFS for a bit and took a copy of it from SRAM. Comparing on my M
 		<published>2023-11-20T17:49:21+01:00</published>
 		<id>https://stardot.org.uk/forums/viewtopic.php?p=409012#p409012</id>
 		<link href="https://stardot.org.uk/forums/viewtopic.php?p=409012#p409012"/>
+		<link rel="category" type="text/html" href="https://stardot.org.uk/forums/viewforum.php?f=3" title="" />
 
-		<link rel="up" type="text/html" href="https://stardot.org.uk/forums/viewforum.php?f=3" title="" />
+		<link rel="topic" type="text/html" href="https://stardot.org.uk/forums/viewtopic.php?t=28000" title="Parent topic link" />
 		<title type="html"><![CDATA[Re: ROMs that copy themselves to SRAM? (ADFS E00?)]]></title>
-
-		
 		<content type="html" xml:base="https://stardot.org.uk/forums/viewtopic.php?p=409012#p409012"><![CDATA[
 <blockquote class="uncited"><div>
 <blockquote class="uncited"><div>
@@ -186,11 +180,10 @@ Hello, Coeus! First of all thank you very much for this brilliant idea. Secondly
 		<published>2023-11-20T17:46:40+01:00</published>
 		<id>https://stardot.org.uk/forums/viewtopic.php?p=409011#p409011</id>
 		<link href="https://stardot.org.uk/forums/viewtopic.php?p=409011#p409011"/>
+		<link rel="category" type="text/html" href="https://stardot.org.uk/forums/viewforum.php?f=3" title="" />
 
-		<link rel="up" type="text/html" href="https://stardot.org.uk/forums/viewforum.php?f=3" title="" />
+		<link rel="topic" type="text/html" href="https://stardot.org.uk/forums/viewtopic.php?t=28000" title="Parent topic link" />
 		<title type="html"><![CDATA[Re: ROMs that copy themselves to SRAM? (ADFS E00?)]]></title>
-
-		
 		<content type="html" xml:base="https://stardot.org.uk/forums/viewtopic.php?p=409011#p409011"><![CDATA[
 <blockquote class="uncited"><div>
 <blockquote class="uncited"><div>
@@ -238,11 +231,10 @@ I will review the other reason you have listed - most useful - thx!<p>Statistics
 		<published>2023-11-20T14:47:10+01:00</published>
 		<id>https://stardot.org.uk/forums/viewtopic.php?p=409006#p409006</id>
 		<link href="https://stardot.org.uk/forums/viewtopic.php?p=409006#p409006"/>
+		<link rel="category" type="text/html" href="https://stardot.org.uk/forums/viewforum.php?f=3" title="" />
 
-		<link rel="up" type="text/html" href="https://stardot.org.uk/forums/viewforum.php?f=3" title="" />
+		<link rel="topic" type="text/html" href="https://stardot.org.uk/forums/viewtopic.php?t=28000" title="Parent topic link" />
 		<title type="html"><![CDATA[Re: ROMs that copy themselves to SRAM? (ADFS E00?)]]></title>
-
-		
 		<content type="html" xml:base="https://stardot.org.uk/forums/viewtopic.php?p=409006#p409006"><![CDATA[
 <blockquote class="uncited"><div>
 What ROM/README copyright/author string would you recommend? <br>
@@ -262,11 +254,10 @@ The original idea was mine and I came up with an initial implementation (I am St
 		<published>2023-11-20T09:45:20+01:00</published>
 		<id>https://stardot.org.uk/forums/viewtopic.php?p=408994#p408994</id>
 		<link href="https://stardot.org.uk/forums/viewtopic.php?p=408994#p408994"/>
+		<link rel="category" type="text/html" href="https://stardot.org.uk/forums/viewforum.php?f=3" title="" />
 
-		<link rel="up" type="text/html" href="https://stardot.org.uk/forums/viewforum.php?f=3" title="" />
+		<link rel="topic" type="text/html" href="https://stardot.org.uk/forums/viewtopic.php?t=28000" title="Parent topic link" />
 		<title type="html"><![CDATA[Re: ROMs that copy themselves to SRAM? (ADFS E00?)]]></title>
-
-		
 		<content type="html" xml:base="https://stardot.org.uk/forums/viewtopic.php?p=408994#p408994"><![CDATA[
 <blockquote class="uncited"><div>
 Actually when I press soft-break I get ...<br>
@@ -308,11 +299,10 @@ Dave<p>Statistics: Posted by <a href="https://stardot.org.uk/forums/memberlist.p
 		<published>2023-11-20T08:15:35+01:00</published>
 		<id>https://stardot.org.uk/forums/viewtopic.php?p=408991#p408991</id>
 		<link href="https://stardot.org.uk/forums/viewtopic.php?p=408991#p408991"/>
+		<link rel="category" type="text/html" href="https://stardot.org.uk/forums/viewforum.php?f=3" title="" />
 
-		<link rel="up" type="text/html" href="https://stardot.org.uk/forums/viewforum.php?f=3" title="" />
+		<link rel="topic" type="text/html" href="https://stardot.org.uk/forums/viewtopic.php?t=28000" title="Parent topic link" />
 		<title type="html"><![CDATA[Re: ROMs that copy themselves to SRAM? (ADFS E00?)]]></title>
-
-		
 		<content type="html" xml:base="https://stardot.org.uk/forums/viewtopic.php?p=408991#p408991"><![CDATA[
 Actually when I press soft-break I get ...<br>
 <br>

@@ -41,7 +41,8 @@ BST = timezone(timedelta(hours=1))
 
 
 def make_post(post_id: int, *, subject: str = "Re: Head over Heels", **overrides: object) -> Post:
-    defaults = {
+    defaults: dict[str, object] = {
+        "topic_id": None,
         "forum_id": 53,
         "forum_name": "new projects in development: games",
         "author_id": 10058,
@@ -128,10 +129,9 @@ class TestMissingThings:
         page = resolve(Day(datetime(1981, 12, 1).date()), repository)
         assert "NO POSTS" in text_of(page).upper()
 
-    def test_topics_are_honestly_reported_as_unavailable(self, repository: Repository) -> None:
-        #  The feed carries no topic ids, so this cannot be built yet. Saying so
-        #  is better than offering an empty menu.
-        assert "NOT AVAILABLE" in text_of(resolve(TopicsIndex(), repository)).upper()
+    def test_an_archive_with_no_topics_says_so(self, repository: Repository) -> None:
+        #  These posts predate the feed carrying topic ids.
+        assert "NO" in text_of(resolve(TopicsIndex(), repository)).upper()
 
 
 class TestMenus:
@@ -521,3 +521,80 @@ class TestThePromptFitsTheRow:
         page = resolve(PostPage(1), crowded)
         assert "# next" in text_of(page, 0)
         assert "# next" not in text_of(page, len(page.frames) - 1)
+
+
+class TestTopics:
+    """Thread browsing, now that the board's feed carries topic ids."""
+
+    @pytest.fixture
+    def threaded(self) -> Iterator[Repository]:
+        with Repository.in_memory() as repository:
+            for offset in range(4):
+                repository.add_post(
+                    make_post(
+                        100 + offset,
+                        subject="Head over Heels" if offset == 0 else "Re: Head over Heels",
+                        topic_id=33390,
+                        published=datetime(2026, 8, 2, 9, tzinfo=BST) + timedelta(hours=offset),
+                    )
+                )
+            repository.add_post(
+                make_post(
+                    200,
+                    subject="Writing games for the Tube",
+                    topic_id=33291,
+                    published=datetime(2026, 8, 1, 9, tzinfo=BST),
+                )
+            )
+            yield repository
+
+    def test_the_topics_index_lists_them(self, threaded: Repository) -> None:
+        rendered = text_of(resolve(TopicsIndex(), threaded))
+        assert "Head over Heels" in rendered
+        assert "Writing games for the Tube" in rendered
+
+    def test_the_index_no_longer_says_it_is_unavailable(self, threaded: Repository) -> None:
+        assert "NOT AVAILABLE" not in text_of(resolve(TopicsIndex(), threaded)).upper()
+
+    def test_a_choice_leads_to_that_topic(self, threaded: Repository) -> None:
+        found = resolve(TopicsIndex(), threaded).frame(0)
+        assert found is not None
+        assert found.choices["1"] == Topic(33390)
+
+    def test_a_topic_lists_its_posts_oldest_first(self, threaded: Repository) -> None:
+        found = resolve(Topic(33390), threaded).frame(0)
+        assert found is not None
+        assert found.choices["1"] == PostPage(100)
+        assert found.choices["4"] == PostPage(103)
+
+    def test_a_topic_is_titled_by_its_subject(self, threaded: Repository) -> None:
+        assert "Head over Heels" in text_of(resolve(Topic(33390), threaded))
+
+    def test_a_topic_we_hold_nothing_of_says_so(self, threaded: Repository) -> None:
+        assert "NO POSTS" in text_of(resolve(Topic(999999), threaded)).upper()
+
+    def test_an_empty_archive_says_so_rather_than_showing_an_empty_menu(self) -> None:
+        with Repository.in_memory() as repository:
+            assert "NO" in text_of(resolve(TopicsIndex(), repository)).upper()
+
+    def test_a_post_offers_its_topic(self, threaded: Repository) -> None:
+        found = resolve(PostPage(101), threaded).frame(0)
+        assert found is not None
+        assert Topic(33390) in found.choices.values()
+
+    def test_a_post_with_no_topic_offers_none(self, repository: Repository) -> None:
+        found = resolve(PostPage(489000), repository).frame(0)
+        assert found is not None
+        assert not any(isinstance(ref, Topic) for ref in found.choices.values())
+
+    def test_walking_a_topic_gives_the_thread_as_the_sequence(
+        self, threaded: Repository
+    ) -> None:
+        #  Reading a thread from its topic page should walk that thread.
+        page = resolve(Topic(33390), threaded)
+        assert page.destinations == (
+            PostPage(100),
+            PostPage(101),
+            PostPage(102),
+            PostPage(103),
+        )

@@ -5,293 +5,282 @@
 	<title>stardot.org.uk</title>
 	<subtitle>for users of Acorn computers and emulators</subtitle>
 	<link href="https://stardot.org.uk/forums/index.php" />
-	<updated>2026-08-03T10:42:17+01:00</updated>
+	<updated>2026-08-03T21:21:26+01:00</updated>
 
 	<author><name><![CDATA[stardot.org.uk]]></name></author>
 	<id>https://stardot.org.uk/forums/app.php/feed</id>
 
 		<entry>
-		<author><name><![CDATA[komadori]]></name></author>
-		<updated>2026-08-03T10:42:17+01:00</updated>
+		<author><name><![CDATA[SamSkivington]]></name></author>
+		<updated>2026-08-03T21:21:26+01:00</updated>
 
-		<published>2026-08-03T10:42:17+01:00</published>
-		<id>https://stardot.org.uk/forums/viewtopic.php?p=489542#p489542</id>
-		<link href="https://stardot.org.uk/forums/viewtopic.php?p=489542#p489542"/>
+		<published>2026-08-03T21:21:26+01:00</published>
+		<id>https://stardot.org.uk/forums/viewtopic.php?p=489618#p489618</id>
+		<link href="https://stardot.org.uk/forums/viewtopic.php?p=489618#p489618"/>
+		<link rel="category" type="text/html" href="https://stardot.org.uk/forums/viewforum.php?f=54" title="programming" />
 
-		<link rel="up" type="text/html" href="https://stardot.org.uk/forums/viewforum.php?f=54" title="programming" />
-		<title type="html"><![CDATA[programming • Re: Writing games for the Tube]]></title>
-
-					<category term="programming" scheme="https://stardot.org.uk/forums/viewforum.php?f=54" label="programming"/>
-		
-		<content type="html" xml:base="https://stardot.org.uk/forums/viewtopic.php?p=489542#p489542"><![CDATA[
-According to <a href="https://elite.bbcelite.com/deep_dives/the_elite_memory_map_6502sp.html" class="postlink">Mark Moxon's article on second proccessor Elite</a>, the Tube software on the host processor uses the language zero page up to 0x7F. Hence, 0x80 to 0x8F is free for your USERV handler or similar application routines on the host processor. I don't know off hand if there's any more official source for this information, but it makes sense that some zero page is reserved for application use on the host.<br>
-<br>
-My own work-in-progress game, Japanese Military Chess, dynamically supports running on the host or 6502 second processor. I've been keeping a dev log and you can read the section on how I implemented Tube support here: <a href="https://www.robinkay.uk/posts/2024/01/04/jmc-part-2/" class="postlink">https://www.robinkay.uk/posts/2024/01/04/jmc-part-2/</a><p>Statistics: Posted by <a href="https://stardot.org.uk/forums/memberlist.php?mode=viewprofile&amp;u=13965">komadori</a> — Mon Aug 03, 2026 10:42 am</p><hr />
-]]></content>
-	</entry>
-		<entry>
-		<author><name><![CDATA[dp11]]></name></author>
-		<updated>2026-08-03T10:05:07+01:00</updated>
-
-		<published>2026-08-03T10:05:07+01:00</published>
-		<id>https://stardot.org.uk/forums/viewtopic.php?p=489541#p489541</id>
-		<link href="https://stardot.org.uk/forums/viewtopic.php?p=489541#p489541"/>
-
-		<link rel="up" type="text/html" href="https://stardot.org.uk/forums/viewforum.php?f=2" title="8-bit acorn software: other" />
-		<title type="html"><![CDATA[8-bit acorn software: other • Re: Acorn File Forge: a browser-based editor for SSD, MMB, ADFS, BeebSCSI, HFE and UEF images]]></title>
-
-					<category term="8-bit acorn software: other" scheme="https://stardot.org.uk/forums/viewforum.php?f=2" label="8-bit acorn software: other"/>
-		
-		<content type="html" xml:base="https://stardot.org.uk/forums/viewtopic.php?p=489541#p489541"><![CDATA[
-github link is 404 for me.<p>Statistics: Posted by <a href="https://stardot.org.uk/forums/memberlist.php?mode=viewprofile&amp;u=9624">dp11</a> — Mon Aug 03, 2026 10:05 am</p><hr />
-]]></content>
-	</entry>
-		<entry>
-		<author><name><![CDATA[bobtheimp]]></name></author>
-		<updated>2026-08-03T09:55:14+01:00</updated>
-
-		<published>2026-08-03T09:55:14+01:00</published>
-		<id>https://stardot.org.uk/forums/viewtopic.php?p=489540#p489540</id>
-		<link href="https://stardot.org.uk/forums/viewtopic.php?p=489540#p489540"/>
-
-		<link rel="up" type="text/html" href="https://stardot.org.uk/forums/viewforum.php?f=2" title="8-bit acorn software: other" />
-		<title type="html"><![CDATA[8-bit acorn software: other • Acorn File Forge: a browser-based editor for SSD, MMB, ADFS, BeebSCSI, HFE and UEF images]]></title>
-
-					<category term="8-bit acorn software: other" scheme="https://stardot.org.uk/forums/viewforum.php?f=2" label="8-bit acorn software: other"/>
-		
-		<content type="html" xml:base="https://stardot.org.uk/forums/viewtopic.php?p=489540#p489540"><![CDATA[
-Hi all,<br>
-<br>
-I have been working on a utility called <strong class="text-strong">Acorn File Forge</strong>. It started with a fairly simple idea: open an MMB file and an ADFS hard-drive image side by side, then drag software between them without juggling several command-line tools (as cool as they are, and as much as I love the command line, I'm also a visual person  <img class="smilies" src="https://stardot.org.uk/forums/images/smilies/icon_biggrin.gif" width="15" height="15" alt=":D" title="Very Happy">  ).<br>
-<br>
-As these things tend to do, it grew a little.<br>
-<br>
-Acorn File Forge runs in a web browser and supports up to three rearrangeable work panes. Each pane can contain a different image, so you can browse an MMB in one, open one of its disks in another, and copy files or complete disks into an ADFS hard drive in the third.<br>
-<br>
-<strong class="text-strong">It currently supports:</strong><br>
-
-<ul>
-<li>SSD and DSD DFS images</li>
-<li>MMB disk collections, including all 511 slots</li>
-<li>ADFS floppy images</li>
-<li>BeebSCSI DAT and DSC hard-drive pairs</li>
-<li>HDF, HDD and raw FileCore images</li>
-<li>HFE floppy images</li>
-<li>UEF tapes</li>
-<li>ZIP archives containing supported images</li>
-</ul>
-
-Files and directories can be added, extracted, renamed, moved, deleted, locked and dragged between compatible images. ADFS directories are fully traversable, and multiple files or MMB slots can be selected at once.<br>
-<br>
-<strong class="text-strong">MMB and menu support</strong><br>
-<br>
-MMB support includes blank SSD and DSD creation, read-only and read/write slot flags, moving disks by drag and drop, multi-image imports, duplicate-game checks and menu maintenance.<br>
-<br>
-It understands the Universal Menu, SPI Game Menu, Electron User and Acorn User menu arrangements. Menu databases can be previewed, bulk edited, reordered, audited and regenerated.<br>
-<br>
-There is similar menu support for ADFS directories. A collection of extracted disks can be turned into a browsable menu, with Acorn File Forge examining the actual launchers to determine whether each title needs CHAIN, RUN, EXEC or LOAD. It also derives PAGE from the program wherever possible instead of relying on a hopeful guess.<br>
-<br>
-<strong class="text-strong">Online software library</strong><br>
-<br>
-The Online Library can search several configurable Acorn software catalogues. Results can be filtered by machine and installed directly into an MMB, DFS disk or ADFS directory.<br>
-<br>
-It tries to use filenames, existing menu records, disk catalogues and loaders before going online for metadata.<br>
-<br>
-<strong class="text-strong">Safety and recovery</strong><br>
-<br>
-Because old disk images can be wonderfully inventive, the application takes a cautious approach.<br>
-<br>
-It works on private copies, creates automatic undo points, supports named checkpoints and validates images before saving. Long operations have progress displays and abort controls.<br>
-<br>
-Saved images arrive as timestamped ZIP files with a generated README containing checksums, hardware information, warnings and a catalogue of the contents.<br>
-<br>
-There are hardware profiles for:<br>
-
-<ul>
-<li>Electron Plus 3</li>
-<li>BBC Micro with MMFS</li>
-<li>BBC/Master BeebSCSI</li>
-<li>Master ADFS</li>
-<li>Archimedes and RISC OS</li>
-</ul>
-
-These help catch things such as unsuitable PAGE values, Tube-related Electron problems and invalid BeebSCSI geometry.<br>
-<br>
-<strong class="text-strong">Running it</strong><br>
-<br>
-It is fully Dockerised and listens on port 8666:<br>
-
-<div class="codebox"><p>Code: </p><pre><code>git clone git@github.com:peteclarke-del/AcornFileForge.git
-cd AcornFileForge
-docker compose up --build -d
-</code></pre></div>
-
-Then visit:<br>
-
-<div class="codebox"><p>Code: </p><pre><code>http://localhost:8666
-</code></pre></div>
-
-The source and full illustrated guide are here:<br>
-<br>
-<a href="https://github.com/peteclarke-del/AcornFileForge" class="postlink">Acorn File Forge on GitHub</a><br>
-<br>
-This is very much aimed at real Acorn workflows, but unusual loaders, protected disks and obscure FileCore variants will always find creative ways to surprise software. Please keep original images and test anything important before writing it back to physical media.<br>
-<br>
-I would be particularly interested in feedback from people using MMFS, BeebSCSI, Electron Plus 3 and real Archimedes or RISC OS hardware. Bug reports, awkward images and suggestions for less confusing workflows are all welcome.<br>
-<br>
-Hopefully somebody else finds it useful, or at least enjoys seeing just how far “I only want to copy this disk into that image” can escalate.<p>Statistics: Posted by <a href="https://stardot.org.uk/forums/memberlist.php?mode=viewprofile&amp;u=12978">bobtheimp</a> — Mon Aug 03, 2026 9:55 am</p><hr />
-]]></content>
-	</entry>
-		<entry>
-		<author><name><![CDATA[RobC]]></name></author>
-		<updated>2026-08-03T09:19:59+01:00</updated>
-
-		<published>2026-08-03T09:19:59+01:00</published>
-		<id>https://stardot.org.uk/forums/viewtopic.php?p=489539#p489539</id>
-		<link href="https://stardot.org.uk/forums/viewtopic.php?p=489539#p489539"/>
-
-		<link rel="up" type="text/html" href="https://stardot.org.uk/forums/viewforum.php?f=54" title="programming" />
+		<link rel="topic" type="text/html" href="https://stardot.org.uk/forums/viewtopic.php?t=33390" title="Parent topic link" />
 		<title type="html"><![CDATA[programming • Re: Writing games for the Tube: bare metal]]></title>
+		<category term="programming" scheme="https://stardot.org.uk/forums/viewforum.php?f=54" label="programming"/>
+		<content type="html" xml:base="https://stardot.org.uk/forums/viewtopic.php?p=489618#p489618"><![CDATA[
+Now I'm free to execute an OSCLI call on the host to run the loader, which runs on the parasite. After checking which Tube side it's running on (omitted because we've already covered that) it starts with this.<br>
+<br>
+In this case I'm detecting different CPU types for choosing whether to load an enhanced version of the program. This is one place where you need a 'proper' 65x assembler, not BeebAsm...unless you're prepared to use EQUB for parts of it.<br>
 
-					<category term="programming" scheme="https://stardot.org.uk/forums/viewforum.php?f=54" label="programming"/>
-		
-		<content type="html" xml:base="https://stardot.org.uk/forums/viewtopic.php?p=489539#p489539"><![CDATA[
-<blockquote class="uncited"><div>  <br>
-Using a faster parasite CPU does not make the Tube any faster. The bottleneck is the host's ability to read and write data via the ULA between the CPUs.
-</div></blockquote>
-This is strictly true but having a very fast parasite (i.e. native mode Pi) does mean that you can get away without checking that data has arrived on the host side during longer transfers. This is a significant performance improvement.<p>Statistics: Posted by <a href="https://stardot.org.uk/forums/memberlist.php?mode=viewprofile&amp;u=1543">RobC</a> — Mon Aug 03, 2026 9:19 am</p><hr />
+<div class="codebox"><p>Code: </p><pre><code>.pc02
+.proc EntryPoint
+	;	work out which CPU variant
+	lda	#1
+
+.p816
+	;	this will only leave A as 0 after the 2nd XBA on 65C02
+	xba
+	dec	a
+	xba
+.pc02
+
+	;	A = 
+	;	0	65C02
+	;	1	65816</code></pre></div><p>Statistics: Posted by <a href="https://stardot.org.uk/forums/memberlist.php?mode=viewprofile&amp;u=13141">SamSkivington</a> — Mon Aug 03, 2026 9:21 pm</p><hr />
 ]]></content>
 	</entry>
 		<entry>
-		<author><name><![CDATA[!FOZ!]]></name></author>
-		<updated>2026-08-03T09:11:08+01:00</updated>
+		<author><name><![CDATA[MarkMoxon]]></name></author>
+		<updated>2026-08-03T21:13:47+01:00</updated>
 
-		<published>2026-08-03T09:11:08+01:00</published>
-		<id>https://stardot.org.uk/forums/viewtopic.php?p=489538#p489538</id>
-		<link href="https://stardot.org.uk/forums/viewtopic.php?p=489538#p489538"/>
+		<published>2026-08-03T21:13:47+01:00</published>
+		<id>https://stardot.org.uk/forums/viewtopic.php?p=489617#p489617</id>
+		<link href="https://stardot.org.uk/forums/viewtopic.php?p=489617#p489617"/>
+		<link rel="category" type="text/html" href="https://stardot.org.uk/forums/viewforum.php?f=54" title="programming" />
 
-		<link rel="up" type="text/html" href="https://stardot.org.uk/forums/viewforum.php?f=3" title="8-bit acorn hardware" />
-		<title type="html"><![CDATA[8-bit acorn hardware • Re: Pi1MHz Software]]></title>
-
-					<category term="8-bit acorn hardware" scheme="https://stardot.org.uk/forums/viewforum.php?f=3" label="8-bit acorn hardware"/>
-		
-		<content type="html" xml:base="https://stardot.org.uk/forums/viewtopic.php?p=489538#p489538"><![CDATA[
-<img class="smilies" src="https://stardot.org.uk/forums/images/smilies/eusa_clap.gif" width="19" height="16" alt="=D&gt;" title="Applause">  <img class="smilies" src="https://stardot.org.uk/forums/images/smilies/eusa_clap.gif" width="19" height="16" alt="=D&gt;" title="Applause">  <img class="smilies" src="https://stardot.org.uk/forums/images/smilies/eusa_clap.gif" width="19" height="16" alt="=D&gt;" title="Applause"> <br>
-<br>
-Thanks you for merging and releasing this - and obviously thanks to the original authors of the Fast SID library.<br>
-<br>
-Teemu Rantanen, Michael Schwendt, Ettore Perazzoli; vendored from VICE 3.1<br>
-<br>
-Will be upgrading to this official release to replace my adhoc build! <br>
-<br>
-I'll still cherish my original BeebSID build attached to my BITD Beeb, thought now all my other Pi1MHz powered Beeb's can sing like an C64!  <img class="smilies" src="https://stardot.org.uk/forums/images/smilies/icon_biggrin.gif" width="15" height="15" alt=":D" title="Very Happy"><p>Statistics: Posted by <a href="https://stardot.org.uk/forums/memberlist.php?mode=viewprofile&amp;u=13433">!FOZ!</a> — Mon Aug 03, 2026 9:11 am</p><hr />
-]]></content>
-	</entry>
-		<entry>
-		<author><name><![CDATA[!FOZ!]]></name></author>
-		<updated>2026-08-03T08:59:59+01:00</updated>
-
-		<published>2026-08-03T08:59:59+01:00</published>
-		<id>https://stardot.org.uk/forums/viewtopic.php?p=489537#p489537</id>
-		<link href="https://stardot.org.uk/forums/viewtopic.php?p=489537#p489537"/>
-
-		<link rel="up" type="text/html" href="https://stardot.org.uk/forums/viewforum.php?f=3" title="8-bit acorn hardware" />
-		<title type="html"><![CDATA[8-bit acorn hardware • Re: BeebSID]]></title>
-
-					<category term="8-bit acorn hardware" scheme="https://stardot.org.uk/forums/viewforum.php?f=3" label="8-bit acorn hardware"/>
-		
-		<content type="html" xml:base="https://stardot.org.uk/forums/viewtopic.php?p=489537#p489537"><![CDATA[
-<strong class="text-strong">SID emulation for your BBC via Pi1MHZ!  <img class="smilies" src="https://stardot.org.uk/forums/images/smilies/eusa_pray.gif" width="19" height="16" alt="[-o&lt;" title="Pray"> </strong><br>
-<br>
-If you don't have the BeebSID hardware, but do have a Pi1MHZ (or plan to get one), its firmware now emulates BeebSID as well!  <img class="smilies" src="https://stardot.org.uk/forums/images/smilies/eusa_drool.gif" width="15" height="16" alt="=P~" title="Drool"> <br>
-<br>
-From v1.30 - <a href="https://github.com/dp111/Pi1MHz/releases" class="postlink">https://github.com/dp111/Pi1MHz/releases</a><p>Statistics: Posted by <a href="https://stardot.org.uk/forums/memberlist.php?mode=viewprofile&amp;u=13433">!FOZ!</a> — Mon Aug 03, 2026 8:59 am</p><hr />
-]]></content>
-	</entry>
-		<entry>
-		<author><name><![CDATA[!FOZ!]]></name></author>
-		<updated>2026-08-03T08:56:19+01:00</updated>
-
-		<published>2026-08-03T08:56:19+01:00</published>
-		<id>https://stardot.org.uk/forums/viewtopic.php?p=489536#p489536</id>
-		<link href="https://stardot.org.uk/forums/viewtopic.php?p=489536#p489536"/>
-
-		<link rel="up" type="text/html" href="https://stardot.org.uk/forums/viewforum.php?f=16" title="32-bit acorn hardware" />
-		<title type="html"><![CDATA[32-bit acorn hardware • Re: A3020 battery and mods]]></title>
-
-					<category term="32-bit acorn hardware" scheme="https://stardot.org.uk/forums/viewforum.php?f=16" label="32-bit acorn hardware"/>
-		
-		<content type="html" xml:base="https://stardot.org.uk/forums/viewtopic.php?p=489536#p489536"><![CDATA[
+		<link rel="topic" type="text/html" href="https://stardot.org.uk/forums/viewtopic.php?t=33390" title="Parent topic link" />
+		<title type="html"><![CDATA[programming • Re: Writing games for the Tube: bare metal]]></title>
+		<category term="programming" scheme="https://stardot.org.uk/forums/viewforum.php?f=54" label="programming"/>
+		<content type="html" xml:base="https://stardot.org.uk/forums/viewtopic.php?p=489617#p489617"><![CDATA[
 <blockquote class="uncited"><div>
-Lack of Earth won’t change functionality but you should complete it for proper signal screening.
+I was wrong about 12. It's 11.
 </div></blockquote>
 
-Ok ta, will take a look I have crimping set that can make up a small wire.  <img class="smilies" src="https://stardot.org.uk/forums/images/smilies/icon_biggrin.gif" width="15" height="15" alt=":D" title="Very Happy"><br>
+Ah, it’s your host code that uses 11 bytes of ZP? Sorry, I misread what you said in your post; I thought you were saying that about the Acorn host code.<br>
 <br>
-Its odd because it feels like I am the only one in this machine since factory....  <img class="smilies" src="https://stardot.org.uk/forums/images/smilies/eusa_doh.gif" width="22" height="16" alt="#-o" title="d'oh!"><p>Statistics: Posted by <a href="https://stardot.org.uk/forums/memberlist.php?mode=viewprofile&amp;u=13433">!FOZ!</a> — Mon Aug 03, 2026 8:56 am</p><hr />
+Very efficient!  <img class="smilies" src="https://stardot.org.uk/forums/images/smilies/icon_biggrin.gif" width="15" height="15" alt=":D" title="Very Happy"> <br>
+<br>
+Mark<p>Statistics: Posted by <a href="https://stardot.org.uk/forums/memberlist.php?mode=viewprofile&amp;u=11976">MarkMoxon</a> — Mon Aug 03, 2026 9:13 pm</p><hr />
 ]]></content>
 	</entry>
 		<entry>
-		<author><name><![CDATA[jankfactor]]></name></author>
-		<updated>2026-08-03T07:56:07+01:00</updated>
+		<author><name><![CDATA[KenLowe]]></name></author>
+		<updated>2026-08-03T21:12:03+01:00</updated>
 
-		<published>2026-08-03T07:56:07+01:00</published>
-		<id>https://stardot.org.uk/forums/viewtopic.php?p=489535#p489535</id>
-		<link href="https://stardot.org.uk/forums/viewtopic.php?p=489535#p489535"/>
+		<published>2026-08-03T21:12:03+01:00</published>
+		<id>https://stardot.org.uk/forums/viewtopic.php?p=489616#p489616</id>
+		<link href="https://stardot.org.uk/forums/viewtopic.php?p=489616#p489616"/>
+		<link rel="category" type="text/html" href="https://stardot.org.uk/forums/viewforum.php?f=3" title="8-bit acorn hardware" />
 
-		<link rel="up" type="text/html" href="https://stardot.org.uk/forums/viewforum.php?f=53" title="new projects in development: games" />
-		<title type="html"><![CDATA[new projects in development: games • Re: Head over Heels]]></title>
-
-					<category term="new projects in development: games" scheme="https://stardot.org.uk/forums/viewforum.php?f=53" label="new projects in development: games"/>
-		
-		<content type="html" xml:base="https://stardot.org.uk/forums/viewtopic.php?p=489535#p489535"><![CDATA[
-I absolutely love Head Over Heels (have a t-shirt around somewhere...). The only issue I have with the game is that a lot of the floating doors and platforms are impossible to judge visually where they are in isometric space. A faked shadow on the floor tile would make this easier, but perhaps that's part of the 'fun' trying to figure it out.  <img class="smilies" src="https://stardot.org.uk/forums/images/smilies/icon_razz.gif" width="15" height="15" alt=":P" title="Razz"> Good luck with this, what a great project to take on!<p>Statistics: Posted by <a href="https://stardot.org.uk/forums/memberlist.php?mode=viewprofile&amp;u=16317">jankfactor</a> — Mon Aug 03, 2026 7:56 am</p><hr />
-]]></content>
-	</entry>
-		<entry>
-		<author><name><![CDATA[beebman82]]></name></author>
-		<updated>2026-08-03T07:21:50+01:00</updated>
-
-		<published>2026-08-03T07:21:50+01:00</published>
-		<id>https://stardot.org.uk/forums/viewtopic.php?p=489534#p489534</id>
-		<link href="https://stardot.org.uk/forums/viewtopic.php?p=489534#p489534"/>
-
-		<link rel="up" type="text/html" href="https://stardot.org.uk/forums/viewforum.php?f=53" title="new projects in development: games" />
-		<title type="html"><![CDATA[new projects in development: games • Re: Head over Heels]]></title>
-
-					<category term="new projects in development: games" scheme="https://stardot.org.uk/forums/viewforum.php?f=53" label="new projects in development: games"/>
-		
-		<content type="html" xml:base="https://stardot.org.uk/forums/viewtopic.php?p=489534#p489534"><![CDATA[
-This is one of my favourite games, I'm so looking forward to seeing this progress to completion. Keep up the fantastic work  <img class="smilies" src="https://stardot.org.uk/forums/images/smilies/icon_biggrin.gif" width="15" height="15" alt=":D" title="Very Happy"><br>
-<br>
-I never managed to get very far in the game, I primarily remember it on the ZX Spectrum, but it is one of those games I still like to pick up and play as it brings back such great memories<p>Statistics: Posted by <a href="https://stardot.org.uk/forums/memberlist.php?mode=viewprofile&amp;u=13462">beebman82</a> — Mon Aug 03, 2026 7:21 am</p><hr />
+		<link rel="topic" type="text/html" href="https://stardot.org.uk/forums/viewtopic.php?t=33291" title="Parent topic link" />
+		<title type="html"><![CDATA[8-bit acorn hardware • Re: Video ULA - CPLD recreation]]></title>
+		<category term="8-bit acorn hardware" scheme="https://stardot.org.uk/forums/viewforum.php?f=3" label="8-bit acorn hardware"/>
+		<content type="html" xml:base="https://stardot.org.uk/forums/viewtopic.php?p=489616#p489616"><![CDATA[
+Yes, Claude. Although I've not actually tested the suggested fix yet. Would that be the preferred solution, if it works?<p>Statistics: Posted by <a href="https://stardot.org.uk/forums/memberlist.php?mode=viewprofile&amp;u=352">KenLowe</a> — Mon Aug 03, 2026 9:12 pm</p><hr />
 ]]></content>
 	</entry>
 		<entry>
 		<author><name><![CDATA[KarateEd]]></name></author>
-		<updated>2026-08-03T06:55:22+01:00</updated>
+		<updated>2026-08-03T21:10:06+01:00</updated>
 
-		<published>2026-08-03T06:55:22+01:00</published>
-		<id>https://stardot.org.uk/forums/viewtopic.php?p=489533#p489533</id>
-		<link href="https://stardot.org.uk/forums/viewtopic.php?p=489533#p489533"/>
+		<published>2026-08-03T21:10:06+01:00</published>
+		<id>https://stardot.org.uk/forums/viewtopic.php?p=489615#p489615</id>
+		<link href="https://stardot.org.uk/forums/viewtopic.php?p=489615#p489615"/>
+		<link rel="category" type="text/html" href="https://stardot.org.uk/forums/viewforum.php?f=46" title="8-bit acorn software: games - high scores" />
 
-		<link rel="up" type="text/html" href="https://stardot.org.uk/forums/viewforum.php?f=46" title="8-bit acorn software: games - high scores" />
+		<link rel="topic" type="text/html" href="https://stardot.org.uk/forums/viewtopic.php?t=33311" title="Parent topic link" />
 		<title type="html"><![CDATA[8-bit acorn software: games - high scores • Re: High Score Challenge - S28 - Round - One - Cyborg Warriors]]></title>
+		<category term="8-bit acorn software: games - high scores" scheme="https://stardot.org.uk/forums/viewforum.php?f=46" label="8-bit acorn software: games - high scores"/>
+		<content type="html" xml:base="https://stardot.org.uk/forums/viewtopic.php?p=489615#p489615"><![CDATA[
+I have a quick question for everyone.<br>
+<br>
+ManiacMiner posted a 66k+ score.  I know he said he felt it was massively bugged.  What does everyone think about that score.<br>
+<br>
+Should I post it?  I agree with Rod btw.  I think it's just the game and whether it's massively bugged or not, we're all playing with the same potential bug.<br>
+<br>
+One consideration though is it will definitely skew the rest of the scores downward and that should be considered so Rod, if you wish to change your vote that's fine too.<br>
+<br>
+So Rod said yes<br>
+Ed Says yes<br>
+<br>
+Please everyone submit a response by end of today so I can finish this beggar off.......thanks,<p>Statistics: Posted by <a href="https://stardot.org.uk/forums/memberlist.php?mode=viewprofile&amp;u=9931">KarateEd</a> — Mon Aug 03, 2026 9:10 pm</p><hr />
+]]></content>
+	</entry>
+		<entry>
+		<author><name><![CDATA[hoglet]]></name></author>
+		<updated>2026-08-03T21:02:54+01:00</updated>
 
-					<category term="8-bit acorn software: games - high scores" scheme="https://stardot.org.uk/forums/viewforum.php?f=46" label="8-bit acorn software: games - high scores"/>
-		
-		<content type="html" xml:base="https://stardot.org.uk/forums/viewtopic.php?p=489533#p489533"><![CDATA[
-Finally broke 50k.....5247<br>
+		<published>2026-08-03T21:02:54+01:00</published>
+		<id>https://stardot.org.uk/forums/viewtopic.php?p=489614#p489614</id>
+		<link href="https://stardot.org.uk/forums/viewtopic.php?p=489614#p489614"/>
+		<link rel="category" type="text/html" href="https://stardot.org.uk/forums/viewforum.php?f=3" title="8-bit acorn hardware" />
 
+		<link rel="topic" type="text/html" href="https://stardot.org.uk/forums/viewtopic.php?t=33291" title="Parent topic link" />
+		<title type="html"><![CDATA[8-bit acorn hardware • Re: Video ULA - CPLD recreation]]></title>
+		<category term="8-bit acorn hardware" scheme="https://stardot.org.uk/forums/viewforum.php?f=3" label="8-bit acorn hardware"/>
+		<content type="html" xml:base="https://stardot.org.uk/forums/viewtopic.php?p=489614#p489614"><![CDATA[
+Thanks Ken (or Claude?), that's a good clear explanation.<p>Statistics: Posted by <a href="https://stardot.org.uk/forums/memberlist.php?mode=viewprofile&amp;u=9657">hoglet</a> — Mon Aug 03, 2026 9:02 pm</p><hr />
+]]></content>
+	</entry>
+		<entry>
+		<author><name><![CDATA[SamSkivington]]></name></author>
+		<updated>2026-08-03T20:53:32+01:00</updated>
+
+		<published>2026-08-03T20:53:32+01:00</published>
+		<id>https://stardot.org.uk/forums/viewtopic.php?p=489613#p489613</id>
+		<link href="https://stardot.org.uk/forums/viewtopic.php?p=489613#p489613"/>
+		<link rel="category" type="text/html" href="https://stardot.org.uk/forums/viewforum.php?f=54" title="programming" />
+
+		<link rel="topic" type="text/html" href="https://stardot.org.uk/forums/viewtopic.php?t=33390" title="Parent topic link" />
+		<title type="html"><![CDATA[programming • Re: Writing games for the Tube: bare metal]]></title>
+		<category term="programming" scheme="https://stardot.org.uk/forums/viewforum.php?f=54" label="programming"/>
+		<content type="html" xml:base="https://stardot.org.uk/forums/viewtopic.php?p=489613#p489613"><![CDATA[
+The Tube host is a bit too big to be posting here, despite its slimmed down nature, but I'll share it in another way.<br>
+<br>
+The important bits of the custom Tube host code are:<br>
+<br>
+Only OSFILE is supported from the normal OS calls, so we can load and save settings or high scores or whatever.<br>
+<br>
+In the &amp;406 reason code handler executed on the host, in the Acorn one, the JMP at the end here isn't a thing (it's a JSR) and the next instruction returns the host to the tight loop running in ZP. This variation hands control back to the host after, say, a *RUN OSCLI call.<br>
+<br>
+We are gradually eliminating the Acorn Tube protocol (or most of it).<br>
+<br>
+The net result of this is that you can *RUN something that has a parasite execution address and it will do it. The parasite program will just get on with its job, initialisation or whatever. What is not then happening is the host waiting for OSWRCH calls or anything else (and at this point not even OSFILE)<br>
+
+<div class="codebox"><p>Code: </p><pre><code>_noSendSyncByte
+	cpx	#TUBE_ACTION_EXECUTE_IN_PARASITE
+	bne	_noSendStartByte
+
+	;	send start byte
+	lda	#$80
+	jmp	TubeHostWriteR2
+
+_noSendStartByte
+	rts</code></pre></div><p>Statistics: Posted by <a href="https://stardot.org.uk/forums/memberlist.php?mode=viewprofile&amp;u=13141">SamSkivington</a> — Mon Aug 03, 2026 8:53 pm</p><hr />
+]]></content>
+	</entry>
+		<entry>
+		<author><name><![CDATA[TobyLobster]]></name></author>
+		<updated>2026-08-03T20:53:19+01:00</updated>
+
+		<published>2026-08-03T20:53:19+01:00</published>
+		<id>https://stardot.org.uk/forums/viewtopic.php?p=489612#p489612</id>
+		<link href="https://stardot.org.uk/forums/viewtopic.php?p=489612#p489612"/>
+		<link rel="category" type="text/html" href="https://stardot.org.uk/forums/viewforum.php?f=2" title="8-bit acorn software: other" />
+
+		<link rel="topic" type="text/html" href="https://stardot.org.uk/forums/viewtopic.php?t=33392" title="Parent topic link" />
+		<title type="html"><![CDATA[8-bit acorn software: other • Re: An AI language model on a BBC Micro]]></title>
+		<category term="8-bit acorn software: other" scheme="https://stardot.org.uk/forums/viewforum.php?f=2" label="8-bit acorn software: other"/>
+		<content type="html" xml:base="https://stardot.org.uk/forums/viewtopic.php?p=489612#p489612"><![CDATA[
+Yeah, pretty amazing it's possible at all. Nothing to do with me btw, just reporting.<p>Statistics: Posted by <a href="https://stardot.org.uk/forums/memberlist.php?mode=viewprofile&amp;u=12029">TobyLobster</a> — Mon Aug 03, 2026 8:53 pm</p><hr />
+]]></content>
+	</entry>
+		<entry>
+		<author><name><![CDATA[KenLowe]]></name></author>
+		<updated>2026-08-03T20:52:55+01:00</updated>
+
+		<published>2026-08-03T20:52:55+01:00</published>
+		<id>https://stardot.org.uk/forums/viewtopic.php?p=489611#p489611</id>
+		<link href="https://stardot.org.uk/forums/viewtopic.php?p=489611#p489611"/>
+		<link rel="category" type="text/html" href="https://stardot.org.uk/forums/viewforum.php?f=3" title="8-bit acorn hardware" />
+
+		<link rel="topic" type="text/html" href="https://stardot.org.uk/forums/viewtopic.php?t=33291" title="Parent topic link" />
+		<title type="html"><![CDATA[8-bit acorn hardware • Re: Video ULA - CPLD recreation]]></title>
+		<category term="8-bit acorn hardware" scheme="https://stardot.org.uk/forums/viewforum.php?f=3" label="8-bit acorn hardware"/>
+		<content type="html" xml:base="https://stardot.org.uk/forums/viewtopic.php?p=489611#p489611"><![CDATA[
+<blockquote class="uncited"><div>
+Maybe someone else can explain why the case statement was wrong.
+</div></blockquote>
 <div class="inline-attachment">
 			
 				<dl class="thumbnail">
-			<dt><a href="https://stardot.org.uk/forums/download/file.php?id=120191&amp;mode=view"><img src="https://stardot.org.uk/forums/download/file.php?id=120191&amp;t=1" class="postimage" alt="CW-10.png" title="CW-10.png (18.14 KiB) Viewed 21 times" /></a></dt>
+			<dt><a href="https://stardot.org.uk/forums/download/file.php?id=120214&amp;mode=view"><img src="https://stardot.org.uk/forums/download/file.php?id=120214&amp;t=1" class="postimage" alt="Capture001.JPG" title="Capture001.JPG (80.1 KiB) Viewed 21 times" /></a></dt>
 					</dl>
 		
 		
 		
-			</div><p>Statistics: Posted by <a href="https://stardot.org.uk/forums/memberlist.php?mode=viewprofile&amp;u=9931">KarateEd</a> — Mon Aug 03, 2026 6:55 am</p><hr />
+			</div><p>Statistics: Posted by <a href="https://stardot.org.uk/forums/memberlist.php?mode=viewprofile&amp;u=352">KenLowe</a> — Mon Aug 03, 2026 8:52 pm</p><hr />
+]]></content>
+	</entry>
+		<entry>
+		<author><name><![CDATA[covkid50]]></name></author>
+		<updated>2026-08-03T20:33:38+01:00</updated>
+
+		<published>2026-08-03T20:33:38+01:00</published>
+		<id>https://stardot.org.uk/forums/viewtopic.php?p=489610#p489610</id>
+		<link href="https://stardot.org.uk/forums/viewtopic.php?p=489610#p489610"/>
+		<link rel="category" type="text/html" href="https://stardot.org.uk/forums/viewforum.php?f=3" title="8-bit acorn hardware" />
+
+		<link rel="topic" type="text/html" href="https://stardot.org.uk/forums/viewtopic.php?t=2530" title="Parent topic link" />
+		<title type="html"><![CDATA[8-bit acorn hardware • Re: BeebSID]]></title>
+		<category term="8-bit acorn hardware" scheme="https://stardot.org.uk/forums/viewforum.php?f=3" label="8-bit acorn hardware"/>
+		<content type="html" xml:base="https://stardot.org.uk/forums/viewtopic.php?p=489610#p489610"><![CDATA[
+<blockquote class="uncited"><div>
+<blockquote class="uncited"><div>
+<blockquote class="uncited"><div>
+<strong class="text-strong">SID emulation for your BBC via Pi1MHZ!  <img class="smilies" src="https://stardot.org.uk/forums/images/smilies/eusa_pray.gif" width="19" height="16" alt="[-o&lt;" title="Pray"> </strong><br>
+<br>
+If you don't have the BeebSID hardware, but do have a Pi1MHZ (or plan to get one), its firmware now emulates BeebSID as well!  <img class="smilies" src="https://stardot.org.uk/forums/images/smilies/eusa_drool.gif" width="15" height="16" alt="=P~" title="Drool"> <br>
+<br>
+From v1.30 - <a href="https://github.com/dp111/Pi1MHz/releases" class="postlink">https://github.com/dp111/Pi1MHz/releases</a>
+</div></blockquote>
+
+Interesting! Does this mean that I don’t need to build a BeebSID? I have the bare PCBs on their way, but if the emulation is decent it might save me time and money. I was almost certainly going to use a SID replacement rather than a genuine one. I guess I will give the Pi1MHz a try.
+</div></blockquote>
+
+Yes, its totally another option. The emulation library used is not these days considered the most accurate, but is the most compatible with the architecture of Pi1MHz. I personally have both and other than a bit less bass at times its perfectly good emulation and I have played some of the more tricky SIDs. So yes, I would say give it a go and see what your ears think - its certainly worth a try!   <img class="smilies" src="https://stardot.org.uk/forums/images/smilies/icon_biggrin.gif" width="15" height="15" alt=":D" title="Very Happy">
+</div></blockquote>
+Thanks!<p>Statistics: Posted by <a href="https://stardot.org.uk/forums/memberlist.php?mode=viewprofile&amp;u=13489">covkid50</a> — Mon Aug 03, 2026 8:33 pm</p><hr />
+]]></content>
+	</entry>
+		<entry>
+		<author><name><![CDATA[SamSkivington]]></name></author>
+		<updated>2026-08-03T20:33:06+01:00</updated>
+
+		<published>2026-08-03T20:33:06+01:00</published>
+		<id>https://stardot.org.uk/forums/viewtopic.php?p=489609#p489609</id>
+		<link href="https://stardot.org.uk/forums/viewtopic.php?p=489609#p489609"/>
+		<link rel="category" type="text/html" href="https://stardot.org.uk/forums/viewforum.php?f=54" title="programming" />
+
+		<link rel="topic" type="text/html" href="https://stardot.org.uk/forums/viewtopic.php?t=33390" title="Parent topic link" />
+		<title type="html"><![CDATA[programming • Re: Writing games for the Tube: bare metal]]></title>
+		<category term="programming" scheme="https://stardot.org.uk/forums/viewforum.php?f=54" label="programming"/>
+		<content type="html" xml:base="https://stardot.org.uk/forums/viewtopic.php?p=489609#p489609"><![CDATA[
+<blockquote class="uncited"><div>
+<blockquote class="uncited"><div>
+So, um TubeHostInstall is just a data transfer loop. I think the Tube host code would probably be more interesting. I can say, without even looking, though, that the bulk of the code lives at &amp;400 as normal and ZP usage is 12 bytes - Acorn must have had their reasons for running code in ZP but I don't see any reason to do the same. Works fine.
+</div></blockquote>
+
+I love the stripped-down simplicity of your setup. It’s so elegant!<br>
+<br>
+To make the point even more, I think ZP usage for the Acorn host code is a fair amount more than 12 bytes. It seems to use pretty much the whole block from &amp;0000 to &amp;0056; sticking breakpoints on the code in here halts things all the time, particularly the block at &amp;0036. So your approach is even slicker than you’re claiming. Nice.  <img class="smilies" src="https://stardot.org.uk/forums/images/smilies/icon_biggrin.gif" width="15" height="15" alt=":D" title="Very Happy"><br>
+<br>
+Mark
+</div></blockquote>
+
+I was wrong about 12. It's 11.<br>
+
+<div class="codebox"><p>Code: </p><pre><code>ZP_TUBE_CLAIM_ID
+	db	0
+
+ZP_TUBE_CONTROL_BLOCK_POINTER
+	dw	0
+
+ZP_COMMAND_HOST_ADDRESS
+	dw	0
+ZP_COMMAND_LENGTH
+	dw	0
+ZP_COMMAND_PARASITE_ADDRESS
+	dd	0
+
+ZP_TUBE_HOST_TOP
+.export ZP_TUBE_HOST_TOP
+</code></pre></div><p>Statistics: Posted by <a href="https://stardot.org.uk/forums/memberlist.php?mode=viewprofile&amp;u=13141">SamSkivington</a> — Mon Aug 03, 2026 8:33 pm</p><hr />
 ]]></content>
 	</entry>
 	</feed>

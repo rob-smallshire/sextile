@@ -42,7 +42,10 @@ class TestFeedLevel:
         assert board.title == "stardot.org.uk"
 
     def test_the_feed_reports_when_it_was_updated(self, board: Feed) -> None:
-        assert board.updated == datetime.fromisoformat("2026-08-03T10:42:17+01:00")
+        assert board.updated is not None
+        assert board.updated.tzinfo is not None
+        #  The board-wide feed is updated by its newest post.
+        assert board.updated == board.posts[0].updated
 
     def test_the_board_feed_holds_ten_posts(self, board: Feed) -> None:
         assert len(board.posts) == 10
@@ -58,7 +61,8 @@ class TestIdentifiers:
     """Everything the page numbering depends on."""
 
     def test_the_post_id_comes_from_the_link(self, board: Feed) -> None:
-        assert board.posts[0].post_id == 489542
+        for post in board.posts:
+            assert f"p={post.post_id}" in post.url
 
     def test_posts_appear_newest_first(self, board: Feed) -> None:
         ids = [post.post_id for post in board.posts]
@@ -70,7 +74,9 @@ class TestIdentifiers:
     def test_the_author_id_is_recovered_from_the_statistics_footer(self, board: Feed) -> None:
         #  The only place a numeric user id appears, and it is inside the very
         #  markup the renderer strips. It must be read before that happens.
-        assert board.posts[0].author_id == 13965
+        for post in board.posts:
+            assert post.author_id is not None
+            assert f"u={post.author_id}" in post.content_html.replace("&amp;", "&")
 
     @pytest.mark.parametrize("document", ALL_FEEDS)
     def test_every_post_has_a_post_id_and_an_author_id(self, document: str) -> None:
@@ -85,30 +91,35 @@ class TestIdentifiers:
 
     def test_the_post_id_falls_back_to_the_id_element(self) -> None:
         #  The link and the id carry the same URL, so losing one is survivable.
-        document = BOARD_FEED.replace(
-            '<link href="https://stardot.org.uk/forums/viewtopic.php?p=489542#p489542"/>',
+        first = parse_feed(TOPIC_FEED).posts[0]
+        document = TOPIC_FEED.replace(
+            f'<link href="{first.url}"/>',
             '<link href="https://stardot.org.uk/forums/index.php"/>',
             1,
         )
-        assert parse_feed(document).posts[0].post_id == 489542
+        assert parse_feed(document).posts[0].post_id == first.post_id
 
 
 class TestPostFields:
-    def test_the_author_name(self, board: Feed) -> None:
-        assert board.posts[0].author_name == "komadori"
+    def test_the_author_name(self) -> None:
+        assert parse_feed(TOPIC_FEED).posts[0].author_name == "!FOZ!"
 
     def test_the_forum_name(self, board: Feed) -> None:
         assert board.posts[0].forum_name == "programming"
 
     def test_the_subject_has_the_forum_name_stripped(self, board: Feed) -> None:
         #  phpBB titles read "forum name - subject", joined by a bullet.
-        assert board.posts[0].subject == "Re: Writing games for the Tube"
+        for post in board.posts:
+            assert "\u2022" not in post.subject
+            assert not post.subject.startswith(post.forum_name)
 
     def test_a_reply_is_recognised(self, board: Feed) -> None:
         assert board.posts[0].is_reply
 
-    def test_the_topic_title_drops_the_reply_marker(self, board: Feed) -> None:
-        assert board.posts[0].topic_title == "Writing games for the Tube"
+    def test_the_topic_title_drops_the_reply_marker(self) -> None:
+        assert parse_feed(TOPIC_FEED).posts[0].topic_title == (
+            "ROMs that copy themselves to SRAM? (ADFS E00?)"
+        )
 
     def test_a_first_post_is_not_a_reply(self) -> None:
         forum = parse_feed(FORUM_FEED)
@@ -117,17 +128,20 @@ class TestPostFields:
         assert all(post.topic_title == post.subject for post in openers)
 
     def test_timestamps_are_timezone_aware(self, board: Feed) -> None:
-        post = board.posts[0]
-        assert post.published.tzinfo is not None
-        assert post.published == datetime.fromisoformat("2026-08-03T10:42:17+01:00")
+        assert all(post.published.tzinfo is not None for post in board.posts)
+        assert parse_feed(TOPIC_FEED).posts[0].published == datetime.fromisoformat(
+            "2023-11-23T08:23:04+01:00"
+        )
 
-    def test_the_url_is_the_canonical_post_link(self, board: Feed) -> None:
-        assert board.posts[0].url == "https://stardot.org.uk/forums/viewtopic.php?p=489542#p489542"
+    def test_the_url_is_the_canonical_post_link(self) -> None:
+        assert parse_feed(TOPIC_FEED).posts[0].url == (
+            "https://stardot.org.uk/forums/viewtopic.php?p=409158#p409158"
+        )
 
-    def test_the_content_is_the_whole_post_body(self, board: Feed) -> None:
-        content = board.posts[0].content_html
-        assert "According to" in content
-        assert "bbcelite.com" in content
+    def test_the_content_is_the_whole_post_body(self) -> None:
+        content = parse_feed(TOPIC_FEED).posts[0].content_html
+        assert "Steve Picton" in content
+        assert "bootloaders he wrote" in content
 
     def test_the_content_is_not_truncated(self) -> None:
         #  phpBB can be configured to send an extract; this board sends it all,
@@ -190,10 +204,8 @@ class TestMalformedInput:
 
     def test_one_bad_entry_does_not_lose_the_others(self) -> None:
         #  Both the link and the id have to go before an entry is unusable.
-        document = BOARD_FEED.replace(
-            "https://stardot.org.uk/forums/viewtopic.php?p=489542#p489542",
-            "https://stardot.org.uk/forums/index.php",
-        )
+        first = parse_feed(TOPIC_FEED).posts[0]
+        document = TOPIC_FEED.replace(first.url, "https://stardot.org.uk/forums/index.php")
         feed = parse_feed(document)
         assert len(feed.posts) == 9
         assert len(feed.problems) == 1
@@ -201,10 +213,14 @@ class TestMalformedInput:
     def test_a_missing_author_id_is_tolerated(self) -> None:
         #  A deleted or anonymised account has no profile link, which is a
         #  degraded post rather than an unusable one.
-        document = BOARD_FEED.replace("memberlist.php?mode=viewprofile&amp;u=13965", "index.php")
+        first = parse_feed(TOPIC_FEED).posts[0]
+        assert first.author_id is not None
+        document = TOPIC_FEED.replace(
+            f"memberlist.php?mode=viewprofile&amp;u={first.author_id}", "index.php"
+        )
         post = parse_feed(document).posts[0]
         assert post.author_id is None
-        assert post.post_id == 489542
+        assert post.post_id == first.post_id
 
 
 def _feed_with_entry(entry_body: str) -> str:
@@ -232,12 +248,27 @@ def test_a_feed_may_legitimately_be_empty() -> None:
 
 
 class TestTheForumLink:
-    """phpBB now offers `<link rel="up">` naming the entry's forum.
+    """phpBB offers a link naming the entry's forum, alongside `<category>`.
 
-    Board and forum feeds already carried a `<category>` saying the same thing,
-    so this matters most for per-topic feeds, which carry no category at all and
-    so produced posts that did not know their forum.
+    It matters most for per-topic feeds, which carry no category at all and so
+    produced posts that did not know their forum. The relation it uses has
+    already changed once, from `up` to `category`, so the link is recognised by
+    the shape of its URL rather than by that name.
     """
+
+    @pytest.mark.parametrize(
+        "rel",
+        ['rel="category"', 'rel="up"', 'rel="related"', ""],
+    )
+    def test_any_relation_carrying_a_forum_url_is_read(self, rel: str) -> None:
+        document = _feed_with_entry(
+            _WHEN + '<link href="https://stardot.org.uk/forums/viewtopic.php?p=489542"/>'
+            f'<link {rel} href="https://stardot.org.uk/forums/viewforum.php?f=54" '
+            'title="programming"/>'
+        )
+        post = parse_feed(document).posts[0]
+        assert post.forum_id == 54
+        assert post.forum_name == "programming"
 
     def test_the_forum_comes_from_an_up_link_when_there_is_no_category(self) -> None:
         post = parse_feed(_feed_with_entry(_LINKS_ONLY)).posts[0]
@@ -328,10 +359,16 @@ class TestTheTopicLink:
     def test_a_forum_link_is_not_mistaken_for_a_topic(self) -> None:
         assert parse_feed(_feed_with_entry(_LINKS_ONLY)).posts[0].topic_id is None
 
-    def test_the_captured_feeds_still_carry_no_topic_id(self) -> None:
-        #  The gap this is waiting on. When it closes, this test says so.
-        for document in (BOARD_FEED, TOPIC_FEED, FORUM_FEED):
-            assert all(post.topic_id is None for post in parse_feed(document).posts)
+    @pytest.mark.parametrize("document", ALL_FEEDS)
+    def test_every_captured_post_now_carries_a_topic_id(self, document: str) -> None:
+        #  This test used to assert the opposite, and was written to say so when
+        #  the gap closed. The board added a topic link and it did.
+        for post in parse_feed(document).posts:
+            assert post.topic_id is not None
+            assert f"t={post.topic_id}" in document
+
+    def test_all_posts_in_a_topic_feed_share_one_topic_id(self) -> None:
+        assert len({post.topic_id for post in parse_feed(TOPIC_FEED).posts}) == 1
 
 
 class TestEntityReferences:

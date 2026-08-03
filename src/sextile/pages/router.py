@@ -133,22 +133,10 @@ def resolve(
             return _notice(
                 reference, "GOODBYE", ["Thank you for calling Sextile.", "", "Ring off."]
             )
-        case TopicsIndex() | Topic():
-            return _notice(
-                reference,
-                "TOPICS",
-                [
-                    "Thread browsing is NOT AVAILABLE.",
-                    "",
-                    "The board's feed does not carry topic",
-                    "identifiers, and the page that would",
-                    "reveal them is disallowed to us by the",
-                    "site's robots.txt.",
-                    "",
-                    "Posts may still be read by day, by",
-                    "forum, and by contributor.",
-                ],
-            )
+        case TopicsIndex():
+            return _topics_menu(reference, repository)
+        case Topic(topic_id):
+            return _topic_page(reference, topic_id, repository)
 
 
 # -- menus ------------------------------------------------------------------
@@ -158,6 +146,7 @@ def _main_index(repository: Repository) -> Page:
     held = repository.count_posts()
     items = [
         MenuItem("Latest posts", "the newest first", PostsIndex()),
+        MenuItem("By topic", "read whole threads", TopicsIndex()),
         MenuItem("By day", "browse by date", DaysIndex()),
         MenuItem("By forum", "browse by section", ForumsIndex()),
         MenuItem("By contributor", "browse by poster", ContributorsIndex()),
@@ -216,6 +205,33 @@ def _contributors_menu(reference: PageRef, repository: Repository) -> Page:
         for user_id, name, count in contributors
     ]
     return _menu(reference, title="BY CONTRIBUTOR", items=items)
+
+
+def _topics_menu(reference: PageRef, repository: Repository) -> Page:
+    topics = repository.topics(limit=60)
+    if not topics:
+        return _notice(
+            reference,
+            "BY TOPIC",
+            [
+                "NO TOPICS held yet.",
+                "",
+                "Topics are known only for posts seen",
+                "since the board's feed began carrying",
+                "them. Older posts have none.",
+            ],
+        )
+    items = [
+        MenuItem(title, f"{count} post{'' if count == 1 else 's'}", Topic(topic_id))
+        for topic_id, title, count in topics
+    ]
+    return _menu(reference, title="BY TOPIC", items=items)
+
+
+def _topic_page(reference: PageRef, topic_id: int, repository: Repository) -> Page:
+    posts = repository.posts_in_topic(topic_id)
+    title = posts[0].topic_title if posts else f"TOPIC {topic_id}"
+    return _posts_menu(reference, title, posts)
 
 
 def _forum_page(reference: PageRef, forum_id: int, repository: Repository) -> Page:
@@ -357,6 +373,8 @@ def _post_choices(post: Post) -> dict[str, PageRef]:
     if post.author_id is not None:
         choices["2"] = Contributor(post.author_id)
     choices["3"] = Day(post.published.astimezone(BOARD_TIMEZONE).date())
+    if post.topic_id is not None:
+        choices["4"] = Topic(post.topic_id)
     return choices
 
 

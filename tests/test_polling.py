@@ -22,12 +22,13 @@ from sextile.store.repository import Repository
 BST = timezone(timedelta(hours=1))
 
 
-def make_post(post_id: int, forum_id: int | None = 53) -> Post:
+def make_post(post_id: int, forum_id: int | None = 53, topic_id: int | None = None) -> Post:
     when = datetime(2026, 8, 2, 9, 0, tzinfo=BST) + timedelta(minutes=post_id % 100)
     return Post(
         post_id=post_id,
         forum_id=forum_id,
         forum_name=f"forum {forum_id}",
+        topic_id=topic_id,
         author_id=10058,
         author_name="Iapetus",
         subject=f"Re: Topic {post_id}",
@@ -38,11 +39,11 @@ def make_post(post_id: int, forum_id: int | None = 53) -> Post:
     )
 
 
-def feed_of(*post_ids: int, forum_id: int | None = 53) -> Feed:
+def feed_of(*post_ids: int, forum_id: int | None = 53, topic_id: int | None = None) -> Feed:
     return Feed(
         title="stardot.org.uk",
         updated=None,
-        posts=tuple(make_post(post_id, forum_id) for post_id in post_ids),
+        posts=tuple(make_post(post_id, forum_id, topic_id) for post_id in post_ids),
     )
 
 
@@ -56,11 +57,13 @@ class RecordingSource:
         newest_topics: Feed | None = None,
         active_topics: Feed | None = None,
         forums: dict[int, Feed] | None = None,
+        topics: dict[int, Feed] | None = None,
     ) -> None:
         self._latest = latest or [feed_of()]
         self._newest_topics = newest_topics or feed_of()
         self._active_topics = active_topics or feed_of()
         self._forums = forums or {}
+        self._topics = topics or {}
         self.asked: list[str] = []
 
     async def latest_posts(self) -> Feed:
@@ -80,9 +83,9 @@ class RecordingSource:
         self.asked.append(f"forum:{forum_id}")
         return self._forums.get(forum_id, feed_of(forum_id=forum_id))
 
-    async def posts_in_topic(self, topic_id: int) -> Feed:  # pragma: no cover - unused here
+    async def posts_in_topic(self, topic_id: int) -> Feed:
         self.asked.append(f"topic:{topic_id}")
-        return feed_of()
+        return self._topics.get(topic_id, feed_of(topic_id=topic_id))
 
 
 class FakeSleeper:
@@ -192,3 +195,43 @@ class TestSeeding:
         results = await seed(source, repository)
         assert any(result.failed for result in results)
         assert repository.count_posts() == 2
+
+
+class TestFollowingTopics:
+    """A seed now follows the topics it discovers.
+
+    The board-wide feed shows ten posts of ten different threads; a per-topic
+    feed shows ten posts of one. Following each topic is what turns a scatter of
+    replies into threads that can actually be read.
+    """
+
+    async def test_seeding_follows_the_topics_it_discovered(
+        self, repository: Repository
+    ) -> None:
+        source = RecordingSource(
+            latest=[feed_of(1, topic_id=7)],
+            newest_topics=feed_of(2, topic_id=8),
+            topics={7: feed_of(10, 11, topic_id=7), 8: feed_of(20, topic_id=8)},
+        )
+        await seed(source, repository)
+        assert "topic:7" in source.asked
+        assert "topic:8" in source.asked
+        assert repository.count_posts() == 5
+
+    async def test_each_topic_is_visited_once(self, repository: Repository) -> None:
+        source = RecordingSource(latest=[feed_of(1, 2, 3, topic_id=7)])
+        await seed(source, repository)
+        assert source.asked.count("topic:7") == 1
+
+    async def test_a_topic_that_cannot_be_fetched_does_not_stop_the_sweep(
+        self, repository: Repository
+    ) -> None:
+        class Broken(RecordingSource):
+            async def posts_in_topic(self, topic_id: int) -> Feed:
+                self.asked.append(f"topic:{topic_id}")
+                raise OSError("not enabled")
+
+        source = Broken(latest=[feed_of(1, topic_id=7)])
+        results = await seed(source, repository)
+        assert any(result.failed for result in results)
+        assert repository.count_posts() == 1

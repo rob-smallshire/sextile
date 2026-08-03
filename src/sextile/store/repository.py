@@ -35,7 +35,7 @@ BOARD_TIMEZONE: Final = ZoneInfo("Europe/London")
 _SCHEMA_FILEPATH: Final = Path(__file__).with_name("schema.sql")
 
 _POST_COLUMNS: Final = (
-    "post_id, forum_id, forum_name, author_id, author_name, "
+    "post_id, forum_id, forum_name, topic_id, author_id, author_name, "
     "subject, published, updated, url, content_html"
 )
 
@@ -92,11 +92,12 @@ class Repository:
             ).fetchone()
             cursor.execute(
                 f"INSERT OR REPLACE INTO posts ({_POST_COLUMNS}, local_date, first_seen) "
-                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
                 (
                     post.post_id,
                     post.forum_id,
                     post.forum_name,
+                    post.topic_id,
                     post.author_id,
                     post.author_name,
                     post.subject,
@@ -172,6 +173,33 @@ class Repository:
             (forum_id, limit),
         )
 
+    def posts_in_topic(self, topic_id: int, limit: int = 500) -> list[Post]:
+        """A thread's posts, oldest first, because it reads as a conversation."""
+        return self._posts(
+            f"SELECT {_POST_COLUMNS} FROM posts WHERE topic_id = ? ORDER BY published LIMIT ?",
+            (topic_id, limit),
+        )
+
+    def topics(self, limit: int = 100) -> list[tuple[int, str, int]]:
+        """The topics seen, most recently active first, with their post counts.
+
+        A topic's title comes from any of its posts, with the reply marker
+        removed: we may only ever have seen replies, never the post that opened
+        it. MIN picks the shortest, which is the one without the marker where
+        both are present.
+        """
+        rows = self._all(
+            "SELECT topic_id, MIN(topic_title) AS title, COUNT(*) AS total, "
+            "MAX(published) AS latest FROM ("
+            "  SELECT topic_id, published, "
+            "    CASE WHEN subject LIKE 'Re: %' THEN SUBSTR(subject, 5) ELSE subject END "
+            "    AS topic_title "
+            "  FROM posts WHERE topic_id IS NOT NULL"
+            ") GROUP BY topic_id ORDER BY latest DESC LIMIT ?",
+            (limit,),
+        )
+        return [(int(row["topic_id"]), row["title"], int(row["total"])) for row in rows]
+
     def posts_by_author(self, author_id: int, limit: int = 50) -> list[Post]:
         return self._posts(
             f"SELECT {_POST_COLUMNS} FROM posts WHERE author_id = ? "
@@ -217,6 +245,7 @@ def _to_post(row: sqlite3.Row) -> Post:
         post_id=int(row["post_id"]),
         forum_id=None if row["forum_id"] is None else int(row["forum_id"]),
         forum_name=row["forum_name"],
+        topic_id=None if row["topic_id"] is None else int(row["topic_id"]),
         author_id=None if row["author_id"] is None else int(row["author_id"]),
         author_name=row["author_name"],
         subject=row["subject"],

@@ -129,7 +129,7 @@ def _forum(entry: ElementTree.Element) -> tuple[int | None, str]:
     The category is preferred where both are present, being the older and more
     specific of the two.
     """
-    for found in (_forum_from_category(entry), _forum_from_up_link(entry)):
+    for found in (_forum_from_category(entry), _forum_from_link(entry)):
         if found[0] is not None:
             return found
     return None, ""
@@ -144,11 +144,14 @@ def _forum_from_category(entry: ElementTree.Element) -> tuple[int | None, str]:
     return (int(match.group(1)) if match else None), name
 
 
-def _forum_from_up_link(entry: ElementTree.Element) -> tuple[int | None, str]:
+def _forum_from_link(entry: ElementTree.Element) -> tuple[int | None, str]:
+    """A forum named by any link, whatever relation it claims.
+
+    The relation has already moved once, from `up` to `category`, so matching
+    on it would be matching on the least stable thing in the entry. The URL
+    shape is what actually says "this is a forum".
+    """
     for link in entry.findall(f"{_ATOM}link"):
-        if link.get("rel") != "up":
-            continue
-        #  It names the forum today; anything else is not to be mistaken for one.
         match = _FORUM_ID.search(link.get("href", ""))
         if match:
             return int(match.group(1)), link.get("title", "")

@@ -30,6 +30,7 @@ def make_post(
     author_id: int | None = 10058,
     author_name: str = "Iapetus",
     subject: str = "Re: Head over Heels",
+    topic_id: int | None = None,
     published: datetime | None = None,
     content_html: str = "<p>What a great project!</p>",
 ) -> Post:
@@ -38,6 +39,7 @@ def make_post(
         post_id=post_id,
         forum_id=forum_id,
         forum_name=forum_name,
+        topic_id=topic_id,
         author_id=author_id,
         author_name=author_name,
         subject=subject,
@@ -225,3 +227,59 @@ class TestForumNamesArriveIncomplete:
         #  Better an unnamed forum than a missing one.
         repository.add_post(make_post(post_id=1, forum_id=54, forum_name=""))
         assert repository.forums() == [(54, "", 1)]
+
+
+class TestTopics:
+    """A post now knows its topic, so threads can be reconstructed."""
+
+    def test_a_topic_id_survives_the_round_trip(self, repository: Repository) -> None:
+        repository.add_post(make_post(topic_id=33390))
+        stored = repository.post(489493)
+        assert stored is not None
+        assert stored.topic_id == 33390
+
+    def test_a_post_without_a_topic_is_still_storable(self, repository: Repository) -> None:
+        repository.add_post(make_post(topic_id=None))
+        stored = repository.post(489493)
+        assert stored is not None
+        assert stored.topic_id is None
+
+    def test_a_topic_holds_its_posts_oldest_first(self, repository: Repository) -> None:
+        #  A thread reads like a conversation, so it runs forwards.
+        for offset in range(3):
+            repository.add_post(
+                make_post(
+                    post_id=300 + offset,
+                    topic_id=33390,
+                    published=datetime(2026, 8, 2, 9, tzinfo=BST) + timedelta(hours=offset),
+                )
+            )
+        repository.add_post(make_post(post_id=999, topic_id=1))
+        assert [post.post_id for post in repository.posts_in_topic(33390)] == [300, 301, 302]
+
+    def test_topics_are_listed_with_their_titles_and_counts(self, repository: Repository) -> None:
+        repository.add_post(make_post(post_id=1, topic_id=7, subject="Head over Heels"))
+        repository.add_post(make_post(post_id=2, topic_id=7, subject="Re: Head over Heels"))
+        repository.add_post(make_post(post_id=3, topic_id=8, subject="Writing games"))
+        assert repository.topics() == [
+            (7, "Head over Heels", 2),
+            (8, "Writing games", 1),
+        ]
+
+    def test_a_topic_is_titled_without_its_reply_markers(self, repository: Repository) -> None:
+        #  Only replies were seen, so the title has to come from one of them.
+        repository.add_post(make_post(post_id=1, topic_id=7, subject="Re: Head over Heels"))
+        assert repository.topics() == [(7, "Head over Heels", 1)]
+
+    def test_topics_are_ordered_by_their_latest_post(self, repository: Repository) -> None:
+        repository.add_post(
+            make_post(post_id=1, topic_id=7, published=datetime(2026, 8, 1, 9, tzinfo=BST))
+        )
+        repository.add_post(
+            make_post(post_id=2, topic_id=8, published=datetime(2026, 8, 2, 9, tzinfo=BST))
+        )
+        assert [topic_id for topic_id, _, _ in repository.topics()] == [8, 7]
+
+    def test_posts_with_no_topic_are_omitted_from_the_index(self, repository: Repository) -> None:
+        repository.add_post(make_post(topic_id=None))
+        assert repository.topics() == []

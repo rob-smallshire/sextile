@@ -7,9 +7,10 @@ window drained between polls and something was missed.
 
 A first run has nothing to show, and waiting hours for the window to fill is a
 poor introduction to a service. Seeding therefore sweeps every route the board
-publishes -- the latest posts, the newest topics, the active topics, and then
-each forum it has just learned about -- which gathers a great deal more in one
-pass than a single windowful.
+publishes -- the latest posts, the newest topics, the active topics, then each
+forum it has just learned about, and then each topic -- which gathers a great
+deal more in one pass than a single windowful, and gathers it as threads rather
+than as a scatter of unrelated replies.
 
 Neither operation gives up on a failure. A board that is briefly unreachable,
 or a route this board has not enabled, is ordinary; stopping would mean a
@@ -39,6 +40,8 @@ class PollableSource(Protocol):
     async def active_topics(self) -> Feed: ...
 
     async def posts_in_forum(self, forum_id: int) -> Feed: ...
+
+    async def posts_in_topic(self, topic_id: int) -> Feed: ...
 
 
 @dataclass(frozen=True)
@@ -116,6 +119,17 @@ async def seed(
     for forum_id, name, _ in await asyncio.to_thread(repository.forums):
         result = await _ingest(
             source.posts_in_forum(forum_id), repository, route=f"forum {forum_id}: {name}"
+        )
+        results.append(result)
+        if on_result is not None:
+            on_result(result)
+
+    #  Following each topic is what turns a scatter of replies into threads that
+    #  can be read: the board-wide feed shows ten posts of ten different threads,
+    #  a per-topic feed ten posts of one.
+    for topic_id, title, _ in await asyncio.to_thread(repository.topics, 200):
+        result = await _ingest(
+            source.posts_in_topic(topic_id), repository, route=f"topic {topic_id}: {title}"
         )
         results.append(result)
         if on_result is not None:

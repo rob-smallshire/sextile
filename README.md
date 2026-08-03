@@ -20,8 +20,9 @@ Atom feed  --> ingest --> SQLite --> content blocks --> frames --> session --> t
                 done        done         done            done       done        done
 ```
 
-It answers calls. What remains is a poller that keeps the archive fed without
-being asked, and the presentation refinements that only a real screen reveals.
+A poller keeps the archive fed. What remains is the presentation work that only
+watching a real screen can settle — see
+[docs/open-questions.md](docs/open-questions.md).
 
 ## Trying it
 
@@ -78,6 +79,14 @@ Keyword jumps work too: `*MAIN#`, `*LATEST#`, `*DAYS#`, `*FORUMS#`, `*WHO#`,
 Page numbers follow the board's own identifiers, so `*82489493#` here is post
 489493 there. See [docs/page-numbering.md](docs/page-numbering.md).
 
+## How it is put together
+
+[docs/architecture.md](docs/architecture.md) has the module map and, more
+usefully, an account of the three seams and why they are where they are: the
+`PostSource` port that a phpBB extension would slot into, the `Page`/`PageFrame`
+pair that lets a frame decide what its keys do, and the server's deliberate
+ignorance of ip232.
+
 ## What was measured rather than assumed
 
 Much of the design rests on facts established against real software rather than
@@ -112,3 +121,17 @@ uv run mypy
 The spikes under `docs/spikes/` need a local Beebium checkout and are not part
 of the test suite; they are kept as the record of how each question was
 answered.
+
+## Reading further
+
+| | |
+|---|---|
+| [architecture.md](docs/architecture.md) | the module map and the seams |
+| [viewdata-encoding.md](docs/viewdata-encoding.md) | what the BBC end actually does, and how we know |
+| [page-numbering.md](docs/page-numbering.md) | the numbering scheme and why it uses Stardot's own ids |
+| [feed-limitations.md](docs/feed-limitations.md) | what the Atom feed cannot tell us |
+| [phpbb-feed-code-newlines.md](docs/phpbb-feed-code-newlines.md) | a defect in phpBB's feed, written up to hand over |
+| [open-questions.md](docs/open-questions.md) | known gaps, and what is deliberately not done |
+
+`CLAUDE.md` records how the project is built, for anyone — human or otherwise —
+picking it up.

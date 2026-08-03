@@ -259,3 +259,91 @@ class TestWhatIsSent:
 
 def _text(message: bytes) -> str:
     return "".join(chr(byte) for byte in message if 0x20 <= byte < 0x7F)
+
+
+class TestMovingWithinAPage:
+    """`#` and `B` walk the frames of whatever is showing."""
+
+    def test_hash_advances_and_b_goes_back(self, session: Session) -> None:
+        session.receive(b"*8#")
+        session.receive(b"#")
+        assert session.frame_index == 1
+        session.receive(b"B")
+        assert session.frame_index == 0
+
+    def test_b_on_the_first_frame_does_nothing(self, session: Session) -> None:
+        session.receive(b"*8#")
+        assert session.receive(b"B") == []
+        assert session.frame_index == 0
+
+    def test_hash_on_the_last_frame_does_nothing(self, session: Session) -> None:
+        session.receive(b"*9#")
+        assert session.receive(b"#") == []
+
+    def test_moving_frames_does_not_disturb_the_history(self, session: Session) -> None:
+        session.receive(b"*8#")
+        session.receive(b"#")
+        session.receive(b"B")
+        session.receive(b"*0#")
+        assert session.reference == MainIndex()
+
+
+class TestMovingBetweenPosts:
+    """`N` and `P` walk the sequence the reader arrived through."""
+
+    def test_next_post_follows_the_menu_that_was_used(self, session: Session) -> None:
+        session.receive(b"*8#")  # latest posts, newest first
+        session.receive(b"1")  # the newest
+        session.receive(b"N")
+        assert session.reference == PostPage(489023)
+
+    def test_previous_post_goes_back_up_the_sequence(self, session: Session) -> None:
+        session.receive(b"*8#")
+        session.receive(b"2")
+        session.receive(b"P")
+        assert session.reference == PostPage(489024)
+
+    def test_the_sequence_continues_past_the_end_of_a_menu_frame(
+        self, session: Session
+    ) -> None:
+        #  The ninth choice of frame a is followed by the first of frame b.
+        session.receive(b"*8#")
+        session.receive(b"9")
+        session.receive(b"N")
+        assert session.reference == PostPage(489015)
+
+    def test_the_first_of_a_sequence_offers_no_previous(self, session: Session) -> None:
+        session.receive(b"*8#")
+        session.receive(b"1")
+        assert session.receive(b"P") == []
+
+    def test_the_last_of_a_sequence_offers_no_next(self, session: Session) -> None:
+        session.receive(b"*3220260802#")  # a day, oldest first
+        session.receive(b"1")
+        assert session.receive(b"P") == []
+
+    def test_typing_a_page_number_leaves_no_sequence_to_walk(self, session: Session) -> None:
+        session.receive(b"*82489000#")
+        assert session.receive(b"N") == []
+        assert session.receive(b"P") == []
+
+    def test_a_day_gives_that_day_as_the_sequence(self, session: Session) -> None:
+        session.receive(b"*3220260802#")
+        session.receive(b"1")  # oldest that day
+        session.receive(b"N")
+        assert session.reference == PostPage(489001)
+
+    def test_walking_on_leaves_the_sequence_intact(self, session: Session) -> None:
+        session.receive(b"*8#")
+        session.receive(b"1")
+        session.receive(b"N")
+        session.receive(b"N")
+        assert session.reference == PostPage(489022)
+
+    def test_leaving_for_a_different_page_abandons_the_sequence(
+        self, session: Session
+    ) -> None:
+        session.receive(b"*8#")
+        session.receive(b"1")
+        session.receive(b"*9#")
+        assert session.receive(b"N") == []

@@ -32,7 +32,7 @@ from sextile.pages.numbering import (
     Post as PostPage,
 )
 from sextile.pages.page import Page, PageFrame
-from sextile.pages.router import CHOICES_PER_FRAME, resolve
+from sextile.pages.router import CHOICES_PER_FRAME, Neighbours, resolve
 from sextile.store.repository import Repository
 
 BST = timezone(timedelta(hours=1))
@@ -343,3 +343,132 @@ class TestNoEntityReferenceReachesTheScreen:
 
 
 _ENTITY = re.compile(r"&(?:[a-zA-Z][a-zA-Z0-9]{1,10}|#[0-9]{1,6}|#[xX][0-9a-fA-F]{1,5});")
+
+
+class TestNavigationIsOfferedOnlyWhereItLeadsSomewhere:
+    """An offer that goes nowhere is worse than no offer.
+
+    Every navigation key a frame names must do something on that frame, and
+    every key that would do something should be named.
+    """
+
+    @pytest.fixture
+    def long_post(self) -> Iterator[Repository]:
+        with Repository.in_memory() as repository:
+            body = "".join(f"<p>Paragraph number {n} of a long post.</p>" for n in range(60))
+            repository.add_post(make_post(1, content_html=body))
+            repository.add_post(make_post(2, content_html="<p>Short.</p>"))
+            yield repository
+
+    def test_a_long_post_offers_the_next_frame_on_its_first(
+        self, long_post: Repository
+    ) -> None:
+        page = resolve(PostPage(1), long_post)
+        assert len(page.frames) > 1
+        assert "#" in text_of(page, 0)
+
+    def test_but_not_on_its_last(self, long_post: Repository) -> None:
+        page = resolve(PostPage(1), long_post)
+        last = len(page.frames) - 1
+        assert "next frame" not in text_of(page, last).lower()
+
+    def test_a_single_frame_post_offers_no_frame_navigation(
+        self, long_post: Repository
+    ) -> None:
+        rendered = text_of(resolve(PostPage(2), long_post)).lower()
+        assert "next frame" not in rendered
+        assert "back" not in rendered
+
+    def test_a_later_frame_offers_going_back_one(self, long_post: Repository) -> None:
+        page = resolve(PostPage(1), long_post)
+        found = page.frame(1)
+        assert found is not None
+        assert found.offers("B")
+
+    def test_the_first_frame_does_not_offer_going_back(self, long_post: Repository) -> None:
+        found = resolve(PostPage(1), long_post).frame(0)
+        assert found is not None
+        assert not found.offers("B")
+
+    def test_a_menu_offers_going_back_a_frame_too(self, repository: Repository) -> None:
+        page = resolve(PostsIndex(), repository)
+        first = page.frame(0)
+        second = page.frame(1)
+        assert first is not None and second is not None
+        assert not first.offers("B")
+        assert second.offers("B")
+
+    def test_moving_within_a_page_names_no_destination(self, long_post: Repository) -> None:
+        #  It is not a change of page, so it belongs among the moves.
+        found = resolve(PostPage(1), long_post).frame(1)
+        assert found is not None
+        assert "B" not in found.choices
+        assert "B" in found.moves
+
+    def test_a_menu_offers_more_only_while_there_is_more(
+        self, repository: Repository
+    ) -> None:
+        page = resolve(PostsIndex(), repository)
+        assert "more" in text_of(page, 0).lower()
+        assert "more" not in text_of(page, len(page.frames) - 1).lower()
+
+
+class TestMovingBetweenPosts:
+    """`N` and `P` walk the sequence the reader arrived through."""
+
+    def test_neither_is_offered_without_a_sequence(self, repository: Repository) -> None:
+        #  Reached by typing a page number, so there is no "next" to speak of.
+        found = resolve(PostPage(489000), repository).frame(0)
+        assert found is not None
+        assert "N" not in found.choices
+        assert "P" not in found.choices
+
+    def test_the_next_post_is_offered_when_one_is_known(
+        self, repository: Repository
+    ) -> None:
+        page = resolve(
+            PostPage(489000),
+            repository,
+            neighbours=Neighbours(following=PostPage(489001), preceding=None),
+        )
+        found = page.frame(0)
+        assert found is not None
+        assert found.choices["N"] == PostPage(489001)
+        assert "P" not in found.choices
+
+    def test_the_previous_post_is_offered_when_one_is_known(
+        self, repository: Repository
+    ) -> None:
+        page = resolve(
+            PostPage(489001),
+            repository,
+            neighbours=Neighbours(following=None, preceding=PostPage(489000)),
+        )
+        found = page.frame(0)
+        assert found is not None
+        assert found.choices["P"] == PostPage(489000)
+        assert "N" not in found.choices
+
+    def test_both_are_named_in_the_prompt(self, repository: Repository) -> None:
+        page = resolve(
+            PostPage(489001),
+            repository,
+            neighbours=Neighbours(following=PostPage(489002), preceding=PostPage(489000)),
+        )
+        rendered = text_of(page).upper()
+        assert "N " in rendered
+        assert "P " in rendered
+
+    def test_neighbours_are_offered_on_every_frame_of_a_long_post(self) -> None:
+        with Repository.in_memory() as repository:
+            body = "".join(f"<p>Paragraph {n}.</p>" for n in range(60))
+            repository.add_post(make_post(1, content_html=body))
+            page = resolve(
+                PostPage(1),
+                repository,
+                neighbours=Neighbours(following=PostPage(2), preceding=None),
+            )
+            for index in range(len(page.frames)):
+                found = page.frame(index)
+                assert found is not None
+                assert found.choices["N"] == PostPage(2)

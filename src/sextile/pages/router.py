@@ -55,9 +55,30 @@ _ROWS_PER_CHOICE: Final = 2
 #: Rows a post frame gives to its subject and byline before the body begins.
 _POST_HEADING_ROWS: Final = 3
 
-_MENU_PROMPT: Final = "Select 1-9, 0 index"
-_MORE_PROMPT: Final = "Select 1-9, # more, 0 index"
-_READING_PROMPT: Final = "# next frame, 0 index"
+#  Keys that move about, rather than selecting from a menu. `#` keeps its
+#  conventional viewdata meaning; the rest are ours, since viewdata never had a
+#  way back to the previous frame.
+NEXT_FRAME_KEY: Final = "#"
+BACK_FRAME_KEY: Final = "B"
+NEXT_POST_KEY: Final = "N"
+PREVIOUS_POST_KEY: Final = "P"
+
+
+@dataclass(frozen=True)
+class Neighbours:
+    """The posts either side of this one, in the sequence being read.
+
+    Which sequence depends on how the reader arrived: a post reached from a
+    day's index has that day's posts either side of it, one reached from a
+    forum has that forum's. A post reached by typing its number has neither,
+    and is offered neither.
+    """
+
+    following: PageRef | None = None
+    preceding: PageRef | None = None
+
+
+NO_NEIGHBOURS: Final = Neighbours()
 
 
 @dataclass(frozen=True)
@@ -69,7 +90,12 @@ class MenuItem:
     destination: PageRef
 
 
-def resolve(reference: PageRef, repository: Repository) -> Page:
+def resolve(
+    reference: PageRef,
+    repository: Repository,
+    *,
+    neighbours: Neighbours = NO_NEIGHBOURS,
+) -> Page:
     """Build the page a reference names. Always returns something showable."""
     match reference:
         case MainIndex():
@@ -89,7 +115,7 @@ def resolve(reference: PageRef, repository: Repository) -> Page:
         case Contributor(user_id):
             return _contributor_page(reference, user_id, repository)
         case numbering.Post(post_id):
-            return _post_page(reference, post_id, repository)
+            return _post_page(reference, post_id, repository, neighbours)
         case About():
             return _about(reference, repository)
         case Logoff():
@@ -212,19 +238,17 @@ def _menu(
     batches = [items[start : start + per_frame] for start in range(0, len(items), per_frame)] or [
         []
     ]
-    frames = []
-    for index, batch in enumerate(batches):
-        last = index == len(batches) - 1
-        frames.append(
-            _menu_frame(
-                reference,
-                index,
-                title=title,
-                batch=batch,
-                preamble=lead,
-                prompt=_MENU_PROMPT if last else _MORE_PROMPT,
-            )
+    frames = [
+        _menu_frame(
+            reference,
+            index,
+            title=title,
+            batch=batch,
+            preamble=lead,
+            moving=_frame_moves(index, len(batches), more="more"),
         )
+        for index, batch in enumerate(batches)
+    ]
     return Page(reference=reference, frames=tuple(frames))
 
 
@@ -235,11 +259,16 @@ def _menu_frame(
     title: str,
     batch: list[MenuItem],
     preamble: list[str],
-    prompt: str,
+    moving: dict[str, str],
 ) -> PageFrame:
     canvas = Canvas()
     number = f"{numbering.format_page_number(reference)}{numbering.frame_letter(index)}"
-    draw_chrome(canvas, title=title, page_number=number, prompt=prompt)
+    draw_chrome(
+        canvas,
+        title=title,
+        page_number=number,
+        prompt=_prompt(moving, selecting=bool(batch)),
+    )
 
     row = CONTENT_FIRST_ROW
     for line in preamble:
@@ -260,13 +289,15 @@ def _menu_frame(
             canvas.row(row).skip(2).text(_fitted(item.detail, COLUMNS - 4), Colour.GREEN)
         row += 1
 
-    return PageFrame(frame=canvas.frame, choices=choices)
+    return PageFrame(frame=canvas.frame, choices=choices, moves=_moves(moving))
 
 
 # -- content pages ----------------------------------------------------------
 
 
-def _post_page(reference: PageRef, post_id: int, repository: Repository) -> Page:
+def _post_page(
+    reference: PageRef, post_id: int, repository: Repository, neighbours: Neighbours
+) -> Page:
     post = repository.post(post_id)
     if post is None:
         return _notice(
@@ -287,18 +318,24 @@ def _post_page(reference: PageRef, post_id: int, repository: Repository) -> Page
     for index, rows in enumerate(pages):
         canvas = Canvas()
         number = f"{numbering.format_page_number(reference)}{numbering.frame_letter(index)}"
+        moving = _frame_moves(index, len(pages), more="next frame")
+        moving.update(_post_moves(neighbours))
         draw_chrome(
             canvas,
             title=post.forum_name or SERVICE_NAME,
             page_number=number,
-            prompt=_READING_PROMPT,
+            prompt=_prompt(moving, selecting=False),
         )
         canvas.row(CONTENT_FIRST_ROW).text(_fitted(post.subject, COLUMNS - 1), Colour.YELLOW)
         byline = canvas.row(CONTENT_FIRST_ROW + 1)
         byline.text(_fitted(post.author_name, COLUMNS - 8), Colour.GREEN)
         canvas.right(CONTENT_FIRST_ROW + 1, _time_of(post), Colour.GREEN)
         draw_rows(canvas, CONTENT_FIRST_ROW + _POST_HEADING_ROWS, rows)
-        frames.append(PageFrame(frame=canvas.frame, choices=_post_choices(post)))
+        choices = _post_choices(post)
+        choices.update(_neighbour_choices(neighbours))
+        frames.append(
+            PageFrame(frame=canvas.frame, choices=choices, moves=_moves(moving))
+        )
     return Page(reference=reference, frames=tuple(frames))
 
 
@@ -364,3 +401,51 @@ def _fitted(text: str, cells: int) -> str:
     while cell_count(fitted) > cells:
         fitted = fitted[:-1]
     return fitted
+
+
+# -- what a frame offers ----------------------------------------------------
+#
+#  A key a frame names must do something on that frame, and a key that would do
+#  something should be named. So the prompt and the choices are built from the
+#  same description of what is actually available here.
+
+
+def _frame_moves(index: int, total: int, *, more: str) -> dict[str, str]:
+    """Moving between the frames of this page."""
+    moves: dict[str, str] = {}
+    if index + 1 < total:
+        moves[NEXT_FRAME_KEY] = more
+    if index > 0:
+        moves[BACK_FRAME_KEY] = "back"
+    return moves
+
+
+def _post_moves(neighbours: Neighbours) -> dict[str, str]:
+    """Moving between posts, when the reader arrived through a sequence."""
+    moves: dict[str, str] = {}
+    if neighbours.following is not None:
+        moves[NEXT_POST_KEY] = "next post"
+    if neighbours.preceding is not None:
+        moves[PREVIOUS_POST_KEY] = "prev post"
+    return moves
+
+
+def _moves(moving: dict[str, str]) -> frozenset[str]:
+    """The keys that move within this page rather than leaving it."""
+    return frozenset(key for key in moving if key in (NEXT_FRAME_KEY, BACK_FRAME_KEY))
+
+
+def _neighbour_choices(neighbours: Neighbours) -> dict[str, PageRef]:
+    choices: dict[str, PageRef] = {}
+    if neighbours.following is not None:
+        choices[NEXT_POST_KEY] = neighbours.following
+    if neighbours.preceding is not None:
+        choices[PREVIOUS_POST_KEY] = neighbours.preceding
+    return choices
+
+
+def _prompt(moving: dict[str, str], *, selecting: bool) -> str:
+    parts = ["1-9 select"] if selecting else []
+    parts.extend(f"{key} {what}" for key, what in moving.items())
+    parts.append("0 index")
+    return ", ".join(parts)

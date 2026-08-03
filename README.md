@@ -68,10 +68,17 @@ Then, in Commstar's Prestel mode, enter chat with `<C>`, type `ATDT1` and press
 
 ```
 *nnn#     go to a page          #      the next frame
-*0#       back                  *00#   show this frame again
-*09#      fetch it afresh       **     abandon a part-typed request
-0-9       select from the menu
+*0#       back a page           B      back a frame
+*00#      show this frame again N      the next post
+*09#      fetch it afresh       P      the previous post
+**        abandon a part-typed request
+1-9       select from the menu  0      the main index
 ```
+
+A frame names only the keys that do something on it. There is no `# next frame`
+on the last frame of a post, and no `N` unless the reader arrived through a
+sequence — from a day's index `N` walks that day, from a forum it walks that
+forum, and a page reached by typing its number has no sequence at all.
 
 Keyword jumps work too: `*MAIN#`, `*LATEST#`, `*DAYS#`, `*FORUMS#`, `*WHO#`,
 `*ABOUT#`, `*BYE#`.

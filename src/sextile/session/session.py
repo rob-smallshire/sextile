@@ -21,7 +21,12 @@ from sextile.pages.numbering import (
     parse_page_target,
 )
 from sextile.pages.page import Page, PageFrame
-from sextile.pages.router import resolve
+from sextile.pages.router import (
+    BACK_FRAME_KEY,
+    NEXT_FRAME_KEY,
+    Neighbours,
+    resolve,
+)
 from sextile.session.commands import (
     Back,
     Clear,
@@ -44,6 +49,37 @@ HISTORY_LIMIT: Final = 32
 
 
 @dataclass(frozen=True)
+class _Sequence:
+    """The run of pages a menu offered, and where in it the reader is.
+
+    This is what makes "next post" mean something: from a day's index it is the
+    next post that day, from a forum the next in that forum. Arrive by typing a
+    page number and there is no sequence, so nothing is offered.
+    """
+
+    destinations: tuple[PageRef, ...]
+    position: int
+
+    @property
+    def following(self) -> PageRef | None:
+        after = self.position + 1
+        return self.destinations[after] if after < len(self.destinations) else None
+
+    @property
+    def preceding(self) -> PageRef | None:
+        return self.destinations[self.position - 1] if self.position > 0 else None
+
+    def neighbours(self) -> Neighbours:
+        return Neighbours(following=self.following, preceding=self.preceding)
+
+    def moved_to(self, reference: PageRef) -> "_Sequence | None":
+        """The same sequence, repositioned, if it contains the destination."""
+        if reference not in self.destinations:
+            return None
+        return _Sequence(self.destinations, self.destinations.index(reference))
+
+
+@dataclass(frozen=True)
 class _Place:
     """A page and the frame of it that was showing."""
 
@@ -60,6 +96,7 @@ class Session:
         self._history: list[_Place] = []
         self._finished = False
         self._reference: PageRef = start or MainIndex()
+        self._sequence: _Sequence | None = None
         self._page = resolve(self._reference, repository)
         self._frame_index = 0
 
@@ -128,10 +165,15 @@ class Session:
             return self._unknown(target)
         return self._go_to(reference)
 
-    def _go_to(self, reference: PageRef) -> bytes | None:
+    def _go_to(self, reference: PageRef, sequence: "_Sequence | None" = None) -> bytes | None:
         self._remember()
         self._reference = reference
-        self._page = resolve(reference, self._repository)
+        self._sequence = sequence
+        self._page = resolve(
+            reference,
+            self._repository,
+            neighbours=sequence.neighbours() if sequence else Neighbours(),
+        )
         self._frame_index = 0
         if isinstance(reference, Logoff):
             self._finished = True
@@ -141,10 +183,30 @@ class Session:
         found = self._page.frame(self._frame_index)
         if found is None:
             return None
+        if key in found.moves:
+            return self._move(key)
         destination = found.choices.get(key)
         #  A key the frame does not offer does nothing. Guessing would take the
         #  reader somewhere they did not ask to go.
-        return None if destination is None else self._go_to(destination)
+        if destination is None:
+            return None
+        return self._go_to(destination, self._sequence_towards(destination))
+
+    def _sequence_towards(self, destination: PageRef) -> "_Sequence | None":
+        """The run of pages the reader is walking, once they step into it."""
+        if self._sequence is not None:
+            moved = self._sequence.moved_to(destination)
+            if moved is not None:
+                return moved
+        offered = self._page.destinations
+        return _Sequence(offered, offered.index(destination)) if destination in offered else None
+
+    def _move(self, key: str) -> bytes | None:
+        if key == NEXT_FRAME_KEY:
+            return self._next_frame()
+        if key == BACK_FRAME_KEY:
+            return self._previous_frame()
+        return None
 
     def _next_frame(self) -> bytes | None:
         if self._frame_index + 1 >= len(self._page.frames):
@@ -153,17 +215,28 @@ class Session:
         self._frame_index += 1
         return self._send()
 
+    def _previous_frame(self) -> bytes | None:
+        if self._frame_index == 0:
+            return None
+        self._frame_index -= 1
+        return self._send()
+
     def _back(self) -> bytes | None:
         if not self._history:
             return None
         place = self._history.pop()
         self._reference = place.reference
+        self._sequence = None
         self._page = resolve(place.reference, self._repository)
         self._frame_index = min(place.frame_index, len(self._page.frames) - 1)
         return self._send()
 
     def _refresh(self) -> bytes | None:
-        self._page = resolve(self._reference, self._repository)
+        self._page = resolve(
+            self._reference,
+            self._repository,
+            neighbours=self._sequence.neighbours() if self._sequence else Neighbours(),
+        )
         self._frame_index = min(self._frame_index, len(self._page.frames) - 1)
         return self._send()
 

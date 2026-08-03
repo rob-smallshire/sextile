@@ -33,8 +33,12 @@ Beeb for half an hour.
 - **Differential update** — sending only the cells that changed since the last
   frame. Trailing blanks are already trimmed, which takes a third to three
   quarters off; this would take most of the rest on a menu where only the middle
-  rows differ. It needs cursor positioning, which has been measured only as keys
-  arriving *from* the BBC, never as codes sent *to* it.
+  rows differ. The cursor positioning it needs has now been measured and works;
+  see `viewdata-encoding.md`.
+- **A command line.** Commstar does not echo a `*123#` page request, so a reader
+  cannot see what they have typed. The cursor codes needed to redraw the footer
+  row alone have been measured and cost about `2 + len(text)` bytes, so this is
+  now buildable.
 - **`sextile render --post` draws no chrome**, unlike `--page`. It predates the
   chrome and is now only useful for inspecting body layout in isolation.
 

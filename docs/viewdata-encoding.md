@@ -61,9 +61,9 @@ serialiser needs:
 | 0x0D | Carriage return |
 | 0x0A | Line feed |
 
-Cursor left/right/up/down (0x08–0x0B) have been measured only in the other
-direction, as keys the BBC sends; see "The cursor keys reach us" below. Nothing
-sends them *to* a terminal, since a frame is drawn as a whole.
+Cursor left/right/up/down (0x08–0x0B) work in both directions; see "The cursor
+moves on command" below for what they do as output, and "The cursor keys reach
+us" for what they mean as input.
 
 ## The keyboard transposition
 
@@ -176,6 +176,32 @@ seconds down to two or three.
 The one case that would break it is a row filled to all forty columns: that
 wraps of its own accord, so a terminator after it would skip the row below. It
 is in the table above for that reason.
+
+## The cursor moves on command
+
+Measured by `docs/spikes/spike_cursor_output.py`. Commstar acts on the cursor
+codes sent *to* it, which makes it possible to redraw part of a screen instead
+of all of it:
+
+| Sent | Effect |
+|---|---|
+| `0x1E` then `0x0B` | Home, then up — **wraps to row 23** |
+| `0x1E` then n × `0x0A` | Home, then down to row n |
+| `0x0D` | Back to column 0 of the current row |
+| `0x08` | Back one cell, over what is there |
+| `0x09` | Forward one cell, leaving it as it was |
+
+Two findings matter more than the rest. **Moving the cursor erases nothing** —
+after home and five downs, all twenty-four rows still bore their labels. And
+**cursor up from row 0 wraps to row 23**, so the footer row is two bytes away
+rather than twenty-four.
+
+Overwriting row 23 alone left rows 0 to 22 untouched. So a command line, or any
+other partial redraw, costs about `2 + len(text)` bytes: a few milliseconds at
+9600 baud, and under a third of a second at 1200.
+
+This is also what differential update would need, should the whole-frame repaint
+ever become the thing worth optimising.
 
 ## A testing gotcha
 

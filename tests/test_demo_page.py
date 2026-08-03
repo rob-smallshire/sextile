@@ -36,13 +36,18 @@ def test_the_frame_uses_mosaic_graphics() -> None:
     assert any(cell in "QRSTUVW" for row in attributes for cell in row)
 
 
-def test_the_frame_serialises_to_the_expected_length() -> None:
+def test_the_untrimmed_frame_serialises_to_the_expected_length() -> None:
     #  Two bytes of preamble, 960 cells, plus one extra byte per attribute.
     frame = demo_frame()
     attributes = sum(
         1 for row in range(ROWS) for column in range(COLUMNS) if frame.is_attribute(row, column)
     )
-    assert len(frame.to_bytes()) == 2 + ROWS * COLUMNS + attributes
+    assert len(frame.to_bytes(trim=False)) == 2 + ROWS * COLUMNS + attributes
+
+
+def test_trimming_saves_most_of_the_frame() -> None:
+    frame = demo_frame()
+    assert len(frame.to_bytes()) < len(frame.to_bytes(trim=False))
 
 
 def test_every_byte_survives_a_seven_bit_line() -> None:

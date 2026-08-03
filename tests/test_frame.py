@@ -91,13 +91,15 @@ class TestSerialisation:
         serialised = Frame().to_bytes()
         assert serialised[:2] == bytes([ScreenControl.CLEAR_SCREEN, ScreenControl.CURSOR_HOME])
 
-    def test_a_blank_frame_is_the_preamble_and_960_spaces(self) -> None:
-        serialised = Frame().to_bytes()
+    def test_the_untrimmed_form_is_the_preamble_and_960_cells(self) -> None:
+        serialised = Frame().to_bytes(trim=False)
         assert serialised == bytes([0x0C, 0x1E]) + b" " * (ROWS * COLUMNS)
 
-    def test_no_line_terminators_are_emitted(self) -> None:
-        #  Column 40 wraps of its own accord; a CR or LF would cost a row.
-        serialised = Frame().to_bytes()[2:]
+    def test_the_untrimmed_form_emits_no_line_terminators(self) -> None:
+        #  Column 40 wraps of its own accord, so walking the cursor by writing
+        #  every cell needs no CR or LF at all. See TestTrimming for the form
+        #  actually sent.
+        serialised = Frame().to_bytes(trim=False)[2:]
         assert bytes([ScreenControl.CARRIAGE_RETURN]) not in serialised
         assert bytes([ScreenControl.LINE_FEED]) not in serialised
 
@@ -114,11 +116,11 @@ class TestSerialisation:
     def test_escaping_lengthens_the_stream_without_moving_the_cursor(self) -> None:
         #  The escape costs a second byte on the wire but still one cell on
         #  screen, which is exactly why the grid, not the byte count, is the
-        #  authority on layout.
+        #  authority on layout. Compared untrimmed, where every cell is sent.
         blank = Frame()
         coloured = Frame()
         coloured.set_attribute(10, 20, Control.ALPHA_CYAN)
-        assert len(coloured.to_bytes()) == len(blank.to_bytes()) + 1
+        assert len(coloured.to_bytes(trim=False)) == len(blank.to_bytes(trim=False)) + 1
 
     def test_every_byte_is_seven_bit(self) -> None:
         frame = Frame()
@@ -156,3 +158,71 @@ class TestGridRendering:
         characters, attributes = frame.to_grid()
         assert len(characters) == len(attributes) == ROWS
         assert all(len(row) == COLUMNS for row in characters + attributes)
+
+
+class TestTrimming:
+    """Trailing blanks are not sent.
+
+    The frame begins by clearing the screen, so a space at the end of a row
+    overwrites nothing: it exists only to walk the cursor forward. A carriage
+    return and line feed do that in two bytes instead of up to forty, and both
+    were measured putting twenty-four rows on rows 0-23 in the geometry spike.
+
+    Rows that fill all forty columns get no terminator, because column 40 wraps
+    of its own accord and a terminator there would skip a row.
+    """
+
+    def test_a_blank_frame_is_nothing_but_the_preamble(self) -> None:
+        #  The screen has just been cleared; there is nothing left to say.
+        assert Frame().to_bytes() == bytes([ScreenControl.CLEAR_SCREEN, ScreenControl.CURSOR_HOME])
+
+    def test_a_row_stops_at_its_last_written_cell(self) -> None:
+        frame = Frame()
+        frame.write(0, 0, "HI")
+        assert frame.to_bytes() == bytes([0x0C, 0x1E]) + b"HI"
+
+    def test_a_short_row_is_followed_by_a_terminator(self) -> None:
+        frame = Frame()
+        frame.write(0, 0, "HI")
+        frame.write(1, 0, "THERE")
+        assert frame.to_bytes() == bytes([0x0C, 0x1E]) + b"HI\r\n" + b"THERE"
+
+    def test_a_full_row_needs_no_terminator(self) -> None:
+        #  Column 40 wraps by itself; a terminator would skip a row.
+        frame = Frame()
+        frame.write(0, 0, "X" * COLUMNS)
+        frame.write(1, 0, "Y")
+        assert frame.to_bytes() == bytes([0x0C, 0x1E]) + b"X" * COLUMNS + b"Y"
+
+    def test_a_blank_row_between_two_written_ones_costs_two_bytes(self) -> None:
+        frame = Frame()
+        frame.write(0, 0, "A")
+        frame.write(2, 0, "C")
+        assert frame.to_bytes() == bytes([0x0C, 0x1E]) + b"A\r\n" + b"\r\n" + b"C"
+
+    def test_nothing_is_sent_after_the_last_written_row(self) -> None:
+        frame = Frame()
+        frame.write(0, 0, "ONLY")
+        assert frame.to_bytes().endswith(b"ONLY")
+
+    def test_a_trailing_attribute_is_kept(self) -> None:
+        #  An attribute is not a blank, even where nothing follows it.
+        frame = Frame()
+        frame.set_attribute(0, 0, Control.ALPHA_RED)
+        assert frame.to_bytes() == bytes([0x0C, 0x1E]) + b"\x1bA"
+
+    def test_the_untrimmed_form_is_still_available(self) -> None:
+        #  So that a spike can compare the two on real hardware.
+        assert len(Frame().to_bytes(trim=False)) == 2 + ROWS * COLUMNS
+
+    def test_trimming_never_lengthens_a_frame(self) -> None:
+        frame = Frame()
+        for row in range(ROWS):
+            frame.write(row, 0, "X" * COLUMNS)
+        assert len(frame.to_bytes()) <= len(frame.to_bytes(trim=False))
+
+    def test_a_wholly_full_frame_is_unchanged_by_trimming(self) -> None:
+        frame = Frame()
+        for row in range(ROWS):
+            frame.write(row, 0, "X" * COLUMNS)
+        assert frame.to_bytes() == frame.to_bytes(trim=False)

@@ -70,15 +70,49 @@ class Frame:
             for code in self._cells[offset : offset + length]
         )
 
-    def to_bytes(self) -> bytes:
-        """The frame as it travels: clear, home, then every cell in turn."""
+    def to_bytes(self, *, trim: bool = True) -> bytes:
+        """The frame as it travels: clear, home, then the cells that say something.
+
+        Trailing blanks are not sent. The frame begins by clearing the screen,
+        so a space at the end of a row overwrites nothing -- it exists only to
+        walk the cursor forward, and a carriage return and line feed do that in
+        two bytes rather than up to forty. A row that fills all forty columns
+        gets no terminator, because column 40 wraps of its own accord and a
+        terminator there would skip a row. After the last row with anything on
+        it, nothing is sent at all.
+
+        ``trim=False`` gives the older form, every cell in turn, so the two can
+        be compared on real hardware.
+        """
         stream = bytearray([ScreenControl.CLEAR_SCREEN, ScreenControl.CURSOR_HOME])
-        for code in self._cells:
-            if code < _BLANK:
-                stream.extend(encode_control(Control(code)))
-            else:
-                stream.append(code)
+        last_row = self._last_written_row() if trim else ROWS - 1
+        for row in range(last_row + 1):
+            used = self._used_columns(row) if trim else COLUMNS
+            offset = row * COLUMNS
+            for code in self._cells[offset : offset + used]:
+                if code < _BLANK:
+                    stream.extend(encode_control(Control(code)))
+                else:
+                    stream.append(code)
+            if row < last_row and used < COLUMNS:
+                stream.extend((ScreenControl.CARRIAGE_RETURN, ScreenControl.LINE_FEED))
         return bytes(stream)
+
+    def _last_written_row(self) -> int:
+        """The last row with anything on it, or -1 if the frame is blank."""
+        for row in reversed(range(ROWS)):
+            if self._used_columns(row):
+                return row
+        return -1
+
+    def _used_columns(self, row: int) -> int:
+        """How much of a row is worth sending: up to its last non-blank cell."""
+        offset = row * COLUMNS
+        codes = self._cells[offset : offset + COLUMNS]
+        for column in reversed(range(COLUMNS)):
+            if codes[column] != _BLANK:
+                return column + 1
+        return 0
 
     def to_grid(self) -> tuple[list[str], list[str]]:
         """A readable dump as two layers, so golden-frame failures diff legibly.

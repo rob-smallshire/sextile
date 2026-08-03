@@ -71,10 +71,12 @@ class TestContinuation:
         rendered = "\n".join(text_of(frame) for frame in frames)
         assert rendered.count("marker7") == 1
 
-    def test_every_frame_is_a_full_frame(self) -> None:
+    def test_every_frame_covers_the_whole_screen(self) -> None:
+        #  Trailing blanks are trimmed off the wire, but the grid behind them is
+        #  always the full 24 by 40.
         content = PostContent(blocks=tuple(Paragraph((f"line {n}",)) for n in range(40)))
         for frame in lay_out(content):
-            assert len(frame.to_bytes()) >= 2 + 24 * COLUMNS
+            assert len(frame.to_bytes(trim=False)) == 2 + 24 * COLUMNS
 
     def test_a_post_needing_more_than_twenty_six_frames_is_truncated_visibly(self) -> None:
         #  A page has frames a-z and no more. Running out must be said, not

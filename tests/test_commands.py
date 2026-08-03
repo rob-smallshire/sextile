@@ -74,18 +74,32 @@ class TestPrestelCommands:
     def test_a_bare_hash_advances_a_frame(self) -> None:
         assert parse(VIEWDATA_HASH) == [Next()]
 
-    def test_two_stars_clear_a_part_typed_request(self) -> None:
+    def test_two_stars_cancel_a_part_typed_request(self) -> None:
         assert parse(b"*824**") == [Clear()]
 
-    def test_a_request_typed_after_clearing_is_read_normally(self) -> None:
+    def test_one_star_cancels_outright(self) -> None:
+        #  The command line goes away and the footer comes back, so a reader who
+        #  changes their mind is not trapped in a buffer they no longer want.
+        parser = CommandParser()
+        assert parser.feed(b"*824*") == [Clear()]
+        assert parser.entry == ""
+
+    def test_a_digit_after_a_cancel_is_an_ordinary_keypress(self) -> None:
+        assert parse(b"*824*1") == [Clear(), Select("1")]
+
+    def test_two_stars_cancel_and_begin_again(self) -> None:
+        #  Which is what Prestel's `**` did, without the parser knowing the
+        #  sequence: it is simply cancel followed by begin.
         parser = CommandParser()
         assert parser.feed(b"*824**") == [Clear()]
-        assert parser.feed(b"*1#") == [GoTo("1")]
+        assert parser.entry == "*"
 
-    def test_a_second_star_mid_request_starts_again(self) -> None:
-        #  ** clears, so what follows is a fresh request rather than a mess.
+    def test_prestel_habits_still_work(self) -> None:
+        assert parse(b"*824**456#") == [Clear(), GoTo("456")]
+
+    def test_a_fresh_request_after_a_cancel_is_read_normally(self) -> None:
         parser = CommandParser()
-        parser.feed(b"*824**")
+        parser.feed(b"*824*")
         assert parser.feed(b"*8#") == [GoTo("8")]
 
 

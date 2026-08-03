@@ -98,6 +98,21 @@ class Frame:
                 stream.extend((ScreenControl.CARRIAGE_RETURN, ScreenControl.LINE_FEED))
         return bytes(stream)
 
+    def row_bytes(self, row: int) -> bytes:
+        """One row's cells, escaped, with no preamble and no terminator.
+
+        For drawing over a single row of a screen that is already showing
+        something, which is what the command line does.
+        """
+        offset = self._offset(row, 0)
+        stream = bytearray()
+        for code in self._cells[offset : offset + COLUMNS]:
+            if code < _BLANK:
+                stream.extend(encode_control(Control(code)))
+            else:
+                stream.append(code)
+        return bytes(stream)
+
     def _last_written_row(self) -> int:
         """The last row with anything on it, or -1 if the frame is blank."""
         for row in reversed(range(ROWS)):

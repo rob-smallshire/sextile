@@ -1,0 +1,74 @@
+"""The command line a reader types a page request into.
+
+Commstar does not echo `*123#` -- confirmed by watching a tcpser trace while
+typing one -- so unless Sextile draws it, a reader cannot see what they have
+typed. It replaces the footer while a request is being entered, which makes the
+mode change visible and gives `**` somewhere to be explained; there is nowhere
+in the ordinary footer to say so.
+
+Drawn over the footer row alone, not by redrawing the frame. `CURSOR_HOME` then
+cursor up wraps to row 23, measured in `docs/spikes/spike_cursor_output.py`, so
+the whole thing costs about fifty bytes: a few milliseconds at 9600 baud, and
+under half a second even at 1200. That is what makes it affordable on every
+keystroke.
+
+The row reads as a field: white on blue for what has been typed, then yellow on
+black for the reminder that `*` cancels.
+"""
+
+from typing import Final
+
+from sextile.viewdata.canvas import Canvas
+from sextile.viewdata.chrome import FOOTER_ROW
+from sextile.viewdata.controls import Colour, Control, alpha_colour
+from sextile.viewdata.encoding import ScreenControl
+from sextile.viewdata.frame import COLUMNS, Frame
+
+CANCEL_HINT: Final = "* cancels"
+
+#  Three cells to say "white on blue": a background can only be taken from a
+#  foreground, so the colour must be chosen, made the background, and then the
+#  text colour chosen again.
+_BUFFER_ATTRIBUTES: Final = 3
+
+#  Two more to return to yellow on black for the hint.
+_HINT_ATTRIBUTES: Final = 2
+
+#: Cells the typed request has to itself, once the colours and hint are paid for.
+BUFFER_CELLS: Final = COLUMNS - _BUFFER_ATTRIBUTES - _HINT_ATTRIBUTES - len(CANCEL_HINT)
+
+#: Cursor up, which wraps from row 0 to row 23. Measured, not assumed.
+_CURSOR_UP: Final = 0x0B
+
+
+def draw_command_line(canvas: Canvas, entry: str) -> None:
+    """Draw the command line across the footer row."""
+    frame = canvas.frame
+    frame.set_attribute(FOOTER_ROW, 0, Control.ALPHA_BLUE)
+    frame.set_attribute(FOOTER_ROW, 1, Control.NEW_BACKGROUND)
+    frame.set_attribute(FOOTER_ROW, 2, Control.ALPHA_WHITE)
+
+    #  The tail, not the head: what was typed most recently is what a reader is
+    #  checking. Real page numbers are far shorter than this anyway.
+    shown = entry[-BUFFER_CELLS:]
+    frame.write(FOOTER_ROW, _BUFFER_ATTRIBUTES, shown.ljust(BUFFER_CELLS))
+
+    hint_start = _BUFFER_ATTRIBUTES + BUFFER_CELLS
+    frame.set_attribute(FOOTER_ROW, hint_start, Control.BLACK_BACKGROUND)
+    frame.set_attribute(FOOTER_ROW, hint_start + 1, alpha_colour(Colour.YELLOW))
+    frame.write(FOOTER_ROW, hint_start + _HINT_ATTRIBUTES, CANCEL_HINT)
+
+
+def command_line_bytes(entry: str) -> bytes:
+    """The bytes that draw the command line, leaving the page beneath alone."""
+    canvas = Canvas(Frame())
+    draw_command_line(canvas, entry)
+    return (
+        bytes([ScreenControl.CURSOR_HOME, _CURSOR_UP])
+        + canvas.frame.row_bytes(FOOTER_ROW)
+    )
+
+
+def footer_bytes(frame: Frame) -> bytes:
+    """The bytes that put a page's own footer back, after a request is done."""
+    return bytes([ScreenControl.CURSOR_HOME, _CURSOR_UP]) + frame.row_bytes(FOOTER_ROW)

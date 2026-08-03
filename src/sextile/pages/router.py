@@ -407,7 +407,9 @@ def _notice(reference: PageRef, title: str, lines: list[str]) -> Page:
     """A page that simply says something, with no choices but the way back."""
     canvas = Canvas()
     number = f"{numbering.format_page_number(reference)}{numbering.frame_letter(0)}"
-    draw_chrome(canvas, title=title, page_number=number, prompt="0 for the main index")
+    #  Through the same renderer as every other page, so a notice says what
+    #  everything else says and degrades the same way.
+    draw_chrome(canvas, title=title, page_number=number, prompt=_prompt({}, selecting=False))
     for offset, line in enumerate(lines[:CONTENT_ROWS]):
         if line:
             canvas.row(CONTENT_FIRST_ROW + offset).text(_fitted(line, COLUMNS - 1), Colour.WHITE)

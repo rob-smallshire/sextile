@@ -85,9 +85,18 @@ between items, because that is shuffling sideways through a drawer of them.
 ```
 *nnn#     go to a page              1-9   select from the menu
 *0#       back, through history     0     the main index
-*00#      show this frame again     **    abandon a part-typed request
-*09#      fetch it afresh
+*00#      show this frame again     *     cancel a request being typed
+*09#      fetch it afresh           **    cancel and begin again
 ```
+
+Commstar does not echo a page request, so Sextile draws it: while one is being
+typed the footer becomes a command line, white on blue, with a reminder that `*`
+cancels. It is drawn over that row alone rather than by redrawing the frame, so
+it costs about fifty bytes a keystroke and the page beneath survives.
+
+`**` is then simply cancel followed by begin, which leaves an empty buffer ready
+for a new number — what Prestel's `**` did, for a reader who types it out of
+habit.
 
 **A frame names only the keys that do something on it**, in a footer that says
 so compactly:

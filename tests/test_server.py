@@ -62,11 +62,22 @@ async def connect(server: asyncio.Server) -> tuple[asyncio.StreamReader, asyncio
 
 
 async def read_frame(reader: asyncio.StreamReader) -> bytes:
-    """Read one frame's worth of bytes, however they are chunked."""
-    data = await asyncio.wait_for(reader.read(4096), timeout=5.0)
-    while data and not data.startswith(FRAME_PREAMBLE):  # pragma: no cover - defensive
-        data = await asyncio.wait_for(reader.read(4096), timeout=5.0)
-    return data
+    """Read until a whole frame arrives, and return it from its preamble on.
+
+    Anything before it is discarded rather than the read being abandoned: a
+    command-line update can precede a frame, and the two may well arrive in one
+    chunk, so a frame has to be looked for inside what was read rather than only
+    at the start of it.
+    """
+    buffer = b""
+    while True:
+        chunk = await asyncio.wait_for(reader.read(4096), timeout=5.0)
+        if not chunk:
+            return buffer
+        buffer += chunk
+        found = buffer.find(FRAME_PREAMBLE)
+        if found != -1:
+            return buffer[found:]
 
 
 def text_of(data: bytes) -> str:
@@ -127,16 +138,20 @@ class TestNavigating:
         writer.close()
         await writer.wait_closed()
 
-    async def test_a_part_typed_request_is_answered_with_silence(
+    async def test_a_part_typed_request_is_echoed_on_the_footer_row(
         self, server: asyncio.Server
     ) -> None:
+        #  Commstar does not echo a page request, so Sextile draws it -- over
+        #  the footer row alone, leaving the page beneath it intact.
         reader, writer = await connect(server)
         await read_frame(reader)
 
         writer.write(b"*84")
         await writer.drain()
-        with pytest.raises(TimeoutError):
-            await asyncio.wait_for(reader.read(1), timeout=0.3)
+        echoed = await asyncio.wait_for(reader.read(4096), timeout=5.0)
+
+        assert not echoed.startswith(FRAME_PREAMBLE)
+        assert "*84" in text_of(echoed)
 
         writer.close()
         await writer.wait_closed()

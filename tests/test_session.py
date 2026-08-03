@@ -242,14 +242,21 @@ class TestLoggingOff:
 
 
 class TestWhatIsSent:
-    def test_every_response_is_a_whole_frame(self, session: Session) -> None:
+    def test_a_page_is_sent_as_a_whole_frame(self, session: Session) -> None:
+        #  A command line is drawn over one row instead; see TestTheCommandLine.
         response = session.receive(b"*8#")
         assert response
         for message in response:
             assert message.startswith(bytes([0x0C, 0x1E]))
 
-    def test_nothing_is_sent_for_a_part_typed_request(self, session: Session) -> None:
-        assert session.receive(b"*84") == []
+    def test_a_part_typed_request_is_echoed_rather_than_ignored(
+        self, session: Session
+    ) -> None:
+        #  It used to be answered with silence. Commstar does not echo, so the
+        #  reader was typing blind; now the footer row shows what they have.
+        response = session.receive(b"*84")
+        assert len(response) == 1
+        assert "*84" in _text(response[0])
 
     def test_every_byte_survives_a_seven_bit_line(self, session: Session) -> None:
         for keyed in [b"*1#", b"*8#", b"*82489000#", b"*9#", b"#", b"*0#"]:
@@ -369,3 +376,79 @@ class TestTheConventionalKeyStillWorks:
         session.receive(b"*9#")
         assert session.receive(b"#") == []
         assert session.receive(b"S") == []
+
+
+class TestTheCommandLine:
+    """What a reader sees while typing a page request.
+
+    Commstar does not echo it, so unless Sextile draws it the reader is typing
+    blind. It replaces the footer, and goes away again when the request is done
+    or cancelled.
+    """
+
+    def test_a_star_puts_the_command_line_up(self, session: Session) -> None:
+        response = session.receive(b"*")
+        assert response
+        assert "cancels" in _text(response[-1])
+
+    def test_it_shows_what_has_been_typed(self, session: Session) -> None:
+        session.receive(b"*")
+        response = session.receive(b"824")
+        assert "*824" in _text(response[-1])
+
+    def test_it_follows_every_keystroke(self, session: Session) -> None:
+        session.receive(b"*8")
+        assert "*82" in _text(session.receive(b"2")[-1])
+        assert "*824" in _text(session.receive(b"4")[-1])
+
+    def test_it_does_not_clear_the_screen(self, session: Session) -> None:
+        #  The page beneath has to survive, or there was no point drawing a row.
+        for response in session.receive(b"*824"):
+            assert 0x0C not in response
+
+    def test_a_cancel_puts_the_footer_back(self, session: Session) -> None:
+        session.receive(b"*824")
+        response = session.receive(b"*")
+        assert response
+        assert "menu" in _text(response[-1])
+        assert "cancels" not in _text(response[-1])
+
+    def test_cancelling_and_beginning_again_shows_an_empty_buffer(
+        self, session: Session
+    ) -> None:
+        session.receive(b"*824")
+        response = session.receive(b"**")
+        assert "824" not in _text(response[-1])
+        assert "cancels" in _text(response[-1])
+
+    def test_completing_a_request_redraws_the_whole_page(self, session: Session) -> None:
+        session.receive(b"*8")
+        response = session.receive(b"#")
+        assert response[-1].startswith(bytes([0x0C, 0x1E]))
+        assert session.reference == PostsIndex()
+
+    def test_an_unknown_page_leaves_no_command_line_behind(self, session: Session) -> None:
+        session.receive(b"*222222")
+        response = session.receive(b"#")
+        assert "cancels" not in _text(response[-1])
+
+    def test_a_request_that_changes_nothing_still_restores_the_footer(
+        self, session: Session
+    ) -> None:
+        #  `*#` on a single-frame page moves nowhere, but the command line must
+        #  not be left on screen.
+        session.receive(b"*9#")
+        session.receive(b"*")
+        response = session.receive(b"#")
+        assert response
+        assert "menu" in _text(response[-1])
+
+    def test_an_ordinary_keypress_draws_no_command_line(self, session: Session) -> None:
+        session.receive(b"*8#")
+        for response in session.receive(b"1"):
+            assert "cancels" not in _text(response)
+
+    def test_every_byte_survives_a_seven_bit_line(self, session: Session) -> None:
+        for keyed in (b"*", b"8", b"2", b"*", b"#"):
+            for response in session.receive(keyed):
+                assert all(byte < 0x80 for byte in response)

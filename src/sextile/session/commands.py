@@ -8,7 +8,8 @@ else typed on its own is an immediate keypress:
     *0<term>           back
     *00<term>          show this frame again
     *09<term>          fetch it afresh
-    **                 abandon a part-typed request
+    *                  cancel it, if one is being typed
+    **                 cancel and begin again, as Prestel's `**` did
     <term>             the next frame
     <key>              select
 
@@ -143,14 +144,23 @@ class CommandParser:
         return None
 
     def _star(self) -> Command | None:
-        """Begin a request, or abandon one and begin again.
+        """Begin a request, or cancel the one being typed.
 
-        `**` clears what has been typed and leaves the reader still entering a
-        request, so `*824**1#` goes to page 1 rather than pressing 1.
+        One rule, which happens to give two useful things at once. A star while
+        typing cancels: the command line goes away and the footer comes back, so
+        a reader who changes their mind is never trapped in a buffer they no
+        longer want.
+
+        And `**` is then simply cancel followed by begin, which leaves an empty
+        buffer ready for a new number -- exactly what Prestel's `**` did. A
+        reader who types it out of habit gets what they expect, without the
+        parser knowing anything about the sequence.
         """
-        abandoned = bool(self._payload)
+        if self._payload is not None:
+            self._payload = None
+            return Clear()
         self._payload = ""
-        return Clear() if abandoned else None
+        return None
 
     def _discard(self, character: str) -> Command | None:
         if character == _STAR:

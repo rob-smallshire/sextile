@@ -32,8 +32,9 @@ Beeb for half an hour.
   codes. If Commstar passes them through in Prestel chat mode rather than
   consuming them locally, arrows could work alongside WASD, and would be more
   authentic than either. Measurable with the existing spike harness.
-- **Code listings run on**, because the feed strips their newlines. Sextile
-  renders what it is given rather than guessing where the breaks were.
+- **Code listings now keep their line breaks**, since the board fixed its feed,
+  but they are still not wrapped for forty columns. A listing indented to
+  column eight has little room left.
 - **A full frame is 960 cells, resent on every keypress.** At 1200 baud that is
   about eight seconds, which is authentic; at 9600 it is under a second.
   Differential update is possible but needs cursor positioning, which has not

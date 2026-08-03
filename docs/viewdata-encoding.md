@@ -61,8 +61,9 @@ serialiser needs:
 | 0x0D | Carriage return |
 | 0x0A | Line feed |
 
-Cursor left/right/up/down (0x08–0x0B) are conventional viewdata but have not
-been measured here, so nothing depends on them.
+Cursor left/right/up/down (0x08–0x0B) have been measured only in the other
+direction, as keys the BBC sends; see "The cursor keys reach us" below. Nothing
+sends them *to* a terminal, since a frame is drawn as a whole.
 
 ## The keyboard transposition
 

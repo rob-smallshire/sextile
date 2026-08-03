@@ -8,6 +8,7 @@ else typed on its own is an immediate keypress:
     *0<term>           back
     *00<term>          show this frame again
     *09<term>          fetch it afresh
+    DELETE             rub out the last character typed
     *                  cancel it, if one is being typed
     **                 cancel and begin again, as Prestel's `**` did
     <term>             the next frame
@@ -41,6 +42,9 @@ ENTRY_LIMIT: Final = 32
 
 _STAR: Final = "*"
 _CARRIAGE_RETURN: Final = "\r"
+#: What the BBC's DELETE key transmits, measured against Commstar. Distinct
+#: from RETURN, which sends 0x5F and terminates a request.
+_DELETE: Final = "\x7f"
 _LINE_FEED: Final = "\n"
 _TERMINATORS: Final = frozenset({"\x5f", "#", _CARRIAGE_RETURN})
 
@@ -133,6 +137,12 @@ class CommandParser:
         if character in _TERMINATORS:
             return self._terminate()
         if self._payload is not None:
+            if character == _DELETE:
+                #  Rub out the last character typed. Deleting past the start
+                #  does nothing: `*` is how a reader cancels, and backing off
+                #  the end into a cancel would be too easy to do by accident.
+                self._payload = self._payload[:-1]
+                return None
             return self._accumulate(character)
         if character.isalnum():
             return Select(character.upper())

@@ -142,7 +142,7 @@ class TestArrivingInPieces:
 
 
 class TestNoise:
-    @pytest.mark.parametrize("noise", [b"\x00", b"\x1b", b"\x7f", b" "])
+    @pytest.mark.parametrize("noise", [b"\x00", b"\x1b", b" "])
     def test_bytes_that_are_not_keys_are_ignored(self, noise: bytes) -> None:
         #  A terminal sends line feeds and stray control bytes; none of them
         #  mean anything here.
@@ -261,3 +261,40 @@ class TestCarriageReturnAndLineFeed:
 
     def test_two_line_feeds_after_a_return_move_once(self) -> None:
         assert parse(b"*8\r\n\n") == [GoTo("8"), Select("S")]
+
+
+class TestDelete:
+    """The BBC's DELETE key sends 0x7F, measured against Commstar.
+
+    Distinct from RETURN, which sends 0x5F and terminates a request -- so a
+    reader can rub out a mistyped digit without sending what they have.
+    """
+
+    def test_it_rubs_out_the_last_character(self) -> None:
+        parser = CommandParser()
+        parser.feed(b"*824\x7f")
+        assert parser.entry == "*82"
+
+    def test_several_deletes_rub_out_several(self) -> None:
+        parser = CommandParser()
+        parser.feed(b"*824\x7f\x7f")
+        assert parser.entry == "*8"
+
+    def test_deleting_past_the_start_does_not_cancel(self) -> None:
+        #  `*` is how a reader cancels; backing off the end into one would be
+        #  too easy to do by accident.
+        parser = CommandParser()
+        parser.feed(b"*8\x7f\x7f\x7f\x7f")
+        assert parser.entry == "*"
+
+    def test_what_is_left_is_still_a_usable_request(self) -> None:
+        assert parse(b"*8249\x7f#") == [GoTo("824")]
+
+    def test_delete_outside_a_request_does_nothing(self) -> None:
+        assert parse(b"\x7f") == []
+
+    def test_delete_is_not_the_terminator(self) -> None:
+        #  0x5F ends a request; 0x7F edits one. Sending the same byte for both
+        #  would make rubbing out impossible.
+        assert parse(b"*8\x7f") == []
+        assert parse(b"*8\x5f") == [GoTo("8")]

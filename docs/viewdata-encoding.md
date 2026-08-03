@@ -79,6 +79,15 @@ tree and confirmed by its own test suite:
 The viewdata `#` command key therefore arrives as **0x5F**, not 0x23. The
 Prestel command parser must accept it.
 
+The editing keys, measured by `docs/spikes/spike_editing_keys.py`:
+
+| Keypress | Transmits |
+|---|---|
+| `DELETE` | 0x7F, ASCII delete — distinct from RETURN, so a digit can be rubbed out without sending the request |
+| `TAB` | 0x09, the same byte as cursor right |
+| `CTRL-H` | 0x19, not the ASCII backspace one might expect |
+| `COPY` | nothing; consumed locally |
+
 ## Attributes reset at the start of every row
 
 Not measured but read directly from the emulation, which is a better oracle:

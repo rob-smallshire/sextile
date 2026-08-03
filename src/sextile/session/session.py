@@ -42,7 +42,11 @@ from sextile.session.commands import (
 from sextile.store.repository import Repository
 from sextile.viewdata.canvas import Canvas
 from sextile.viewdata.chrome import CONTENT_FIRST_ROW, draw_chrome
-from sextile.viewdata.command_line import command_line_bytes, footer_bytes
+from sextile.viewdata.command_line import (
+    appended_character_bytes,
+    command_line_bytes,
+    footer_bytes,
+)
 from sextile.viewdata.controls import Colour
 from sextile.viewdata.frame import Frame
 
@@ -97,9 +101,10 @@ class Session:
         self._parser = CommandParser()
         self._history: list[_Place] = []
         self._finished = False
-        #  Whether the footer row is currently showing a request being typed
-        #  rather than the page's own prompt.
-        self._entering = False
+        #  What the footer row is currently showing of a request being typed,
+        #  or "" when it is showing the page's own prompt. Kept so that a
+        #  keystroke which merely extends it can be sent as one byte.
+        self._displayed = ""
         self._reference: PageRef = start or MainIndex()
         self._sequence: _Sequence | None = None
         self._page = resolve(self._reference, repository)
@@ -148,15 +153,20 @@ class Session:
         A request being typed replaces the footer; finishing or cancelling one
         puts it back. A whole frame going out has the page's own footer in it
         already, so nothing more is needed then.
+
+        A keystroke that merely extends what is showing sends that one
+        character and lets the cursor advance itself. Repainting the row for
+        every digit is visible as a flicker once the cursor is on.
         """
         entry = self._parser.entry
         if entry:
-            responses.append(command_line_bytes(entry))
-        elif self._entering and not responses:
+            appended = appended_character_bytes(entry, self._displayed)
+            responses.append(appended or command_line_bytes(entry))
+        elif self._displayed and not responses:
             frame = self.current_frame()
             if frame is not None:
                 responses.append(footer_bytes(frame))
-        self._entering = bool(entry)
+        self._displayed = entry
 
     def _act(self, command: Command) -> bytes | None:
         match command:

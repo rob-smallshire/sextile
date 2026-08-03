@@ -398,9 +398,11 @@ class TestTheCommandLine:
         assert "*824" in _text(response[-1])
 
     def test_it_follows_every_keystroke(self, session: Session) -> None:
+        #  Each of these sends the character alone; see
+        #  TestTheCommandLineIsNotRepainted for why.
         session.receive(b"*8")
-        assert "*82" in _text(session.receive(b"2")[-1])
-        assert "*824" in _text(session.receive(b"4")[-1])
+        assert "2" in _text(session.receive(b"2")[-1])
+        assert "4" in _text(session.receive(b"4")[-1])
 
     def test_it_does_not_clear_the_screen(self, session: Session) -> None:
         #  The page beneath has to survive, or there was no point drawing a row.
@@ -453,3 +455,47 @@ class TestTheCommandLine:
         for keyed in (b"*", b"8", b"2", b"*", b"#"):
             for response in session.receive(keyed):
                 assert all(byte < 0x80 for byte in response)
+
+
+class TestTheCommandLineIsNotRepainted:
+    """A keystroke that only adds a character sends that character.
+
+    The cursor is already sitting where it goes, so it advances itself.
+    Repainting forty cells and stepping the cursor back across them is visible
+    as a flicker once the cursor is on -- which is the whole reason it is on.
+    """
+
+    def test_the_first_star_draws_the_whole_line(self, session: Session) -> None:
+        assert len(session.receive(b"*")[-1]) > 20
+
+    def test_a_further_digit_costs_one_byte(self, session: Session) -> None:
+        session.receive(b"*8")
+        assert session.receive(b"2") == [b"2"]
+
+    def test_digit_after_digit_costs_one_byte_each(self, session: Session) -> None:
+        session.receive(b"*")
+        assert session.receive(b"8") == [b"8"]
+        assert session.receive(b"2") == [b"2"]
+        assert session.receive(b"4") == [b"4"]
+
+    def test_a_delete_redraws_the_row(self, session: Session) -> None:
+        #  The line has grown shorter, so the old text has to be cleared away.
+        session.receive(b"*824")
+        response = session.receive(b"\x7f")
+        assert len(response[-1]) > 20
+        assert "*82" in _text(response[-1])
+
+    def test_the_line_is_correct_again_after_a_delete(self, session: Session) -> None:
+        session.receive(b"*824")
+        session.receive(b"\x7f")
+        assert session.receive(b"9") == [b"9"]
+
+    def test_a_scrolling_buffer_redraws(self, session: Session) -> None:
+        #  Past the buffer's width everything shifts, so one byte will not do.
+        session.receive(b"*" + b"9" * 30)
+        assert len(session.receive(b"9")[-1]) > 20
+
+    def test_a_letter_is_encoded_for_the_terminal(self, session: Session) -> None:
+        #  Not merely echoed: a page request may name a keyword.
+        session.receive(b"*MAIN")
+        assert session.receive(b"X") == [b"X"]

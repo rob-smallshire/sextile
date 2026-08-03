@@ -21,7 +21,7 @@ from typing import Final
 from sextile.viewdata.canvas import Canvas
 from sextile.viewdata.chrome import FOOTER_ROW
 from sextile.viewdata.controls import Colour, Control, alpha_colour
-from sextile.viewdata.encoding import ScreenControl
+from sextile.viewdata.encoding import ScreenControl, encode_text
 from sextile.viewdata.frame import COLUMNS, Frame
 
 CANCEL_HINT: Final = "* cancels"
@@ -53,6 +53,26 @@ def draw_command_line(canvas: Canvas, entry: str) -> None:
     frame.set_attribute(FOOTER_ROW, hint_start, Control.BLACK_BACKGROUND)
     frame.set_attribute(FOOTER_ROW, hint_start + 1, alpha_colour(Colour.YELLOW))
     frame.write(FOOTER_ROW, hint_start + _HINT_ATTRIBUTES, CANCEL_HINT)
+
+
+def appended_character_bytes(entry: str, shown: str) -> bytes | None:
+    """The one byte that extends the command line, if one byte will do.
+
+    The cursor is left sitting exactly where the next character goes, so a
+    keystroke that only adds to what is there needs nothing but that character:
+    the cursor advances itself. Redrawing the row instead would repaint forty
+    cells and step the cursor back across them, which is visible as a flicker
+    when the cursor is on.
+
+    Returns None when a redraw is genuinely needed -- the line appearing, a
+    character rubbed out, or the buffer having to scroll.
+    """
+    if not shown or not entry.startswith(shown) or len(entry) != len(shown) + 1:
+        return None
+    if len(entry) > BUFFER_CELLS:
+        #  The buffer would have to scroll, which moves everything.
+        return None
+    return encode_text(entry[-1])
 
 
 def command_line_bytes(entry: str) -> bytes:

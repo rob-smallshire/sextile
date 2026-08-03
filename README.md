@@ -86,7 +86,8 @@ between items, because that is shuffling sideways through a drawer of them.
 *nnn#     go to a page              1-9   select from the menu
 *0#       back, through history     0     the main index
 *00#      show this frame again     *     cancel a request being typed
-*09#      fetch it afresh           **    cancel and begin again
+*09#      fetch it afresh           DEL   rub out the last character
+**        cancel and begin again
 ```
 
 Commstar does not echo a page request, so Sextile draws it: while one is being

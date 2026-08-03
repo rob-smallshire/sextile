@@ -32,17 +32,25 @@ _ESCAPE_OFFSET: Final = 0x40
 
 
 class ScreenControl(IntEnum):
-    """Bare C0 codes controlling the screen, as measured against Commstar.
+    """Bare C0 codes controlling the screen, measured against Commstar.
 
-    Only codes that have actually been observed working are here. Cursor
-    left/right/up/down are conventional viewdata, but nothing may depend on
-    them until they have been measured too.
+    All of these are known to be consumed as controls rather than displayed --
+    `0x11 A B 0x14 C D` renders as `ABCD` with no gap, so neither takes a cell.
+
+    What CURSOR_ON and CURSOR_OFF *do* is viewdata convention rather than
+    measurement: the cursor flashes, so a single reading of the screen tells you
+    only which half of the blink you caught. That the cursor shows by default is
+    certain; which code suppresses it is being confirmed on real hardware.
     """
 
     LINE_FEED = 0x0A
     CARRIAGE_RETURN = 0x0D
     CLEAR_SCREEN = 0x0C
     CURSOR_HOME = 0x1E
+    CURSOR_UP = 0x0B
+    CURSOR_RIGHT = 0x09
+    CURSOR_ON = 0x11
+    CURSOR_OFF = 0x14
 
 
 def encode_control(control: Control) -> bytes:

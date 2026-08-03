@@ -203,6 +203,24 @@ other partial redraw, costs about `2 + len(text)` bytes: a few milliseconds at
 This is also what differential update would need, should the whole-frame repaint
 ever become the thing worth optimising.
 
+## The cursor
+
+Commstar shows a cursor by default, which is a distraction on a page nobody is
+typing into. Every frame therefore begins by hiding it, and the command line
+turns it back on where the next character will land — the one place in the
+service a cursor tells a reader anything.
+
+By viewdata convention `0x11` (DC1) shows the cursor and `0x14` (DC4) hides it.
+**Which of the two does which is inferred, not measured.** What *is* measured is
+that both are consumed as controls rather than displayed: `0x11 A B 0x14 C D`
+renders as `ABCD` with no gap, so neither takes a cell and neither is mistaken
+for the graphics colour at the same value.
+
+The cursor flashes, which defeated a first attempt to measure it — two readings
+of the same state disagreed, having caught opposite halves of the blink. A
+measurement would have to sample across it. Confirmation is coming from the real
+screen instead.
+
 ## A testing gotcha
 
 Beebium's `teletext_screen().text` maps cell codes to ASCII, not to the glyph the

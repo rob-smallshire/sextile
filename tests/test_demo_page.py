@@ -7,7 +7,7 @@ mosaic graphics, wrapped body text, a page number -- so that a glance at
 
 from sextile.pages.demo import demo_frame
 from sextile.viewdata.ansi import render_ansi
-from sextile.viewdata.frame import COLUMNS, ROWS
+from sextile.viewdata.frame import COLUMNS, FRAME_PREAMBLE, ROWS
 
 
 def test_the_demo_frame_fills_the_geometry() -> None:
@@ -42,7 +42,7 @@ def test_the_untrimmed_frame_serialises_to_the_expected_length() -> None:
     attributes = sum(
         1 for row in range(ROWS) for column in range(COLUMNS) if frame.is_attribute(row, column)
     )
-    assert len(frame.to_bytes(trim=False)) == 2 + ROWS * COLUMNS + attributes
+    assert len(frame.to_bytes(trim=False)) == len(FRAME_PREAMBLE) + ROWS * COLUMNS + attributes
 
 
 def test_trimming_saves_most_of_the_frame() -> None:

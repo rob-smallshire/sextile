@@ -25,6 +25,7 @@ from sextile.pages.numbering import (
 )
 from sextile.session.session import Session
 from sextile.store.repository import Repository
+from sextile.viewdata.frame import FRAME_PREAMBLE
 
 BST = timezone(timedelta(hours=1))
 
@@ -247,7 +248,7 @@ class TestWhatIsSent:
         response = session.receive(b"*8#")
         assert response
         for message in response:
-            assert message.startswith(bytes([0x0C, 0x1E]))
+            assert message.startswith(FRAME_PREAMBLE)
 
     def test_a_part_typed_request_is_echoed_rather_than_ignored(
         self, session: Session
@@ -424,7 +425,7 @@ class TestTheCommandLine:
     def test_completing_a_request_redraws_the_whole_page(self, session: Session) -> None:
         session.receive(b"*8")
         response = session.receive(b"#")
-        assert response[-1].startswith(bytes([0x0C, 0x1E]))
+        assert response[-1].startswith(FRAME_PREAMBLE)
         assert session.reference == PostsIndex()
 
     def test_an_unknown_page_leaves_no_command_line_behind(self, session: Session) -> None:

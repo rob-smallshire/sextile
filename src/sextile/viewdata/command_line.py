@@ -37,10 +37,6 @@ _HINT_ATTRIBUTES: Final = 2
 #: Cells the typed request has to itself, once the colours and hint are paid for.
 BUFFER_CELLS: Final = COLUMNS - _BUFFER_ATTRIBUTES - _HINT_ATTRIBUTES - len(CANCEL_HINT)
 
-#: Cursor up, which wraps from row 0 to row 23. Measured, not assumed.
-_CURSOR_UP: Final = 0x0B
-
-
 def draw_command_line(canvas: Canvas, entry: str) -> None:
     """Draw the command line across the footer row."""
     frame = canvas.frame
@@ -60,15 +56,34 @@ def draw_command_line(canvas: Canvas, entry: str) -> None:
 
 
 def command_line_bytes(entry: str) -> bytes:
-    """The bytes that draw the command line, leaving the page beneath alone."""
+    """The bytes that draw the command line, leaving the page beneath alone.
+
+    The cursor is put where the next character will land and turned on, which is
+    the one place in the service a cursor tells a reader anything. Getting there
+    costs a few cursor-rights: they skip without erasing, so stepping across the
+    row already drawn disturbs nothing.
+    """
     canvas = Canvas(Frame())
     draw_command_line(canvas, entry)
+    shown = entry[-BUFFER_CELLS:]
     return (
-        bytes([ScreenControl.CURSOR_HOME, _CURSOR_UP])
+        _to_footer_row()
         + canvas.frame.row_bytes(FOOTER_ROW)
+        + _to_footer_row()
+        + bytes([ScreenControl.CURSOR_RIGHT]) * (_BUFFER_ATTRIBUTES + len(shown))
+        + bytes([ScreenControl.CURSOR_ON])
     )
 
 
 def footer_bytes(frame: Frame) -> bytes:
     """The bytes that put a page's own footer back, after a request is done."""
-    return bytes([ScreenControl.CURSOR_HOME, _CURSOR_UP]) + frame.row_bytes(FOOTER_ROW)
+    return (
+        bytes([ScreenControl.CURSOR_OFF])
+        + _to_footer_row()
+        + frame.row_bytes(FOOTER_ROW)
+    )
+
+
+def _to_footer_row() -> bytes:
+    """Home, then up -- which wraps to row 23. Measured, not assumed."""
+    return bytes([ScreenControl.CURSOR_HOME, ScreenControl.CURSOR_UP])

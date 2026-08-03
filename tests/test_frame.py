@@ -10,7 +10,7 @@ import pytest
 
 from sextile.viewdata.controls import Colour, Control, alpha_colour
 from sextile.viewdata.encoding import ScreenControl
-from sextile.viewdata.frame import COLUMNS, ROWS, Frame
+from sextile.viewdata.frame import COLUMNS, FRAME_PREAMBLE, ROWS, Frame
 
 SPACE = 0x20
 
@@ -87,31 +87,31 @@ class TestAttributes:
 
 
 class TestSerialisation:
-    def test_a_frame_begins_by_clearing_and_homing(self) -> None:
-        serialised = Frame().to_bytes()
-        assert serialised[:2] == bytes([ScreenControl.CLEAR_SCREEN, ScreenControl.CURSOR_HOME])
+    def test_a_frame_begins_by_hiding_the_cursor_clearing_and_homing(self) -> None:
+        assert Frame().to_bytes().startswith(FRAME_PREAMBLE)
+        assert bytes([0x14, 0x0C, 0x1E]) == FRAME_PREAMBLE
 
     def test_the_untrimmed_form_is_the_preamble_and_960_cells(self) -> None:
         serialised = Frame().to_bytes(trim=False)
-        assert serialised == bytes([0x0C, 0x1E]) + b" " * (ROWS * COLUMNS)
+        assert serialised == FRAME_PREAMBLE + b" " * (ROWS * COLUMNS)
 
     def test_the_untrimmed_form_emits_no_line_terminators(self) -> None:
         #  Column 40 wraps of its own accord, so walking the cursor by writing
         #  every cell needs no CR or LF at all. See TestTrimming for the form
         #  actually sent.
-        serialised = Frame().to_bytes(trim=False)[2:]
+        serialised = Frame().to_bytes(trim=False)[len(FRAME_PREAMBLE) :]
         assert bytes([ScreenControl.CARRIAGE_RETURN]) not in serialised
         assert bytes([ScreenControl.LINE_FEED]) not in serialised
 
     def test_text_appears_in_the_stream(self) -> None:
         frame = Frame()
         frame.write(0, 0, "STARDOT")
-        assert frame.to_bytes()[2:9] == b"STARDOT"
+        assert frame.to_bytes()[len(FRAME_PREAMBLE) :][:7] == b"STARDOT"
 
     def test_an_attribute_is_escaped(self) -> None:
         frame = Frame()
         frame.set_attribute(0, 0, Control.ALPHA_RED)
-        assert frame.to_bytes()[2:4] == b"\x1bA"
+        assert frame.to_bytes()[len(FRAME_PREAMBLE) :][:2] == b"\x1bA"
 
     def test_escaping_lengthens_the_stream_without_moving_the_cursor(self) -> None:
         #  The escape costs a second byte on the wire but still one cell on
@@ -174,31 +174,31 @@ class TestTrimming:
 
     def test_a_blank_frame_is_nothing_but_the_preamble(self) -> None:
         #  The screen has just been cleared; there is nothing left to say.
-        assert Frame().to_bytes() == bytes([ScreenControl.CLEAR_SCREEN, ScreenControl.CURSOR_HOME])
+        assert Frame().to_bytes() == FRAME_PREAMBLE
 
     def test_a_row_stops_at_its_last_written_cell(self) -> None:
         frame = Frame()
         frame.write(0, 0, "HI")
-        assert frame.to_bytes() == bytes([0x0C, 0x1E]) + b"HI"
+        assert frame.to_bytes() == FRAME_PREAMBLE + b"HI"
 
     def test_a_short_row_is_followed_by_a_terminator(self) -> None:
         frame = Frame()
         frame.write(0, 0, "HI")
         frame.write(1, 0, "THERE")
-        assert frame.to_bytes() == bytes([0x0C, 0x1E]) + b"HI\r\n" + b"THERE"
+        assert frame.to_bytes() == FRAME_PREAMBLE + b"HI\r\n" + b"THERE"
 
     def test_a_full_row_needs_no_terminator(self) -> None:
         #  Column 40 wraps by itself; a terminator would skip a row.
         frame = Frame()
         frame.write(0, 0, "X" * COLUMNS)
         frame.write(1, 0, "Y")
-        assert frame.to_bytes() == bytes([0x0C, 0x1E]) + b"X" * COLUMNS + b"Y"
+        assert frame.to_bytes() == FRAME_PREAMBLE + b"X" * COLUMNS + b"Y"
 
     def test_a_blank_row_between_two_written_ones_costs_two_bytes(self) -> None:
         frame = Frame()
         frame.write(0, 0, "A")
         frame.write(2, 0, "C")
-        assert frame.to_bytes() == bytes([0x0C, 0x1E]) + b"A\r\n" + b"\r\n" + b"C"
+        assert frame.to_bytes() == FRAME_PREAMBLE + b"A\r\n" + b"\r\n" + b"C"
 
     def test_nothing_is_sent_after_the_last_written_row(self) -> None:
         frame = Frame()
@@ -209,11 +209,11 @@ class TestTrimming:
         #  An attribute is not a blank, even where nothing follows it.
         frame = Frame()
         frame.set_attribute(0, 0, Control.ALPHA_RED)
-        assert frame.to_bytes() == bytes([0x0C, 0x1E]) + b"\x1bA"
+        assert frame.to_bytes() == FRAME_PREAMBLE + b"\x1bA"
 
     def test_the_untrimmed_form_is_still_available(self) -> None:
         #  So that a spike can compare the two on real hardware.
-        assert len(Frame().to_bytes(trim=False)) == 2 + ROWS * COLUMNS
+        assert len(Frame().to_bytes(trim=False)) == len(FRAME_PREAMBLE) + ROWS * COLUMNS
 
     def test_trimming_never_lengthens_a_frame(self) -> None:
         frame = Frame()

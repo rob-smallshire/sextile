@@ -88,7 +88,12 @@ class TestTheBytesSent:
         #  Home, then cursor up, which wraps to the bottom. Measured; see
         #  docs/viewdata-encoding.md.
         sent = command_line_bytes("*1")
-        assert sent[:2] == bytes([ScreenControl.CURSOR_HOME, 0x0B])
+        assert sent[:2] == bytes([ScreenControl.CURSOR_HOME, ScreenControl.CURSOR_UP])
+
+    def test_it_leaves_the_cursor_on(self) -> None:
+        #  The one place in the service a cursor tells a reader anything: it
+        #  marks where the next character will land.
+        assert command_line_bytes("*1").endswith(bytes([ScreenControl.CURSOR_ON]))
 
     def test_it_does_not_clear_the_screen(self) -> None:
         #  The page beneath must survive: that is the whole point.
@@ -101,4 +106,4 @@ class TestTheBytesSent:
     def test_it_is_small_enough_to_send_on_every_keystroke(self, entry: str) -> None:
         #  About fifty bytes: a few milliseconds at 9600 baud, and under half a
         #  second even at 1200.
-        assert len(command_line_bytes(entry)) < 60
+        assert len(command_line_bytes(entry)) < 100

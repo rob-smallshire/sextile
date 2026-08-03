@@ -26,6 +26,13 @@ COLUMNS: Final = 40
 
 _BLANK: Final = 0x20
 
+#: What every frame begins with: hide the cursor so it does not trail across the
+#: screen as the frame paints, clear, and home. The command line turns the
+#: cursor back on, that being the one place it tells a reader anything.
+FRAME_PREAMBLE: Final = bytes(
+    [ScreenControl.CURSOR_OFF, ScreenControl.CLEAR_SCREEN, ScreenControl.CURSOR_HOME]
+)
+
 #  In the readable dump, an attribute shows as the letter it travels as on the
 #  wire, which keeps a golden frame directly comparable with a byte trace.
 _NOT_AN_ATTRIBUTE: Final = "."
@@ -84,7 +91,7 @@ class Frame:
         ``trim=False`` gives the older form, every cell in turn, so the two can
         be compared on real hardware.
         """
-        stream = bytearray([ScreenControl.CLEAR_SCREEN, ScreenControl.CURSOR_HOME])
+        stream = bytearray(FRAME_PREAMBLE)
         last_row = self._last_written_row() if trim else ROWS - 1
         for row in range(last_row + 1):
             used = self._used_columns(row) if trim else COLUMNS

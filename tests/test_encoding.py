@@ -71,10 +71,24 @@ class TestScreenControl:
     def test_measured_values(self, control: ScreenControl, value: int) -> None:
         assert control == value
 
-    def test_only_measured_codes_are_offered(self) -> None:
-        #  Cursor left/right/up/down are conventional viewdata but were never
-        #  measured, so nothing is allowed to depend on them yet.
-        assert len(ScreenControl) == 4
+    @pytest.mark.parametrize(
+        ("control", "value"),
+        [
+            (ScreenControl.CURSOR_UP, 0x0B),
+            (ScreenControl.CURSOR_RIGHT, 0x09),
+            (ScreenControl.CURSOR_ON, 0x11),
+            (ScreenControl.CURSOR_OFF, 0x14),
+        ],
+    )
+    def test_the_cursor_codes(self, control: ScreenControl, value: int) -> None:
+        assert control == value
+
+    def test_no_screen_control_is_ever_escaped(self) -> None:
+        #  Escaping one would turn it into an attribute: 0x11 escaped is
+        #  graphics red, and 0x14 graphics blue. The two namespaces are what
+        #  keep those apart.
+        for control in ScreenControl:
+            assert encode_control(Control(control))[1] != control
 
     def test_clear_screen_collides_with_normal_height_but_differs_on_the_wire(self) -> None:
         #  Both are 0x0C; only the escape tells them apart. This is the mistake

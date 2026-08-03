@@ -20,7 +20,7 @@ from sextile.content.blocks import (
     PostContent,
     Quote,
 )
-from sextile.viewdata.frame import COLUMNS, Frame
+from sextile.viewdata.frame import COLUMNS, FRAME_PREAMBLE, Frame
 from sextile.viewdata.layout import BODY_ROWS, lay_out
 
 
@@ -76,7 +76,7 @@ class TestContinuation:
         #  always the full 24 by 40.
         content = PostContent(blocks=tuple(Paragraph((f"line {n}",)) for n in range(40)))
         for frame in lay_out(content):
-            assert len(frame.to_bytes(trim=False)) == 2 + 24 * COLUMNS
+            assert len(frame.to_bytes(trim=False)) == len(FRAME_PREAMBLE) + 24 * COLUMNS
 
     def test_a_post_needing_more_than_twenty_six_frames_is_truncated_visibly(self) -> None:
         #  A page has frames a-z and no more. Running out must be said, not

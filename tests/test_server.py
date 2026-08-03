@@ -20,8 +20,7 @@ from sextile.store.repository import Repository
 
 BST = timezone(timedelta(hours=1))
 
-#  Frames begin by clearing the screen and homing the cursor.
-FRAME_PREAMBLE = bytes([0x0C, 0x1E])
+from sextile.viewdata.frame import FRAME_PREAMBLE  # noqa: E402
 
 
 def make_post(post_id: int, minute: int = 0) -> Post:

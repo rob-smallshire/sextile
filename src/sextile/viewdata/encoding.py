@@ -47,6 +47,7 @@ class ScreenControl(IntEnum):
     CLEAR_SCREEN = 0x0C
     CURSOR_HOME = 0x1E
     CURSOR_UP = 0x0B
+    CURSOR_LEFT = 0x08
     CURSOR_RIGHT = 0x09
     CURSOR_ON = 0x11
     CURSOR_OFF = 0x14

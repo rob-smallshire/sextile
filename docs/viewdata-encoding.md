@@ -209,6 +209,12 @@ Overwriting row 23 alone left rows 0 to 22 untouched. So a command line, or any
 other partial redraw, costs about `2 + len(text)` bytes: a few milliseconds at
 9600 baud, and under a third of a second at 1200.
 
+Smaller edits are cheaper still, and are what the command line actually uses.
+Because the cursor is left where the next character goes, typing one costs that
+character alone, and rubbing one out costs three bytes — cursor left, a space,
+cursor left. The space keeps the row's background, the attributes that set it
+sitting earlier in the row and going untouched.
+
 This is also what differential update would need, should the whole-frame repaint
 ever become the thing worth optimising.
 

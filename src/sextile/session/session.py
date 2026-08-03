@@ -43,9 +43,9 @@ from sextile.store.repository import Repository
 from sextile.viewdata.canvas import Canvas
 from sextile.viewdata.chrome import CONTENT_FIRST_ROW, draw_chrome
 from sextile.viewdata.command_line import (
-    appended_character_bytes,
     command_line_bytes,
     footer_bytes,
+    incremental_bytes,
 )
 from sextile.viewdata.controls import Colour
 from sextile.viewdata.frame import Frame
@@ -154,14 +154,14 @@ class Session:
         puts it back. A whole frame going out has the page's own footer in it
         already, so nothing more is needed then.
 
-        A keystroke that merely extends what is showing sends that one
-        character and lets the cursor advance itself. Repainting the row for
-        every digit is visible as a flicker once the cursor is on.
+        A keystroke that only adds or removes a character changes the row by
+        a byte or three rather than repainting it, which is visible as a
+        flicker once the cursor is on.
         """
         entry = self._parser.entry
         if entry:
-            appended = appended_character_bytes(entry, self._displayed)
-            responses.append(appended or command_line_bytes(entry))
+            change = incremental_bytes(entry, self._displayed)
+            responses.append(change or command_line_bytes(entry))
         elif self._displayed and not responses:
             frame = self.current_frame()
             if frame is not None:

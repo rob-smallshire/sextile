@@ -478,12 +478,10 @@ class TestTheCommandLineIsNotRepainted:
         assert session.receive(b"2") == [b"2"]
         assert session.receive(b"4") == [b"4"]
 
-    def test_a_delete_redraws_the_row(self, session: Session) -> None:
-        #  The line has grown shorter, so the old text has to be cleared away.
+    def test_a_delete_costs_three_bytes(self, session: Session) -> None:
+        #  Cursor left, a space over the character, cursor left again.
         session.receive(b"*824")
-        response = session.receive(b"\x7f")
-        assert len(response[-1]) > 20
-        assert "*82" in _text(response[-1])
+        assert session.receive(b"\x7f") == [bytes([0x08, 0x20, 0x08])]
 
     def test_the_line_is_correct_again_after_a_delete(self, session: Session) -> None:
         session.receive(b"*824")
@@ -523,3 +521,30 @@ class TestDeletingTheStar:
         session.receive(b"\x7f")
         session.receive(b"1")
         assert session.reference == PostPage(489024)
+
+
+class TestRubbingOutIsAlsoIncremental:
+    def test_a_delete_moves_back_blanks_and_moves_back(self, session: Session) -> None:
+        session.receive(b"*82")
+        assert session.receive(b"\x7f") == [bytes([0x08, 0x20, 0x08])]
+
+    def test_deletes_in_a_row_each_cost_three(self, session: Session) -> None:
+        session.receive(b"*824")
+        assert session.receive(b"\x7f") == [bytes([0x08, 0x20, 0x08])]
+        assert session.receive(b"\x7f") == [bytes([0x08, 0x20, 0x08])]
+
+    def test_typing_after_a_delete_costs_one(self, session: Session) -> None:
+        session.receive(b"*824")
+        session.receive(b"\x7f")
+        assert session.receive(b"9") == [b"9"]
+
+    def test_deleting_the_star_restores_the_footer_instead(self, session: Session) -> None:
+        session.receive(b"*")
+        response = session.receive(b"\x7f")
+        assert "menu" in _text(response[-1])
+
+    def test_a_scrolled_buffer_still_redraws(self, session: Session) -> None:
+        #  Past the buffer's width the whole row shifts, so a small edit will
+        #  not do.
+        session.receive(b"*" + b"9" * 30)
+        assert len(session.receive(b"\x7f")[-1]) > 20

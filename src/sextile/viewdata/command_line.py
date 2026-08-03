@@ -34,6 +34,8 @@ _BUFFER_ATTRIBUTES: Final = 3
 #  Two more to return to yellow on black for the hint.
 _HINT_ATTRIBUTES: Final = 2
 
+_SPACE: Final = 0x20
+
 #: Cells the typed request has to itself, once the colours and hint are paid for.
 BUFFER_CELLS: Final = COLUMNS - _BUFFER_ATTRIBUTES - _HINT_ATTRIBUTES - len(CANCEL_HINT)
 
@@ -55,24 +57,29 @@ def draw_command_line(canvas: Canvas, entry: str) -> None:
     frame.write(FOOTER_ROW, hint_start + _HINT_ATTRIBUTES, CANCEL_HINT)
 
 
-def appended_character_bytes(entry: str, shown: str) -> bytes | None:
-    """The one byte that extends the command line, if one byte will do.
+def incremental_bytes(entry: str, displayed: str) -> bytes | None:
+    """The smallest change turning what is showing into what is wanted.
 
-    The cursor is left sitting exactly where the next character goes, so a
-    keystroke that only adds to what is there needs nothing but that character:
-    the cursor advances itself. Redrawing the row instead would repaint forty
-    cells and step the cursor back across them, which is visible as a flicker
-    when the cursor is on.
+    Two cases are worth the trouble, both because the cursor is already in the
+    right place. A character typed needs only that character: the cursor
+    advances itself. A character rubbed out needs cursor left, a space, and
+    cursor left again -- the space inheriting the row's blue background, since
+    the attributes that set it sit earlier in the row and are not touched.
 
-    Returns None when a redraw is genuinely needed -- the line appearing, a
-    character rubbed out, or the buffer having to scroll.
+    Returns None when the row genuinely has to be redrawn: the line appearing,
+    or a buffer wide enough to scroll, where everything on it moves.
     """
-    if not shown or not entry.startswith(shown) or len(entry) != len(shown) + 1:
+    if not displayed:
         return None
-    if len(entry) > BUFFER_CELLS:
-        #  The buffer would have to scroll, which moves everything.
+    if max(len(entry), len(displayed)) > BUFFER_CELLS:
         return None
-    return encode_text(entry[-1])
+    if len(entry) == len(displayed) + 1 and entry.startswith(displayed):
+        return encode_text(entry[-1])
+    if len(entry) == len(displayed) - 1 and displayed.startswith(entry):
+        return bytes(
+            [ScreenControl.CURSOR_LEFT, _SPACE, ScreenControl.CURSOR_LEFT]
+        )
+    return None
 
 
 def command_line_bytes(entry: str) -> bytes:

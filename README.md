@@ -24,42 +24,97 @@ A poller keeps the archive fed. What remains is the presentation work that only
 watching a real screen can settle — see
 [docs/open-questions.md](docs/open-questions.md).
 
-## Trying it
-
-```sh
-uv run sextile render --demo                # a frame, in colour, without a Beeb
-uv run sextile render --demo --form grid    # character and attribute layers
-uv run sextile render --demo --form bytes   # the wire stream
-
-uv run sextile ingest --once                # fetch the feed into the archive
-uv run sextile archive                      # what the archive holds
-
-uv run sextile render --page 1              # the main index
-uv run sextile render --page 8              # latest posts
-uv run sextile render --page 82489493       # one post, by its Stardot id
-uv run sextile render --page 8 --frame 1    # its second frame
-```
-
-`render --page` also prints, to standard error, where each digit key would
-lead — which is the quickest way to check a menu is wired up correctly.
-
-```sh
-uv run sextile serve                        # answer calls on port 6850
-nc localhost 6850                           # and call it
-```
-
 ## Connecting a BBC Micro
 
-Sextile is a plain TCP server, reached exactly as any other viewdata board is:
-[tcpser](https://github.com/go4retro/tcpser) provides the ip232 endpoint the
-emulator connects to, and the guest dials out through it.
+Sextile is a plain TCP server. Everything between it and a Beeb is off-the-shelf:
+[tcpser](https://github.com/go4retro/tcpser) presents a TCP service as an
+emulated Hayes modem on an ip232 endpoint, and the emulator dials it. Four
+processes, so four shells.
+
+**1. Fetch Stardot's content into the archive**
+
+```sh
+cd sextile
+uv run sextile ingest --seed     # fill a new archive
+uv run sextile ingest            # then poll every five minutes
+```
+
+Seeding sweeps every route the board publishes — the latest posts, the newest
+and active topics, then each forum and each topic it has just learned of. The
+site asks for sixty seconds between requests and Sextile obeys, so a first sweep
+runs to an hour or more. It reports each route as it completes, and nothing is
+lost if it is interrupted: the archive keeps what it has.
+
+**2. Serve it**
+
+```sh
+cd sextile
+uv run sextile serve             # answers on port 6850
+```
+
+**3. Bridge TCP to an emulated modem**
 
 ```sh
 tcpser -v 25232 -s 9600 -l 4 -t sS -n 1=localhost:6850
 ```
 
-Then, in Commstar's Prestel mode, enter chat with `<C>`, type `ATDT1` and press
-`CTRL-M`. `-t sS` traces the bytes, which is the best debugging tool available.
+`-n 1=…` puts Sextile in the modem's phonebook as number 1, so it can be dialled
+without typing a hostname through an emulated keyboard. `-t sS` traces the bytes
+in both directions, which is the best debugging tool in the whole arrangement.
+
+**4. Point an emulator's serial port at it**
+
+Here a Beebium instance named `Terminator`, with a Commstar ROM in a sideways
+slot:
+
+```sh
+./beebium-model-b start \
+    --sideways 13:rom:../../../roms/commstar_1_40_SN882A.rom \
+    --ip232-serial host=localhost:port=25232 \
+    --machine-name "Terminator" --advertise
+```
+
+Then in the Beebium front end, **File > Connect…** and choose `Terminator`.
+
+BeebEm should work too, having its own IP232 support, though it has not been
+tried here. So should a real BBC Micro with one of the ESP-based WiFi modems.
+
+**5. Dial from Commstar**
+
+```
+*COMMSTAR         start the comms ROM
+#                 switch to Prestel emulation
+C                 enter chat mode
+ATDT1  CTRL-M     dial phonebook entry 1
+```
+
+`CTRL-M` rather than `RETURN`, because in Prestel mode `RETURN` transmits the
+viewdata `#` (0x5F) rather than a carriage return, and an AT command needs a
+real one.
+
+The login frame arrives into a terminal already in viewdata mode, so there is no
+mode change to race.
+
+<!-- A photograph of a connected session goes here. -->
+
+## Trying it without a Beeb
+
+```sh
+uv run sextile render --demo                # a frame, in colour
+uv run sextile render --demo --form grid    # character and attribute layers
+uv run sextile render --demo --form bytes   # the wire stream, as a hex dump
+
+uv run sextile render --page 1              # the main index
+uv run sextile render --page 8              # latest posts
+uv run sextile render --page 82489493       # one post, by its Stardot id
+uv run sextile render --page 8 --frame 1    # its second frame
+
+uv run sextile archive                      # what the archive holds
+nc localhost 6850                           # call the server from a terminal
+```
+
+`render --page` also prints, to standard error, where each key would lead —
+the quickest way to check a menu is wired up correctly.
 
 ## Getting about
 

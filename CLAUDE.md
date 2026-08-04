@@ -71,7 +71,7 @@ re-using them to making fresh requests.
 ```sh
 uv run sextile render --demo            # a frame, in colour, without a Beeb
 uv run sextile render --page 1          # any page, plus where each key leads
-uv run sextile ingest --seed            # fill a new archive (~20 minutes)
+uv run sextile ingest --seed            # fill a new archive (an hour or more)
 uv run sextile ingest                   # then poll every 5 minutes
 uv run sextile serve                    # answer calls on port 6850
 nc localhost 6850                       # and call it

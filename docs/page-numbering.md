@@ -11,7 +11,7 @@ The first digit names a namespace; the second says what kind of page within it.
 3     days index          32<YYYYMMDD>   3220260802
 4     forums index    41 search   42<forum>  4253
 5     contributors    51 search   52<user>   5210058
-7     topics          71 search   72<topic>  7233387
+7     topics index    71 search   72<topic>  7233387
 8     latest posts    81 search   82<post>   82489493
 9     system          90 logoff   91 status
 0, 2, 6             reserved
@@ -58,10 +58,10 @@ identifier is still there, merely prefixed.
 
 ## Why Stardot's own identifiers
 
-Every number here comes from upstream. Post, forum and contributor ids are all
-present in the Atom feed — the user id inside the `Statistics: Posted by …`
-footer, which the HTML converter must therefore read before discarding it. Only
-topic ids are missing, which is why `7` is reserved rather than in use.
+Every number here comes from upstream. Post, forum, contributor and topic ids
+are all present in the Atom feed — the user id inside the `Statistics: Posted
+by …` footer, which the HTML converter must therefore read before discarding it,
+and the topic id in a link the board's administrators added at our asking.
 
 Nothing allocates a number, and that is the point:
 
@@ -71,10 +71,10 @@ Nothing allocates a number, and that is the point:
   can present posts out of order, meaning the ordinal is not reliably
   chronological anyway. The friction came entirely from the naming scheme.
 - **The numbers already sort by time.** phpBB assigns post ids sequentially.
-- **One identifier, two worlds.** `viewtopic.php?p=489493` and `*8489493#` carry
-  the same number, so a reference passes between the web forum and a BBC Micro
-  in either direction. For a service whose purpose is joining those worlds, that
-  seems worth more than a readable date.
+- **One identifier, two worlds.** `viewtopic.php?p=489493` and `*82489493#`
+  carry the same number, so a reference passes between the web forum and a BBC
+  Micro in either direction. For a service whose purpose is joining those
+  worlds, that seems worth more than a readable date.
 - **Shorter.** Seven digits against ten or twelve, which at 75 baud is about
   half a second of typing saved on every jump.
 

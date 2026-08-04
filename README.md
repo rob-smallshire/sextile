@@ -92,10 +92,7 @@ ATDT1  CTRL-M     dial phonebook entry 1
 viewdata `#` (0x5F) rather than a carriage return, and an AT command needs a
 real one.
 
-The login frame arrives into a terminal already in viewdata mode, so there is no
-mode change to race.
-
-<!-- A photograph of a connected session goes here. -->
+![Sextile page 1 on a BBC Micro](docs/images/sextile-page-1.png)
 
 ## Trying it without a Beeb
 

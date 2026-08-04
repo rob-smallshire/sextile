@@ -19,6 +19,12 @@ from sextile.viewdata.wrapping import wrap_text
 #: Every row begins displaying white alphanumerics.
 DEFAULT_COLOUR = Colour.WHITE
 
+#  Attributes that change the foreground colour, and so what a character
+#  written after them will look like.
+_ALPHA_COLOURS = range(0x01, 0x08)
+_GRAPHICS_COLOURS = range(0x11, 0x18)
+_GRAPHICS_OFFSET = 0x10
+
 
 class RowWriter:
     """A cursor along one row, tracking the colour in effect."""
@@ -60,11 +66,39 @@ class RowWriter:
         return self
 
     def skip(self, cells: int) -> Self:
-        """Advance without writing, leaving the cells blank."""
+        """Advance without writing, leaving the cells blank.
+
+        Whatever colour is in force where the cursor lands becomes this
+        writer's colour. Skipping is how a second writer reaches a place
+        further along a row somebody else has already written, and assuming
+        white there would emit no attribute and leave the text silently taking
+        the earlier colour.
+        """
         if cells > self.remaining:
             raise ValueError(f"skipping {cells} cells overruns row {self._row}")
         self._column += cells
+        self._colour = self._colour_in_force()
         return self
+
+    def _colour_in_force(self) -> Colour:
+        """The colour a character written here would take.
+
+        Attributes reset at the start of a row, so only this row matters, and
+        only the attributes before the cursor.
+        """
+        colour = DEFAULT_COLOUR
+        for column in range(self._column):
+            code = self._frame.cell(self._row, column)
+            if code in _ALPHA_COLOURS:
+                colour = Colour(code)
+            elif code in _GRAPHICS_COLOURS:
+                colour = Colour(code - _GRAPHICS_OFFSET)
+        return colour
+
+    @property
+    def colour(self) -> Colour:
+        """The colour the next character would take."""
+        return self._colour
 
     def at(self, column: int) -> Self:
         """Move to a column, which must not be behind the cursor."""
@@ -97,23 +131,43 @@ class Canvas:
         """
         cells = cell_count(text)
         column = max((COLUMNS - cells) // 2, 0)
-        needs_attribute = colour is not None and colour is not DEFAULT_COLOUR
-        if needs_attribute and column == 0:
+        if self._needs_attribute(row, column, colour) and column == 0:
+            #  There is no column to the left of zero for the attribute, so the
+            #  text gives up its centring rather than the colour being dropped.
             column = 1
-        writer = self.row(row)
-        writer.skip(column - 1 if needs_attribute else column)
-        return writer.text(text, colour)
+        return self._write_at(row, column, text, colour)
 
     def right(self, row: int, text: str, colour: Colour | None = None) -> RowWriter:
         """Write text ending at the right edge of the row."""
         cells = cell_count(text)
-        needs_attribute = colour is not None and colour is not DEFAULT_COLOUR
-        start = COLUMNS - cells - (1 if needs_attribute else 0)
-        if start < 0:
+        column = COLUMNS - cells
+        if column < 0:
             raise ValueError(f"{text!r} needs {cells} cells and cannot be right-aligned")
+        return self._write_at(row, column, text, colour)
+
+    def _write_at(
+        self, row: int, column: int, text: str, colour: Colour | None
+    ) -> RowWriter:
+        """Write so that the text itself begins at a column, attribute or no.
+
+        The attribute cell, when one is needed, is taken from in front of the
+        text rather than from the text's own place, so alignment is unaffected
+        by whether the colour happens to change here.
+        """
         writer = self.row(row)
-        writer.skip(start)
+        writer.skip(column - (1 if self._needs_attribute(row, column, colour) else 0))
         return writer.text(text, colour)
+
+    def _needs_attribute(self, row: int, column: int, colour: Colour | None) -> bool:
+        """Whether writing this colour at this column would cost an attribute cell.
+
+        Not simply "is it white?": a row somebody else has already coloured is
+        not white at column twenty, and text written there without an attribute
+        would silently take their colour.
+        """
+        if colour is None:
+            return False
+        return self.row(row).skip(column).colour is not colour
 
     def paragraph(
         self,

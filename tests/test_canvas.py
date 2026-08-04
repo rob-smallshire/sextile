@@ -190,3 +190,49 @@ class TestParagraphs:
         canvas = Canvas()
         _, overflow = canvas.paragraph_with_overflow(0, 5, "one two", width=10)
         assert overflow == ""
+
+
+class TestWritingAfterSomethingElse:
+    """A second writer on a row inherits the colour already in force there.
+
+    Attributes reset at the start of a row, not at the start of a write. A
+    writer that skips over an earlier colour change and then assumes white
+    would emit no attribute, and its text would silently take that colour --
+    which is exactly what happened to the page number in the header, showing
+    cyan behind the title's attribute rather than white.
+    """
+
+    def test_a_later_write_in_white_is_given_its_attribute(self) -> None:
+        canvas = Canvas()
+        canvas.row(0).text("TITLE", Colour.CYAN)
+        canvas.right(0, "1a", Colour.WHITE)
+        _, attributes = canvas.frame.to_grid()
+        assert "G" in attributes[0], attributes[0]
+
+    def test_the_later_text_is_not_left_in_the_earlier_colour(self) -> None:
+        canvas = Canvas()
+        canvas.row(0).text("TITLE", Colour.CYAN)
+        canvas.right(0, "1a", Colour.WHITE)
+        _, attributes = canvas.frame.to_grid()
+        assert attributes[0].index("G") > attributes[0].index("F")
+
+    def test_no_attribute_where_the_colour_already_matches(self) -> None:
+        #  Still only one attribute cell where one will do.
+        canvas = Canvas()
+        canvas.row(0).text("TITLE", Colour.CYAN)
+        canvas.right(0, "1a", Colour.CYAN)
+        _, attributes = canvas.frame.to_grid()
+        assert attributes[0].count("F") == 1
+
+    def test_a_graphics_colour_counts_as_the_colour_in_force(self) -> None:
+        canvas = Canvas()
+        canvas.frame.set_attribute(0, 0, Control.GRAPHICS_RED)
+        canvas.right(0, "X", Colour.RED)
+        _, attributes = canvas.frame.to_grid()
+        assert "A" not in attributes[0]
+
+    def test_skipping_over_nothing_still_starts_white(self) -> None:
+        canvas = Canvas()
+        canvas.right(0, "1a", Colour.WHITE)
+        _, attributes = canvas.frame.to_grid()
+        assert attributes[0] == "." * COLUMNS

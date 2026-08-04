@@ -28,32 +28,33 @@ watching a real screen can settle — see
 
 Sextile is a plain TCP server. Everything between it and a Beeb is off-the-shelf:
 [tcpser](https://github.com/go4retro/tcpser) presents a TCP service as an
-emulated Hayes modem on an ip232 endpoint, and the emulator dials it. Four
-processes, so four shells.
+emulated Hayes modem on an ip232 endpoint, and the emulator dials it. The first
+four steps each start something that keeps running, so each needs its own shell.
 
-**1. Fetch Stardot's content into the archive**
+**1. Fetch Stardot's content into the archive — first shell**
 
 ```sh
 cd sextile
 uv run sextile ingest --once     # one request: the ten latest posts
+uv run sextile ingest            # then poll every five minutes, until stopped
 ```
 
-That is enough to have something to look at. Later, `ingest --seed` sweeps every
-route the board publishes — the latest posts, the newest and active topics, then
-each forum and each topic it has just learned of — and `ingest` alone polls every
-five minutes. (Seeding makes one request per route and the site asks for sixty
-seconds between requests, so a first sweep takes about as many minutes as there
-are routes: an hour or so for Stardot, and several for a re-sweep of a full
-archive. Nothing is lost if it is interrupted; the archive keeps what it has.)
+The first command is enough to have something to look at. Later, `ingest --seed`
+sweeps every route the board publishes — the latest posts, the newest and active
+topics, then each forum and each topic it has just learned of. (Seeding makes one
+request per route and the site asks for sixty seconds between requests, so a
+sweep takes about as many minutes as there are routes: an hour or so for Stardot,
+and several for a re-sweep of a full archive. Nothing is lost if it is
+interrupted; the archive keeps what it has.)
 
-**2. Serve it**
+**2. Serve it — second shell**
 
 ```sh
 cd sextile
 uv run sextile serve             # answers on port 6850
 ```
 
-**3. Bridge TCP to an emulated modem**
+**3. Bridge TCP to an emulated modem — third shell**
 
 ```sh
 tcpser -v 25232 -s 9600 -l 4 -t sS -n 1=localhost:6850
@@ -63,7 +64,7 @@ tcpser -v 25232 -s 9600 -l 4 -t sS -n 1=localhost:6850
 without typing a hostname through an emulated keyboard. `-t sS` traces the bytes
 in both directions, which is the best debugging tool in the whole arrangement.
 
-**4. Point an emulator's serial port at it**
+**4. Point an emulator's serial port at it — fourth shell**
 
 Here a Beebium instance named `Terminator`, with a Commstar ROM in a sideways
 slot:
@@ -80,7 +81,7 @@ Then in the Beebium front end, **File > Connect…** and choose `Terminator`.
 BeebEm should work too, having its own IP232 support, though it has not been
 tried here. So should a real BBC Micro with one of the ESP-based WiFi modems.
 
-**5. Dial from Commstar**
+**5. Dial from Commstar — at the emulated BBC's keyboard**
 
 ```
 *COMMSTAR         start the comms ROM

@@ -2,7 +2,10 @@
 
 A Prestel-style Viewdata service presenting the Stardot phpBB forum to 1980s
 Acorn hardware. Read [docs/architecture.md](docs/architecture.md) first; it
-explains the layering and, more usefully, where the seams are and why.
+explains the layering and, more usefully, where the seams are and why. Then
+[docs/rendering.md](docs/rendering.md) or
+[docs/navigation.md](docs/navigation.md), depending on which end you are
+working at.
 
 ## How this project is built
 

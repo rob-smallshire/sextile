@@ -92,12 +92,16 @@ between items, because that is shuffling sideways through a drawer of them.
 
 Commstar does not echo a page request, so Sextile draws it: while one is being
 typed the footer becomes a command line, white on blue, with a reminder that `*`
-cancels. It is drawn over that row alone rather than by redrawing the frame, so
-it costs about fifty bytes a keystroke and the page beneath survives.
+cancels. It is drawn over that row alone rather than by redrawing the frame, and
+the cursor is left where the next character goes — so a typed character costs
+one byte and a rub-out three.
 
 `**` is then simply cancel followed by begin, which leaves an empty buffer ready
 for a new number — what Prestel's `**` did, for a reader who types it out of
 habit.
+
+[docs/navigation.md](docs/navigation.md) has the whole model and the reasoning
+behind it.
 
 **A frame names only the keys that do something on it**, in a footer that says
 so compactly:
@@ -154,7 +158,9 @@ See `docs/viewdata-encoding.md` and `docs/page-numbering.md`, and the spikes in
 ## Politeness
 
 Stardot asks for a 60-second crawl delay and forbids several paths, including
-the one that would reveal a post's topic id. Sextile enforces both in code.
+`viewtopic.php?p=`. Sextile enforces both in code, with its own RFC 9309 matcher
+because Python's `urllib.robotparser` reads the board's file wrongly and would
+permit what it forbids.
 
 ## Development
 
@@ -170,13 +176,20 @@ answered.
 
 ## Reading further
 
+Start with the architecture, then follow whichever narrative you need: one
+takes a post from the archive to the wire, the other a keypress from the
+terminal to a reply.
+
 | | |
 |---|---|
-| [architecture.md](docs/architecture.md) | the module map and the seams |
-| [viewdata-encoding.md](docs/viewdata-encoding.md) | what the BBC end actually does, and how we know |
+| [architecture.md](docs/architecture.md) | the module map, the seams, and where the awkwardness lives |
+| [rendering.md](docs/rendering.md) | how a post becomes bytes, stage by stage |
+| [navigation.md](docs/navigation.md) | how a reader moves about, and why the controls are what they are |
 | [page-numbering.md](docs/page-numbering.md) | the numbering scheme and why it uses Stardot's own ids |
+| [viewdata-encoding.md](docs/viewdata-encoding.md) | what the BBC end actually does, and how we know |
+| [spikes/README.md](docs/spikes/README.md) | the eight questions measured on real hardware, and their answers |
 | [feed-limitations.md](docs/feed-limitations.md) | what the Atom feed cannot tell us |
-| [phpbb-feed-code-newlines.md](docs/phpbb-feed-code-newlines.md) | a defect in phpBB's feed, written up to hand over |
+| [phpbb-feed-code-newlines.md](docs/phpbb-feed-code-newlines.md) | a defect in phpBB's feed, found here and since fixed |
 | [open-questions.md](docs/open-questions.md) | known gaps, and what is deliberately not done |
 
 `CLAUDE.md` records how the project is built, for anyone — human or otherwise —

@@ -11,18 +11,28 @@
             v
    content/    html, blocks, transliterate               a post's shape
             |
-   viewdata/|  charset, controls, encoding, frame,       a screen
-            |  canvas, wrapping, layout, chrome, ansi
+   viewdata/|  charset, controls, encoding, frame        a screen
+            |  canvas, wrapping, layout                  putting things on one
+            |  chrome, footer, command_line              its furniture
+            |  ansi                                      seeing it without a Beeb
             v
-   pages/      numbering, router, page                   what a page number means
+   pages/      numbering, page, router, demo             what a page number means
             |
-   session/ |  commands, session                         one caller's conversation
+   keys.py  |  the four movements                        shared by the two below
+            v
+   session/    commands, session                         one caller's conversation
+            |
             v
    server.py   asyncio TCP                               answering calls
+                                                         __main__.py drives it all
 ```
 
 Dependencies point downward only. `viewdata/` knows nothing of forums;
 `content/` knows nothing of screens; `feed/` knows nothing of either.
+
+Two narratives follow the arrows end to end, and are the quickest way in:
+[rendering.md](rendering.md) takes one post from the archive to the wire, and
+[navigation.md](navigation.md) takes one keypress from the terminal to a reply.
 
 ## The seams, and why they are there
 
@@ -62,6 +72,12 @@ cell. A row that changes colour twice has thirty-eight columns for text, not
 forty. Canvas does that accounting so nothing above it has to, which is also why
 colour could not be deferred to a later version.
 
+**`viewdata/command_line.py`** draws over one row rather than redrawing the
+frame, because Commstar does not echo a page request and repainting forty cells
+per keystroke flickers once the cursor is on. It leaves the cursor where the
+next character goes, which is what makes a typed character cost one byte and a
+rub-out three.
+
 **`viewdata/footer.py`** decides what the prompt gives up when the row will
 not hold it all. Forty cells is not many and the longest prompt already fills
 the row exactly, so the next key added will not fit. Each item carries a
@@ -82,16 +98,38 @@ longest-match-wins.
 
 **`store/repository.py`** stores instants in UTC so that ordering by text is
 ordering by time, and computes each post's London calendar date once on the way
-in. Days are London days because that is where the board's readers are.
+in. Days are London days because that is where the board's readers are. It is
+deliberately synchronous, reached through `asyncio.to_thread` at the boundary,
+which is why the connection is opened `check_same_thread=False` and every
+statement runs under a lock.
+
+**`keys.py`** names the four movements once, because there are two spellings of
+them — `WASD` and the BBC's own cursor keys, which arrive as the viewdata
+cursor-control codes. The parser and the router both read it, so the two cannot
+drift apart.
 
 ## Testing
 
 Unit tests throughout, written first, against real captured data wherever the
 real data has a shape worth respecting — `tests/data/` holds feeds and a
-`robots.txt` taken from the live board.
+`robots.txt` taken from the live board. Real data has repeatedly found things
+invented data would not: per-topic feeds carrying no `<category>`, a post id
+recoverable from `<id>` when the link is unusable, and phpBB's feed stripping
+newlines from code listings.
+
+One lesson about fixtures, learned three refetches in. A test asserting the
+first post's author is `komadori` pins today's feed, not the parser. Concrete
+values belong on `topic-28000-feed.xml`, a closed thread from 2023 that does not
+move; tests over the board feed should assert *shape*.
 
 Facts about the BBC end were **measured, not assumed**. The scripts that settled
-each question are kept in `docs/spikes/`; they need a local Beebium checkout and
-are not part of the suite. What they established is written up in
-[viewdata-encoding.md](viewdata-encoding.md), which distinguishes what was
-verified from what was inferred.
+each question are indexed in [spikes/README.md](spikes/README.md); they need a
+local Beebium checkout and are not part of the suite. What they established is
+written up in [viewdata-encoding.md](viewdata-encoding.md), which distinguishes
+what was verified from what was inferred.
+
+**Limitations are recorded as tests**, so that a change in the board's
+configuration surfaces as a failure rather than going unnoticed. Two such tests
+have already inverted: one asserting listings arrive without line breaks, and
+one asserting no post carries a topic id. Both now assert the opposite, the
+administrators having fixed the feed. That is the mechanism working.

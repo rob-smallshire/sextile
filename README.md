@@ -130,8 +130,9 @@ and the 7E1 line takes the eighth bit, landing them on the viewdata
 cursor-control codes 0x08-0x0B — so arrows and WASD are two spellings of one
 compass. Measured, not assumed: `docs/spikes/spike_cursor_keys.py`.
 
-Vertical within an item, because a document reads top to bottom; horizontal
-between items, because that is shuffling sideways through a drawer of them.
+Vertical navigation is within an item, because a document reads top to bottom;
+horizontal navigation is between items, because that is like shuffling sideways
+through a drawer of them.
 
 ```
 *nnn#     go to a page              1-9   select from the menu
@@ -143,9 +144,7 @@ between items, because that is shuffling sideways through a drawer of them.
 
 Commstar does not echo a page request, so Sextile draws it: while one is being
 typed the footer becomes a command line, white on blue, with a reminder that `*`
-cancels. It is drawn over that row alone rather than by redrawing the frame, and
-the cursor is left where the next character goes — so a typed character costs
-one byte and a rub-out three.
+cancels.
 
 `**` is then simply cancel followed by begin, which leaves an empty buffer ready
 for a new number — what Prestel's `**` did, for a reader who types it out of
@@ -163,16 +162,12 @@ S→ frame, ←A―D→ post, # next, 0 menu        a post reached through a seq
 0 menu                                      a page reached by typing its number
 ```
 
-The G0 set has left, right and up arrows but no down arrow — those three are
-there for BBC BASIC and the line editor, not as a compass — so the two
-horizontal arrows do duty as `previous` and `next` on both axes. At its longest
-the footer is exactly forty cells including its colour attribute, which is a
-whole row, and there is a test to keep it that way.
+The G0 character set has left, right and up arrows but no down arrow — so the two
+horizontal arrow glyphs do duty as `previous` and `next` on both axes.
 
-WASD is deliberately anachronistic: it postdates viewdata by a decade, where
-everything else here is period-correct to the byte. `#` therefore keeps working
-alongside `S`, because it is the one key a viewdata reader will try without
-being told.
+WASD is admittedly anachronistic: it postdates viewdata by a decade, where
+everything else here is period-appropriate. `#` therefore keeps working
+alongside `S`.
 
 Keyword jumps work too: `*MAIN#`, `*LATEST#`, `*DAYS#`, `*FORUMS#`, `*WHO#`,
 `*ABOUT#`, `*BYE#`.
@@ -223,7 +218,7 @@ uv run mypy
 
 The spikes under `docs/spikes/` need a local Beebium checkout and are not part
 of the test suite; they are kept as the record of how each question was
-answered.
+answered. Once Beebium is packaged and released, Sextile’s tests will be able to use it. 
 
 ## Reading further
 

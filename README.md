@@ -28,8 +28,8 @@ watching a real screen can settle — see
 
 Sextile is a plain TCP server. Everything between it and a Beeb is off-the-shelf:
 [tcpser](https://github.com/go4retro/tcpser) presents a TCP service as an
-emulated Hayes modem on an ip232 endpoint, and the emulator dials it. The first
-four steps each start something that keeps running, so each needs its own shell.
+emulated Hayes modem on an ip232 endpoint, and the emulated BBC Micro dials it. The first
+four steps below each start something that keeps running, so each needs its own shell.
 
 **1. Fetch Stardot's content into the archive — first shell**
 
@@ -39,8 +39,8 @@ uv run sextile ingest --once     # one request: the ten latest posts
 uv run sextile ingest            # then poll every five minutes, until stopped
 ```
 
-The first command is enough to have something to look at. Later, `ingest --seed`
-sweeps every route the board publishes — the latest posts, the newest and active
+The first command is enough to have something to look at. Later, you can use  `ingest --seed`
+to sweep every route Stardot publishes — the latest posts, the newest and active
 topics, then each forum and each topic it has just learned of. (Seeding makes one
 request per route and the site asks for sixty seconds between requests, so a
 sweep takes about as many minutes as there are routes: an hour or so for Stardot,

@@ -35,15 +35,16 @@ processes, so four shells.
 
 ```sh
 cd sextile
-uv run sextile ingest --seed     # fill a new archive
-uv run sextile ingest            # then poll every five minutes
+uv run sextile ingest --once     # one request: the ten latest posts
 ```
 
-Seeding sweeps every route the board publishes — the latest posts, the newest
-and active topics, then each forum and each topic it has just learned of. The
-site asks for sixty seconds between requests and Sextile obeys, so a first sweep
-runs to an hour or more. It reports each route as it completes, and nothing is
-lost if it is interrupted: the archive keeps what it has.
+That is enough to have something to look at. Later, `ingest --seed` sweeps every
+route the board publishes — the latest posts, the newest and active topics, then
+each forum and each topic it has just learned of — and `ingest` alone polls every
+five minutes. (Seeding makes one request per route and the site asks for sixty
+seconds between requests, so a first sweep takes about as many minutes as there
+are routes: an hour or so for Stardot, and several for a re-sweep of a full
+archive. Nothing is lost if it is interrupted; the archive keeps what it has.)
 
 **2. Serve it**
 

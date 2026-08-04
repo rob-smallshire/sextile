@@ -48,9 +48,6 @@ uv run sextile serve                        # answer calls on port 6850
 nc localhost 6850                           # and call it
 ```
 
-Port 6850 is the Motorola MC6850 ACIA, which drives the BBC Micro's serial
-port.
-
 ## Connecting a BBC Micro
 
 Sextile is a plain TCP server, reached exactly as any other viewdata board is:

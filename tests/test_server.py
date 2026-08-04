@@ -84,8 +84,7 @@ def text_of(data: bytes) -> str:
 
 
 class TestConnecting:
-    async def test_the_default_port_is_the_acia(self) -> None:
-        #  6850 is the Motorola ACIA in the BBC's own serial path.
+    async def test_the_default_port(self) -> None:
         assert DEFAULT_PORT == 6850
 
     async def test_a_frame_arrives_unasked_on_connecting(self, server: asyncio.Server) -> None:

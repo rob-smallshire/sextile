@@ -6,8 +6,6 @@ other viewdata board is:
 
     tcpser -v 25232 -s 9600 -l 4 -t sS -n 1=localhost:6850
 
-The default port is 6850, after the Motorola ACIA in the BBC's own serial path.
-
 Two things a real board taught us. A caller who walks away must eventually be
 released, because a single-line service held open locks everyone else out. And a
 caller who vanishes mid-request must not take the service with them, which is
@@ -22,7 +20,7 @@ from typing import Final
 from sextile.session.session import Session
 from sextile.store.repository import Repository
 
-#: The Motorola MC6850 ACIA, which drives the BBC Micro's serial port.
+#: After the MC6850 ACIA, which drives the BBC Micro's serial port.
 DEFAULT_PORT: Final = 6850
 
 #: How long a caller may say nothing before the line is released.

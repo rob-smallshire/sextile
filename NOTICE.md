@@ -36,11 +36,10 @@ terms above. No third-party GPL code is included.
 `docs/phpbb-feed-code-newlines.md` quotes two lines of phpBB
 (GPL-2.0-or-later), for the purpose of identifying and reporting a defect.
 
-## Conversation transcript
+## Conversation transcripts
 
-`docs/ChatGPT-phpBB-API-Integration.md` is an export of an early design
-conversation, kept for the record. It contains quoted links and summaries of
-third-party documentation.
+`docs/discussions/` holds exports of design conversations, kept for the record.
+They contain quoted links and summaries of third-party documentation.
 
 ## Dependencies
 

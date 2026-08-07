@@ -1,5 +1,9 @@
 # How Sextile is put together
 
+This describes what exists today, in which Sextile is both a framework and the
+Stardot service running on it. Those are being separated;
+[target-architecture.md](target-architecture.md) says what into, and why.
+
 ```
     Stardot's Atom feed
             |

@@ -22,8 +22,8 @@ from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
 from typing import Final, Protocol
 
-from sextile.model import Feed, Post
-from sextile.store.repository import Repository
+from stardot_viewdata.model import Feed, Post
+from stardot_viewdata.store.repository import Repository
 
 #: Comfortably inside the board's 60-second crawl delay, and well ahead of the
 #: two and a half hours the feed window takes to drain.

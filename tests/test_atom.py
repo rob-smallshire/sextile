@@ -12,8 +12,8 @@ from pathlib import Path
 
 import pytest
 
-from sextile.feed.atom import FeedFormatError, parse_feed
-from sextile.model import Feed
+from stardot_viewdata.feed.atom import FeedFormatError, parse_feed
+from stardot_viewdata.model import Feed
 
 FIXTURES = Path(__file__).parent / "data"
 

@@ -24,9 +24,9 @@ from typing import Final, Self
 import httpx
 
 from sextile import __version__
-from sextile.feed.atom import parse_feed
-from sextile.feed.robots import RobotsRules
-from sextile.model import Feed
+from stardot_viewdata.feed.atom import parse_feed
+from stardot_viewdata.feed.robots import RobotsRules
+from stardot_viewdata.model import Feed
 
 USER_AGENT: Final = f"Sextile/{__version__} (+viewdata gateway for Stardot)"
 

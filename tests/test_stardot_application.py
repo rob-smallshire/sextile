@@ -17,10 +17,10 @@ import pytest
 from sextile import keys
 from sextile.addressing import PageAddress, UnknownPageError
 from sextile.application import Arrival, PageRequest
-from sextile.model import Post
 from sextile.page import Page
-from sextile.store.repository import Repository
 from stardot_viewdata import StardotApplication
+from stardot_viewdata.model import Post
+from stardot_viewdata.store.repository import Repository
 
 BST = timezone(timedelta(hours=1))
 

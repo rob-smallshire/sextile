@@ -31,10 +31,7 @@ from typing import Final
 from sextile import keys
 from sextile.addressing import PageAddress
 from sextile.application import Arrival, PageRequest, Sextile
-from sextile.content.html import parse_post_body
-from sextile.model import Post
 from sextile.page import Page, PageFrame
-from sextile.store.repository import BOARD_TIMEZONE, Repository
 from sextile.viewdata.canvas import Canvas
 from sextile.viewdata.chrome import (
     CONTENT_FIRST_ROW,
@@ -47,6 +44,9 @@ from sextile.viewdata.encoding import cell_count
 from sextile.viewdata.footer import FooterItem, Priority, render_footer
 from sextile.viewdata.frame import COLUMNS
 from sextile.viewdata.layout import draw_rows, paginate
+from stardot_viewdata.html import parse_post_body
+from stardot_viewdata.model import Post
+from stardot_viewdata.store.repository import BOARD_TIMEZONE, Repository
 
 DEFAULT_DATABASE_FILEPATH: Final = Path("sextile.sqlite")
 

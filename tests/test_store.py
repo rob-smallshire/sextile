@@ -16,8 +16,8 @@ from pathlib import Path
 
 import pytest
 
-from sextile.model import Post
-from sextile.store.repository import Repository
+from stardot_viewdata.model import Post
+from stardot_viewdata.store.repository import Repository
 
 BST = timezone(timedelta(hours=1))
 

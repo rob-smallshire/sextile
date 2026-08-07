@@ -15,9 +15,9 @@ from datetime import datetime, timedelta, timezone
 
 import pytest
 
-from sextile.feed.ingest import poll, seed
-from sextile.model import Feed, Post
-from sextile.store.repository import Repository
+from stardot_viewdata.feed.ingest import poll, seed
+from stardot_viewdata.model import Feed, Post
+from stardot_viewdata.store.repository import Repository
 
 BST = timezone(timedelta(hours=1))
 

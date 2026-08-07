@@ -23,7 +23,7 @@ from datetime import datetime
 from typing import Final
 from xml.etree import ElementTree
 
-from sextile.model import Feed, Post
+from stardot_viewdata.model import Feed, Post
 
 _ATOM: Final = "{http://www.w3.org/2005/Atom}"
 

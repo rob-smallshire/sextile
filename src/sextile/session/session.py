@@ -54,9 +54,9 @@ HISTORY_LIMIT: Final = 32
 class _Sequence:
     """The run of pages a menu offered, and where in it the reader is.
 
-    This is what makes "next" mean something: from a day's index it is the next
-    post that day, from a forum the next in that forum. Arrive by keying a page
-    number and there is no sequence, so nothing is offered.
+    This is what makes "next" mean something: it is the next of whatever the
+    menu the reader came through was listing. Arrive by keying a page number and
+    there is no sequence, so nothing is offered.
     """
 
     destinations: tuple[PageAddress, ...]

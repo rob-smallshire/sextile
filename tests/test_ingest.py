@@ -10,10 +10,10 @@ from pathlib import Path
 
 import pytest
 
-from sextile.feed.atom import parse_feed
-from sextile.feed.ingest import ingest_once
-from sextile.model import Feed
-from sextile.store.repository import Repository
+from stardot_viewdata.feed.atom import parse_feed
+from stardot_viewdata.feed.ingest import ingest_once
+from stardot_viewdata.model import Feed
+from stardot_viewdata.store.repository import Repository
 
 FIXTURES = Path(__file__).parent / "data"
 BOARD_FEED = (FIXTURES / "board-feed.xml").read_text()

@@ -1,1 +1,1 @@
-"""Content conversion: forum post HTML into semantic blocks fit for viewdata."""
+"""What is to be shown, described structurally rather than typographically."""

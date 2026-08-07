@@ -28,7 +28,7 @@ from types import TracebackType
 from typing import Final, Self
 from zoneinfo import ZoneInfo
 
-from sextile.model import Post
+from stardot_viewdata.model import Post
 
 BOARD_TIMEZONE: Final = ZoneInfo("Europe/London")
 

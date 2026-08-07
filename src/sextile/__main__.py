@@ -3,8 +3,8 @@
 It can serve or draw any application, named the way a WSGI or ASGI server names
 one:
 
-    sextile serve stardot_viewdata:app
-    sextile render stardot_viewdata:app --page 82489493
+    sextile serve your_service:app
+    sextile render your_service:app --page 82489493
     sextile render --demo
 
 The demonstration frame needs no application, being a picture of what the

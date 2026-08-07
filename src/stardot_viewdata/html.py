@@ -25,11 +25,11 @@ from sextile.content.blocks import (
     Attachment,
     Block,
     Code,
+    Document,
     Image,
     Link,
     ListItem,
     Paragraph,
-    PostContent,
     Quote,
 )
 
@@ -44,12 +44,12 @@ _PARAGRAPH_TAGS: Final = frozenset({"p", "div", "dl", "dt", "dd", "hr", "ul", "o
 _WHITESPACE: Final = re.compile(r"\s+")
 
 
-def parse_post_body(body: str) -> PostContent:
+def parse_post_body(body: str) -> Document:
     """Parse a phpBB post body into blocks."""
     parser = _BodyParser()
     parser.feed(_without_footer(body))
     parser.close()
-    return PostContent(blocks=tuple(parser.blocks), links=tuple(parser.links))
+    return Document(blocks=tuple(parser.blocks), links=tuple(parser.links))
 
 
 def _without_footer(body: str) -> str:

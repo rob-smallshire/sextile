@@ -1,12 +1,13 @@
-"""The semantic shape of a post, between HTML and a screen.
+"""The semantic shape of a document, between its source and a screen.
 
 Deliberately structural rather than typographic. On forty columns, colour earns
 its keep telling a quotation from a code listing from the author's own words; it
 earns nothing rendering an italic, so emphasis is dropped and structure is kept.
 
-A paragraph holds lines rather than one string because phpBB uses `<br>` for
-both purposes: a single break is a new line, a double break a new paragraph.
-Spending a blank row on every `<br>` would be ruinous on a twenty-four row
+A paragraph holds lines rather than one string because a single line break
+and a paragraph break are different things and both arrive as one. That is how
+phpBB's HTML reads -- one `<br>` is a new line, two are a new paragraph -- and
+spending a blank row on every break would be ruinous on a twenty-four row
 screen.
 """
 
@@ -22,7 +23,7 @@ class Paragraph:
 
 @dataclass(frozen=True)
 class Quote:
-    """Words quoted from another post, which may themselves quote."""
+    """Words quoted from elsewhere, which may themselves quote."""
 
     blocks: tuple["Block", ...]
 
@@ -48,7 +49,7 @@ class Image:
 
 @dataclass(frozen=True)
 class Attachment:
-    """A file attached to the post, named but not retrievable."""
+    """A file attached to the document, named but not retrievable."""
 
     name: str
 
@@ -66,8 +67,8 @@ class Link:
 
 
 @dataclass(frozen=True)
-class PostContent:
-    """A post's body, ready to be laid out."""
+class Document:
+    """A body of content, ready to be laid out."""
 
     blocks: tuple[Block, ...]
     links: tuple[Link, ...] = ()

@@ -23,18 +23,18 @@ from sextile.cli import (
     render_page,
     run_service,
 )
-from sextile.feed.client import FeedClient
-from sextile.feed.ingest import (
+from stardot_viewdata import __version__
+from stardot_viewdata.application import DEFAULT_DATABASE_FILEPATH, StardotApplication
+from stardot_viewdata.feed.client import FeedClient
+from stardot_viewdata.feed.ingest import (
     DEFAULT_POLL_INTERVAL,
     IngestResult,
     ingest_once,
     poll,
     seed,
 )
-from sextile.feed.source import STARDOT_BASE_URL, AtomFeedSource
-from sextile.store.repository import Repository
-from stardot_viewdata import __version__
-from stardot_viewdata.application import DEFAULT_DATABASE_FILEPATH, StardotApplication
+from stardot_viewdata.feed.source import STARDOT_BASE_URL, AtomFeedSource
+from stardot_viewdata.store.repository import Repository
 
 
 def build_parser() -> argparse.ArgumentParser:

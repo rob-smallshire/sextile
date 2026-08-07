@@ -14,7 +14,7 @@ from pathlib import Path
 
 import pytest
 
-from sextile.feed.robots import RobotsRules
+from stardot_viewdata.feed.robots import RobotsRules
 
 FIXTURES = Path(__file__).parent / "data"
 STARDOT_ROBOTS = (FIXTURES / "stardot-robots.txt").read_text()

@@ -13,8 +13,8 @@ its topic, since the feed never says and robots.txt forbids the page that would.
 
 from typing import Final, Protocol
 
-from sextile.feed.client import FeedClient
-from sextile.model import Feed
+from stardot_viewdata.feed.client import FeedClient
+from stardot_viewdata.model import Feed
 
 #: phpBB's feed routes are path-based. Query parameters are silently ignored.
 FEED_ROOT: Final = "/forums/app.php/feed"

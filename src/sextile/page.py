@@ -2,7 +2,7 @@
 
 A page is more than a list of frames. On a menu, pressing a digit goes
 somewhere, and where it goes depends on which frame is showing -- frame b of a
-day's posts offers a different nine choices from frame a. So the choices belong
+listing offers a different nine choices from frame a. So the choices belong
 to the frame, not to the page. That is the whole reason this type exists rather
 than an application simply returning frames: the session needs to know what `3`
 means right now.

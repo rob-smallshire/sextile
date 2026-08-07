@@ -42,10 +42,10 @@ _QUOTED: Final = 30
 class Arrival:
     """The pages either side of this one, in the sequence being read.
 
-    Which sequence depends on how the reader got here: a page reached from a
-    day's index has that day's pages either side of it, one reached from a forum
-    has that forum's. A page reached by keying its number has neither, and
-    should offer neither.
+    Which sequence depends on how the reader got here: a page reached through
+    one menu has that menu's pages either side of it, and through another has
+    that one's. A page reached by keying its number has neither, and should be
+    offered neither.
     """
 
     preceding: PageAddress | None = None

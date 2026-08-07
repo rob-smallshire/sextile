@@ -1,6 +1,6 @@
 """Breaking text into lines narrow enough for a viewdata frame.
 
-Forty columns is narrow, and posts about retrocomputing are full of URLs, hex
+Forty columns is narrow, and writing about retrocomputing is full of URLs, hex
 dumps and assembler listings. A word that cannot fit any line is split rather
 than dropped or allowed to overrun: losing part of a link address is worse than
 an ugly break.

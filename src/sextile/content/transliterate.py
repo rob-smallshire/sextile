@@ -36,7 +36,8 @@ _SUBSTITUTIONS: Final[dict[str, str]] = {
     "`": "'",
     "|": "‖",
     "~": "-",
-    #  Typographic punctuation, which phpBB and its posters produce freely.
+    #  Typographic punctuation, which web software and its writers produce
+    #  freely.
     "‘": "'",  # left single quotation mark
     "’": "'",  # right single quotation mark
     "‚": ",",  # single low-9 quotation mark

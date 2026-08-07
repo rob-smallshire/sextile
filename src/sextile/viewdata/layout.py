@@ -9,7 +9,7 @@ someone reading in colour can tell at a glance whose words they are looking at.
 A quotation is cyan, a listing green, an image or attachment magenta, and the
 author's own words white.
 
-A page has frames a-z and no more, so a post long enough to exhaust them says so
+A page has frames a-z and no more, so a document long enough to exhaust them says so
 rather than ending mid-sentence with nothing to explain it.
 """
 
@@ -20,10 +20,10 @@ from sextile.content.blocks import (
     Attachment,
     Block,
     Code,
+    Document,
     Image,
     ListItem,
     Paragraph,
-    PostContent,
     Quote,
 )
 from sextile.viewdata.canvas import Canvas
@@ -31,7 +31,7 @@ from sextile.viewdata.controls import Colour
 from sextile.viewdata.frame import COLUMNS, ROWS, Frame
 from sextile.viewdata.wrapping import wrap_text
 
-#: Rows a frame gives to the post itself, the rest being chrome.
+#: Rows a frame gives to the content itself, the rest being chrome.
 BODY_ROWS: Final = ROWS - 3
 
 #: A page's frames are lettered a-z.
@@ -43,7 +43,7 @@ _QUOTE_INDENT: Final = 2
 #  moving right and rely on colour alone.
 _MAX_QUOTE_DEPTH: Final = 4
 
-_TRUNCATION_NOTICE: Final = "... TRUNCATED, POST TOO LONG"
+_TRUNCATION_NOTICE: Final = "... TRUNCATED, TOO LONG TO SHOW"
 
 
 @dataclass(frozen=True)
@@ -55,8 +55,8 @@ class Row:
     indent: int = 0
 
 
-def paginate(content: PostContent, rows_per_frame: int = BODY_ROWS) -> list[list[Row]]:
-    """Render a post's content and deal it into frame-sized pages of rows.
+def paginate(content: Document, rows_per_frame: int = BODY_ROWS) -> list[list[Row]]:
+    """Render a document and deal it into frame-sized pages of rows.
 
     Stops short of drawing, so a page builder can place these rows beneath its
     own chrome and title block without this module knowing either exists.
@@ -73,11 +73,10 @@ def draw_rows(canvas: Canvas, first_row: int, rows: list[Row]) -> None:
             canvas.row(first_row + offset).skip(row.indent).text(row.text, row.colour)
 
 
-def lay_out(content: PostContent) -> list[Frame]:
-    """Render a post's content as bare frames, with no chrome.
+def lay_out(content: Document) -> list[Frame]:
+    """Render a document as bare frames, with no chrome.
 
-    Used by the tests and by `sextile render --post`, where the content is the
-    only thing of interest.
+    For where the content is the only thing of interest.
     """
     return [_frame_for(page) for page in paginate(content)]
 
@@ -118,7 +117,7 @@ def _rows_for(blocks: tuple[Block, ...], depth: int) -> list[Row]:
     return _without_leading_blanks(rows)
 
 
-def _link_rows(content: PostContent) -> list[Row]:
+def _link_rows(content: Document) -> list[Row]:
     if not content.links:
         return []
     rows = [Row("", Colour.WHITE), Row("LINKS", Colour.YELLOW)]

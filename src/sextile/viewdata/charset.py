@@ -7,7 +7,7 @@ sign rather than a hash, and the hash -- the viewdata command key -- sits at 0x5
 
 Ten characters a modern keyboard offers have no G0 representation at all:
 ``[ \\ ] ^ _ ` { | } ~``. Those positions are occupied by arrows, fractions and
-rules instead. Source code quoted in forum posts meets them constantly, so
+rules instead. Quoted source code meets them constantly, so
 ``encode_g0`` reports them as unrepresentable rather than guessing; deciding what
 to show in their place belongs to the transliteration layer.
 """

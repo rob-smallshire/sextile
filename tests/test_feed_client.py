@@ -12,7 +12,7 @@ from pathlib import Path
 import httpx
 import pytest
 
-from sextile.feed.client import FeedClient, ForbiddenByRobotsError
+from stardot_viewdata.feed.client import FeedClient, ForbiddenByRobotsError
 
 FIXTURES = Path(__file__).parent / "data"
 BOARD_FEED = (FIXTURES / "board-feed.xml").read_text()

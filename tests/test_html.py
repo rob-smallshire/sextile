@@ -18,14 +18,14 @@ from sextile.content.blocks import (
     Attachment,
     Block,
     Code,
+    Document,
     Image,
     ListItem,
     Paragraph,
-    PostContent,
     Quote,
 )
-from sextile.content.html import parse_post_body
-from sextile.feed.atom import parse_feed
+from stardot_viewdata.feed.atom import parse_feed
+from stardot_viewdata.html import parse_post_body
 
 FIXTURES = Path(__file__).parent / "data"
 BOARD_POSTS = parse_feed((FIXTURES / "board-feed.xml").read_text()).posts
@@ -245,7 +245,7 @@ class TestEveryCapturedPost:
                 assert all(line.strip() for line in block.lines)
 
 
-def _text_of(content: PostContent) -> str:
+def _text_of(content: Document) -> str:
     parts: list[str] = []
 
     def walk(blocks: tuple[Block, ...]) -> None:

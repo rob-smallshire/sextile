@@ -7,8 +7,8 @@ works to.
 
 The header is where a reader looks to know where they are and what to quote to
 come back, so the page number is placed first and the title is given whatever
-room is left. Stardot's forum names reach forty characters unaided, so a title
-that would crowd the number is truncated rather than allowed to push it away.
+room is left. Titles reach forty characters unaided, so one that would crowd
+the number is truncated rather than allowed to push it away.
 """
 
 from typing import Final

@@ -1,0 +1,38 @@
+# calendar-viewdata
+
+A calendar, served as Viewdata frames.
+
+```sh
+uv run sextile serve calendar_viewdata:app
+nc localhost 6850
+```
+
+```
+    1           the index
+    2           the date and time now
+    3           this month
+    32<date>    the month containing a date, as 3220260802
+    4           the days to come
+    42<date>    one of them
+    9           about
+    90          goodbye
+```
+
+## Why it exists
+
+To be a *second* application. Sextile claims to be a framework rather than one
+service with the serial numbers filed off, and the only way to find out is to
+write something with nothing whatever in common with the first one and see what
+the framework asks for.
+
+It is deliberately small and depends on nothing but the standard library and
+Sextile: no archive, no network, nothing to configure. That makes it the worked
+example the framework's documentation is written against —
+[docs/writing-an-application.md](../../docs/writing-an-application.md) — and a
+reasonable thing to copy when starting a service of your own.
+
+The one thing it depends on that is not a pure function is the clock, which is
+therefore a constructor argument. A service whose pages change under it cannot
+be tested otherwise.
+
+MIT licensed.

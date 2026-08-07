@@ -8,6 +8,7 @@ resolution-markers = [
 
 [manifest]
 members = [
+    "calendar-viewdata",
     "sextile",
     "sextile-workspace",
     "stardot-viewdata",
@@ -66,6 +67,17 @@ wheels = [
     { url = "https://sixtynorthartifactory1.jfrog.io/artifactory/api/pypi/python-packages/packages/packages/47/ae/6710c14ecb276031cf10249f6adf5a59e2d3fdb3b5183bd59f70524067ee/ast_serialize-0.6.0-cp39-abi3-win_amd64.whl", hash = "sha256:113b58346f9ceb664352032770caca817d4a3c86f611c6088e6ef65ddaa70f0e" },
     { url = "https://sixtynorthartifactory1.jfrog.io/artifactory/api/pypi/python-packages/packages/packages/66/40/c53deb2cd0c9b0fb636d24d9f40924cf2e65028e6b20b10cd5c1eeb2c730/ast_serialize-0.6.0-cp39-abi3-win_arm64.whl", hash = "sha256:ccd132fe8db56f61fe743b1f644d01b8d65b83248a8da506f3132bda86d6ed5e" },
 ]
+
+[[package]]
+name = "calendar-viewdata"
+version = "0.1.0"
+source = { editable = "packages/calendar-viewdata" }
+dependencies = [
+    { name = "sextile" },
+]
+
+[package.metadata]
+requires-dist = [{ name = "sextile", editable = "packages/sextile" }]
 
 [[package]]
 name = "certifi"
@@ -356,6 +368,7 @@ name = "sextile-workspace"
 version = "0.1.0"
 source = { editable = "." }
 dependencies = [
+    { name = "calendar-viewdata" },
     { name = "sextile" },
     { name = "stardot-viewdata" },
 ]
@@ -370,6 +383,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
+    { name = "calendar-viewdata", editable = "packages/calendar-viewdata" },
     { name = "sextile", editable = "packages/sextile" },
     { name = "stardot-viewdata", editable = "packages/stardot-viewdata" },
 ]

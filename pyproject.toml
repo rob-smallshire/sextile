@@ -14,6 +14,7 @@ requires-python = ">=3.12"
 dependencies = [
     "sextile",
     "stardot-viewdata",
+    "calendar-viewdata",
 ]
 
 [tool.uv.workspace]
@@ -24,6 +25,7 @@ members = ["packages/*"]
 [tool.uv.sources]
 sextile = { workspace = true }
 stardot-viewdata = { workspace = true }
+calendar-viewdata = { workspace = true }
 
 [build-system]
 requires = ["hatchling"]
@@ -46,7 +48,11 @@ asyncio_mode = "auto"
 
 [tool.ruff]
 line-length = 100
-src = ["packages/sextile/src", "packages/stardot-viewdata/src"]
+src = [
+    "packages/sextile/src",
+    "packages/stardot-viewdata/src",
+    "packages/calendar-viewdata/src",
+]
 #  Spikes are preserved as a record of how a question was answered, not as
 #  maintained code, and they import packages this project does not depend on.
 extend-exclude = ["docs/spikes"]
@@ -60,4 +66,8 @@ files = ["packages"]
 #  Each member's tests are a top-level package of their own, so two members may
 #  both have a tests/ directory without one shadowing the other.
 explicit_package_bases = true
-mypy_path = "packages/sextile/src:packages/stardot-viewdata/src:packages/sextile/tests"
+mypy_path = """\
+packages/sextile/src:\
+packages/stardot-viewdata/src:\
+packages/calendar-viewdata/src:\
+packages/sextile/tests"""

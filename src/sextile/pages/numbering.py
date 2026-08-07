@@ -35,16 +35,36 @@ from dataclasses import dataclass
 from datetime import date
 from typing import Final
 
+from sextile.addressing import UnknownPageError, frame_letter
+
+__all__ = [
+    "About",
+    "Contributor",
+    "ContributorsIndex",
+    "Day",
+    "DaysIndex",
+    "Forum",
+    "ForumsIndex",
+    "Logoff",
+    "MainIndex",
+    "PageRef",
+    "Post",
+    "PostsIndex",
+    "Topic",
+    "TopicsIndex",
+    "UnknownPageError",
+    "format_page_number",
+    "frame_letter",
+    "keywords",
+    "parse_page_number",
+    "parse_page_target",
+]
+
 _DATE_DIGITS: Final = 8
-_FRAMES_PER_PAGE: Final = 26
 
 #  The second digit selecting a member of a namespace, as opposed to its index
 #  (0, unused) or a search within it (1, reserved).
 _MEMBER: Final = "2"
-
-
-class UnknownPageError(ValueError):
-    """A page number that names nothing."""
 
 
 @dataclass(frozen=True)
@@ -241,17 +261,6 @@ def format_page_number(reference: PageRef) -> str:
             return "9"
         case Logoff():
             return "90"
-
-
-def frame_letter(index: int) -> str:
-    """The letter naming a frame within a page, counting from ``a``.
-
-    A user never types this: it identifies a continuation of a page that was too
-    long for one screen, and appears only in the page number a frame displays.
-    """
-    if not 0 <= index < _FRAMES_PER_PAGE:
-        raise ValueError(f"a page has at most {_FRAMES_PER_PAGE} frames, not frame {index}")
-    return chr(ord("a") + index)
 
 
 def _parse_day(number: str, digits: str) -> PageRef:

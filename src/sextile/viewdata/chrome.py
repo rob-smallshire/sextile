@@ -44,6 +44,11 @@ def draw_chrome(canvas: Canvas, *, title: str, page_number: str, prompt: str) ->
 
 
 def _draw_header(canvas: Canvas, title: str, page_number: str) -> None:
+    #  Not everything drawn is a page. A notice given in reply to a keypress has
+    #  no number of its own, and the title may have the whole row.
+    if not page_number:
+        canvas.row(HEADER_ROW).text(_fitted(title, COLUMNS - 1), Colour.CYAN)
+        return
     number_cells = cell_count(page_number)
     available = COLUMNS - number_cells - _HEADER_ATTRIBUTES - _GAP
     canvas.row(HEADER_ROW).text(_fitted(title, available), Colour.CYAN)

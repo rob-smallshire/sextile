@@ -68,6 +68,14 @@ class TestHeader:
         assert header.rstrip().endswith("82489493a")
         assert len(header) == COLUMNS
 
+    def test_a_frame_that_is_not_a_page_needs_no_number(self) -> None:
+        #  Not everything on screen is a page. A notice drawn in reply to a
+        #  keypress has no number, and inventing one would tell the reader to
+        #  key something that fetches nothing.
+        canvas = Canvas()
+        draw_chrome(canvas, title="UNKNOWN PAGE", page_number="", prompt="")
+        assert rows_of(canvas)[HEADER_ROW].rstrip().endswith("UNKNOWN PAGE")
+
     def test_the_title_and_the_number_never_collide(self) -> None:
         canvas = Canvas()
         draw_chrome(canvas, title="X" * 60, page_number="123456789012", prompt="")

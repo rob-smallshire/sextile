@@ -20,6 +20,12 @@ sextile = "sextile.__main__:main"
 requires = ["hatchling"]
 build-backend = "hatchling.build"
 
+#  Two packages, for the moment in one distribution: the framework, and the
+#  Stardot application running on it. They become separate workspace members
+#  once the split is finished.
+[tool.hatch.build.targets.wheel]
+packages = ["src/sextile", "src/stardot_viewdata"]
+
 [dependency-groups]
 dev = [
     "pytest>=8.0",

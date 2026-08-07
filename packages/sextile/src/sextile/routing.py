@@ -19,9 +19,10 @@ digits, most first, so `90` beats `9{n:int}` however they were registered. A
 routing table that depended on registration order would be a table whose meaning
 changed when someone tidied it.
 
-**Fields must be separable.** Two variable-width fields running together are
-refused outright, because nothing could say where one ended and the next began.
-A variable-width field may follow a fixed-width one, which is unambiguous.
+**Fields must be separable.** A page number has no separators, so two fields
+can only be told apart if all but the last has a width known in advance.
+`{year:int(4)}{month:int(2)}` is fine; two bare `int` fields running together
+are refused at registration rather than matched arbitrarily.
 
 Nothing here knows what a page is. The router maps addresses to targets, and
 `sextile.application` decides that a target is something that builds a page.
@@ -36,6 +37,9 @@ from typing import Final
 from sextile.addressing import PageAddress, UnknownPageError
 
 _FIELD: Final = re.compile(r"\{(?P<spec>[^{}]*)\}")
+
+#: A converter, optionally given an argument: `int` or `int(4)`.
+_CONVERTER: Final = re.compile(r"(?P<name>[A-Za-z_][A-Za-z_0-9]*)(?:\((?P<argument>[^()]*)\))?")
 
 #: What `{name}` means when nothing else is said. Every field of a page number
 #: is numeric, so there is only one sensible default.
@@ -110,6 +114,63 @@ INTEGER: Final = Converter(field_pattern=r"0|[1-9][0-9]*", parse=int)
 DATE: Final = Converter(field_pattern=r"[0-9]{8}", width=8, parse=_to_date, format=_from_date)
 
 
+def fixed_integer(width: int) -> Converter:
+    """A whole number written in exactly ``width`` digits, padded with zeros.
+
+    The leading-zero rule inverts here, and for the same reason it exists. A
+    variable-width field refuses a leading zero because `0042` and `42` would be
+    two numbers for one page; a fixed-width field *requires* the padding,
+    because with the width settled there is again only one spelling of each
+    value.
+
+    Fixed widths are what let fields sit next to one another. A page number has
+    no separators, so two fields can only be told apart if all but the last is
+    of a width known in advance.
+    """
+    if width < 1:
+        raise RouteError(f"a field of {width} digits could hold nothing")
+    return Converter(
+        field_pattern=rf"[0-9]{{{width}}}",
+        width=width,
+        parse=int,
+        format=lambda value: _padded(value, width),
+    )
+
+
+def _padded(value: object, width: int) -> str:
+    if isinstance(value, bool) or not isinstance(value, int):
+        raise TypeError(f"{value!r} is not a whole number")
+    #  A value too wide overflows its field rather than being truncated into
+    #  a number that means something else; `to_digits` catches it.
+    return f"{value:0{width}d}"
+
+
+type ConverterFactory = Callable[[str | None], Converter]
+"""How a converter is made from whatever was written in its brackets.
+
+Given `None` where the pattern named the converter with no brackets at all, so
+that `int` and `int()` are not the same thing: the second is somebody who meant
+to say a width and did not.
+"""
+
+
+def _unparameterised(name: str, converter: Converter) -> ConverterFactory:
+    def make(argument: str | None) -> Converter:
+        if argument is not None:
+            raise RouteError(f"the {name!r} converter takes no argument")
+        return converter
+
+    return make
+
+
+def _integer(argument: str | None) -> Converter:
+    if argument is None:
+        return INTEGER
+    if not (argument.isascii() and argument.isdigit()):
+        raise RouteError(f"{argument!r} is not a width")
+    return fixed_integer(int(argument))
+
+
 @dataclass(frozen=True)
 class _Field:
     name: str
@@ -150,7 +211,10 @@ class Router[T]:
         self._routes: list[Route[T]] = []
         self._named: dict[str, Route[T]] = {}
         self._keywords: dict[str, PageAddress] = {}
-        self._converters: dict[str, Converter] = {"int": INTEGER, "date": DATE}
+        self._converters: dict[str, ConverterFactory] = {
+            "int": _integer,
+            "date": _unparameterised("date", DATE),
+        }
 
     # -- registering --------------------------------------------------------
 
@@ -169,11 +233,18 @@ class Router[T]:
         if name is not None:
             self._named[name] = route
 
-    def converter(self, name: str, converter: Converter) -> None:
-        """Offer a field shape of the application's own."""
+    def converter(self, name: str, converter: Converter | ConverterFactory) -> None:
+        """Offer a field shape of the application's own.
+
+        Either a converter, used wherever `{field:name}` appears, or a factory
+        taking whatever was written in brackets, so that `{field:name(3)}` can
+        mean something the application decides.
+        """
         if name in self._converters:
             raise RouteError(f"{name!r} is already a converter")
-        self._converters[name] = converter
+        self._converters[name] = (
+            converter if callable(converter) else _unparameterised(name, converter)
+        )
 
     def alias(self, keyword: str, address: str | PageAddress) -> None:
         """Let ``keyword`` be keyed in place of a page number.
@@ -323,10 +394,17 @@ class Router[T]:
         return literal
 
     def _field(self, pattern: str, spec: str) -> _Field:
-        name, _, converter_name = spec.partition(":")
+        name, _, wanted = spec.partition(":")
         if not name.isidentifier():
             raise RouteError(f"{pattern!r} has {name!r} for a field name")
-        converter = self._converters.get(converter_name or _DEFAULT_CONVERTER)
-        if converter is None:
-            raise RouteError(f"{pattern!r} wants a {converter_name!r} field, and there is none")
+        found = _CONVERTER.fullmatch(wanted or _DEFAULT_CONVERTER)
+        if found is None:
+            raise RouteError(f"{pattern!r} has {wanted!r} where a converter belongs")
+        make = self._converters.get(found.group("name"))
+        if make is None:
+            raise RouteError(f"{pattern!r} wants a {wanted!r} field, and there is none")
+        try:
+            converter = make(found.group("argument"))
+        except RouteError as error:
+            raise RouteError(f"{pattern!r}: {error}") from error
         return _Field(name=name, converter=converter)

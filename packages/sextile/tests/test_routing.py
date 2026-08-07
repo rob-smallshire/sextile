@@ -103,6 +103,107 @@ class TestFields:
         assert found.params == {"day": date(2026, 8, 2), "post_id": 489493}
 
 
+class TestFixedWidthFields:
+    """`int(n)` takes exactly n digits, which is what lets fields sit together.
+
+    A page number has no separators, so two fields can only be told apart if all
+    but the last has a width known in advance.
+    """
+
+    def test_a_width_makes_a_field_take_exactly_that_many_digits(self) -> None:
+        router: Router[str] = Router()
+        router.add("7{year:int(4)}", "year")
+        found = router.match(address("72026"))
+        assert found is not None
+        assert found.params == {"year": 2026}
+
+    def test_it_refuses_fewer_digits(self) -> None:
+        router: Router[str] = Router()
+        router.add("7{year:int(4)}", "year")
+        assert router.match(address("7202")) is None
+
+    def test_it_refuses_more_digits(self) -> None:
+        router: Router[str] = Router()
+        router.add("7{year:int(4)}", "year")
+        assert router.match(address("720260")) is None
+
+    def test_a_leading_zero_is_expected_rather_than_refused(self) -> None:
+        #  The rule inverts with a fixed width. A variable-width field refuses a
+        #  leading zero because it would give one page two numbers; a
+        #  fixed-width field is padded for exactly the same reason, so there is
+        #  still only one spelling of each value.
+        router: Router[str] = Router()
+        router.add("7{month:int(2)}", "month")
+        found = router.match(address("708"))
+        assert found is not None
+        assert found.params == {"month": 8}
+
+    def test_the_unpadded_spelling_is_refused(self) -> None:
+        router: Router[str] = Router()
+        router.add("7{month:int(2)}", "month")
+        assert router.match(address("78")) is None
+
+    def test_fixed_width_fields_may_run_together(self) -> None:
+        router: Router[str] = Router()
+        router.add("32{year:int(4)}{month:int(2)}{day:int(2)}", "iso")
+        found = router.match(address("3220260802"))
+        assert found is not None
+        assert found.params == {"year": 2026, "month": 8, "day": 2}
+
+    def test_a_variable_field_may_follow_them(self) -> None:
+        router: Router[str] = Router()
+        router.add("32{year:int(4)}{post_id:int}", "post-in-year")
+        found = router.match(address("322026489493"))
+        assert found is not None
+        assert found.params == {"year": 2026, "post_id": 489493}
+
+    def test_a_fixed_field_may_not_follow_a_variable_one(self) -> None:
+        router: Router[str] = Router()
+        with pytest.raises(RouteError):
+            router.add("32{post_id:int}{year:int(4)}", "wrong-way-round")
+
+    @pytest.mark.parametrize(
+        "pattern",
+        [
+            "7{n:int(0)}",  # would hold nothing
+            "7{n:int(x)}",  # not a width
+            "7{n:int()}",  # meant to say a width, and did not
+            "7{n:int(-2)}",
+        ],
+    )
+    def test_a_width_that_is_not_one_is_refused(self, pattern: str) -> None:
+        router: Router[str] = Router()
+        with pytest.raises(RouteError):
+            router.add(pattern, "target")
+
+    def test_a_converter_that_takes_no_width_refuses_one(self) -> None:
+        router: Router[str] = Router()
+        with pytest.raises(RouteError):
+            router.add("32{day:date(8)}", "day")
+
+
+class TestBuildingAFixedWidthAddress:
+    def test_a_value_is_padded_to_the_width(self) -> None:
+        router: Router[str] = Router()
+        router.add("7{year:int(4)}{month:int(2)}", "month", name="month")
+        assert router.address_for("month", year=2026, month=8) == address("7202608")
+
+    def test_a_value_too_wide_for_its_field_is_refused(self) -> None:
+        #  It would build a number that means something else, or nothing.
+        router: Router[str] = Router()
+        router.add("7{month:int(2)}", "month", name="month")
+        with pytest.raises(NoSuchRouteError):
+            router.address_for("month", month=100)
+
+    def test_an_address_built_matches_the_route_it_was_built_from(self) -> None:
+        router: Router[str] = Router()
+        router.add("32{year:int(4)}{month:int(2)}{day:int(2)}", "iso", name="iso")
+        built = router.address_for("iso", year=2026, month=8, day=2)
+        found = router.match(built)
+        assert found is not None
+        assert found.params == {"year": 2026, "month": 8, "day": 2}
+
+
 class TestChoosingBetweenRoutes:
     #  Patterns are tried by how much of them is literal, most first, so a
     #  specific number beats a general one whatever order they were added in.

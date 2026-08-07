@@ -48,19 +48,39 @@ async def day(request: PageRequest, day: date) -> Page:
 ```
 
 `int` takes one or more digits and refuses a leading zero, so a page cannot have
-two numbers. `date` takes eight, as `YYYYMMDD`. An application that needs
-another field shape registers one:
+two numbers. `date` takes eight, as `YYYYMMDD`.
+
+**`int(n)` takes exactly n digits**, zero-padded. That is what lets fields sit
+next to one another, since a page number has no separators:
+
+```python
+@app.page("32{year:int(4)}{month:int(2)}{day:int(2)}", name="iso")
+async def iso(request: PageRequest, year: int, month: int, day: int) -> Page:
+    ...
+
+app.address_for("iso", year=2026, month=8, day=2)     # 3220260802
+```
+
+The leading-zero rule inverts here, for the same reason it exists. A
+variable-width field refuses a leading zero because `0042` and `42` would be two
+numbers for one page; a fixed-width field *requires* the padding, because with
+the width settled there is again only one spelling of each value. So `708` is
+month 8 and `78` is not a page.
+
+An application that needs another field shape registers one, either fixed or
+parameterised by whatever is written in the brackets:
 
 ```python
 app.converter("pair", Converter(field_pattern="[0-9]{2}", width=2))
+app.converter("code", lambda width: Converter(...))    # for {x:code(3)}
 ```
 
 Two rules keep matching predictable. **Most literal wins**: `90` beats
 `9{n:int}` however they were registered, because a table whose meaning changed
-when someone tidied it would be no use. And **fields must be separable**: two
-variable-width fields running together are refused outright, since nothing could
-say where one ended and the next began. Give the first a fixed width, or put a
-digit between them.
+when someone tidied it would be no use. And **fields must be separable**: all
+but the last field running together must have a fixed width, or nothing could
+say where one ended and the next began. Give them widths, or put a literal digit
+between them.
 
 None of this needs prefix-free numbers. A viewdata request is terminated, so
 `*8#` and `*82489493#` are unambiguously different and fields may vary in width.

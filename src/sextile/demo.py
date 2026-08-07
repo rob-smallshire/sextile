@@ -5,17 +5,17 @@ wrapped body text, a page number -- so a glance at ``sextile render --demo``
 shows whether anything is obviously wrong. Nothing else depends on it.
 """
 
-from sextile.pages.numbering import MainIndex, Post, format_page_number
+from sextile.addressing import PageAddress
 from sextile.viewdata.canvas import Canvas
 from sextile.viewdata.controls import Colour, Control, graphics_colour
 from sextile.viewdata.frame import COLUMNS, Frame
 
 SERVICE_NAME = "SEXTILE"
 
-#  A real Stardot post, numbered by the scheme rather than by hand, so the demo
-#  cannot drift away from what the parser accepts.
-_SAMPLE_PAGE_NUMBER = format_page_number(Post(489493))
-_MAIN_INDEX_NUMBER = format_page_number(MainIndex())
+#  Numbers from no particular service: this is a picture of a page rather than
+#  a page, and the framework has no numbering of its own to borrow.
+_SAMPLE_PAGE_NUMBER = PageAddress("82489493")
+_MAIN_INDEX_NUMBER = PageAddress("1")
 
 _SAMPLE_BODY = (
     "I've been investigating the cycle timing of the Acorn NS32016 second "
@@ -48,7 +48,7 @@ def demo_frame() -> Frame:
 
 def _header(canvas: Canvas, row: int) -> None:
     canvas.row(row).text(SERVICE_NAME, Colour.CYAN)
-    canvas.right(row, _SAMPLE_PAGE_NUMBER, Colour.WHITE)
+    canvas.right(row, str(_SAMPLE_PAGE_NUMBER), Colour.WHITE)
 
 
 def _rule(canvas: Canvas, row: int, colour: Colour) -> None:

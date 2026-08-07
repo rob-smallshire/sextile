@@ -1,11 +1,12 @@
 """Stardot as a Sextile application.
 
-The service is being lifted off the framework it grew inside. What proves the
-lift changed nothing is not a description of the new arrangement but the old
-one's own output: every page here is built both ways and the bytes compared.
+What the service has: a numbering that is not allowed to drift, a set of named
+jumps, and a rule that a page with nothing to show says so rather than appearing
+to be broken.
 
-When the old arrangement goes, so do the comparisons, and what remains is the
-rest of this file -- the numbering, and what each page offers.
+Nothing here is about frames, sessions or the wire. Those belong to the
+framework, and the framework is tested against a service that is about nothing
+in particular, so that neither can quietly come to depend on the other.
 """
 
 from collections.abc import Iterator
@@ -18,8 +19,6 @@ from sextile.addressing import PageAddress, UnknownPageError
 from sextile.application import Arrival, PageRequest
 from sextile.model import Post
 from sextile.page import Page
-from sextile.pages import numbering
-from sextile.pages.router import Neighbours, resolve
 from sextile.store.repository import Repository
 from stardot_viewdata import StardotApplication
 
@@ -73,7 +72,16 @@ BY_NUMBER = Arrival()
 
 
 async def page_at(app: StardotApplication, digits: str, arrival: Arrival = BY_NUMBER) -> Page:
-    return await app.respond(PageRequest(address=PageAddress(digits), arrival=arrival))
+    """The page at a number, which for a number the service has is always one."""
+    page = await app.respond(PageRequest(address=PageAddress(digits), arrival=arrival))
+    assert page is not None, f"*{digits}# is not a page here"
+    return page
+
+
+async def what_a_reader_sees(app: StardotApplication, digits: str) -> Page:
+    """The page, or the notice shown in its place -- as the session would."""
+    page = await app.respond(PageRequest(address=PageAddress(digits)))
+    return page if page is not None else await app.not_found(digits)
 
 
 def bytes_of(page: Page) -> list[bytes]:
@@ -87,86 +95,35 @@ def text_of(page: Page, index: int = 0) -> str:
     return "\n".join(characters)
 
 
-#: Every page the service has, and the reference the old arrangement knows it by.
-EVERY_PAGE: list[tuple[str, numbering.PageRef]] = [
-    ("1", numbering.MainIndex()),
-    ("8", numbering.PostsIndex()),
-    ("82489000", numbering.Post(489000)),
-    ("82999999", numbering.Post(999999)),
-    ("7", numbering.TopicsIndex()),
-    ("7233387", numbering.Topic(33387)),
-    ("3", numbering.DaysIndex()),
-    ("3220260802", numbering.Day(datetime(2026, 8, 2).date())),
-    ("3219811201", numbering.Day(datetime(1981, 12, 1).date())),
-    ("4", numbering.ForumsIndex()),
-    ("4253", numbering.Forum(53)),
-    ("5", numbering.ContributorsIndex()),
-    ("5210058", numbering.Contributor(10058)),
-    ("9", numbering.About()),
-    ("90", numbering.Logoff()),
+#: Every page the service has.
+EVERY_PAGE: list[str] = [
+    "1",
+    "8",
+    "82489000",
+    "82999999",
+    "7",
+    "7233387",
+    "3",
+    "3220260802",
+    "3219811201",
+    "4",
+    "4253",
+    "5",
+    "5210058",
+    "9",
+    "90",
 ]
-
-
-class TestNothingOnTheWireChanged:
-    @pytest.mark.parametrize(("digits", "reference"), EVERY_PAGE, ids=[p[0] for p in EVERY_PAGE])
-    async def test_a_page_is_drawn_exactly_as_it_was(
-        self,
-        digits: str,
-        reference: numbering.PageRef,
-        app: StardotApplication,
-        repository: Repository,
-    ) -> None:
-        assert bytes_of(await page_at(app, digits)) == [
-            page_frame.frame.to_bytes() for page_frame in resolve(reference, repository).frames
-        ]
-
-    async def test_a_post_reached_through_a_sequence_is_drawn_as_it_was(
-        self, app: StardotApplication, repository: Repository
-    ) -> None:
-        #  The prev/next axis in the footer appears only for a reader who
-        #  arrived through a menu, which is the one thing a page number cannot
-        #  say for itself.
-        arrival = Arrival(preceding=PageAddress("82489000"), following=PageAddress("82489002"))
-        was = resolve(
-            numbering.Post(489001),
-            repository,
-            neighbours=Neighbours(
-                preceding=numbering.Post(489000), following=numbering.Post(489002)
-            ),
-        )
-        assert bytes_of(await page_at(app, "82489001", arrival)) == [
-            page_frame.frame.to_bytes() for page_frame in was.frames
-        ]
-
-    @pytest.mark.parametrize(("digits", "reference"), EVERY_PAGE, ids=[p[0] for p in EVERY_PAGE])
-    async def test_a_page_offers_what_it_offered(
-        self,
-        digits: str,
-        reference: numbering.PageRef,
-        app: StardotApplication,
-        repository: Repository,
-    ) -> None:
-        was = resolve(reference, repository)
-        now = await page_at(app, digits)
-        for index, page_frame in enumerate(now.frames):
-            before = was.frame(index)
-            assert before is not None
-            assert {key: str(where) for key, where in page_frame.choices.items()} == {
-                key: numbering.format_page_number(where) for key, where in before.choices.items()
-            }
-            assert page_frame.moves == before.moves
 
 
 class TestTheNumbering:
     #  The scheme is Stardot's own and is not allowed to drift: a page number
     #  written on paper in 2026 should still fetch that page.
 
-    @pytest.mark.parametrize(("digits", "_reference"), EVERY_PAGE, ids=[p[0] for p in EVERY_PAGE])
+    @pytest.mark.parametrize("digits", EVERY_PAGE)
     async def test_every_page_number_is_answered(
-        self, digits: str, _reference: numbering.PageRef, app: StardotApplication
+        self, digits: str, app: StardotApplication
     ) -> None:
-        page = await page_at(app, digits)
-        assert "NOT a page here" not in text_of(page)
+        assert await app.respond(PageRequest(address=PageAddress(digits))) is not None
 
     def test_a_page_number_is_built_from_the_board_s_own_identifier(
         self, app: StardotApplication
@@ -181,14 +138,14 @@ class TestTheNumbering:
     async def test_a_reserved_or_unallocated_number_says_so(
         self, digits: str, app: StardotApplication
     ) -> None:
-        assert "NOT a page here" in text_of(await page_at(app, digits))
+        assert "NOT a page here" in text_of(await what_a_reader_sees(app, digits))
 
     @pytest.mark.parametrize("digits", ["8201", "42053"])
     async def test_a_leading_zero_names_no_page(
         self, digits: str, app: StardotApplication
     ) -> None:
         #  Accepting one would give a single page two different numbers.
-        assert "NOT a page here" in text_of(await page_at(app, digits))
+        assert "NOT a page here" in text_of(await what_a_reader_sees(app, digits))
 
     def test_the_index_has_one_number_and_not_two(self, app: StardotApplication) -> None:
         #  The bare root names it; <root>0 is not accepted as well.
@@ -270,7 +227,7 @@ class TestWhereTheKeysLead:
     async def test_zero_returns_to_the_index_from_everywhere(
         self, app: StardotApplication
     ) -> None:
-        for digits, _ in EVERY_PAGE:
+        for digits in EVERY_PAGE:
             page = await page_at(app, digits)
             for page_frame in page.frames:
                 assert page_frame.destination("0") == PageAddress("1")

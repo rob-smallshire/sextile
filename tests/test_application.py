@@ -12,7 +12,7 @@ thing as being logged in.
 import pytest
 
 from sextile.addressing import PageAddress, UnknownPageError
-from sextile.application import Application, PageRequest, Sextile
+from sextile.application import Application, Arrival, PageRequest, Sextile
 from sextile.page import Page, PageFrame
 from sextile.routing import NoSuchRouteError
 from sextile.viewdata.canvas import Canvas
@@ -37,7 +37,8 @@ def request_for(digits: str, **params: object) -> PageRequest:
     return PageRequest(address=PageAddress(digits), params=params)
 
 
-def text_of(page: Page, row: int = 0) -> str:
+def text_of(page: Page | None, row: int = 0) -> str:
+    assert page is not None, "expected a page, and the application had none"
     characters, _ = page.frames[0].frame.to_grid()
     return characters[row].rstrip()
 
@@ -101,13 +102,14 @@ class TestRouting:
 
 
 class TestSayingSo:
-    #  An empty response would be indistinguishable from a line fault, on a
-    #  service that answers slowly by design.
+    #  An unrouted page is answered with nothing rather than with a notice: the
+    #  two are shown differently. A page that exists is somewhere the reader has
+    #  gone; a page that does not is something said to a reader who has not
+    #  moved, and the session needs to be able to tell them apart.
 
-    async def test_an_unrouted_page_says_so(self) -> None:
+    async def test_an_unrouted_page_is_not_answered(self) -> None:
         app = Sextile()
-        page = await app.respond(request_for("6"))
-        assert "6" in text_of(page, row=2)
+        assert await app.respond(request_for("6")) is None
 
     async def test_a_word_that_names_nothing_says_so(self) -> None:
         app = Sextile()
@@ -121,7 +123,6 @@ class TestSayingSo:
         async def missing(target: str) -> Page:
             return saying(f"NO {target}")
 
-        assert text_of(await app.respond(request_for("6"))) == "NO 6"
         assert text_of(await app.not_found("BANANA")) == "NO BANANA"
 
 
@@ -198,14 +199,13 @@ class TestArrival:
             choices = {"N": following} if following else {}
             return Page(frames=(PageFrame(blank(), choices=choices),))
 
-        from sextile.application import Arrival
-
         page = await app.respond(
             PageRequest(
                 address=PageAddress("821"),
                 arrival=Arrival(following=PageAddress("822")),
             )
         )
+        assert page is not None
         assert page.frames[0].destination("N") == PageAddress("822")
 
 
@@ -263,11 +263,24 @@ class TestMounting:
         app.mount("", inner)
         assert text_of(await app.respond(request_for("1"))) == "OURS"
 
-    async def test_a_page_no_mounted_application_has_still_says_so(self) -> None:
+    async def test_a_page_no_mounted_application_has_is_not_answered(self) -> None:
         app = Sextile()
         app.mount("8", Sextile())
-        page = await app.respond(request_for("82489493"))
-        assert "82489493" in text_of(page, row=2)
+        assert await app.respond(request_for("82489493")) is None
+
+    async def test_a_page_the_first_mount_declines_falls_to_the_next(self) -> None:
+        first, second = Sextile(), Sextile()
+
+        @second.page("1")
+        async def main(request: PageRequest) -> Page:
+            return saying("SECOND")
+
+        app = Sextile()
+        app.mount("", first)
+        app.mount("", second)
+        answered = await app.respond(request_for("1"))
+        assert answered is not None
+        assert text_of(answered) == "SECOND"
 
     async def test_a_mounted_application_s_keywords_are_offered_too(self) -> None:
         app = Sextile()

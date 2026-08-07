@@ -82,9 +82,23 @@ class Application(ABC):
     """
 
     @abstractmethod
-    async def respond(self, request: PageRequest) -> Page:
-        """Build the page this request asks for. Always returns something showable."""
+    async def respond(self, request: PageRequest) -> Page | None:
+        """Build the page this request asks for, or None if there is no such page.
+
+        None rather than a notice, because the two are shown differently: a page
+        that exists is somewhere the reader has gone, and a page that does not
+        is something said to a reader who has not moved.
+        """
         raise NotImplementedError
+
+    @property
+    def home(self) -> PageAddress:
+        """Where a caller is put when the line opens.
+
+        Page 1 unless a service says otherwise. A caller has to arrive
+        somewhere, and the terminal has no address of its own to offer.
+        """
+        return PageAddress("1")
 
     def resolve(self, target: str) -> PageAddress:
         """The page a typed request names, or raise ``UnknownPageError``.
@@ -114,10 +128,15 @@ class Application(ABC):
 class Sextile(Application):
     """An application that answers by routing page numbers to handlers."""
 
-    def __init__(self) -> None:
+    def __init__(self, *, home: str | PageAddress = "1") -> None:
         self._router: Router[Handler] = Router()
         self._mounted: list[tuple[str, Application]] = []
         self._not_found: NotFoundHandler | None = None
+        self._home = home if isinstance(home, PageAddress) else PageAddress(home)
+
+    @property
+    def home(self) -> PageAddress:
+        return self._home
 
     # -- building it --------------------------------------------------------
 
@@ -168,14 +187,16 @@ class Sextile(Application):
 
     # -- answering ----------------------------------------------------------
 
-    async def respond(self, request: PageRequest) -> Page:
+    async def respond(self, request: PageRequest) -> Page | None:
         found = self._router.match(request.address)
         if found is not None:
             return await found.target(request, **found.params)
         for prefix, application in self._mounted:
             if request.address.digits.startswith(prefix):
-                return await application.respond(request)
-        return await self.not_found(str(request.address))
+                answered = await application.respond(request)
+                if answered is not None:
+                    return answered
+        return None
 
     def resolve(self, target: str) -> PageAddress:
         try:

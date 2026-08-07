@@ -17,8 +17,8 @@ import asyncio
 import logging
 from typing import Final
 
+from sextile.application import Application
 from sextile.session.session import Session
-from sextile.store.repository import Repository
 
 #: After the MC6850 ACIA, which drives the BBC Micro's serial port.
 DEFAULT_PORT: Final = 6850
@@ -36,16 +36,21 @@ _TIMED_OUT_NOTICE: Final = (
 
 
 async def serve(
-    repository: Repository,
+    application: Application,
     *,
     host: str = "127.0.0.1",
     port: int = DEFAULT_PORT,
     idle_timeout: float = DEFAULT_IDLE_TIMEOUT,
 ) -> asyncio.Server:
-    """Start listening. Returns the server, so a caller can close it."""
+    """Start listening. Returns the server, so a caller can close it.
+
+    Starting and stopping the application is the caller's, not this function's:
+    a server that opened an application's database would be a server with an
+    opinion about what an application is.
+    """
 
     async def handle(reader: asyncio.StreamReader, writer: asyncio.StreamWriter) -> None:
-        await _converse(reader, writer, repository, idle_timeout)
+        await _converse(reader, writer, application, idle_timeout)
 
     server = await asyncio.start_server(handle, host, port)
     for socket in server.sockets:
@@ -56,15 +61,15 @@ async def serve(
 async def _converse(
     reader: asyncio.StreamReader,
     writer: asyncio.StreamWriter,
-    repository: Repository,
+    application: Application,
     idle_timeout: float,
 ) -> None:
     """One caller's session, from connection to ringing off."""
     caller = writer.get_extra_info("peername")
     _logger.info("Call from %s", caller)
-    session = Session(repository)
+    session = Session(application)
     try:
-        await _write(writer, session.greeting())
+        await _write(writer, await session.greeting())
         while not session.finished:
             data = await _read(reader, idle_timeout)
             if data is None:
@@ -72,8 +77,7 @@ async def _converse(
                 break
             if not data:
                 break
-            #  Building a page touches SQLite, so keep it off the event loop.
-            for response in await asyncio.to_thread(session.receive, data):
+            for response in await session.receive(data):
                 await _write(writer, response)
     except (ConnectionError, asyncio.IncompleteReadError):
         #  A caller who pulls the plug is ordinary, not exceptional.

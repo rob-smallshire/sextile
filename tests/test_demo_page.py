@@ -5,7 +5,7 @@ mosaic graphics, wrapped body text, a page number -- so that a glance at
 ``sextile render --demo`` shows whether anything is obviously wrong.
 """
 
-from sextile.pages.demo import demo_frame
+from sextile.demo import demo_frame
 from sextile.viewdata.ansi import render_ansi
 from sextile.viewdata.frame import COLUMNS, FRAME_PREAMBLE, ROWS
 

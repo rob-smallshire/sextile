@@ -15,6 +15,7 @@ dependencies = [
 
 [project.scripts]
 sextile = "sextile.__main__:main"
+stardot-viewdata = "stardot_viewdata.__main__:main"
 
 [build-system]
 requires = ["hatchling"]

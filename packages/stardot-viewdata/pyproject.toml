@@ -1,0 +1,25 @@
+[project]
+name = "stardot-viewdata"
+version = "0.1.0"
+description = "The Stardot forum as a Viewdata service, for 1980s Acorn computers"
+readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [
+    { name = "Robert Smallshire", email = "robert@smallshire.org.uk" }
+]
+requires-python = ">=3.12"
+dependencies = [
+    "sextile",
+    "httpx>=0.27",
+]
+
+[project.scripts]
+stardot-viewdata = "stardot_viewdata.__main__:main"
+
+[tool.uv.sources]
+sextile = { workspace = true }
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"

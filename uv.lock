@@ -6,6 +6,13 @@ resolution-markers = [
     "python_full_version < '3.15'",
 ]
 
+[manifest]
+members = [
+    "sextile",
+    "sextile-workspace",
+    "stardot-viewdata",
+]
+
 [[package]]
 name = "anyio"
 version = "4.14.2"
@@ -342,9 +349,15 @@ wheels = [
 [[package]]
 name = "sextile"
 version = "0.1.0"
+source = { editable = "packages/sextile" }
+
+[[package]]
+name = "sextile-workspace"
+version = "0.1.0"
 source = { editable = "." }
 dependencies = [
-    { name = "httpx" },
+    { name = "sextile" },
+    { name = "stardot-viewdata" },
 ]
 
 [package.dev-dependencies]
@@ -356,7 +369,10 @@ dev = [
 ]
 
 [package.metadata]
-requires-dist = [{ name = "httpx", specifier = ">=0.27" }]
+requires-dist = [
+    { name = "sextile", editable = "packages/sextile" },
+    { name = "stardot-viewdata", editable = "packages/stardot-viewdata" },
+]
 
 [package.metadata.requires-dev]
 dev = [
@@ -364,6 +380,21 @@ dev = [
     { name = "pytest", specifier = ">=8.0" },
     { name = "pytest-asyncio", specifier = ">=0.24" },
     { name = "ruff", specifier = ">=0.6" },
+]
+
+[[package]]
+name = "stardot-viewdata"
+version = "0.1.0"
+source = { editable = "packages/stardot-viewdata" }
+dependencies = [
+    { name = "httpx" },
+    { name = "sextile" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "httpx", specifier = ">=0.27" },
+    { name = "sextile", editable = "packages/sextile" },
 ]
 
 [[package]]

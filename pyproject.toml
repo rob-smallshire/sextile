@@ -1,7 +1,9 @@
+#  The workspace root. It ships nothing itself: it holds the members, the one
+#  lockfile they share, and the tooling they are all held to.
 [project]
-name = "sextile"
+name = "sextile-workspace"
 version = "0.1.0"
-description = "A Prestel-style Viewdata service presenting the Stardot forum to 1980s Acorn computers"
+description = "Sextile, and the Viewdata services built on it"
 readme = "README.md"
 license = "MIT"
 license-files = ["LICENSE"]
@@ -10,22 +12,25 @@ authors = [
 ]
 requires-python = ">=3.12"
 dependencies = [
-    "httpx>=0.27",
+    "sextile",
+    "stardot-viewdata",
 ]
 
-[project.scripts]
-sextile = "sextile.__main__:main"
-stardot-viewdata = "stardot_viewdata.__main__:main"
+[tool.uv.workspace]
+members = ["packages/*"]
+
+#  Members resolve each other from the workspace rather than from an index, so
+#  an edit to the framework is felt by its applications immediately.
+[tool.uv.sources]
+sextile = { workspace = true }
+stardot-viewdata = { workspace = true }
 
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
 
-#  Two packages, for the moment in one distribution: the framework, and the
-#  Stardot application running on it. They become separate workspace members
-#  once the split is finished.
 [tool.hatch.build.targets.wheel]
-packages = ["src/sextile", "src/stardot_viewdata"]
+bypass-selection = true
 
 [dependency-groups]
 dev = [
@@ -36,12 +41,12 @@ dev = [
 ]
 
 [tool.pytest.ini_options]
-testpaths = ["tests"]
+testpaths = ["packages"]
 asyncio_mode = "auto"
 
 [tool.ruff]
 line-length = 100
-src = ["src", "tests"]
+src = ["packages/sextile/src", "packages/stardot-viewdata/src"]
 #  Spikes are preserved as a record of how a question was answered, not as
 #  maintained code, and they import packages this project does not depend on.
 extend-exclude = ["docs/spikes"]
@@ -51,4 +56,8 @@ select = ["E", "F", "I", "UP", "B", "SIM"]
 
 [tool.mypy]
 strict = true
-files = ["src", "tests"]
+files = ["packages"]
+#  Each member's tests are a top-level package of their own, so two members may
+#  both have a tests/ directory without one shadowing the other.
+explicit_package_bases = true
+mypy_path = "packages/sextile/src:packages/stardot-viewdata/src:packages/sextile/tests"

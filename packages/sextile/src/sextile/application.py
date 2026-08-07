@@ -140,14 +140,18 @@ class Sextile(Application):
 
     # -- building it --------------------------------------------------------
 
-    def page(self, pattern: str, *, name: str | None = None) -> Callable[[Handler], Handler]:
+    def page[H: Handler](self, pattern: str, *, name: str | None = None) -> Callable[[H], H]:
         """Register a handler for every page number matching ``pattern``.
 
         The route takes the handler's own name unless told otherwise, so a page
         linking to another names it once rather than twice.
+
+        Generic in the handler so that decorating one does not throw its own
+        signature away: a service checked strictly should stay checked strictly
+        on the far side of the decorator.
         """
 
-        def register(handler: Handler) -> Handler:
+        def register(handler: H) -> H:
             self._router.add(pattern, handler, name=name or handler.__name__)
             return handler
 
@@ -180,7 +184,7 @@ class Sextile(Application):
         #  general one however they were added.
         self._mounted.sort(key=lambda mount: -len(mount[0]))
 
-    def on_not_found(self, handler: NotFoundHandler) -> NotFoundHandler:
+    def on_not_found[H: NotFoundHandler](self, handler: H) -> H:
         """Register what this service says about a page it has not got."""
         self._not_found = handler
         return handler

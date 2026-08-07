@@ -13,8 +13,8 @@ import asyncio
 from collections.abc import AsyncIterator
 
 import pytest
-
 from exemplar import Board
+
 from sextile.server import DEFAULT_PORT, serve
 from sextile.viewdata.frame import FRAME_PREAMBLE
 

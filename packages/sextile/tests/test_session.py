@@ -12,8 +12,8 @@ the framework would not be one.
 """
 
 import pytest
-
 from exemplar import Board
+
 from sextile.addressing import PageAddress
 from sextile.application import PageRequest, Sextile
 from sextile.page import Page

@@ -5,7 +5,8 @@ repository is not ours to license, and is noted here.
 
 ## Forum posts used as test fixtures
 
-`tests/data/board-feed.xml`, `forum-53-feed.xml` and `topic-28000-feed.xml` are
+In `packages/stardot-viewdata/tests/data/`, the files `board-feed.xml`,
+`forum-53-feed.xml` and `topic-28000-feed.xml` are
 Atom documents captured verbatim from `stardot.org.uk`'s public syndication
 feed. They contain **posts written by named members of that forum**, whose
 words remain their own. They are included because the parsing, layout and
@@ -16,9 +17,9 @@ They are reproduced here for testing, in the quantity needed to test with, and
 are **not covered by the MIT grant above**. Anyone redistributing this
 repository should treat them as third-party content.
 
-`tests/data/stardot-robots.txt` is likewise a copy of that site's robots.txt,
-kept so that the rules Sextile obeys are tested against the real file rather
-than a paraphrase.
+`stardot-robots.txt` beside them is likewise a copy of that site's robots.txt,
+kept so that the rules obeyed are tested against the real file rather than a
+paraphrase.
 
 Stardot's robots.txt carries `Content-Signal: search=yes, ai-train=no,
 use=reference`. Sextile does not train anything.

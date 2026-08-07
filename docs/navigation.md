@@ -141,13 +141,17 @@ boundary specially, and it makes DELETE do the obvious thing everywhere.
 
 | | |
 |---|---|
-| `keys.py` | the compass, and the arrow codes that spell it |
-| `session/commands.py` | bytes to commands; syntax only, no meanings |
-| `session/session.py` | where the reader is, where they have been, what to send |
-| `pages/page.py` | `Page` and `PageFrame`: frames, choices, moves |
-| `pages/router.py` | building each kind of page, and what it offers |
-| `viewdata/footer.py` | fitting the prompt into a row |
-| `viewdata/command_line.py` | drawing and editing the request being typed |
+| `sextile/keys.py` | the compass, and the arrow codes that spell it |
+| `sextile/session/commands.py` | bytes to commands; syntax only, no meanings |
+| `sextile/session/session.py` | where the reader is, where they have been, what to send |
+| `sextile/page.py` | `Page` and `PageFrame`: frames, choices, moves |
+| `sextile/routing.py` | which page number means which page |
+| `sextile/application.py` | the seam an application answers across |
+| `sextile/viewdata/footer.py` | fitting the prompt into a row |
+| `sextile/viewdata/command_line.py` | drawing and editing the request being typed |
+
+All of it is the framework's. What the pages actually *are* belongs to an
+application: see [writing-an-application.md](writing-an-application.md).
 
 The command parser recognises **syntax only**. Whether `MAIN` or `82489493`
 names anything is the numbering layer's business, and whether `N` does anything

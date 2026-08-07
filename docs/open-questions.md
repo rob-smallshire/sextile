@@ -12,13 +12,14 @@ but if `updated` does not move, an edit will only be noticed while the post is
 still inside the feed's ten-post window.
 
 **Do the Stardot administrators want to fix the feed?**
-[phpbb-feed-code-newlines.md](phpbb-feed-code-newlines.md) is written to be
+[phpbb-feed-code-newlines.md](../packages/stardot-viewdata/docs/phpbb-feed-code-newlines.md) is written to be
 handed over. It would make code listings legible, which on a board largely about
 6502 assembler is the single biggest improvement available.
 
-**Would they host a small read-only endpoint?** That is the seam
-`feed/source.py` exists for. It would bring topic ids, and with them thread
-browsing, which is the one obviously missing way to read a forum.
+**Would they host a small read-only endpoint?** They would: the administrator
+has proposed a phpBB extension, which is better than the endpoint we were going
+to ask for. See [target-architecture.md](target-architecture.md) for the shape
+of it and the phases between here and there.
 
 ## Wanted, once a real screen has been watched
 
@@ -35,8 +36,10 @@ Beeb for half an hour.
   quarters off; this would take most of the rest on a menu where only the middle
   rows differ. The cursor positioning it needs has now been measured and works;
   see `viewdata-encoding.md`.
-- **`sextile render --post` draws no chrome**, unlike `--page`. It predates the
-  chrome and is now only useful for inspecting body layout in isolation.
+- **`render --post` is gone.** It drew a post's body with no chrome, which was
+  useful for inspecting layout in isolation, and it did not survive the split
+  because it was a page-drawing command that bypassed pages. `lay_out` still
+  does the same thing from a test.
 
 ## Wanted before it runs unattended
 
@@ -45,12 +48,28 @@ Beeb for half an hour.
   60-second crawl delay. The last-request time should be persisted in the
   archive. This matters as soon as anything but a human starts the poller.
 - **The archive path is relative to the working directory.** `sextile.sqlite`
-  by default, which means `serve` and `ingest` silently disagree if run from
-  different directories — the first thing that went wrong in practice. A fixed
+  by default, which means `stardot-viewdata serve` and `ingest` silently
+  disagree if run from different directories — the first thing that went wrong in practice. A fixed
   location under `platformdirs` would be kinder.
 - **No service file.** Running on a Raspberry Pi wants the poller and the server
   supervised, and a decision about whether they are one process or two. They are
   currently two, sharing only the SQLite file, which works and is simple.
+
+## Raised by the framework extraction
+
+- **Both applications write their own menu builder**, and the two are much
+  alike: nine choices to a frame, a line of detail beneath each, the way back on
+  0. That is a viewdata convention rather than either service's, so it belongs
+  in the framework — but with two examples the shared shape is a guess, and with
+  three it would be evidence.
+- **Mounting is untested against a real second application.** `mount` gives the
+  mounted application the whole address rather than stripping a prefix, because
+  the application draws the page number into the frame itself. That is right,
+  but nothing yet runs two applications behind one number space.
+- **`sextile.viewdata` is a large surface for an application to reach into.**
+  Chrome, canvas, colours, layout and the frame itself are all public, and an
+  application needs most of them. Whether some of it should be a smaller,
+  friendlier facade is a question for when there are more services.
 
 ## Deliberately not done
 

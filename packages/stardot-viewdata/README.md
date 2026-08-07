@@ -175,7 +175,7 @@ Keyword jumps work too: `*MAIN#`, `*LATEST#`, `*DAYS#`, `*FORUMS#`, `*WHO#`,
 `*ABOUT#`, `*BYE#`.
 
 Page numbers follow the board's own identifiers, so `*82489493#` here is post
-489493 there. See [docs/page-numbering.md](../../docs/page-numbering.md).
+489493 there. See [docs/page-numbering.md](docs/page-numbering.md).
 
 ## How it is put together
 
@@ -237,11 +237,11 @@ terminal to a reply.
 | [architecture.md](../../docs/architecture.md) | the module map, the seams, and where the awkwardness lives |
 | [rendering.md](../../docs/rendering.md) | how a post becomes bytes, stage by stage |
 | [navigation.md](../../docs/navigation.md) | how a reader moves about, and why the controls are what they are |
-| [page-numbering.md](../../docs/page-numbering.md) | the numbering scheme and why it uses Stardot's own ids |
+| [page-numbering.md](docs/page-numbering.md) | the numbering scheme and why it uses Stardot's own ids |
 | [viewdata-encoding.md](../../docs/viewdata-encoding.md) | what the BBC end actually does, and how we know |
 | [spikes/README.md](../../docs/spikes/README.md) | the eight questions measured on real hardware, and their answers |
-| [feed-limitations.md](../../docs/feed-limitations.md) | what the Atom feed cannot tell us |
-| [phpbb-feed-code-newlines.md](../../docs/phpbb-feed-code-newlines.md) | a defect in phpBB's feed, found here and since fixed |
+| [feed-limitations.md](docs/feed-limitations.md) | what the Atom feed cannot tell us |
+| [phpbb-feed-code-newlines.md](docs/phpbb-feed-code-newlines.md) | a defect in phpBB's feed, found here and since fixed |
 | [open-questions.md](../../docs/open-questions.md) | known gaps, and what is deliberately not done |
 
 `CLAUDE.md` records how the project is built, for anyone — human or otherwise —
@@ -253,4 +253,4 @@ MIT — see [LICENSE](LICENSE).
 
 The test fixtures under `tests/data/` are Atom documents captured from Stardot
 and contain posts written by members of that forum. Those words are their
-authors' own and are not covered by the grant; see [NOTICE.md](NOTICE.md).
+authors' own and are not covered by the grant; see [NOTICE.md](../../NOTICE.md).

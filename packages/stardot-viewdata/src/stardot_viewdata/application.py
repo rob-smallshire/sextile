@@ -388,9 +388,9 @@ class StardotApplication(Sextile):
                 [
                     f"Post {post_id} is NOT in the archive.",
                     "",
-                    "Sextile holds what it has seen in the",
-                    "board's feed, which reaches back only a",
-                    "little way.",
+                    "This service holds what it has seen in",
+                    "the board's feed, which reaches back",
+                    "only a little way.",
                 ],
             )
 
@@ -432,7 +432,7 @@ class StardotApplication(Sextile):
         held = await self._read(lambda repository: repository.count_posts())
         return self._notice(
             request.address,
-            "ABOUT SEXTILE",
+            f"ABOUT {self.name.upper()}",
             [
                 "A Viewdata service carrying posts from",
                 "stardot.org.uk, for users of Acorn",
@@ -444,8 +444,8 @@ class StardotApplication(Sextile):
                 "identifiers, so *82489493# here is post",
                 "489493 there.",
                 "",
-                "Named after the star key on a viewdata",
-                "keypad.",
+                "Served by Sextile, named after the star",
+                "key on a viewdata keypad.",
             ],
         )
 

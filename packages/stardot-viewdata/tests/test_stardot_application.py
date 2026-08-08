@@ -286,3 +286,35 @@ class TestUtc:
         app = StardotApplication(repository=repository)
         page = await page_at(app, "82500000")
         assert page.frames[0].destination("3") == PageAddress("3220260803")
+
+
+class TestTheServiceNamesItself:
+    """The reader dialled Stardot, not the software that serves it.
+
+    These read oddly until you know the history: this service and the framework
+    beneath it were one program, so every page that had a name on it had the
+    wrong one.
+    """
+
+    def test_the_service_knows_what_it_is_called(self, app: StardotApplication) -> None:
+        assert app.name == "Stardot"
+
+    async def test_the_index_is_headed_with_it(self, app: StardotApplication) -> None:
+        assert "STARDOT" in text_of(await page_at(app, "1"))
+
+    async def test_so_is_the_about_page(self, app: StardotApplication) -> None:
+        assert "ABOUT STARDOT" in text_of(await page_at(app, "9"))
+
+    async def test_the_goodbye_thanks_the_reader_for_calling_it(
+        self, app: StardotApplication
+    ) -> None:
+        assert "calling Stardot" in text_of(await page_at(app, "90"))
+
+    @pytest.mark.parametrize("digits", ["1", "9", "90", "82999999"])
+    async def test_no_page_a_reader_sees_names_the_framework(
+        self, digits: str, app: StardotApplication
+    ) -> None:
+        #  Except where it is genuinely the subject: the about page credits
+        #  what serves it, which is a different thing from being called it.
+        shown = text_of(await page_at(app, digits))
+        assert "Sextile" not in shown or "Served by Sextile" in shown

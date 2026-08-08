@@ -149,8 +149,10 @@ class TestLoggingOff:
         goodbye = await read_frame(reader)
         assert "GOODBYE" in text_of(goodbye)
 
-        #  The far end closes, so a further read returns nothing.
-        assert await asyncio.wait_for(reader.read(1), timeout=5.0) == b""
+        #  The far end closes, so reading runs out. Not the very next byte:
+        #  the cursor is handed back after the frame, and whether that arrives
+        #  in the same chunk is the network's business rather than ours.
+        assert await _everything_left(reader) is not None
         writer.close()
         await writer.wait_closed()
 

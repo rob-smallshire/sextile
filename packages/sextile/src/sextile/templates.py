@@ -36,6 +36,7 @@ from sextile.page import Page, PageFrame
 from sextile.viewdata.canvas import Canvas, RowWriter
 from sextile.viewdata.chrome import CONTENT_FIRST_ROW, CONTENT_ROWS, draw_chrome
 from sextile.viewdata.controls import Colour
+from sextile.viewdata.drawing import fitted
 from sextile.viewdata.encoding import cell_count
 from sextile.viewdata.frame import COLUMNS
 from sextile.viewdata.layout import Row, rows_for
@@ -178,7 +179,7 @@ class Template[E](ABC):
             if self.home is not None:
                 choices[HOME_KEY] = self.home
             if not batch and self.empty:
-                canvas.row(row).text(_fitted(self.empty, COLUMNS - 1), Colour.WHITE)
+                canvas.row(row).text(fitted(self.empty, COLUMNS - 1), Colour.WHITE)
             for offset, entry in enumerate(batch):
                 digit = str(offset + 1) if self.numbered else None
                 where = self.destination(entry) if digit is not None else None
@@ -202,7 +203,7 @@ class Template[E](ABC):
         row = CONTENT_FIRST_ROW
         for line in self.preamble:
             if line:
-                canvas.row(row).text(_fitted(line, COLUMNS - 1), Colour.WHITE)
+                canvas.row(row).text(fitted(line, COLUMNS - 1), Colour.WHITE)
             row += 1
         #  A blank row between the lead-in and the entries, so the two read as
         #  two things.
@@ -243,11 +244,11 @@ class Menu(Template[Entry]):
     def draw(self, row: RowWriter, entry: Entry, digit: str | None) -> None:
         if digit is not None:
             row.text(f"{digit} ", Colour.YELLOW)
-        row.text(_fitted(entry.text, COLUMNS - 4), Colour.WHITE)
+        row.text(fitted(entry.text, COLUMNS - 4), Colour.WHITE)
 
     def draw_detail(self, row: RowWriter, entry: Entry) -> None:
         if entry.detail:
-            row.skip(2).text(_fitted(entry.detail, COLUMNS - 4), Colour.GREEN)
+            row.skip(2).text(fitted(entry.detail, COLUMNS - 4), Colour.GREEN)
 
 
 class Listing(Template[Entry]):
@@ -275,10 +276,10 @@ class Listing(Template[Entry]):
 
     def draw(self, row: RowWriter, entry: Entry, digit: str | None) -> None:
         del digit  # a listing numbers nothing
-        row.text(_fitted(entry.text, self.column), Colour.YELLOW)
+        row.text(fitted(entry.text, self.column), Colour.YELLOW)
         row.skip(max(self.column - cell_count(entry.text), 0))
         row.text(
-            _fitted(entry.detail, COLUMNS - self.column - self._ATTRIBUTES), Colour.WHITE
+            fitted(entry.detail, COLUMNS - self.column - self._ATTRIBUTES), Colour.WHITE
         )
 
 
@@ -351,10 +352,3 @@ def _axis(*, back: bool, on: bool) -> str:
     if back:
         return f"{PREVIOUS_FRAME} frame"
     return ""
-
-
-def _fitted(text: str, cells: int) -> str:
-    fitted = text
-    while cell_count(fitted) > cells:
-        fitted = fitted[:-1]
-    return fitted

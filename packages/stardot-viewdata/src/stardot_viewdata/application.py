@@ -34,8 +34,8 @@ from sextile.page import Page, PageFrame
 from sextile.templates import Menu, MenuItem, Prose
 from sextile.viewdata.canvas import Canvas
 from sextile.viewdata.chrome import CONTENT_FIRST_ROW, CONTENT_ROWS, draw_chrome
-from sextile.viewdata.controls import Colour, Control, graphics_colour
-from sextile.viewdata.encoding import cell_count
+from sextile.viewdata.controls import Colour
+from sextile.viewdata.drawing import centred, centred_double, fitted, rule
 from sextile.viewdata.footer import FooterItem, Priority, render_footer
 from sextile.viewdata.frame import COLUMNS
 from sextile.viewdata.layout import draw_rows, paginate
@@ -373,9 +373,9 @@ class StardotApplication(Sextile):
                 page_number=request.address.frame_number(index),
                 prompt=_prompt(moving, selecting=False),
             )
-            canvas.row(CONTENT_FIRST_ROW).text(_fitted(post.subject, COLUMNS - 1), Colour.YELLOW)
+            canvas.row(CONTENT_FIRST_ROW).text(fitted(post.subject, COLUMNS - 1), Colour.YELLOW)
             byline = canvas.row(CONTENT_FIRST_ROW + 1)
-            byline.text(_fitted(post.author_name, COLUMNS - 8), Colour.GREEN)
+            byline.text(fitted(post.author_name, COLUMNS - 8), Colour.GREEN)
             canvas.right(CONTENT_FIRST_ROW + 1, _time_of(post), Colour.GREEN)
             draw_rows(canvas, CONTENT_FIRST_ROW + _POST_HEADING_ROWS, rows)
             choices = self._post_choices(post)
@@ -403,11 +403,11 @@ class StardotApplication(Sextile):
         """
         held = await self._read(lambda repository: repository.count_posts())
         canvas = Canvas()
-        _rule(canvas, 1)
+        rule(canvas, 1)
         #  Twice the height, which takes the row below it as well.
-        _centred_double(canvas, 3, SERVICE_NAME, Colour.YELLOW)
-        _centred(canvas, 6, "V I E W D A T A", Colour.CYAN)
-        _rule(canvas, 8)
+        centred_double(canvas, 3, SERVICE_NAME, Colour.YELLOW)
+        centred(canvas, 6, "V I E W D A T A", Colour.CYAN)
+        rule(canvas, 8)
         canvas.row(10).text("The Stardot forum for users of Acorn", Colour.WHITE)
         canvas.row(11).text("computers, as 40-column frames.", Colour.WHITE)
         canvas.row(13).text(f"{held} posts held.", Colour.GREEN)
@@ -494,7 +494,7 @@ class StardotApplication(Sextile):
                 else:
                     row.skip(7)
                 if meaning:
-                    row.text(_fitted(meaning, COLUMNS - 8), Colour.WHITE)
+                    row.text(fitted(meaning, COLUMNS - 8), Colour.WHITE)
             frames.append(
                 PageFrame(
                     frame=canvas.frame,
@@ -593,7 +593,7 @@ class StardotApplication(Sextile):
         canvas.row(0).text(title, Colour.CYAN)
         for offset, line in enumerate(lines):
             if line:
-                canvas.row(2 + offset).text(_fitted(line, COLUMNS - 1), Colour.WHITE)
+                canvas.row(2 + offset).text(fitted(line, COLUMNS - 1), Colour.WHITE)
         return Page(frames=(PageFrame(frame=canvas.frame),), hang_up=True)
 
     def _notice(
@@ -617,7 +617,7 @@ class StardotApplication(Sextile):
         for offset, line in enumerate(lines[:CONTENT_ROWS]):
             if line:
                 canvas.row(CONTENT_FIRST_ROW + offset).text(
-                    _fitted(line, COLUMNS - 1), Colour.WHITE
+                    fitted(line, COLUMNS - 1), Colour.WHITE
                 )
         return Page(
             frames=(
@@ -647,31 +647,6 @@ class StardotApplication(Sextile):
 # -- helpers ----------------------------------------------------------------
 
 
-def _centred(canvas: Canvas, row: int, text: str, colour: Colour) -> None:
-    """Text across the middle of a row, the colour attribute paid for."""
-    room = COLUMNS - 1
-    canvas.row(row).skip(max((room - cell_count(text)) // 2, 0)).text(text, colour)
-
-
-def _centred_double(canvas: Canvas, row: int, text: str, colour: Colour) -> None:
-    """Text at twice the height, across the middle of a row and the one below.
-
-    Two cells go on attributes -- the double height and the colour -- so the
-    room to centre within is two fewer than the row.
-    """
-    room = COLUMNS - 2
-    column = max((room - cell_count(text)) // 2, 0)
-    canvas.double_height(row, text, colour, column=column)
-
-
-def _rule(canvas: Canvas, row: int) -> None:
-    """A full-width rule in separated mosaic graphics, as the chrome draws."""
-    frame = canvas.frame
-    frame.set_attribute(row, 0, graphics_colour(Colour.BLUE))
-    frame.set_attribute(row, 1, Control.SEPARATED_GRAPHICS)
-    frame.write(row, 2, "▮" * (COLUMNS - 2))
-
-
 def _day_title(day: date) -> str:
     return day.strftime("%a %d %b %Y").upper()
 
@@ -679,20 +654,6 @@ def _day_title(day: date) -> str:
 def _time_of(post: Post) -> str:
     local: datetime = post.published.astimezone(BOARD_TIMEZONE)
     return local.strftime("%H:%M")
-
-
-def _fitted(text: str, cells: int) -> str:
-    fitted = text
-    while cell_count(fitted) > cells:
-        fitted = fitted[:-1]
-    return fitted
-
-
-# -- what a frame offers ----------------------------------------------------
-#
-#  A key a frame names must do something on that frame, and a key that would do
-#  something should be named. So the prompt and the choices are built from the
-#  same description of what is actually available here.
 
 
 def _frame_moves(index: int, total: int) -> dict[str, str]:

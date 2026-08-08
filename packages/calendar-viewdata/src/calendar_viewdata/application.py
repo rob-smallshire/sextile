@@ -29,6 +29,7 @@ from sextile.templates import Menu, MenuItem, Prose
 from sextile.viewdata.canvas import Canvas
 from sextile.viewdata.chrome import CONTENT_FIRST_ROW, CONTENT_ROWS, draw_chrome
 from sextile.viewdata.controls import Colour
+from sextile.viewdata.drawing import fitted
 from sextile.viewdata.frame import COLUMNS, Frame
 
 SERVICE_NAME: Final = "CALENDAR"
@@ -224,7 +225,7 @@ class CalendarApplication(Sextile):
         canvas.row(0).text(title, Colour.CYAN)
         for offset, line in enumerate(lines):
             if line:
-                canvas.row(2 + offset).text(_fitted(line), Colour.WHITE)
+                canvas.row(2 + offset).text(fitted(line, COLUMNS - 1), Colour.WHITE)
         return Page(frames=(PageFrame(frame=canvas.frame),), hang_up=True)
 
     # -- drawing ------------------------------------------------------------
@@ -296,7 +297,7 @@ class CalendarApplication(Sextile):
         )
         for offset, line in enumerate(lines[:CONTENT_ROWS]):
             if line:
-                canvas.row(CONTENT_FIRST_ROW + offset).text(_fitted(line), Colour.WHITE)
+                canvas.row(CONTENT_FIRST_ROW + offset).text(fitted(line, COLUMNS - 1), Colour.WHITE)
         return canvas.frame
 
 
@@ -356,5 +357,3 @@ def _prompt(moves: set[str], *, selecting: bool) -> str:
     return ", ".join(parts)
 
 
-def _fitted(text: str, cells: int = COLUMNS - 1) -> str:
-    return text[:cells]

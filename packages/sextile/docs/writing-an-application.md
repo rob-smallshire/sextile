@@ -396,6 +396,19 @@ canvas.right(row, page_number, Colour.WHITE)
 canvas.paragraph(first_row, rows, prose, colour=Colour.WHITE)
 ```
 
+`sextile.viewdata.drawing` has the small operations every page wants — free
+functions, so your own sit beside them:
+
+```python
+from sextile.viewdata.drawing import bar, centred, centred_double, fitted, rule
+
+rule(canvas, 1)                                    # a full-width mosaic rule
+centred(canvas, 3, "STARDOT", Colour.YELLOW)       # across the middle of a row
+centred_double(canvas, 5, "STARDOT", Colour.CYAN)  # and at twice the height
+bar(canvas, 20, colour=Colour.GREEN, cells=20, lit=13)   # a gauge
+fitted(title, COLUMNS - 4)                         # shortened to the cells free
+```
+
 `draw_chrome` gives you a header with the page number, two rules and a footer,
 leaving twenty rows. It is a convenience, not a requirement; a service that
 wants the whole screen simply does not call it.

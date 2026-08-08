@@ -423,6 +423,27 @@ neighbours to the handler as `request.arrival`. Walking on with `D` keeps the
 sequence; leaving for an unrelated page drops it. The handler only decides
 whether to offer what it was told of.
 
+## Drawing
+
+`Canvas` knows how to write a row and what an attribute costs.
+`viewdata/drawing.py` is the layer above: the small operations every page turns
+out to want, each of which had been written three or four times before it was
+put there — `fitted`, `centred`, `centred_double`, `rule`, `bar`.
+
+Free functions rather than methods, so that a service can write its own beside
+them and reach for either without minding which is which. They take a canvas
+and a row, and none of them knows what a page is.
+
+`fitted` measures **cells, not characters**, and has no ellipsis: on forty
+columns three dots saying "there was more" cost more than the three characters
+they would hide.
+
+**This is where mosaic graphics belong when they come.** The block characters
+are already how the rules and the countdown bar are drawn — the G1 set gives
+each cell a 2×3 grid of blocks, so a frame is 80×72 addressable points, and
+plotting into that is a matter of setting bits in the right cell. `bar` is the
+one-dimensional case of it.
+
 ## Templates
 
 Five places had grown their own version of the same six steps — take a list,

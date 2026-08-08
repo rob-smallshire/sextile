@@ -7,8 +7,9 @@ shows whether anything is obviously wrong. Nothing else depends on it.
 
 from sextile.addressing import PageAddress
 from sextile.viewdata.canvas import Canvas
-from sextile.viewdata.controls import Colour, Control, graphics_colour
-from sextile.viewdata.frame import COLUMNS, Frame
+from sextile.viewdata.controls import Colour
+from sextile.viewdata.drawing import rule
+from sextile.viewdata.frame import Frame
 
 SERVICE_NAME = "SEXTILE"
 
@@ -24,23 +25,20 @@ _SAMPLE_BODY = (
     "measured this properly?"
 )
 
-#  A solid rule drawn in mosaic graphics: 0x7F is all six blocks set.
-_SOLID_MOSAIC = "▮"
-
 
 def demo_frame() -> Frame:
     """A frame showing everything the engine can currently do."""
     canvas = Canvas()
 
     _header(canvas, row=0)
-    _rule(canvas, row=1, colour=Colour.BLUE)
+    rule(canvas, 1)
 
     canvas.row(3).text("NS32016 TIMING INVESTIGATION", Colour.YELLOW)
     canvas.row(5).text("RobertS", Colour.GREEN).at(30).text("21:20", Colour.GREEN)
 
     canvas.paragraph(7, 12, _SAMPLE_BODY, colour=Colour.WHITE)
 
-    _rule(canvas, row=21, colour=Colour.BLUE)
+    rule(canvas, 21)
     _footer(canvas, row=22)
 
     return canvas.frame
@@ -49,16 +47,6 @@ def demo_frame() -> Frame:
 def _header(canvas: Canvas, row: int) -> None:
     canvas.row(row).text(SERVICE_NAME, Colour.CYAN)
     canvas.right(row, str(_SAMPLE_PAGE_NUMBER), Colour.WHITE)
-
-
-def _rule(canvas: Canvas, row: int, colour: Colour) -> None:
-    """A full-width rule in separated mosaic graphics."""
-    writer = canvas.row(row)
-    frame = canvas.frame
-    frame.set_attribute(row, 0, graphics_colour(colour))
-    frame.set_attribute(row, 1, Control.SEPARATED_GRAPHICS)
-    writer.skip(2)
-    frame.write(row, 2, _SOLID_MOSAIC * (COLUMNS - 2))
 
 
 def _footer(canvas: Canvas, row: int) -> None:

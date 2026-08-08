@@ -31,16 +31,14 @@ from typing import Final
 
 from sextile.viewdata.canvas import Canvas
 from sextile.viewdata.chrome import FOOTER_ROW
-from sextile.viewdata.controls import Colour, alpha_colour, graphics_colour
+from sextile.viewdata.controls import Colour, alpha_colour
+from sextile.viewdata.drawing import bar
 from sextile.viewdata.encoding import ScreenControl
 from sextile.viewdata.frame import COLUMNS, Frame
 
 #: What a reader has to do about it. Deliberately not naming a particular key:
 #: while this is showing, the first key does this and nothing else.
 RESUME_HINT: Final = "Press a key"
-
-#: The mosaic character with all six blocks lit, as the rules use.
-_SOLID_MOSAIC: Final = "▮"
 
 _HINT_COLUMN: Final = 1
 _GAP: Final = 2
@@ -74,15 +72,16 @@ def countdown_bytes(remaining: float) -> bytes:
     frame = canvas.frame
     frame.set_attribute(FOOTER_ROW, 0, alpha_colour(colour))
     frame.write(FOOTER_ROW, _HINT_COLUMN, RESUME_HINT)
-    frame.set_attribute(FOOTER_ROW, _BAR_ATTRIBUTE_COLUMN, graphics_colour(colour))
-    lit = lit_cells(remaining)
     #  The whole bar is written, lit and unlit alike: the row is redrawn in
     #  place, so a cell the bar has given up has to be overwritten rather than
-    #  left showing what it said before.
-    frame.write(
+    #  left showing what it said before. `bar` does that.
+    bar(
+        canvas,
         FOOTER_ROW,
-        _BAR_ATTRIBUTE_COLUMN + 1,
-        _SOLID_MOSAIC * lit + " " * (BAR_CELLS - lit),
+        colour=colour,
+        column=_BAR_ATTRIBUTE_COLUMN,
+        cells=BAR_CELLS,
+        lit=lit_cells(remaining),
     )
     return (
         bytes([ScreenControl.CURSOR_OFF])

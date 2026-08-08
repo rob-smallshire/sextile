@@ -255,6 +255,17 @@ and blocks on one row, and for anything whose feasibility is in doubt.
 `RowWriter.mosaic` exists for the sequential case and pays the same costs, one
 run at a time.
 
+## A worked example: the compass
+
+`sextile/compass.py` draws the four movement keys as arrows, and is a short
+read for how these layers go together: four bitmaps written out as strings,
+`read_bitmap` and `block_runs` to turn each into cells, and a `Composition` to
+place them among the letters that label them.
+
+It is also why the block grid earns its place. The G0 character set has `←`,
+`→` and `↑` and no down arrow, so a compass drawn in letters is impossible; on
+the block grid, six blocks by six is enough for a head that tapers.
+
 ## Large lettering
 
 Not built. The requirements, the source formats and the measurements behind

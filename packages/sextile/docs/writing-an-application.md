@@ -308,6 +308,29 @@ Move the help page to another number and the instruction moves with it. A frame
 that says `*91#` when the guide has moved is worse than no instruction at all:
 the reader does as they are told and it does not work.
 
+## The compass
+
+The four keys that move about a page are the framework's, so the picture of
+them is too:
+
+```python
+from sextile.compass import ROWS, compass
+
+compass(Composition(), CONTENT_FIRST_ROW).draw(canvas)
+```
+
+`ROWS` says how many rows it takes, so it can be centred in what is left of a
+frame. A service that drew its own would be drawing the same thing, and would
+go on drawing it after the keys had moved.
+
+The arrows are mosaics rather than letters because the character set has only
+three of them — `←`, `→` and `↑`, and no down arrow at all — so one of the four
+had to be drawn whatever happened, and three letters beside one picture look
+like a mistake.
+
+`#` is not on it. It moves to the next frame as well, but a compass is about
+which way is which, and `#` belongs in a list of things to key.
+
 ## Pages that come with the framework
 
 Three pages are built for you and registered nowhere, so that a service maps

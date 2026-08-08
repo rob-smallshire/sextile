@@ -34,8 +34,6 @@ from sextile.viewdata.frame import COLUMNS, Frame
 
 SERVICE_NAME: Final = "CALENDAR"
 
-#: A reader selects with one keypress, so nine is the most a frame can offer.
-CHOICES_PER_FRAME: Final = 9
 
 #: How far ahead the days-to-come menu looks.
 DAYS_AHEAD: Final = 28

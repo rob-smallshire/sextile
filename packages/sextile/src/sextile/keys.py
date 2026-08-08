@@ -31,6 +31,17 @@ NEXT_ITEM: Final = "D"
 #: one key a viewdata reader will try without being told.
 CONVENTIONAL_NEXT_FRAME: Final = "#"
 
+#: The page numbers a session answers itself rather than handing to a service:
+#: keyed as `*0#`, `*00#` and `*09#`. Here as well as in the parser because a
+#: service that explains them in a guide has to name the same ones, and a guide
+#: that has drifted from the thing it describes is worse than none.
+BACK: Final = "0"
+REDISPLAY: Final = "00"
+REFRESH: Final = "09"
+
+#: A bare star cancels what is being keyed; two of them begin again.
+CANCEL: Final = "*"
+
 #: What the BBC's cursor keys arrive as, once 7E1 has taken the eighth bit.
 ARROWS: Final[dict[int, str]] = {
     0x08: PREVIOUS_ITEM,  # cursor left

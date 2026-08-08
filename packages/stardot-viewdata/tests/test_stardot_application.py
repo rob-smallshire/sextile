@@ -143,6 +143,11 @@ def text_of(page: Page, index: int = 0) -> str:
     return "\n".join(characters)
 
 
+def all_text_of(page: Page) -> str:
+    """Every frame of a page, for something said on whichever frame has room."""
+    return "\n".join(text_of(page, index) for index in range(len(page.frames)))
+
+
 #: Every page the service has.
 EVERY_PAGE: list[str] = [
     "0",
@@ -691,3 +696,45 @@ class TestAPageIsHeadedWithWhatItWasRegisteredAs:
         #  A day's frames are headed with the date, not with "One day".
         shown = text_of(await page_at(app, "3220260802"))
         assert "ONE DAY" not in shown
+
+
+class TestTheGuideDescribesTheServiceItIsPartOf:
+    """Every key and number in the guide is one the service answers.
+
+    This page is the one most able to lie: it is a table of keys, read by
+    someone who cannot find their way, and nothing about it fails if it is
+    wrong. So none of it is written out.
+    """
+
+    @pytest.mark.parametrize("name", ["logoff", "contents", "names"])
+    async def test_the_numbers_it_gives_are_the_ones_the_router_builds(
+        self, name: str, app: StardotApplication
+    ) -> None:
+        assert keyed(app.address_for(name)) in all_text_of(await page_at(app, "91"))
+
+    @pytest.mark.parametrize(
+        "key", [keys.PREVIOUS_FRAME, keys.NEXT_FRAME, keys.PREVIOUS_ITEM, keys.NEXT_ITEM]
+    )
+    async def test_and_the_keys_are_the_ones_the_framework_sends(
+        self, key: str, app: StardotApplication
+    ) -> None:
+        assert key in all_text_of(await page_at(app, "91"))
+
+    async def test_including_the_requests_the_session_answers_itself(
+        self, app: StardotApplication
+    ) -> None:
+        shown = all_text_of(await page_at(app, "91"))
+        for request in (keys.BACK, keys.REDISPLAY, keys.REFRESH):
+            assert keyed(request) in shown
+
+    async def test_moving_a_page_moves_what_the_guide_says_about_it(
+        self, repository: Repository
+    ) -> None:
+        class Moved(StardotApplication):
+            @page("96", name="logoff", title="Ring off", keywords=("BYE",))
+            async def _logoff(self, request: PageRequest) -> Page:
+                return await super()._logoff(request)
+
+        shown = all_text_of(await page_at(Moved(repository=repository), "91"))
+        assert keyed(PageAddress("96")) in shown
+        assert keyed(PageAddress("90")) not in shown

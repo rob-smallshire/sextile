@@ -31,7 +31,7 @@ from sextile import keys
 from sextile.addressing import PageAddress, keyed
 from sextile.application import Arrival, PageRequest, Parting, Sextile, page
 from sextile.page import Page, PageFrame
-from sextile.templates import Menu, MenuItem, Prose
+from sextile.templates import CHOICES_PER_FRAME, HOME_KEY, Menu, MenuItem, Prose
 from sextile.viewdata import lettering
 from sextile.viewdata.canvas import Canvas
 from sextile.viewdata.chrome import CONTENT_FIRST_ROW, CONTENT_ROWS, draw_chrome
@@ -82,8 +82,6 @@ SUBTITLE_ROWS: Final = 3
 #: from the same place, which is the first thing that went wrong in practice.
 DEFAULT_DATABASE_FILEPATH: Final = Path("stardot.sqlite")
 
-#: A reader selects with one keypress, so nine is the most a frame can offer.
-CHOICES_PER_FRAME: Final = 9
 
 #: Each menu entry takes a line of its own plus a line of detail beneath.
 _ROWS_PER_CHOICE: Final = 2
@@ -542,32 +540,36 @@ class StardotApplication(Sextile):
         Every key named here is one the service actually answers; a guide that
         drifts from the thing it describes is worse than none.
         """
+        #  Every key and every number here is the one the service actually
+        #  answers, taken from the framework or from the router. The words are
+        #  this page's own: a description in a table of keys is a paraphrase
+        #  and cannot come to be untrue, but a number can, and did.
         return self._guide(
             request.address,
             [
                 [
-                    ("1-9", "choose from a menu"),
-                    ("0", "back to the main index"),
-                    ("*nnn#", "go straight to a page"),
+                    (f"1-{CHOICES_PER_FRAME}", "choose from a menu"),
+                    (HOME_KEY, "back to the main index"),
+                    (keyed("nnn"), "go straight to a page"),
                     ("", ""),
-                    ("W  S", "up and down the frames of"),
+                    (f"{keys.PREVIOUS_FRAME}  {keys.NEXT_FRAME}", "up and down the frames of"),
                     ("", "  one item"),
-                    ("#", "the same as S"),
-                    ("A  D", "back and forward through"),
+                    (keys.CONVENTIONAL_NEXT_FRAME, f"the same as {keys.NEXT_FRAME}"),
+                    (f"{keys.PREVIOUS_ITEM}  {keys.NEXT_ITEM}", "back and forward through"),
                     ("", "  the items of a menu"),
                 ],
                 [
-                    ("*0#", "back, through where you"),
+                    (keyed(keys.BACK), "back, through where you"),
                     ("", "  have been"),
-                    ("*00#", "show this frame again"),
-                    ("*09#", "fetch it afresh"),
-                    ("*", "cancel a request being keyed"),
-                    ("**", "cancel and begin again"),
+                    (keyed(keys.REDISPLAY), "show this frame again"),
+                    (keyed(keys.REFRESH), "fetch it afresh"),
+                    (keys.CANCEL, "cancel a request being keyed"),
+                    (keys.CANCEL * 2, "cancel and begin again"),
                     ("DEL", "rub out a character"),
-                    ("*90#", "ring off"),
+                    (keyed(self.address_for("logoff")), "ring off"),
                     ("", ""),
-                    ("*93#", "every page and its number"),
-                    ("*94#", "every word you can key"),
+                    (keyed(self.address_for("contents")), "every page and its number"),
+                    (keyed(self.address_for("names")), "every word you can key"),
                 ],
             ],
         )

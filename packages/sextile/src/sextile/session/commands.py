@@ -35,12 +35,13 @@ the two have to be told apart rather than one of them simply ignored.
 from dataclasses import dataclass
 from typing import Final
 
+from sextile import keys
 from sextile.keys import ARROWS
 
 #: Longest request we will accumulate before deciding the reader is lost.
 ENTRY_LIMIT: Final = 32
 
-_STAR: Final = "*"
+_STAR: Final = keys.CANCEL
 _CARRIAGE_RETURN: Final = "\r"
 #: What the BBC's DELETE key transmits, measured against Commstar. Distinct
 #: from RETURN, which sends 0x5F and terminates a request.
@@ -48,9 +49,9 @@ _DELETE: Final = "\x7f"
 _LINE_FEED: Final = "\n"
 _TERMINATORS: Final = frozenset({"\x5f", "#", _CARRIAGE_RETURN})
 
-_BACK: Final = "0"
-_REDISPLAY: Final = "00"
-_REFRESH: Final = "09"
+_BACK: Final = keys.BACK
+_REDISPLAY: Final = keys.REDISPLAY
+_REFRESH: Final = keys.REFRESH
 
 
 @dataclass(frozen=True)

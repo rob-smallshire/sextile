@@ -6,7 +6,7 @@ where to put it, and only the framework knows the patterns well enough to say.
 """
 
 from sextile.addressing import PageAddress
-from sextile.application import PageInfo
+from sextile.application import Arrival, PageInfo, PageRequest, Sextile
 from sextile.contents import TITLE, contents_page
 from sextile.page import Page
 
@@ -102,3 +102,51 @@ class TestTheOrder:
         ]
         shown = [row.strip() for row in text_of(listed(*pages)).splitlines() if "*" in row]
         assert [row.split()[0] for row in shown] == ["*1#", "*8#", "*82<post-id>#", "*9#"]
+
+
+class TestWhatTheseBuiltInPagesAreCalled:
+    """A built-in page is headed with what the service registered it as.
+
+    Each of them has a name of its own, and a service that maps one into its
+    numbering gives it another when it registers it -- so without this the same
+    words are written twice, and the service's copy is the one that shows in
+    menus and on the contents page.
+    """
+
+    async def test_a_service_s_own_words_are_used(self) -> None:
+        app = Sextile()
+        app.page("93", name="contents", title="Every page")(app.contents)
+        assert "EVERY PAGE" in _shown(await _built(app, "93"))
+
+    async def test_and_a_service_that_calls_it_something_else_gets_that(self) -> None:
+        app = Sextile()
+        app.page("50", name="contents", title="What is here")(app.contents)
+        shown = _shown(await _built(app, "50"))
+        assert "WHAT IS HERE" in shown
+        assert TITLE not in shown
+
+    async def test_a_service_that_said_nothing_keeps_the_framework_s_name(self) -> None:
+        app = Sextile()
+        app.page("50")(app.contents)
+        assert TITLE in _shown(await _built(app, "50"))
+
+
+async def _built(app: Sextile, digits: str) -> Page:
+    page = await app.respond(
+        PageRequest(
+            address=PageAddress(digits),
+            params={},
+            arrival=Arrival(),
+            session={},
+            history=(),
+        )
+    )
+    assert page is not None
+    return page
+
+
+def _shown(page: Page) -> str:
+    frame = page.frame(0)
+    assert frame is not None
+    characters, _ = frame.frame.to_grid()
+    return "\n".join(characters)

@@ -24,8 +24,9 @@ from collections.abc import Callable
 from datetime import UTC, date, datetime, timedelta
 from typing import Final
 
-from sextile import Page, PageAddress, PageFrame, PageRequest, Sextile, page
-from sextile.templates import Menu, MenuItem, Prose
+from sextile import Page, PageAddress, PageFrame, PageRequest, Sextile, keys, page
+from sextile.addressing import keyed
+from sextile.templates import HOME_KEY, Menu, MenuItem, Prose
 from sextile.viewdata.canvas import Canvas
 from sextile.viewdata.chrome import CONTENT_FIRST_ROW, CONTENT_ROWS, draw_chrome
 from sextile.viewdata.controls import Colour
@@ -85,14 +86,14 @@ class CalendarApplication(Sextile):
         moment = self._now()
         return self._notice(
             request.address,
-            "THE TIME NOW",
+            None,
             [
                 _long_date(moment.date()),
                 "",
                 moment.strftime("%H:%M:%S"),
                 moment.tzname() or "",
                 "",
-                "Key *09# to ask again.",
+                f"Key {keyed(keys.REFRESH)} to ask again.",
             ],
         )
 
@@ -110,7 +111,6 @@ class CalendarApplication(Sextile):
         days = [today + timedelta(days=offset) for offset in range(DAYS_AHEAD)]
         return self._menu(
             request.address,
-            title="THE DAYS TO COME",
             items=[
                 (
                     _long_date(day),
@@ -202,7 +202,7 @@ class CalendarApplication(Sextile):
             "service: nothing here knows about forums, and nothing in the "
             "framework knows about calendars.",
             "Everything it shows comes from the standard library.",
-            title="ABOUT",
+            title=self._headed(request.address),
             home=self.index,
         ).build(request.address)
 
@@ -256,17 +256,26 @@ class CalendarApplication(Sextile):
         }
         return Page(frames=(PageFrame(frame=canvas.frame, choices=choices),))
 
+    def _headed(self, address: PageAddress) -> str:
+        """What goes at the top of a page: what it was registered as, shouted.
+
+        A page that names itself in its decorator and again in its own chrome
+        has two copies to keep in step. Pages whose heading is not their name
+        -- a month's name, a day's date -- say so.
+        """
+        return self.describe(address).upper()
+
     def _menu(
         self,
         address: PageAddress,
         *,
-        title: str,
+        title: str | None = None,
         items: list[tuple[str, str, PageAddress]],
         preamble: list[str] | None = None,
     ) -> Page:
         """A menu, dealt nine to a frame by the framework's template."""
         return Menu(
-            title=title,
+            title=title if title is not None else self._headed(address),
             entries=[
                 MenuItem(text=text, detail=detail, destination=where)
                 for text, detail, where in items
@@ -275,12 +284,19 @@ class CalendarApplication(Sextile):
             preamble=preamble or (),
         ).build(address)
 
-    def _notice(self, address: PageAddress, title: str, lines: list[str]) -> Page:
+    def _notice(
+        self, address: PageAddress, title: str | None, lines: list[str]
+    ) -> Page:
         """A page that simply says something, with no choices but the way back."""
         return Page(
             frames=(
                 PageFrame(
-                    frame=self._notice_frame(address, title, lines, prompt="0 menu"),
+                    frame=self._notice_frame(
+                        address,
+                        title if title is not None else self._headed(address),
+                        lines,
+                        prompt=f"{HOME_KEY} menu",
+                    ),
                     choices={"0": self.address_for("main")},
                 ),
             )

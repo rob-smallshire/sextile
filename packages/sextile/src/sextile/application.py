@@ -28,12 +28,14 @@ from collections.abc import Awaitable, Callable, Mapping, MutableMapping, Sequen
 from dataclasses import dataclass, field
 from typing import Final
 
+from sextile import contents, history, keys, names
 from sextile.addressing import PageAddress, UnknownPageError, keyed
 from sextile.contents import contents_page
 from sextile.history import history_page
 from sextile.names import names_page
 from sextile.page import Page, PageFrame
 from sextile.routing import Converter, Match, Router
+from sextile.templates import HOME_KEY
 from sextile.viewdata.canvas import Canvas
 from sextile.viewdata.controls import Colour
 
@@ -236,6 +238,16 @@ class Application(ABC):
         """
         return keyed(address)
 
+    def heading(self, address: PageAddress, default: str) -> str:
+        """What to head a page with. The framework's own name, unless told.
+
+        `Sextile` prefers what the service called the page when it registered
+        it: a built-in page has a name of its own and is given another on the
+        way in, and without this the two say the same thing twice -- with the
+        service's copy the one that shows in menus and on a contents page.
+        """
+        return default
+
     async def history(self, request: PageRequest) -> Page:
         """Where this caller has been, newest first, as a menu of shortcuts.
 
@@ -253,6 +265,7 @@ class Application(ABC):
             been=request.history,
             describe=self.describe,
             home=self.index,
+            title=self.heading(request.address, history.TITLE),
         )
 
     def keywords(self) -> dict[str, PageAddress]:
@@ -271,6 +284,7 @@ class Application(ABC):
             named=self.keywords(),
             describe=self.describe,
             home=self.index,
+            title=self.heading(request.address, names.TITLE),
         )
 
     async def contents(self, request: PageRequest) -> Page:
@@ -282,7 +296,10 @@ class Application(ABC):
         everybody holding a contributor number can be told where to put it.
         """
         return contents_page(
-            address=request.address, pages=self.advertised(), home=self.index
+            address=request.address,
+            pages=self.advertised(),
+            home=self.index,
+            title=self.heading(request.address, contents.TITLE),
         )
 
     def advertised(self) -> tuple[PageInfo, ...]:
@@ -337,7 +354,7 @@ class Application(ABC):
             "This is a fault at our end, not yours,",
             "and the service has made a note of it.",
             "",
-            "Key 0 for the index, or *09# to try it",
+            f"Key {HOME_KEY} for the index, or {keyed(keys.REFRESH)} to try it",
             "again.",
         )
 
@@ -590,6 +607,11 @@ class Sextile(Application):
         called = about.title if about is not None else found.name
         fields = " ".join(str(value) for value in found.params.values())
         return f"{called} {fields}".strip()
+
+    def heading(self, address: PageAddress, default: str) -> str:
+        found = self.route(address)
+        about = self._pages.get(found.name) if found and found.name else None
+        return about.title.upper() if about and about.title else default
 
     def keywords(self) -> dict[str, PageAddress]:
         """The named jumps, for a page that wants to list them."""

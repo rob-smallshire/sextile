@@ -270,6 +270,26 @@ app.pages()                              # every page that has a title
 says it may be listed, so a title frame or a logoff page stays off the contents
 without a flag.
 
+## Say a page's name once
+
+A page that names itself in its decorator and again in its own chrome has two
+copies to keep in step, and the decorator's is the one that shows in menus, on
+the contents page and in the history. So a heading comes from the declaration:
+
+```python
+@page("3", name="days", title="By day", detail="newest first")
+async def _days(self, request: PageRequest) -> Page:
+    return self._menu(request.address, items=items)   # headed BY DAY
+```
+
+`describe(address)` gives the registered title, so `describe(address).upper()`
+is a heading. Pages whose heading is *not* their name — a post's forum, a day's
+date — pass one, and passing one now means something.
+
+The framework's own pages work the same way from the other side: map `contents`
+into your numbering with a title and the page takes it, and keeps its own if
+you give none.
+
 ## Saying where a page is, once
 
 `addressing.keyed` gives a page number as a reader keys it — `*91#` — and

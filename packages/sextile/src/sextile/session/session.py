@@ -148,9 +148,11 @@ class Session:
     #
     #  A caller who has read one frame for ten minutes cannot know the line is
     #  about to be released, and being disconnected without warning looks like a
-    #  fault. So the footer becomes a draining bar, and the next key dismisses
-    #  it and does nothing else -- which is the only way to promise that
-    #  pressing something is safe.
+    #  fault. So the footer becomes a draining bar, which the next key dismisses.
+    #
+    #  Three things want that row: the page's own prompt, a request being typed,
+    #  and this. The bar wins while it is up, and whichever of the other two
+    #  belongs there is put back when it goes.
 
     @property
     def warning_showing(self) -> bool:
@@ -159,12 +161,14 @@ class Session:
     def warn(self, remaining: float) -> bytes | None:
         """Draw or update the warning bar, or None if the row would not change.
 
-        ``remaining`` is the fraction of the warning period left. Nothing is
-        drawn over a request being typed: that occupies the same row, and the
-        reader would lose what they had entered.
+        ``remaining`` is the fraction of the warning period left.
+
+        The bar covers a request being typed, which shares the row. Nothing is
+        lost by that: what was keyed is held in the parser rather than on the
+        screen, and comes back the moment the reader touches anything. Leaving
+        them unwarned and then cutting them off mid-request would be the rudest
+        thing this service could do.
         """
-        if self._parser.entry:
-            return None
         cells = lit_cells(remaining)
         if cells == self._warning_cells:
             return None
@@ -172,10 +176,14 @@ class Session:
         return countdown_bytes(remaining)
 
     def dismiss(self) -> bytes | None:
-        """Put the page's own footer back, or None if the bar was not showing."""
+        """Put back whatever the row should show, or None if no bar was up."""
         if self._warning_cells is None:
             return None
         self._warning_cells = None
+        entry = self._parser.entry
+        if entry:
+            self._displayed = entry
+            return command_line_bytes(entry)
         frame = self.current_frame()
         return footer_bytes(frame) if frame is not None else None
 
@@ -186,8 +194,9 @@ class Session:
         if self._page is None:
             await self._arrive(self._address)
         responses: list[bytes] = []
-        #  The bar said "press a key", so a key has to be safe to press: the
-        #  first thing the reader does wakes the line and does nothing else.
+        #  The bar said "press a key", so a key has to be safe to press: on a
+        #  page, the first thing the reader does wakes the line and does nothing
+        #  else.
         #
         #  A whole *command* is suppressed rather than a byte, which matters for
         #  a request arriving all at once. Dropping the first byte of `*8#`
@@ -196,14 +205,15 @@ class Session:
         #  entire merely means keying it again. A `*` on its own produces no
         #  command at all, so a reader who wakes the line by starting a request
         #  can simply carry on typing it.
-        waking = self._warning_cells is not None
-        if waking:
-            restored = self.dismiss()
-            if restored is not None:
-                responses.append(restored)
+        #
+        #  Nothing is swallowed over a request already being typed. No key
+        #  navigates there -- digits accumulate, `*` cancels, DELETE rubs out --
+        #  so every key can safely go on meaning what it always means, and the
+        #  reader picks up where they left off.
+        swallowing = self._warning_cells is not None and not self._parser.entry
         for command in self._parser.feed(data):
-            if waking:
-                waking = False
+            if swallowing:
+                swallowing = False
                 continue
             reply = await self._act(command)
             if reply is not None:
@@ -217,18 +227,25 @@ class Session:
         """Keep the footer row showing whatever the reader is doing.
 
         A request being typed replaces the footer; finishing or cancelling one
-        puts it back. A whole frame going out has the page's own footer in it
-        already, so nothing more is needed then.
+        puts it back, and so does dismissing the idle warning. A whole frame
+        going out has the page's own footer in it already, so nothing more is
+        needed then.
 
         A keystroke that only adds or removes a character changes the row by
         a byte or three rather than repainting it, which is visible as a
         flicker once the cursor is on.
         """
         entry = self._parser.entry
+        warned, self._warning_cells = self._warning_cells is not None, None
         if entry:
-            change = incremental_bytes(entry, self._displayed)
+            #  A bar covering the command line makes the byte-at-a-time trick a
+            #  lie: what is on the row is not what was displayed before.
+            change = None if warned else incremental_bytes(entry, self._displayed)
             responses.append(change or command_line_bytes(entry))
-        elif self._displayed and not responses:
+        elif responses:
+            #  A whole frame went out, and it carries the page's own footer.
+            pass
+        elif self._displayed or warned:
             frame = self.current_frame()
             if frame is not None:
                 responses.append(footer_bytes(frame))

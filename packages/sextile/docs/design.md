@@ -256,8 +256,21 @@ turn, where dropping the request entire merely means keying it again. And a
 bare `*` produces no command at all, so a reader who wakes the line by starting
 a request can carry on typing it.
 
-The bar is not drawn over a request being typed, since the command line occupies
-the same row and the reader would lose what they had entered.
+**Three things want the footer row**: the page's own prompt, a request being
+typed, and the bar. The bar wins while it is up, and whichever of the other two
+belongs there is put back when it goes.
+
+That includes covering a part-keyed request. Nothing is lost by it — what was
+keyed lives in the parser, not on the screen — and the alternative, leaving a
+reader unwarned because they had begun typing and then cutting them off
+mid-request, is the rudest thing the service could do.
+
+Nothing is swallowed in that case, either. On a page the first key is eaten
+because it would otherwise navigate; while a request is being typed no key
+navigates — digits accumulate, `*` cancels, DELETE rubs out — so every key goes
+on meaning what it always means and the reader picks up where they left off. The
+command line is then redrawn in full rather than a byte at a time, since what is
+on the row is a bar and not what was displayed before.
 
 It costs one row and never a frame: 45 bytes, a third of a second at 1200 baud,
 and only when a cell of the bar actually changes — twenty-five cells over

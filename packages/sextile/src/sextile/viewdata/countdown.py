@@ -6,10 +6,14 @@ service that answers slowly by design, is indistinguishable from a fault -- and
 the remedy, pressing something, is not one a reader can guess at.
 
 So after a period of silence the footer row becomes a bar that drains, with an
-instruction. Drawn over that row alone, as the command line is -- never the
-frame -- and only when what it would say has changed: twenty-five cells over
-several minutes changes about twice a minute, and the row costs 45 bytes, a
-third of a second at 1200 baud.
+instruction. It covers whatever else wanted that row, a part-keyed request
+included: what was keyed is held in the parser rather than on the screen, and
+comes back the moment the reader touches anything.
+
+Drawn over that row alone, as the command line is -- never the frame -- and only
+when what it would say has changed: twenty-five cells over several minutes
+changes about twice a minute, and the row costs 45 bytes, a third of a second at
+1200 baud.
 
 The whole row goes each time, rather than only the cell the bar has given up,
 and the reason is not laziness. There is no absolute cursor addressing on the

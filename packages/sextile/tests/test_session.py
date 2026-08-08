@@ -628,20 +628,85 @@ class TestTheIdleWarning:
         await session.receive(b"1")
         assert session.address == at("821024")
 
-    async def test_a_part_typed_request_survives_the_warning(
+    async def test_dismissing_when_nothing_is_showing_changes_nothing(
         self, session: Session
     ) -> None:
-        #  The command line occupies the same row. Drawing over a request the
-        #  reader is in the middle of typing would lose what they had typed.
-        await session.receive(b"*82")
-        assert session.warn(0.5) is None
-        assert not session.warning_showing
+        assert session.dismiss() is None
 
-    async def test_a_request_being_typed_still_completes(self, session: Session) -> None:
+
+class TestTheWarningOverAPartTypedRequest:
+    """The command line has the same row, and being cut off mid-request is
+    the rudest thing the service can do. So the bar covers it: what was typed
+    is held in the parser, not on the screen, and comes back untouched.
+
+    Nothing is swallowed here. While a request is being typed no key navigates
+    -- digits accumulate, `*` cancels, DELETE rubs out -- so every key can
+    safely mean what it always means.
+    """
+
+    async def test_the_bar_covers_the_command_line(self, session: Session) -> None:
+        await session.receive(b"*82")
+        drawn = session.warn(0.5)
+        assert drawn is not None
+        assert "Press a key" in _text(drawn)
+
+    async def test_the_request_is_not_lost(self, session: Session) -> None:
+        await session.receive(b"*82")
+        session.warn(0.5)
+        response = await session.receive(b"1")
+        assert "*821" in _text(response[-1]), "the whole request comes back"
+
+    async def test_the_key_is_not_swallowed(self, session: Session) -> None:
+        #  On a page the first key is eaten, because it would otherwise
+        #  navigate. Here it is a character of a page number.
+        await session.receive(b"*8")
+        session.warn(0.5)
+        await session.receive(b"2")
+        await session.receive(b"1")
+        await session.receive(b"#")
+        assert session.address == at("821")
+
+    async def test_the_command_line_is_redrawn_in_full(self, session: Session) -> None:
+        #  Not incrementally: the row shows a bar, so the byte-at-a-time trick
+        #  would leave the reader's request half drawn over it.
+        await session.receive(b"*82")
+        session.warn(0.5)
+        response = await session.receive(b"1")
+        assert len(response[-1]) > 20
+
+    async def test_completing_the_request_still_goes_there(self, session: Session) -> None:
         await session.receive(b"*8")
         session.warn(0.5)
         await session.receive(b"#")
         assert session.address == at("8")
+
+    async def test_cancelling_puts_the_page_s_own_footer_back(
+        self, session: Session
+    ) -> None:
+        #  The bar must not be left on screen when the request goes away.
+        await session.receive(b"*82")
+        session.warn(0.5)
+        response = await session.receive(b"*")
+        assert "menu" in _text(response[-1])
+        assert "Press a key" not in _text(response[-1])
+        assert not session.warning_showing
+
+    async def test_rubbing_out_the_star_puts_the_footer_back_too(
+        self, session: Session
+    ) -> None:
+        await session.receive(b"*")
+        session.warn(0.5)
+        response = await session.receive(b"\x7f")
+        assert "menu" in _text(response[-1])
+        assert not session.warning_showing
+
+    async def test_typing_on_afterwards_is_incremental_again(
+        self, session: Session
+    ) -> None:
+        await session.receive(b"*82")
+        session.warn(0.5)
+        await session.receive(b"1")
+        assert await session.receive(b"4") == [b"4"]
 
     async def test_dismissing_when_nothing_is_showing_changes_nothing(
         self, session: Session

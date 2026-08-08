@@ -26,6 +26,9 @@ should not. A pair may close up by no more than `limit` blocks, and **kerning
 does not cross a blank glyph**: a narrow letter after a space would otherwise
 slide back into the space and run the words together.
 
+`cells` takes it the rest of the way to mosaic patterns, and `place` and
+`centred` add it to a `Composition`, which works out the attributes.
+
 The lettering is trimmed on the right to the last block of ink, because a
 banner is centred on what it draws rather than on what it advanced past. The
 left is left alone: a leading bearing is the face's own design.
@@ -35,7 +38,11 @@ from collections.abc import Sequence
 from enum import Enum
 from typing import Final
 
+from sextile.viewdata.blocks import BLOCKS_DOWN, block_runs
+from sextile.viewdata.composition import Composition
+from sextile.viewdata.controls import Colour
 from sextile.viewdata.font import Font, Glyph
+from sextile.viewdata.frame import COLUMNS
 
 #: Blocks that must stay clear between two letters when kerning. One is the
 #: least that keeps them legible: at this size a block is a stroke's width.
@@ -159,3 +166,72 @@ def _left(glyph: Glyph) -> list[int | None]:
         min((x for x, block in enumerate(row) if block), default=None)
         for row in glyph.bitmap
     ]
+
+
+def cells(
+    text: str,
+    font: Font,
+    *,
+    spacing: Spacing = Spacing.PROPORTIONAL,
+    gap: int = _GAP,
+    limit: int = _LIMIT,
+    inverted: bool = False,
+    margin: int = 0,
+) -> list[list[int]]:
+    """`text` set in `font` as mosaic patterns, a list of them for each cell row.
+
+    `margin` widens the field by that many blocks on every side, which is what
+    an inverted banner wants: the letters are holes in a lit field, and without
+    a margin the field ends where the ink does and the letters touch its edge.
+    """
+    picture = bitmap(text, font, spacing=spacing, gap=gap, limit=limit)
+    return block_runs(_bordered(picture, margin), inverted=inverted)
+
+
+def _bordered(picture: list[list[bool]], margin: int) -> list[list[bool]]:
+    if not margin:
+        return picture
+    width = (len(picture[0]) if picture else 0) + 2 * margin
+    blank = [[False] * width for _ in range(margin)]
+    return blank + [[False] * margin + row + [False] * margin for row in picture] + blank
+
+
+def place(
+    composition: Composition,
+    row: int,
+    text: str,
+    font: Font,
+    colour: Colour = Colour.WHITE,
+    *,
+    column: int | None = None,
+    spacing: Spacing = Spacing.PROPORTIONAL,
+    gap: int = _GAP,
+    limit: int = _LIMIT,
+    inverted: bool = False,
+    margin: int = 0,
+    separated: bool = False,
+) -> Composition:
+    """Add `text`, set in `font`, to a composition with its top row at `row`.
+
+    Centred across the frame unless a column is given, and never at column
+    zero: the colour attribute has to go somewhere, and the left-hand cell of
+    the row is the only place it can go.
+    """
+    patterns = cells(
+        text,
+        font,
+        spacing=spacing,
+        gap=gap,
+        limit=limit,
+        inverted=inverted,
+        margin=margin,
+    )
+    at = column if column is not None else max(1, (COLUMNS - len(patterns[0])) // 2)
+    for index, run in enumerate(patterns):
+        composition.blocks(row + index, at, run, colour, separated=separated)
+    return composition
+
+
+def rows_for(font: Font, *, margin: int = 0) -> int:
+    """How many rows of the frame a face needs, at `margin` blocks of border."""
+    return -(-(font.height + 2 * margin) // BLOCKS_DOWN)

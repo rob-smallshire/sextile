@@ -1,9 +1,9 @@
 # Mosaic fonts
 
 Large lettering drawn out of teletext block graphics — banners, title frames,
-headings bigger than double height can give. **The format, one converted face, the
-importer that converted it and the setting of a line of text are built; what
-puts the result on a frame is not.** The rest is written down as
+headings bigger than double height can give. **Built: the format, one converted face,
+the importer that converted it, the setting of a line of text and its placement
+on a frame. Not built: wrapping, a template, and Stardot's title frame in it.** The rest is written down as
 requirements, so that the research behind them does not have to be done twice.
 
 The layer beneath is built and described in [graphics.md](graphics.md): the
@@ -193,9 +193,11 @@ Roughly in order, each committable on its own.
    line in blocks and `lettering.bitmap` sets it, `FIXED`, `PROPORTIONAL` or
    `KERNED`. A character the face has no glyph for is substituted, as
    transliteration does.
-3. **Rendering** — text to a bitmap, then `block_runs`, then `Composition`. The
-   inverted case needs the *field*, not the glyphs, so the renderer decides the
-   band's extent.
+3. ~~**Rendering** — text to a bitmap, then `block_runs`, then `Composition`.~~
+   Done: `lettering.cells` and `lettering.place`, which centres unless given a
+   column and never at column zero, where the attribute has to go. The inverted
+   case takes a `margin`, because the field has to extend past the letters or
+   they touch its edge.
 4. **Wrapping** in blocks, reusing the balanced algorithm in `wrapping.py`
    (measure in blocks rather than cells; the last line is free).
 5. **A template**, `Banner` or similar, on the `Template` base, so a page places

@@ -438,84 +438,9 @@ and a row, and none of them knows what a page is.
 columns three dots saying "there was more" cost more than the three characters
 they would hide.
 
-**Composition** is the declarative half. `Canvas` writes left to right and
-inserts an attribute whenever the state changes, which is right for a page built
-a phrase at a time and wrong for placing things *at* positions: each call
-re-establishes the state it wants without knowing what the next one will want,
-and it cannot say whether the row fits until it has half drawn it.
-
-`Composition` takes the whole frame first, and that buys three things. It says
-**whether the layout is possible**, naming the row, the column and the
-arithmetic, before a cell is written. **Two runs in one style cost one
-attribute**, because it can see there is no text between them and so never
-returns to alpha — the case a sequential writer cannot see. And it is **exact
-rather than clever**: an attribute displays as a blank and a blank in graphics
-is the no-blocks mosaic, so an attribute may sit anywhere in the gap before the
-run it affects, which makes a left-to-right pass optimal and leaves nothing to
-search for. Placement becomes a search only if runs are free to move, which is a
-different feature.
-
-`Style` carries every attribute the hardware has, because the transitions are
-not uniform and that is the whole reason to hand a compositor a style rather
-than write controls by hand:
-
-| | |
-|---|---|
-| colour, flash, height, hold, separated | one cell each |
-| a background | **three** — there is no "set background", only "make the current foreground the background", so it is choose, promote, choose again |
-| a background matching the foreground | two, the third being nothing to change back to |
-| returning to black | one |
-| conceal | one, and **it cannot be undone** — the hardware clears it at the end of a row and nowhere else, so a composition asking for that is refused |
-
-Double height places its run on the row below as well, that being how the
-hardware draws the bottom halves, and the thing everyone gets wrong by leaving
-the row blank.
-
-Rows are independent, so a frame composition is a row composition done
-twenty-four times and nothing has to reason across rows.
-
-**Mixing text and blocks on one row costs cells, knowably.** A colour attribute
-chooses the character set as well as the colour — `GRAPHICS_YELLOW` means
-"yellow, and read what follows as blocks" — so `RowWriter` tracks the mode
-beside the colour. Entering graphics costs a cell; asking for separated graphics
-when contiguous are selected costs another; returning to text costs one whether
-the colour changes or not. Every row begins in alpha with contiguous selected,
-whatever the row above ended in.
-
-Which graphics *set* is selected is separate state from whether graphics are in
-*force*: the separated attribute chooses the set even when alpha is showing, and
-a colour attribute is what enters it. Modelling those as one thing gets the
-arithmetic wrong by a cell in exactly the cases that matter.
-
-The consequence a page has to plan around is that **an attribute displays as a
-space**, so a block region has a margin on its left whether it wants one or not
-— which is why the rules this service draws begin at column 2, and why a frame
-is 78 blocks wide in practice rather than 80. Where a gap would show,
-`HOLD_GRAPHICS` is the way out: it makes an attribute cell repeat the last
-mosaic instead of blanking, which is how teletext art has always changed colour
-mid-picture.
-
-**Pictures become blocks** in `viewdata/blocks.py`: a bitmap in, six-bit cell
-patterns out, padded to whole cells.
-
-`inverted` lives there rather than in whatever draws the letters, and the reason
-is the interesting part. The SAA5050 has **no alpha-black attribute** — the
-colour codes run 0x01–0x07 and there is no way to ask for a black foreground. So
-a Ceefax banner of black letters on cyan is not black letters at all: it is a
-solid cyan field with letter-shaped holes, the unlit blocks showing the default
-black background through. It costs one graphics attribute per row and no
-background attributes whatever, which is *cheaper* than the coloured-background
-version it appears to be.
-
-Inverting a glyph on its own would leave the space around it black, so what has
-to be inverted is the whole field the picture occupies — including the padding,
-or the field has a ragged edge exactly where a banner must not.
-
-**This is where mosaic graphics belong when they come.** The block characters
-are already how the rules and the countdown bar are drawn — the G1 set gives
-each cell a 2×3 grid of blocks, so a frame is 80×72 addressable points, and
-plotting into that is a matter of setting bits in the right cell. `bar` is the
-one-dimensional case of it.
+Mixing text and blocks on one row, placing things at coordinates, and drawing
+pictures are all in [graphics.md](graphics.md) — the block grid, the compositor
+that works out where the attributes go, and the plan for large lettering.
 
 ## Templates
 

@@ -1,8 +1,9 @@
 # Mosaic fonts
 
 Large lettering drawn out of teletext block graphics — banners, title frames,
-headings bigger than double height can give. **The format and its reader are
-built; nothing that draws with them is.** The rest is written down as
+headings bigger than double height can give. **The format, its reader, one converted
+face and the importer that converted it are built; nothing that draws with them
+is.** The rest is written down as
 requirements, so that the research behind them does not have to be done twice.
 
 The layer beneath is built and described in [graphics.md](graphics.md): the
@@ -69,16 +70,18 @@ minimum gap. The profiles are cheap to compute and the fit is exact rather than
 estimated. A table would only be needed for pairs where the right answer is not
 the tightest one, and there is no evidence yet that any exist here.
 
-Measured with real ArcNormal glyphs:
+Measured with the shipped `acorn` face, and reproducible with it:
 
-| | cells | fits in 39? |
-|---|---|---|
-| `BBC CEEFAX`, fixed 8 blocks a glyph | 47 | no |
-| `BBC CEEFAX`, trimmed to each glyph | 35 | yes |
-| `STARDOT`, fixed 8 blocks a glyph | 56 blocks ≈ 28 | yes |
+| | blocks | cells, with the attribute | fits on a row? |
+|---|---|---|---|
+| `BBC CEEFAX`, fixed | 80 | 41 | **no** |
+| `BBC CEEFAX`, proportional | 66 | 34 | yes |
+| `STARDOT`, fixed | 56 | 29 | yes |
+| `STARDOT`, proportional | 49 | 26 | yes |
 
-Ten letters in 78 blocks is 7.8 blocks each. A fixed-width 8×8 face cannot draw
-the Ceefax banner and a proportional one draws it comfortably.
+Ten letters in the 78 blocks a row has is 7.8 blocks each. A fixed-width 8×8
+face cannot draw the Ceefax banner — it is over by a cell — and a proportional
+one draws it with five cells to spare.
 
 **The advance belongs to the font, not the renderer.** Trimming at render time
 would re-decide it on every frame, and would give a space no width at all. So a
@@ -143,10 +146,16 @@ rows = ["".join("#" if byte & (0x80 >> bit) else "." for bit in range(8))
 
 | file | glyphs | codes |
 |---|---|---|
-| `ArcNormal` | 224 | 32–255 — the standard Acorn 8×8 face, and the intended default |
+| `ArcNormal` | 224 | 32–255 — the standard Acorn 8×8 face, and the one shipped |
 | `Serif`, `Broadway`, … | 95 | 32–126 |
 | `Arc7by8` | 96 | 32–127 |
 | `Symbols` | — | 256 bytes, not a multiple of 10; something else |
+
+**Codes 0x80–0x9f are dropped on conversion.** 0x20–0x7e are ASCII and
+0xa0–0xff are Latin-1 — checked against ArcNormal's pound sign, e-acute,
+A-diaeresis and one-half — but the range between belongs to no encoding
+established here, and a wrong letter on a banner is worse than a missing one.
+0x7f goes too: in these faces it is a solid block.
 
 Archives: `mdfs.net/Apps/Font/Fonts1.zip` through `Fonts4.zip`, plus
 `Font4px.zip`, `Font6px.zip`, `Font7px.zip` for narrower faces — which are worth
@@ -170,8 +179,8 @@ converts between it and some fifty others.
 
 Roughly in order, each committable on its own.
 
-1. ~~**The format** and its reader.~~ Done. One converted font next: a golden
-   file is testable without any rendering.
+1. ~~**The format**, its reader, and one converted font.~~ Done. `acorn`, 191
+   glyphs of ASCII and Latin-1, converted by `tools/mdfs_font.py`.
 2. **`Font`** — glyphs by character, advance, height; `measure(text)` in blocks;
    a missing glyph substituted rather than raising, as transliteration does.
    Then the three spacings: fixed, proportional, and kerned by profile fit.
@@ -182,17 +191,18 @@ Roughly in order, each committable on its own.
    (measure in blocks rather than cells; the last line is free).
 5. **A template**, `Banner` or similar, on the `Template` base, so a page places
    large lettering the way it places a menu.
-6. **The converters**, as scripts beside the framework rather than inside it: a
-   font is converted once and vendored, and the framework should not carry a
-   parser for a format nobody will use again. See "Writing an importer" in
-   [graphics.md](graphics.md).
+6. **The ZX Origins importer**, beside `tools/mdfs_font.py`. A font is
+   converted once and the result vendored, so the framework carries no parser
+   for a format read once in the life of a face.
 7. **Stardot's title frame** in it, which is the point of the exercise.
 
 ## Decisions still open
 
-- **Where fonts live.** A `fonts/` directory in the framework package, shipped
-  as package data, is the obvious answer; whether applications can register
-  their own from a path or must import them is not decided.
+- ~~**Where fonts live.**~~ Settled:
+  `sextile/viewdata/fonts/`, shipped as package data, and
+  `font.load_font("acorn")` reads one by name. An application with a face of
+  its own reads it with `read_font` from wherever it keeps it; whether the
+  library should be registrable is still open, and nothing needs it yet.
 - **How many faces to ship.** One default and no more, probably: each is
   provenance to track, and an application wanting another can convert it.
 - **Whether the renderer picks a face by height.** A page asking for "a banner

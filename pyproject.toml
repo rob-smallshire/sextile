@@ -43,12 +43,13 @@ dev = [
 ]
 
 [tool.pytest.ini_options]
-testpaths = ["packages"]
+testpaths = ["packages", "tools"]
 asyncio_mode = "auto"
 
 [tool.ruff]
 line-length = 100
 src = [
+    "tools",
     "packages/sextile/src",
     "packages/stardot-viewdata/src",
     "packages/calendar-viewdata/src",
@@ -62,11 +63,12 @@ select = ["E", "F", "I", "UP", "B", "SIM"]
 
 [tool.mypy]
 strict = true
-files = ["packages"]
+files = ["packages", "tools"]
 #  Each member's tests are a top-level package of their own, so two members may
 #  both have a tests/ directory without one shadowing the other.
 explicit_package_bases = true
 mypy_path = """\
+tools:\
 packages/sextile/src:\
 packages/stardot-viewdata/src:\
 packages/calendar-viewdata/src:\

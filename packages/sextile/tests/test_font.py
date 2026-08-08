@@ -2,7 +2,14 @@
 
 import pytest
 
-from sextile.viewdata.font import FontError, Glyph, read_font, write_font
+from sextile.viewdata.font import (
+    FontError,
+    Glyph,
+    font_names,
+    load_font,
+    read_font,
+    write_font,
+)
 
 A_FONT = """\
 name: Example
@@ -88,6 +95,23 @@ class TestGlyphs:
         with pytest.raises(FontError, match="u\\+0041"):
             read_font("name: X\nheight: 3\nfixed: 3\n\nglyph u+0041 advance 3\n##\n")
 
+    def test_a_glyph_says_where_its_ink_sat_in_the_design_width(self) -> None:
+        #  Trimmed pictures make a proportional setting easy and a fixed one
+        #  impossible, unless the bearing that was trimmed away is kept.
+        font = read_font(
+            "name: X\nheight: 1\nfixed: 8\n\nglyph u+0041 advance 3 bearing 2\n##\n"
+        )
+        assert font["A"].bearing == 2
+
+    def test_and_most_glyphs_have_none_so_it_may_be_left_out(self) -> None:
+        assert read_font(A_FONT)["A"].bearing == 0
+
+    def test_a_bearing_that_is_not_a_number(self) -> None:
+        with pytest.raises(FontError, match="bearing"):
+            read_font(
+                "name: X\nheight: 1\nfixed: 8\n\nglyph u+0041 advance 3 bearing x\n#\n"
+            )
+
     def test_a_character_the_font_has_no_glyph_for(self) -> None:
         assert "Z" not in read_font(A_FONT)
 
@@ -147,6 +171,13 @@ class TestWritingItBackOut:
         written = write_font(read_font(A_FONT))
         assert written.index("u+0020") < written.index("u+002e") < written.index("u+0041")
 
+    def test_a_bearing_is_written_only_when_there_is_one(self) -> None:
+        font = read_font(
+            "name: X\nheight: 1\nfixed: 8\n\nglyph u+0041 advance 3 bearing 2  A\n##\n"
+        )
+        assert "glyph u+0041 advance 3 bearing 2  A" in write_font(font)
+        assert read_font(write_font(font))["A"].bearing == 2
+
     def test_the_note_beside_each_glyph_says_which_letter_it_is(self) -> None:
         #  So that the file can be read, which is the point of the format.
         assert "glyph u+0041 advance 5  A" in write_font(read_font(A_FONT))
@@ -161,3 +192,34 @@ class TestAGlyphOnItsOwn:
         glyph = Glyph.of(["##", ".#"], advance=3)
         assert glyph.bitmap == ((True, True), (False, True))
         assert glyph.height == 2
+        assert glyph.bearing == 0
+
+
+class TestTheFacesTheFrameworkShips:
+    def test_there_is_a_default_to_letter_a_banner_with(self) -> None:
+        assert "acorn" in font_names()
+
+    def test_it_loads_and_is_the_size_it_was_drawn(self) -> None:
+        acorn = load_font("acorn")
+        assert acorn.height == 8
+        assert acorn.fixed == 8
+
+    def test_it_has_the_repertoire_a_page_will_ask_for(self) -> None:
+        acorn = load_font("acorn")
+        #  Sterling among them: a Viewdata service on this side of the water
+        #  will want it, and the G0 set has it where ASCII has a hash.
+        assert all(character in acorn for character in "STARDOT viewdata 0123456789£?")
+
+    def test_and_it_says_where_it_came_from(self) -> None:
+        #  The licence travels in the file, not only in NOTICE.md.
+        assert "MDFS" in load_font("acorn").source
+        assert load_font("acorn").terms
+
+    def test_the_letters_are_trimmed_and_carry_their_bearings(self) -> None:
+        letter_i = load_font("acorn")["i"]
+        assert letter_i.width < load_font("acorn").fixed
+        assert letter_i.bearing > 0
+
+    def test_a_face_that_is_not_shipped_says_what_is(self) -> None:
+        with pytest.raises(FontError, match="acorn"):
+            load_font("helvetica")

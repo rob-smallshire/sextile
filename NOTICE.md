@@ -24,6 +24,19 @@ paraphrase.
 Stardot's robots.txt carries `Content-Signal: search=yes, ai-train=no,
 use=reference`. Sextile does not train anything.
 
+## Fonts
+
+`packages/sextile/src/sextile/viewdata/fonts/acorn.font` is the Acorn 8x8 face
+`ArcNormal`, from the font collection at `mdfs.net/Apps/Font/` maintained by
+J.G.Harston, converted into this project's own format by
+`tools/mdfs_font.py`. It is **free for public use**, and each file carries its
+source and terms in its own header as well as here.
+
+The fonts at `damieng.com/typography/zx-origins/` are deliberately **not**
+included: they are offered for use "in exchange for a mention in the credits",
+which is a permission rather than a licence. The importer for them, when there
+is one, is for pointing at your own copy.
+
 ## Spike scripts
 
 The scripts in `docs/spikes/` drive the Beebium BBC Micro emulator, and their

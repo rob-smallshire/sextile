@@ -227,10 +227,17 @@ class TestThePagesThatComeFree:
     ) -> None:
         assert app.describe(PageAddress("4")) == "The days to come"
 
-    async def test_a_page_with_no_title_stays_off_the_list(
+    async def test_the_words_you_can_key(self, app: CalendarApplication) -> None:
+        shown = text_of(await page_at(app, "94"))
+        assert "*MONTH#" in shown
+        assert "This month" in shown
+
+    async def test_the_word_list_is_generated_and_cannot_drift(
         self, app: CalendarApplication
     ) -> None:
-        assert "*90#" not in text_of(await page_at(app, "93"))
+        shown = text_of(await page_at(app, "94"))
+        for word in app.keywords():
+            assert f"*{word}#" in shown
 
     @pytest.mark.parametrize("keyword", ["HISTORY", "PAGES"])
     def test_their_keywords_are_declared_beside_them(

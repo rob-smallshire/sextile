@@ -173,6 +173,17 @@ class CalendarApplication(Sextile):
         return await self.history(request)
 
     @page(
+        "94",
+        name="names",
+        title="Words you can key",
+        detail="instead of a page number",
+        keywords=("KEYWORDS", "WORDS"),
+    )
+    async def _names(self, request: PageRequest) -> Page:
+        """The framework's page, at this service's number."""
+        return await self.names(request)
+
+    @page(
         "93",
         name="contents",
         title="Every page",
@@ -201,8 +212,9 @@ class CalendarApplication(Sextile):
             ],
         )
 
-    #  No title: a page there is no coming back from is not somewhere to go.
-    @page("90", keywords=("BYE",))
+    #  Listed: the contents page is a directory of numbers that do something,
+    #  and a reader looking for how to ring off should find it there.
+    @page("90", title="Ring off", keywords=("BYE",))
     async def goodbye(self, request: PageRequest) -> Page:
         return self._farewell("GOODBYE", ["Thank you for calling.", "", "Ring off."])
 

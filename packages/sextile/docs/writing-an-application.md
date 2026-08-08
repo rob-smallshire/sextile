@@ -209,8 +209,8 @@ without a flag.
 
 ## Pages that come with the framework
 
-Two pages are built for you and registered nowhere, so that a service maps them
-into its own numbering or does without:
+Three pages are built for you and registered nowhere, so that a service maps
+them into its own numbering or does without:
 
 ```python
 @page("92", name="history", title="Where you have been", keywords=("HISTORY",))
@@ -220,7 +220,16 @@ async def _history(self, request: PageRequest) -> Page:
 @page("93", name="contents", title="Every page", keywords=("PAGES",))
 async def _contents(self, request: PageRequest) -> Page:
     return await self.contents(request)
+
+@page("94", name="names", title="Words you can key", keywords=("KEYWORDS",))
+async def _names(self, request: PageRequest) -> Page:
+    return await self.names(request)
 ```
+
+Each is generated from what the framework already knows — where a caller has
+been, which patterns are registered, which words are aliased — so none can drift
+from the service it describes. Anything you would otherwise type into a help
+page by hand is a list that goes stale.
 
 `contents` lists what the service is made of, taking pages with fields as
 patterns rather than enumerating them — `*52<user-id>#  One contributor` — which

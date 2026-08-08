@@ -101,6 +101,7 @@ EVERY_PAGE: list[str] = [
     "0",
     "1",
     "93",
+    "94",
     "8",
     "82489000",
     "82999999",
@@ -394,15 +395,15 @@ class TestHowToGetAbout:
         #  `#` travels as 0x5F, which this grid shows as the `#` the SAA5050 draws.
         assert keys in shown
 
-    async def test_every_keyword_it_names_is_one_the_service_has(
+    async def test_it_points_at_the_generated_lists_rather_than_repeating_them(
         self, app: StardotApplication
     ) -> None:
-        #  A guide that has drifted from the thing it describes is worse than
-        #  none, so the words it prints are looked up.
+        #  It used to name half a dozen keywords itself, which is a list that
+        #  goes stale the first time one is added. The two pages it now points
+        #  at are generated from the registrations and cannot.
         shown = text_of(await page_at(app, "91"), 1)
-        for word in ("MAIN", "LATEST", "TOPICS", "DAYS", "FORUMS", "WHO"):
-            assert f"*{word}#" in shown
-            app.resolve(word)
+        assert "*93#" in shown
+        assert "*94#" in shown
 
 
 class TestThePagesSayWhatTheyAre:
@@ -423,9 +424,9 @@ class TestThePagesSayWhatTheyAre:
     def test_asking_for_a_page_that_says_nothing_about_itself(
         self, app: StardotApplication
     ) -> None:
-        #  The logoff page has no title, deliberately.
+        #  The title frame has no title, deliberately: it cannot be keyed.
         with pytest.raises(ValueError):
-            MenuItem.for_page(app, "logoff")
+            MenuItem.for_page(app, "title")
 
     async def test_the_main_index_offers_what_the_pages_call_themselves(
         self, app: StardotApplication
@@ -464,14 +465,19 @@ class TestEveryPage:
     ) -> None:
         assert "*52<user-id>#" in text_of(await page_at(app, "93"))
 
-    async def test_the_pages_a_reader_cannot_go_to_are_left_off(
+    async def test_a_page_that_cannot_be_keyed_is_left_off(
         self, app: StardotApplication
     ) -> None:
-        #  The title frame cannot be keyed and the logoff page is not somewhere
-        #  to go; neither is given a title, which is how they stay off the list.
-        shown = text_of(await page_at(app, "93"))
-        assert "*0#" not in shown
-        assert "*90#" not in shown
+        #  Only the title frame: `*0#` is the back command, so the number would
+        #  be an instruction that misleads. Everything else shown here is
+        #  keyable and does something, ringing off included -- this is a
+        #  directory of numbers rather than a menu of places to go.
+        assert "*0#" not in text_of(await page_at(app, "93"))
+
+    async def test_ringing_off_is_listed_because_it_can_be_keyed(
+        self, app: StardotApplication
+    ) -> None:
+        assert "*90#" in text_of(await page_at(app, "93"))
 
     @pytest.mark.parametrize("keyword", ["PAGES", "CONTENTS"])
     def test_a_keyword_reaches_it(self, keyword: str, app: StardotApplication) -> None:

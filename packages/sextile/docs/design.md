@@ -234,6 +234,20 @@ one that opens on a title frame — arrived at once, and never to be sent back t
 `index` defaults to `home`, so a service without a title frame need not know the
 distinction exists.
 
+**A page of keywords comes with the framework too**, generated from the aliases:
+`Application.names`, mapped in the same way. It exists because a service that
+offers keywords has to say so somewhere, and the somewhere was a hard-coded list
+in Stardot's help page — a list that goes stale the first time a keyword is
+added. Words are listed alphabetically, since a reader consulting it is looking
+one up rather than browsing, and several words for one page each get a line: the
+reader has one of them in mind and wants to find it, not to learn it has
+synonyms.
+
+Note what the three built-in pages have in common. Each lists something the
+framework already knows — where a caller has been, what patterns are registered,
+what words are aliased — so none of them can drift from the service they
+describe. A page that has to be kept in step by hand is a page that will not be.
+
 **A history page comes with the framework, unregistered.** The session already
 keeps a history so that `*0#` can retrace it one page at a time; showing the
 whole of it turns a stack into a map. `Application.history` is a handler a

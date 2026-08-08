@@ -31,6 +31,7 @@ from typing import Final
 from sextile.addressing import PageAddress, UnknownPageError
 from sextile.contents import contents_page
 from sextile.history import history_page
+from sextile.names import names_page
 from sextile.page import Page, PageFrame
 from sextile.routing import Converter, Match, Router
 from sextile.viewdata.canvas import Canvas
@@ -249,6 +250,24 @@ class Application(ABC):
         return history_page(
             address=request.address,
             been=request.history,
+            describe=self.describe,
+            home=self.index,
+        )
+
+    def keywords(self) -> dict[str, PageAddress]:
+        """The words this service answers to. None, unless it says so."""
+        return {}
+
+    async def names(self, request: PageRequest) -> Page:
+        """The words a reader can key in place of a page number.
+
+        Registered nowhere, like `history` and `contents`. Generated from the
+        aliases, so it cannot drift from what the service answers -- which is
+        precisely what a list of keywords typed into a help page does.
+        """
+        return names_page(
+            address=request.address,
+            named=self.keywords(),
             describe=self.describe,
             home=self.index,
         )

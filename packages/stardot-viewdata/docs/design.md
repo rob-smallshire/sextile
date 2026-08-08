@@ -54,6 +54,7 @@ it**, so the scheme has room to grow without renumbering anything.
 1     service root                       91    how to get about
                                          92    where you have been
                                          93    every page
+                                         94    words you can key
 3     days index    32<YYYYMMDD>         90    logoff
 4     forums index  42<forum>            <root>1   search, reserved throughout
 5     contributors  52<user>             2, 6      reserved
@@ -98,6 +99,7 @@ aliases onto those same routes rather than onto literal numbers.
 | `91` | how to get about: the keys, in two frames. `*HELP#` |
 | `92` | where you have been: the framework's page, mapped in here. `*HISTORY#` |
 | `93` | every page and its number, built from the registrations. `*PAGES#` |
+| `94` | every word you can key, built from the aliases. `*KEYWORDS#` |
 | `90` | goodbye, which sets `hang_up` |
 
 A post page offers its forum, its author, its day and its topic on `1`–`4`, and

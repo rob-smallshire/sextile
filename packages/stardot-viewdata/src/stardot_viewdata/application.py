@@ -550,8 +550,8 @@ class StardotApplication(Sextile):
                     ("DEL", "rub out a character"),
                     ("*90#", "ring off"),
                     ("", ""),
-                    ("*MAIN#", "and *LATEST# *TOPICS#"),
-                    ("", "  *DAYS# *FORUMS# *WHO#"),
+                    ("*93#", "every page and its number"),
+                    ("*94#", "every word you can key"),
                 ],
             ],
         )
@@ -597,6 +597,17 @@ class StardotApplication(Sextile):
         return await self.history(request)
 
     @page(
+        "94",
+        name="names",
+        title="Words you can key",
+        detail="instead of a page number",
+        keywords=("KEYWORDS", "WORDS"),
+    )
+    async def _names(self, request: PageRequest) -> Page:
+        """The framework's page, at this service's number."""
+        return await self.names(request)
+
+    @page(
         "93",
         name="contents",
         title="Every page",
@@ -629,10 +640,11 @@ class StardotApplication(Sextile):
             ],
         )
 
-    #  No title: a page there is no coming back from does not belong in a
-    #  list of places to go. 9 is the system namespace, where the second
-    #  digit is a function, so *90# keeps its conventional Prestel meaning.
-    @page("90", name="logoff", keywords=("BYE", "OFF"))
+    #  Titled, and so listed: the contents page is a directory of numbers that
+    #  do something rather than a menu of places to go, and a reader looking for
+    #  how to ring off should find it there. 9 is the system namespace, where
+    #  the second digit is a function, so *90# keeps its Prestel meaning.
+    @page("90", name="logoff", title="Ring off", keywords=("BYE", "OFF"))
     async def _logoff(self, request: PageRequest) -> Page:
         return self._farewell(
             "GOODBYE",

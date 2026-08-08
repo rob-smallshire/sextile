@@ -44,10 +44,15 @@ _UP: Final = _RIGHT.turned()
 _LEFT: Final = _UP.turned()
 _DOWN: Final = _LEFT.turned()
 
-#: Rows the whole thing takes: a word, a key, two of arrow, the middle row and
-#: its labels, two more of arrow, a key and a word. Every arrow is three cells
-#: across and two rows down, whichever way it points.
-ROWS: Final = 11
+#: Rows the whole thing takes: a word, a key, two of arrow, the middle row, two
+#: more of arrow, a key and a word. Every arrow is three cells across and two
+#: rows down, whichever way it points.
+#:
+#: The down arrow starts on the row the "item" labels are on, as the up arrow
+#: ends on the row above the middle one: that is what puts the two of them the
+#: same distance from the horizontal pair. They do not collide -- the labels
+#: are at the ends of the row and the arrow is in the middle of it.
+ROWS: Final = 10
 
 #: Where the pieces of the middle row sit, mirrored about the frame so that
 #: each key stays beside its own word. Everything else is centred.
@@ -82,6 +87,6 @@ def compass(
     composition.text(row + 4, _RIGHT_WORD, "next", word)
     composition.text(row + 6, _LEFT_WORD + _UNDER, "item", word)
     composition.text(row + 6, _RIGHT_WORD, "item", word)
-    composition.picture(row + 7, Align.CENTRE, _DOWN.cells(), colour)
-    composition.text(row + 9, Align.CENTRE, keys.NEXT_FRAME, key)
-    return composition.text(row + 10, Align.CENTRE, "next frame", word)
+    composition.picture(row + 6, Align.CENTRE, _DOWN.cells(), colour)
+    composition.text(row + 8, Align.CENTRE, keys.NEXT_FRAME, key)
+    return composition.text(row + 9, Align.CENTRE, "next frame", word)

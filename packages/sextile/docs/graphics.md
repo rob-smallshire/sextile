@@ -266,21 +266,21 @@ It is also why the block grid earns its place. The G0 character set has `←`,
 `→` and `↑` and no down arrow, so a compass drawn in letters is impossible.
 
 Each arrow is a quarter turn of the last, which is what keeps the four looking
-like one set, and **the head is filled rather than drawn as a thin diagonal**:
+like one set:
 
 ```
-   #        ...#..          ..#..
-    #       ...##.          .###.
-######      ######          #####
-    #       ...##.          ..#..
-   #        ...#..          ..#..
-                            ..#..
- sketched    filled       turned upright
+   #                          #
+    #                       # # #
+######                        #
+    #                         #
+   #                          #
+
+ pointing right          turned upright
 ```
 
-A one-block diagonal is a fine arrowhead lying down and falls apart standing
-up — `█ █ █` with gaps — because a block grid has no diagonal to speak of. The
-filled head survives the turn, so all four are the same arrow.
+The head is two blocks a side stepping back from the tip, and the turn costs it
+nothing: blocks laid corner to corner read as the diagonal they are, which is
+how every diagonal at this resolution is drawn.
 
 ## Large lettering
 

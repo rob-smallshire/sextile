@@ -30,15 +30,14 @@ from sextile.viewdata.blocks import block_runs, read_bitmap
 from sextile.viewdata.composition import Align, Composition
 from sextile.viewdata.controls import Colour
 
-#: A long shaft and a head three blocks deep, which is the least that reads as
-#: an arrow rather than as a cross. Each is a quarter turn of the last, and the
-#: head is filled rather than drawn as a thin diagonal: a one-block diagonal
-#: survives the turn from horizontal to vertical as detached blocks, because a
-#: block grid has no diagonal to speak of.
-_RIGHT: Final = ("...#..", "...##.", "######", "...##.", "...#..")
-_UP: Final = ("..#..", ".###.", "#####", "..#..", "..#..", "..#..")
-_LEFT: Final = ("..#...", ".##...", "######", ".##...", "..#...")
-_DOWN: Final = ("..#..", "..#..", "..#..", "#####", ".###.", "..#..")
+#: A long shaft and a head of two blocks a side, stepping diagonally back from
+#: the tip. Each arrow is a quarter turn of the last, which is what keeps the
+#: four looking like one set -- and the turn costs the head nothing, because
+#: blocks laid corner to corner read as the diagonal they are.
+_RIGHT: Final = ("...#..", "....#.", "######", "....#.", "...#..")
+_UP: Final = ("..#..", ".###.", "#.#.#", "..#..", "..#..", "..#..")
+_LEFT: Final = ("..#...", ".#....", "######", ".#....", "..#...")
+_DOWN: Final = ("..#..", "..#..", "..#..", "#.#.#", ".###.", "..#..")
 
 #: Rows the whole thing takes: a word, a key, two of arrow, the middle row and
 #: its labels, two more of arrow, a key and a word. Every arrow is three cells

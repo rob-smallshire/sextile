@@ -55,6 +55,14 @@ class Page:
     that knew which number meant goodbye would be a framework with an opinion
     about numbering, so the page says so instead."""
 
+    follows: PageAddress | None = None
+    """Where `#` leads once this page's frames have run out.
+
+    Prestel's `#` advanced through a route as well as through the frames of one
+    long page, and some pages are nothing but an invitation to press it -- a
+    title frame, or the last page of a guide. Without this they are dead ends
+    under the one key a viewdata reader tries first."""
+
     def __post_init__(self) -> None:
         if not self.frames:
             raise ValueError("a page must have at least one frame")

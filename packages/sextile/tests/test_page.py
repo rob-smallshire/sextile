@@ -113,3 +113,17 @@ class TestRingingOff:
 
     def test_a_page_can_ring_off_after_showing(self) -> None:
         assert Page(frames=(PageFrame(blank()),), hang_up=True).hang_up
+
+
+class TestReadingOn:
+    #  Prestel's `#` meant "next page" in a route as well as "next frame" of a
+    #  long one. A page can say where it leads once its frames run out, which is
+    #  what makes a title frame or a guide read as a sequence rather than a
+    #  dead end.
+
+    def test_a_page_leads_nowhere_by_default(self) -> None:
+        assert Page(frames=(PageFrame(blank()),)).follows is None
+
+    def test_a_page_can_say_what_comes_after_it(self) -> None:
+        page = Page(frames=(PageFrame(blank()),), follows=to("1"))
+        assert page.follows == to("1")

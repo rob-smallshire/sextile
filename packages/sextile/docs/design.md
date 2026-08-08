@@ -189,6 +189,12 @@ disagree.
 page and should not acquire one: which number means goodbye is the application's
 affair.
 
+**`Page.follows` says where `#` leads once the frames run out.** Prestel's `#`
+advanced through a route as well as through the frames of one long page, and
+some pages are nothing but an invitation to press it — a title frame, or the
+last page of a guide. Without it they are dead ends under the one key a viewdata
+reader tries first.
+
 `Page.destinations` is the run of pages a menu offered, across all frames, in
 order — digits only and never `0`, since the way back is on every page and
 counting it would make "next" mean something other than what the menu appeared

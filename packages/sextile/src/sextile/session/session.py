@@ -291,7 +291,7 @@ class Session:
             case Select(key):
                 return await self._select(key)
             case Next():
-                return self._next_frame()
+                return await self._next_frame()
             case Back():
                 return await self._back()
             case Redisplay():
@@ -338,7 +338,7 @@ class Session:
         if found is None:
             return None
         if key in found.moves:
-            return self._move(key)
+            return await self._move(key)
         destination = found.destination(key)
         #  A key the frame does not offer does nothing. Guessing would take the
         #  reader somewhere they did not ask to go.
@@ -355,19 +355,25 @@ class Session:
         offered = self._page.destinations if self._page else ()
         return _Sequence(offered, offered.index(destination)) if destination in offered else None
 
-    def _move(self, key: str) -> bytes | None:
+    async def _move(self, key: str) -> bytes | None:
         if key in (NEXT_FRAME, CONVENTIONAL_NEXT_FRAME):
-            return self._next_frame()
+            return await self._next_frame()
         if key == PREVIOUS_FRAME:
             return self._previous_frame()
         return None
 
-    def _next_frame(self) -> bytes | None:
-        if self._page is None or self._frame_index + 1 >= len(self._page.frames):
-            #  Wrapping round would loop a reader who cannot see that they have.
+    async def _next_frame(self) -> bytes | None:
+        if self._page is None:
             return None
-        self._frame_index += 1
-        return self._send()
+        if self._frame_index + 1 < len(self._page.frames):
+            self._frame_index += 1
+            return self._send()
+        if self._page.follows is not None:
+            #  Out of frames, but the page says what comes after it. Treated as
+            #  going there, history and all: it is a move between pages.
+            return await self._go_to(self._page.follows)
+        #  Wrapping round would loop a reader who cannot see that they have.
+        return None
 
     def _previous_frame(self) -> bytes | None:
         if self._frame_index == 0:

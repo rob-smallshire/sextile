@@ -7,15 +7,26 @@ The first digit names a namespace; the second says what kind of page within it.
 <root>1         search within it        (reserved, not yet built)
 <root>2<id>     one member of it
 
+0     title frame         (unkeyable: see below)
 1     service root        11  search everything
 3     days index          32<YYYYMMDD>   3220260802
 4     forums index    41 search   42<forum>  4253
 5     contributors    51 search   52<user>   5210058
 7     topics index    71 search   72<topic>  7233387
 8     latest posts    81 search   82<post>   82489493
-9     system          90 logoff   91 status
-0, 2, 6             reserved
+9     system          90 logoff   91 how to get about
+2, 6                reserved
 ```
+
+**There is no standard number for a help page.** Viewdata's conventions are
+about *commands* -- `*0#` back, `*00#` again, `*09#` afresh, `*90#` logoff, `#`
+on -- not about where a service files its own pages. So `91` is this scheme's
+choice rather than anybody's convention: the system namespace, where the second
+digit is a function. What is conventional is the keyword, and `*HELP#` reaches
+it, as do `*GUIDE#` and `*KEYS#`.
+
+`9` remains *about the service* and `91` is *how to work it*, which are
+different questions and were previously answered by one page under both names.
 
 ## The shape
 
@@ -29,11 +40,17 @@ not have to be prefix-free — `*8#` and `*82489493#` are unambiguously differen
 pages. Only whole-number uniqueness matters, which is what lets the fields vary
 in width and stay short.
 
-Two deliberate irregularities:
+Three deliberate irregularities:
 
 - **A namespace's index is the bare root, never `<root>0`.** Accepting both
   spellings would give one page two numbers. The `0` slot documents the intent
   and stays free.
+
+- **Page 0 is the title frame, and cannot be keyed.** `*0#` is the back command,
+  so no request reaches it: a caller arrives because the line opened, and leaves
+  by pressing on. It therefore displays no page number, a number a reader cannot
+  key being an instruction that misleads them. Prestel's own initial frame was
+  page 0 under the same tension.
 - **`9` is the system namespace**, where the second digit is a system function
   rather than a content operation, so that `*90#` keeps its conventional Prestel
   meaning as logoff.

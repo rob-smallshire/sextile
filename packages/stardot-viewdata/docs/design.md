@@ -50,18 +50,25 @@ written down in 2026 will still fetch that page.
 it**, so the scheme has room to grow without renumbering anything.
 
 ```
-1     service root                       9     about
+0     title frame                        9     about
+1     service root                       91    how to get about
 3     days index    32<YYYYMMDD>         90    logoff
 4     forums index  42<forum>            <root>1   search, reserved throughout
-5     contributors  52<user>             0, 2, 6   reserved
+5     contributors  52<user>             2, 6      reserved
 7     topics        72<topic>
 8     latest posts  82<post>
 ```
 
-Two deliberate irregularities. A namespace's index is the bare root and never
-`<root>0`, because accepting both would give one page two numbers. And `9` is
-the system namespace, where the second digit is a system function rather than a
-content operation, so that `*90#` keeps its conventional Prestel meaning.
+Three deliberate irregularities. A namespace's index is the bare root and never
+`<root>0`, because accepting both would give one page two numbers. `9` is the
+system namespace, where the second digit is a system function rather than a
+content operation, so that `*90#` keeps its conventional Prestel meaning. And
+page 0, the title frame, cannot be keyed at all — `*0#` is the back command — so
+it displays no number and is reached only by the line opening.
+
+There is no conventional number for a help page; viewdata's conventions are about
+commands rather than about where a service files its own pages. `91` is this
+scheme's choice. The keyword is the conventional part, and `*HELP#` reaches it.
 
 Registered as framework routes, with the handler names that `address_for` uses,
 so no page spells another's number:
@@ -71,20 +78,23 @@ self.page("82{post_id:int}", name="post")(self._post)
 self.address_for("post", post_id=post.post_id)
 ```
 
-Fifteen keywords — `*MAIN#`, `*LATEST#`, `*BYE#` and the rest — are aliases onto
-those same routes rather than onto literal numbers.
+Seventeen keywords — `*MAIN#`, `*LATEST#`, `*HELP#`, `*BYE#` and the rest — are
+aliases onto those same routes rather than onto literal numbers.
 
 ## The pages
 
 | | |
 |---|---|
+| `0` | the title frame the line opens on; `#` carries on to the index |
 | `1` | the index, with a count of what is held |
 | `8`, `82<post>` | latest posts; one post, in as many frames as it takes |
 | `7`, `72<topic>` | topics; a topic's posts, oldest first |
 | `3`, `32<date>` | days held; a day's posts |
 | `4`, `42<forum>` | forums; a forum's posts |
 | `5`, `52<user>` | contributors; one contributor's posts |
-| `9`, `90` | about; goodbye, which sets `hang_up` |
+| `9` | about the service |
+| `91` | how to get about: the keys, in two frames. `*HELP#` |
+| `90` | goodbye, which sets `hang_up` |
 
 A post page offers its forum, its author, its day and its topic on `1`–`4`, and
 the posts either side of it on the horizontal keys when the reader arrived

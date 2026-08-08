@@ -97,6 +97,7 @@ def text_of(page: Page, index: int = 0) -> str:
 
 #: Every page the service has.
 EVERY_PAGE: list[str] = [
+    "0",
     "1",
     "8",
     "82489000",
@@ -111,6 +112,7 @@ EVERY_PAGE: list[str] = [
     "5",
     "5210058",
     "9",
+    "91",
     "90",
 ]
 
@@ -134,7 +136,7 @@ class TestTheNumbering:
         assert app.address_for("contributor", user_id=10058) == PageAddress("5210058")
         assert app.address_for("day", day=datetime(2026, 8, 2).date()) == PageAddress("3220260802")
 
-    @pytest.mark.parametrize("digits", ["2", "6", "0", "11", "40", "9999"])
+    @pytest.mark.parametrize("digits", ["2", "6", "11", "40", "9999"])
     async def test_a_reserved_or_unallocated_number_says_so(
         self, digits: str, app: StardotApplication
     ) -> None:
@@ -227,10 +229,14 @@ class TestWhereTheKeysLead:
     async def test_zero_returns_to_the_index_from_everywhere(
         self, app: StardotApplication
     ) -> None:
+        #  From everywhere a reader can get lost, which is everywhere except
+        #  the two ends: the title frame, which is where they start and which
+        #  offers one way on, and the page that rings off.
+        ends = {app.home, app.address_for("logoff")}
         for digits in EVERY_PAGE:
+            if PageAddress(digits) in ends:
+                continue
             page = await page_at(app, digits)
-            if page.hang_up:
-                continue  # see below
             for page_frame in page.frames:
                 assert page_frame.destination("0") == PageAddress("1")
 
@@ -318,3 +324,80 @@ class TestTheServiceNamesItself:
         #  what serves it, which is a different thing from being called it.
         shown = text_of(await page_at(app, digits))
         assert "Sextile" not in shown or "Served by Sextile" in shown
+
+
+class TestTheTitleFrame:
+    """What the line opens on: what this is, and the one way in.
+
+    Page 0, which cannot be keyed -- `*0#` is the back command -- so a caller
+    arrives on it because the line opened and leaves it by pressing on.
+    """
+
+    def test_the_line_opens_on_it(self, app: StardotApplication) -> None:
+        assert app.home == PageAddress("0")
+
+    async def test_it_names_the_service(self, app: StardotApplication) -> None:
+        assert "STARDOT" in text_of(await page_at(app, "0"))
+
+    async def test_it_shows_no_page_number(self, app: StardotApplication) -> None:
+        #  A number a reader cannot key is an instruction that misleads them.
+        assert "0a" not in text_of(await page_at(app, "0"))
+
+    async def test_hash_carries_on_to_the_index(self, app: StardotApplication) -> None:
+        #  The one key a viewdata reader tries without being told.
+        assert (await page_at(app, "0")).follows == PageAddress("1")
+
+    async def test_so_does_the_first_digit(self, app: StardotApplication) -> None:
+        page = await page_at(app, "0")
+        assert page.frames[0].destination("1") == PageAddress("1")
+
+    async def test_and_nothing_else_does(self, app: StardotApplication) -> None:
+        #  There is one way on from here, which is the point of a title frame.
+        page = await page_at(app, "0")
+        assert set(page.frames[0].choices) == {"1"}
+
+    async def test_it_leaves_the_bottom_rows_clear(self, app: StardotApplication) -> None:
+        #  Room for the countdown bar, which has the footer row.
+        page = await page_at(app, "0")
+        assert page.frames[0].frame.last_written_row() < 22
+
+
+class TestHowToGetAbout:
+    async def test_it_has_a_number_in_the_system_namespace(
+        self, app: StardotApplication
+    ) -> None:
+        assert app.address_for("help") == PageAddress("91")
+
+    @pytest.mark.parametrize("keyword", ["HELP", "GUIDE", "KEYS"])
+    def test_a_keyword_reaches_it(self, keyword: str, app: StardotApplication) -> None:
+        assert app.resolve(keyword) == PageAddress("91")
+
+    def test_about_is_still_its_own_page(self, app: StardotApplication) -> None:
+        #  What the service is, as against how to work it.
+        assert app.resolve("ABOUT") == PageAddress("9")
+
+    async def test_the_main_index_offers_it(self, app: StardotApplication) -> None:
+        assert PageAddress("91") in (await page_at(app, "1")).destinations
+
+    async def test_it_runs_to_more_than_one_frame(self, app: StardotApplication) -> None:
+        assert len((await page_at(app, "91")).frames) == 2
+
+    @pytest.mark.parametrize(
+        "keys", ["1-9", "0", "*nnn#", "W", "A", "*0#", "*00#", "*09#", "**", "*90#"]
+    )
+    async def test_it_names_the_keys_the_service_answers(
+        self, keys: str, app: StardotApplication
+    ) -> None:
+        shown = text_of(await page_at(app, "91")) + text_of(await page_at(app, "91"), 1)
+        #  `#` travels as 0x5F, which this grid shows as the `#` the SAA5050 draws.
+        assert keys in shown
+
+    async def test_every_keyword_it_names_is_one_the_service_has(
+        self, app: StardotApplication
+    ) -> None:
+        #  A guide that has drifted from the thing it describes is worse than
+        #  none, so the words it prints are looked up.
+        shown = text_of(await page_at(app, "91"), 1)
+        for word in ("MAIN", "LATEST", "TOPICS", "DAYS", "FORUMS", "WHO"):
+            assert f"*{word}#" in shown
+            app.resolve(word)

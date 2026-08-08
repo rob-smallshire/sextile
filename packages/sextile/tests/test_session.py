@@ -712,3 +712,50 @@ class TestTheWarningOverAPartTypedRequest:
         self, session: Session
     ) -> None:
         assert session.dismiss() is None
+
+
+class TestReadingOn:
+    """`#` past the last frame of a page that says what comes after it.
+
+    Prestel's `#` advanced through a route, not merely through the frames of one
+    long page, and a title frame is nothing but an invitation to press it.
+    """
+
+    async def test_hash_follows_where_the_page_leads(self, board: Board) -> None:
+        @board.page("6", name="title")
+        async def title(request: PageRequest) -> Page:
+            page = board.menu(request.address, "TITLE", [])
+            return Page(frames=page.frames, follows=board.address_for("main"))
+
+        session = Session(board, start=at("6"))
+        await session.greeting()
+        await session.receive(b"#")
+        assert session.address == at("1")
+
+    async def test_the_frames_are_walked_first(self, session: Session) -> None:
+        #  `8` runs to several frames and says nothing about what follows, so
+        #  `#` steps within it as before.
+        await session.receive(b"*8#")
+        await session.receive(b"#")
+        assert session.frame_index == 1
+        assert session.address == at("8")
+
+    async def test_a_page_that_leads_nowhere_still_stays_put(
+        self, session: Session
+    ) -> None:
+        await session.receive(b"*9#")
+        assert await session.receive(b"#") == []
+
+    async def test_following_on_is_remembered_like_any_other_move(
+        self, board: Board
+    ) -> None:
+        @board.page("6", name="title")
+        async def title(request: PageRequest) -> Page:
+            page = board.menu(request.address, "TITLE", [])
+            return Page(frames=page.frames, follows=board.address_for("main"))
+
+        session = Session(board, start=at("6"))
+        await session.greeting()
+        await session.receive(b"#")
+        await session.receive(b"*0#")
+        assert session.address == at("6")

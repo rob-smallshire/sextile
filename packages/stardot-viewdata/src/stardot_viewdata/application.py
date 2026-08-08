@@ -34,7 +34,7 @@ from sextile.application import Arrival, PageRequest, Parting, Sextile
 from sextile.page import Page, PageFrame
 from sextile.viewdata.canvas import Canvas
 from sextile.viewdata.chrome import CONTENT_FIRST_ROW, CONTENT_ROWS, draw_chrome
-from sextile.viewdata.controls import Colour
+from sextile.viewdata.controls import Colour, Control, graphics_colour
 from sextile.viewdata.encoding import cell_count
 from sextile.viewdata.footer import FooterItem, Priority, render_footer
 from sextile.viewdata.frame import COLUMNS
@@ -105,7 +105,7 @@ class StardotApplication(Sextile):
         the application stops. That is what a test wants, and what a caller
         holding the archive for some other purpose wants too.
         """
-        super().__init__(name=SERVICE_NAME.title())
+        super().__init__(name=SERVICE_NAME.title(), home="0")
         self._database_filepath = database_filepath
         self._repository = repository
         self._ours = repository is None
@@ -147,6 +147,10 @@ class StardotApplication(Sextile):
         A namespace's index is the bare root and never `<root>0`, because
         accepting both would give one page two numbers.
         """
+        #  The title frame. `*0#` is the back command, so this page cannot be
+        #  keyed and does not display a number; a caller arrives on it because
+        #  the line opened, and leaves it by pressing on.
+        self.page("0", name="title")(self._title)
         self.page("1", name="main")(self._main_index)
         self.page("8", name="posts")(self._latest_posts)
         self.page("82{post_id:int}", name="post")(self._post)
@@ -159,6 +163,9 @@ class StardotApplication(Sextile):
         self.page("5", name="contributors")(self._contributors_index)
         self.page("52{user_id:int}", name="contributor")(self._contributor)
         self.page("9", name="about")(self._about)
+        #  In the system namespace, where the second digit is a function rather
+        #  than a content operation.
+        self.page("91", name="help")(self._help)
         #  9 is the system namespace, where the second digit is a system
         #  function rather than a content operation, so that *90# can keep its
         #  conventional Prestel meaning.
@@ -180,7 +187,9 @@ class StardotApplication(Sextile):
             ("USERS", "contributors"),
             ("TOPICS", "topics"),
             ("ABOUT", "about"),
-            ("HELP", "about"),
+            ("HELP", "help"),
+            ("GUIDE", "help"),
+            ("KEYS", "help"),
             ("BYE", "logoff"),
             ("OFF", "logoff"),
         ):
@@ -196,6 +205,7 @@ class StardotApplication(Sextile):
             MenuItem("By day", "browse by date", self.address_for("days")),
             MenuItem("By forum", "browse by section", self.address_for("forums")),
             MenuItem("By contributor", "browse by poster", self.address_for("contributors")),
+            MenuItem("How to get about", "the keys, and what they do", self.address_for("help")),
             MenuItem("About this service", "", self.address_for("about")),
         ]
         return self._menu(
@@ -431,6 +441,107 @@ class StardotApplication(Sextile):
             choices["4"] = self.address_for("topic", topic_id=post.topic_id)
         return choices
 
+    async def _title(self, request: PageRequest) -> Page:
+        """The frame the line opens on: what this is, and how to get in.
+
+        No page number in the header, because `*0#` is the back command and a
+        number a reader cannot key is an instruction that misleads them.
+        """
+        held = await self._read(lambda repository: repository.count_posts())
+        canvas = Canvas()
+        _rule(canvas, 1)
+        _centred(canvas, 3, SERVICE_NAME, Colour.YELLOW)
+        _centred(canvas, 5, "V I E W D A T A", Colour.CYAN)
+        _rule(canvas, 7)
+        canvas.row(10).text("The Stardot forum for users of Acorn", Colour.WHITE)
+        canvas.row(11).text("computers, as 40-column frames.", Colour.WHITE)
+        canvas.row(13).text(f"{held} posts held.", Colour.GREEN)
+        #  Each colour change costs a cell, which shows as a space -- so the
+        #  attribute is the space, rather than being paid for on top of one.
+        canvas.row(16).text("Key", Colour.WHITE).text("#", Colour.YELLOW).text(
+            "for the main index.", Colour.WHITE
+        )
+        canvas.row(18).text("Key", Colour.WHITE).text("*91#", Colour.YELLOW).text(
+            "for how to get about.", Colour.WHITE
+        )
+        return Page(
+            frames=(
+                PageFrame(
+                    frame=canvas.frame,
+                    choices={"1": self.address_for("main")},
+                    moves=frozenset({NEXT_FRAME_KEY, CONVENTIONAL_NEXT_FRAME_KEY}),
+                ),
+            ),
+            #  `#` is the one key a viewdata reader tries without being told, and
+            #  a title frame is nothing but an invitation to press it.
+            follows=self.address_for("main"),
+        )
+
+    async def _help(self, request: PageRequest) -> Page:
+        """How to get about, in two frames.
+
+        Every key named here is one the service actually answers; a guide that
+        drifts from the thing it describes is worse than none.
+        """
+        return self._guide(
+            request.address,
+            [
+                [
+                    ("1-9", "choose from a menu"),
+                    ("0", "back to the main index"),
+                    ("*nnn#", "go straight to a page"),
+                    ("", ""),
+                    ("W  S", "up and down the frames of"),
+                    ("", "  one item"),
+                    ("#", "the same as S"),
+                    ("A  D", "back and forward through"),
+                    ("", "  the items of a menu"),
+                ],
+                [
+                    ("*0#", "back, through where you"),
+                    ("", "  have been"),
+                    ("*00#", "show this frame again"),
+                    ("*09#", "fetch it afresh"),
+                    ("*", "cancel a request being keyed"),
+                    ("**", "cancel and begin again"),
+                    ("DEL", "rub out a character"),
+                    ("*90#", "ring off"),
+                    ("", ""),
+                    ("*MAIN#", "and *LATEST# *TOPICS#"),
+                    ("", "  *DAYS# *FORUMS# *WHO#"),
+                ],
+            ],
+        )
+
+    def _guide(self, address: PageAddress, batches: list[list[tuple[str, str]]]) -> Page:
+        """A key on the left, what it does on the right."""
+        frames = []
+        for index, batch in enumerate(batches):
+            canvas = Canvas()
+            moving = _frame_moves(index, len(batches))
+            draw_chrome(
+                canvas,
+                title="HOW TO GET ABOUT",
+                page_number=address.frame_number(index),
+                prompt=_prompt(moving, selecting=False),
+            )
+            for offset, (key, meaning) in enumerate(batch):
+                row = canvas.row(CONTENT_FIRST_ROW + offset)
+                if key:
+                    row.text(f"{key:<7}", Colour.YELLOW)
+                else:
+                    row.skip(7)
+                if meaning:
+                    row.text(_fitted(meaning, COLUMNS - 8), Colour.WHITE)
+            frames.append(
+                PageFrame(
+                    frame=canvas.frame,
+                    choices={"0": self.address_for("main")},
+                    moves=_moves(moving),
+                )
+            )
+        return Page(frames=tuple(frames))
+
     async def _about(self, request: PageRequest) -> Page:
         held = await self._read(lambda repository: repository.count_posts())
         return self._notice(
@@ -541,6 +652,20 @@ class StardotApplication(Sextile):
 
 
 # -- helpers ----------------------------------------------------------------
+
+
+def _centred(canvas: Canvas, row: int, text: str, colour: Colour) -> None:
+    """Text across the middle of a row, the colour attribute paid for."""
+    room = COLUMNS - 1
+    canvas.row(row).skip(max((room - cell_count(text)) // 2, 0)).text(text, colour)
+
+
+def _rule(canvas: Canvas, row: int) -> None:
+    """A full-width rule in separated mosaic graphics, as the chrome draws."""
+    frame = canvas.frame
+    frame.set_attribute(row, 0, graphics_colour(Colour.BLUE))
+    frame.set_attribute(row, 1, Control.SEPARATED_GRAPHICS)
+    frame.write(row, 2, "▮" * (COLUMNS - 2))
 
 
 def _day_title(day: date) -> str:

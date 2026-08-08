@@ -220,7 +220,7 @@ def _bordered(picture: list[list[bool]], margin: int) -> list[list[bool]]:
 
 def place(
     composition: Composition,
-    row: int,
+    row: Where,
     text: str,
     font: Font,
     colour: Colour = Colour.WHITE,
@@ -236,6 +236,10 @@ def place(
     separated: bool = False,
 ) -> Composition:
     """Add `text`, set in `font`, to a composition with its top row at `row`.
+
+    `row` may be an alignment as well, which centres the letters down the panel
+    they are going on -- to the block, so a line that does not fill its rows
+    sits in the middle of them rather than at the top.
 
     Centred unless a column is given -- within `within`, if it is going on a
     panel, so that a word in a coloured box is centred in the box. Where that

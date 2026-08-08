@@ -20,9 +20,11 @@ from sextile.application import Arrival, PageRequest
 from sextile.page import Page
 from sextile.templates import MenuItem
 from sextile.viewdata import lettering
+from sextile.viewdata.blocks import BLOCKS_ACROSS, BLOCKS_DOWN
 from sextile.viewdata.charset import mosaic_pattern
+from sextile.viewdata.controls import Control
 from sextile.viewdata.font import load_font
-from sextile.viewdata.frame import COLUMNS
+from sextile.viewdata.frame import COLUMNS, Frame
 from sextile.viewdata.lettering import Spacing
 from stardot_viewdata import StardotApplication
 from stardot_viewdata.application import BANNER_FACE, BANNER_ROW, SERVICE_NAME
@@ -53,6 +55,37 @@ def make_post(post_id: int, *, subject: str = "Re: Head over Heels", **overrides
         url=f"https://stardot.org.uk/forums/viewtopic.php?p={post_id}",
         **defaults,  # type: ignore[arg-type]
     )
+
+
+def _blocks_of(frame: Frame, row: int, rows: int) -> list[list[bool]]:
+    """The mosaic blocks a frame carries over some rows, as a bitmap."""
+    picture = [[False] * (COLUMNS * BLOCKS_ACROSS) for _ in range(rows * BLOCKS_DOWN)]
+    for offset in range(rows):
+        for column in range(COLUMNS):
+            if frame.is_attribute(row + offset, column):
+                continue
+            pattern = mosaic_pattern(frame.cell(row + offset, column))
+            for bit, (across, down) in enumerate(
+                ((0, 0), (1, 0), (0, 1), (1, 1), (0, 2), (1, 2))
+            ):
+                if pattern >> bit & 1:
+                    picture[offset * BLOCKS_DOWN + down][
+                        column * BLOCKS_ACROSS + across
+                    ] = True
+    return picture
+
+
+def _ink_of(picture: list[list[bool]]) -> list[list[bool]]:
+    """The same bitmap cropped to what it lights, so two can be compared."""
+    lit = [
+        (y, x)
+        for y, line in enumerate(picture)
+        for x, block in enumerate(line)
+        if block
+    ]
+    top, bottom = min(y for y, _ in lit), max(y for y, _ in lit)
+    left, right = min(x for _, x in lit), max(x for _, x in lit)
+    return [line[left : right + 1] for line in picture[top : bottom + 1]]
 
 
 @pytest.fixture
@@ -349,24 +382,33 @@ class TestTheTitleFrame:
         self, app: StardotApplication
     ) -> None:
         #  Double height gave two rows and one size. The name is now set in a
-        #  mosaic face, so what the frame carries is the same patterns the
-        #  font produces -- checked against the font rather than against a
-        #  transcription of it, so a change to either is a failure here.
+        #  mosaic face, so what the frame carries is the same blocks the font
+        #  produces -- compared against the font rather than a transcription of
+        #  it, and by the shape of the ink rather than the cells it lands in,
+        #  since where the letters sit is the composition's business.
         frame = (await page_at(app, "0")).frames[0].frame
-        wanted = lettering.cells(
-            SERVICE_NAME, load_font(BANNER_FACE), spacing=Spacing.KERNED
+        face = load_font(BANNER_FACE)
+        wanted = lettering.bitmap(SERVICE_NAME, face, spacing=Spacing.KERNED)
+        drawn = _blocks_of(frame, BANNER_ROW, lettering.rows_for(face))
+        assert _ink_of(drawn) == _ink_of(wanted)
+
+    async def test_on_a_stripe_of_colour_across_the_frame(
+        self, app: StardotApplication
+    ) -> None:
+        #  Which the letters do not know about: the stripe is declared once and
+        #  the lettering is drawn on it.
+        frame = (await page_at(app, "0")).frames[0].frame
+        rows = range(BANNER_ROW, BANNER_ROW + 3)
+        assert all(
+            any(frame.cell(row, column) == Control.NEW_BACKGROUND for column in range(4))
+            for row in rows
         )
-        #  Centred, with the colour attribute in the cell before it.
-        at = (COLUMNS - len(wanted[0])) // 2
-        drawn = [
-            [
-                mosaic_pattern(frame.cell(BANNER_ROW + offset, at + column))
-                for column in range(len(wanted[0]))
-            ]
-            for offset in range(len(wanted))
-        ]
-        assert drawn == wanted
-        assert frame.is_attribute(BANNER_ROW, at - 1)
+        #  Nothing turns it off again, so it runs to the end of every row.
+        assert not any(
+            frame.cell(row, column) == Control.BLACK_BACKGROUND
+            for row in rows
+            for column in range(COLUMNS)
+        )
 
     async def test_and_still_says_what_it_is_underneath(
         self, app: StardotApplication

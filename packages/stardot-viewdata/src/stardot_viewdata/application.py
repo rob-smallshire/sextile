@@ -35,7 +35,7 @@ from sextile.templates import Menu, MenuItem, Prose
 from sextile.viewdata import lettering
 from sextile.viewdata.canvas import Canvas
 from sextile.viewdata.chrome import CONTENT_FIRST_ROW, CONTENT_ROWS, draw_chrome
-from sextile.viewdata.composition import Composition
+from sextile.viewdata.composition import Align, Composition
 from sextile.viewdata.controls import Colour
 from sextile.viewdata.drawing import centred, fitted, rule
 from sextile.viewdata.font import load_font
@@ -56,6 +56,14 @@ SERVICE_NAME: Final = "STARDOT"
 #: Three rows of the frame, the same as the double height it replaced.
 BANNER_FACE: Final = "boldbash"
 BANNER_ROW: Final = 2
+
+#: The stripe the name is set on, in the colour the rules above and below it
+#: are drawn in, so the three read as one piece of furniture. Yellow on blue is
+#: what Ceefax used for a page's own name, and it is the strongest pair the
+#: hardware has: there is no alpha black, so light on dark is the only choice,
+#: and yellow is the brightest thing to put on the darkest.
+BANNER_BACKGROUND: Final = Colour.BLUE
+BANNER_COLOUR: Final = Colour.YELLOW
 
 #: Named for the service rather than for the framework serving it, and
 #: relative to the working directory -- so `serve` and `ingest` must be run
@@ -415,20 +423,33 @@ class StardotApplication(Sextile):
         held = await self._read(lambda repository: repository.count_posts())
         canvas = Canvas()
         #  The rule sits on the top row rather than the second, so that the
-        #  banner has a blank row above it and below it and reads as a block.
+        #  stripe has a blank row above it and below it and reads as a block.
         rule(canvas, 0)
         #  Set in a mosaic face rather than written: double height gives two
         #  rows and one size, and this is three rows and the size we chose.
         #  Kerned, because the row is only 78 blocks wide and the letters can
-        #  afford to lean on each other.
-        lettering.place(
-            Composition(),
+        #  afford to lean on each other. On a stripe of colour across the
+        #  frame, with the composition working out where the stripe begins and
+        #  where in it the letters go, up and down as well as along.
+        face = load_font(BANNER_FACE)
+        layout = Composition()
+        stripe = layout.panel(
             BANNER_ROW,
+            Align.LEFT,
+            width=COLUMNS - 1,
+            colour=BANNER_BACKGROUND,
+            rows=lettering.rows_for(face),
+        )
+        lettering.place(
+            layout,
+            Align.CENTRE,
             SERVICE_NAME,
-            load_font(BANNER_FACE),
-            Colour.YELLOW,
+            face,
+            BANNER_COLOUR,
+            within=stripe,
             spacing=Spacing.KERNED,
-        ).draw(canvas)
+        )
+        layout.draw(canvas)
         centred(canvas, 6, "V I E W D A T A", Colour.CYAN)
         rule(canvas, 8)
         canvas.row(10).text("The Stardot forum for users of Acorn", Colour.WHITE)

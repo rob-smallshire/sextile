@@ -1,5 +1,7 @@
 """The mosaic font format, and reading it."""
 
+from importlib import resources
+
 import pytest
 
 from sextile.viewdata.font import (
@@ -198,6 +200,57 @@ class TestAGlyphOnItsOwn:
 class TestTheFacesTheFrameworkShips:
     def test_there_is_a_default_to_letter_a_banner_with(self) -> None:
         assert "acorn" in font_names()
+
+    def test_and_a_choice_of_sizes_beside_it(self) -> None:
+        heights = {load_font(name).height for name in font_names()}
+        #  Three blocks is a single row of the frame; seventeen is six.
+        assert min(heights) <= 3
+        assert max(heights) >= 16
+
+    @pytest.mark.parametrize("name", font_names())
+    def test_every_face_shipped_reads(self, name: str) -> None:
+        assert load_font(name).glyphs
+
+    @pytest.mark.parametrize("name", font_names())
+    def test_every_face_can_set_a_banner(self, name: str) -> None:
+        font = load_font(name)
+        assert all(character in font for character in "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 ")
+
+    @pytest.mark.parametrize("name", font_names())
+    def test_every_face_says_where_it_came_from_and_on_what_terms(
+        self, name: str
+    ) -> None:
+        #  A font whose licence has gone missing cannot be shipped, and this
+        #  is what stops one being added without it.
+        font = load_font(name)
+        assert font.source and font.terms
+
+    @pytest.mark.parametrize("name", font_names())
+    def test_no_face_is_called_by_a_name_its_licence_reserves(
+        self, name: str
+    ) -> None:
+        #  Converting a font to another format makes a Modified Version under
+        #  the Open Font License, which may not use the reserved name. The
+        #  attribution belongs in the source line, and that is where it is.
+        reserved = ("dogica", "quinquefive", "pixeloid", "times9k", "birchleaf")
+        assert not any(word in name.replace("-", "") for word in reserved)
+        assert not any(word in load_font(name).name.lower().replace(" ", "") for word in reserved)
+
+    def test_the_licence_ships_beside_the_faces_it_covers(self) -> None:
+        #  The Open Font License requires that a copy travel with the font,
+        #  so it is package data rather than a file in the repository root.
+        licence = resources.files("sextile.viewdata.fonts").joinpath("OFL-1.1.txt")
+        assert "SIL OPEN FONT LICENSE Version 1.1" in licence.read_text(encoding="utf-8")
+
+    def test_and_every_face_it_covers_names_it(self) -> None:
+        licence = (
+            resources.files("sextile.viewdata.fonts")
+            .joinpath("OFL-1.1.txt")
+            .read_text(encoding="utf-8")
+        )
+        for name in font_names():
+            if "Open Font License" in load_font(name).terms:
+                assert f"{name}.font" in licence
 
     def test_it_loads_and_is_the_size_it_was_drawn(self) -> None:
         acorn = load_font("acorn")

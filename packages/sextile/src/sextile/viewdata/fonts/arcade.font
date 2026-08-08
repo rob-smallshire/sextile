@@ -1,0 +1,665 @@
+name: Arcade
+source: QuinqueFive by GGBotNet, https://ggbot.itch.io/quinquefive-font
+terms: SIL Open Font License, Version 1.1 http://scripts.sil.org/OFL
+height: 5
+fixed: 6
+
+glyph u+0020 advance 2
+
+glyph u+0021 advance 2 bearing 2  !
+#
+#
+#
+.
+#
+
+glyph u+0022 advance 4 bearing 1  "
+#.#
+#.#
+...
+...
+...
+
+glyph u+0023 advance 6  #
+.#.#.
+#####
+.#.#.
+#####
+.#.#.
+
+glyph u+0024 advance 6  $
+.####
+#.#..
+.###.
+..#.#
+####.
+
+glyph u+0025 advance 6  %
+#...#
+...#.
+..#..
+.#...
+#...#
+
+glyph u+0026 advance 6  &
+.##..
+#....
+.##.#
+#..#.
+.##.#
+
+glyph u+0027 advance 2 bearing 2  '
+#
+#
+.
+.
+.
+
+glyph u+0028 advance 4 bearing 1  (
+.##
+#..
+#..
+#..
+.##
+
+glyph u+0029 advance 4 bearing 1  )
+##.
+..#
+..#
+..#
+##.
+
+glyph u+002a advance 4 bearing 1  *
+#.#
+.#.
+#.#
+...
+...
+
+glyph u+002b advance 6  +
+..#..
+..#..
+#####
+..#..
+..#..
+
+glyph u+002c advance 2 bearing 2  ,
+.
+.
+.
+.
+#
+
+glyph u+002d advance 6  -
+.....
+.....
+#####
+.....
+.....
+
+glyph u+002e advance 2 bearing 2  .
+.
+.
+.
+.
+#
+
+glyph u+002f advance 6  /
+....#
+...#.
+..#..
+.#...
+#....
+
+glyph u+0030 advance 6  0
+#####
+#...#
+#...#
+#...#
+#####
+
+glyph u+0031 advance 6  1
+.##..
+#.#..
+..#..
+..#..
+#####
+
+glyph u+0032 advance 6  2
+####.
+....#
+..##.
+.#...
+#####
+
+glyph u+0033 advance 6  3
+#####
+....#
+.####
+....#
+#####
+
+glyph u+0034 advance 6  4
+#...#
+#...#
+#####
+....#
+....#
+
+glyph u+0035 advance 6  5
+#####
+#....
+#####
+....#
+#####
+
+glyph u+0036 advance 6  6
+#####
+#....
+#####
+#...#
+#####
+
+glyph u+0037 advance 6  7
+#####
+....#
+...#.
+..#..
+.#...
+
+glyph u+0038 advance 6  8
+#####
+#...#
+#####
+#...#
+#####
+
+glyph u+0039 advance 6  9
+#####
+#...#
+#####
+....#
+#####
+
+glyph u+003a advance 2 bearing 2  :
+.
+#
+.
+#
+.
+
+glyph u+003b advance 2 bearing 2  ;
+.
+#
+.
+#
+#
+
+glyph u+003c advance 6  <
+...##
+.##..
+#....
+.##..
+...##
+
+glyph u+003d advance 6  =
+.....
+#####
+.....
+#####
+.....
+
+glyph u+003e advance 6  >
+##...
+..##.
+....#
+..##.
+##...
+
+glyph u+003f advance 4 bearing 1  ?
+###
+..#
+.#.
+...
+.#.
+
+glyph u+0040 advance 6  @
+.###.
+#...#
+#.#.#
+#..##
+.#...
+
+glyph u+0041 advance 6  A
+.###.
+#...#
+#...#
+#####
+#...#
+
+glyph u+0042 advance 6  B
+####.
+#...#
+####.
+#...#
+####.
+
+glyph u+0043 advance 6  C
+.####
+#....
+#....
+#....
+.####
+
+glyph u+0044 advance 6  D
+####.
+#...#
+#...#
+#...#
+####.
+
+glyph u+0045 advance 6  E
+#####
+#....
+####.
+#....
+#####
+
+glyph u+0046 advance 6  F
+#####
+#....
+####.
+#....
+#....
+
+glyph u+0047 advance 6  G
+.####
+#....
+#.###
+#...#
+.####
+
+glyph u+0048 advance 6  H
+#...#
+#...#
+#####
+#...#
+#...#
+
+glyph u+0049 advance 6  I
+#####
+..#..
+..#..
+..#..
+#####
+
+glyph u+004a advance 6  J
+....#
+....#
+#...#
+#...#
+.###.
+
+glyph u+004b advance 6  K
+#...#
+#..#.
+###..
+#..#.
+#...#
+
+glyph u+004c advance 6  L
+#....
+#....
+#....
+#....
+#####
+
+glyph u+004d advance 6  M
+#...#
+##.##
+#.#.#
+#.#.#
+#...#
+
+glyph u+004e advance 6  N
+#...#
+##..#
+#.#.#
+#..##
+#...#
+
+glyph u+004f advance 6  O
+.###.
+#...#
+#...#
+#...#
+.###.
+
+glyph u+0050 advance 6  P
+####.
+#...#
+####.
+#....
+#....
+
+glyph u+0051 advance 6  Q
+.###.
+#...#
+#...#
+#..#.
+.##.#
+
+glyph u+0052 advance 6  R
+####.
+#...#
+####.
+#..#.
+#...#
+
+glyph u+0053 advance 6  S
+.####
+#....
+.###.
+....#
+####.
+
+glyph u+0054 advance 6  T
+#####
+..#..
+..#..
+..#..
+..#..
+
+glyph u+0055 advance 6  U
+#...#
+#...#
+#...#
+#...#
+.###.
+
+glyph u+0056 advance 6  V
+#...#
+#...#
+#...#
+.#.#.
+..#..
+
+glyph u+0057 advance 6  W
+#...#
+#.#.#
+#.#.#
+#.#.#
+.###.
+
+glyph u+0058 advance 6  X
+#...#
+.#.#.
+..#..
+.#.#.
+#...#
+
+glyph u+0059 advance 6  Y
+#...#
+#...#
+.###.
+..#..
+..#..
+
+glyph u+005a advance 6  Z
+#####
+...#.
+..#..
+.#...
+#####
+
+glyph u+005b advance 4 bearing 1  [
+###
+#..
+#..
+#..
+###
+
+glyph u+005c advance 6  \
+#....
+.#...
+..#..
+...#.
+....#
+
+glyph u+005d advance 4 bearing 1  ]
+###
+..#
+..#
+..#
+###
+
+glyph u+005e advance 4 bearing 1  ^
+.#.
+#.#
+...
+...
+...
+
+glyph u+005f advance 6  _
+.....
+.....
+.....
+.....
+#####
+
+glyph u+0060 advance 3 bearing 1  `
+#.
+.#
+..
+..
+..
+
+glyph u+0061 advance 6  a
+.###.
+#...#
+#...#
+#####
+#...#
+
+glyph u+0062 advance 6  b
+####.
+#...#
+####.
+#...#
+####.
+
+glyph u+0063 advance 6  c
+.####
+#....
+#....
+#....
+.####
+
+glyph u+0064 advance 6  d
+####.
+#...#
+#...#
+#...#
+####.
+
+glyph u+0065 advance 6  e
+#####
+#....
+####.
+#....
+#####
+
+glyph u+0066 advance 6  f
+#####
+#....
+####.
+#....
+#....
+
+glyph u+0067 advance 6  g
+.####
+#....
+#.###
+#...#
+.####
+
+glyph u+0068 advance 6  h
+#...#
+#...#
+#####
+#...#
+#...#
+
+glyph u+0069 advance 6  i
+#####
+..#..
+..#..
+..#..
+#####
+
+glyph u+006a advance 6  j
+....#
+....#
+#...#
+#...#
+.###.
+
+glyph u+006b advance 6  k
+#...#
+#..#.
+###..
+#..#.
+#...#
+
+glyph u+006c advance 6  l
+#....
+#....
+#....
+#....
+#####
+
+glyph u+006d advance 6  m
+#...#
+##.##
+#.#.#
+#.#.#
+#...#
+
+glyph u+006e advance 6  n
+#...#
+##..#
+#.#.#
+#..##
+#...#
+
+glyph u+006f advance 6  o
+.###.
+#...#
+#...#
+#...#
+.###.
+
+glyph u+0070 advance 6  p
+####.
+#...#
+####.
+#....
+#....
+
+glyph u+0071 advance 6  q
+.###.
+#...#
+#...#
+#..#.
+.##.#
+
+glyph u+0072 advance 6  r
+####.
+#...#
+####.
+#..#.
+#...#
+
+glyph u+0073 advance 6  s
+.####
+#....
+.###.
+....#
+####.
+
+glyph u+0074 advance 6  t
+#####
+..#..
+..#..
+..#..
+..#..
+
+glyph u+0075 advance 6  u
+#...#
+#...#
+#...#
+#...#
+.###.
+
+glyph u+0076 advance 6  v
+#...#
+#...#
+#...#
+.#.#.
+..#..
+
+glyph u+0077 advance 6  w
+#...#
+#.#.#
+#.#.#
+#.#.#
+.###.
+
+glyph u+0078 advance 6  x
+#...#
+.#.#.
+..#..
+.#.#.
+#...#
+
+glyph u+0079 advance 6  y
+#...#
+#...#
+.###.
+..#..
+..#..
+
+glyph u+007a advance 6  z
+#####
+...#.
+..#..
+.#...
+#####
+
+glyph u+007b advance 5  {
+.###
+.#..
+##..
+.#..
+.###
+
+glyph u+007c advance 2 bearing 2  |
+#
+#
+#
+#
+#
+
+glyph u+007d advance 5 bearing 1  }
+###.
+..#.
+..##
+..#.
+###.
+
+glyph u+007e advance 6  ~
+.....
+.#...
+#.#.#
+...#.
+.....

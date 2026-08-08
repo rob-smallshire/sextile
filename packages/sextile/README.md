@@ -65,7 +65,7 @@ does that arithmetic so nothing above it has to.
 | [rendering.md](docs/rendering.md) | how a document becomes bytes, stage by stage |
 | [navigation.md](docs/navigation.md) | how a reader moves about, and why the controls are what they are |
 | [graphics.md](docs/graphics.md) | blocks, and the compositor that places them |
-| [mosaic-fonts.md](docs/mosaic-fonts.md) | large lettering: requirements, not yet built |
+| [mosaic-fonts.md](docs/mosaic-fonts.md) | large lettering: the faces, the format and the spacings |
 | [viewdata-encoding.md](docs/viewdata-encoding.md) | what the BBC end actually does, and how we know |
 
 ## Status

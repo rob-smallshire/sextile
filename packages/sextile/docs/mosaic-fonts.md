@@ -150,6 +150,28 @@ blank but still advances**, which is what a space is.
 An unknown field is an error rather than something ignored — provenance should
 not be lost to a typo — and a picture whose height disagrees with the face's is
 refused by code point.
+## The faces shipped
+
+Twenty-seven, by how many rows of the frame a line of them takes. `load_font`
+reads one by name; the terms are in [NOTICE.md](../../../NOTICE.md) and in each
+file's own header.
+
+| rows | faces |
+|---|---|
+| 1 | `3x3-mono` |
+| 2 | `arcade`, `pixelplace` |
+| 3 | `acorn`, `boldbash`, `console`, `console-bold`, `lilliputsteps`, `pixeloperator8`, `pixeloperator8-bold`, `pixeloperator8-hb`, `publicpixel`, `roman`, `silkscreen`, `silkscreen-bold` |
+| 4 | `grotesque`, `grotesque-bold`, `scientifica`, `scientifica-bold`, `scientifica-italic` |
+| 5 | `pixeloperator`, `pixeloperator-bold`, `pixeloperator-hb`, `pixeloperator-sc`, `pixeloperator-sc-bold`, `pixeloperator-sc-hb` |
+| 6 | `garland` |
+
+Every one of them sets `STARDOT` inside a row, from 25 blocks in `3x3-mono` to
+75 in `garland`. `acorn` remains the default: it is the face a BBC Micro's own
+ROM is drawn in.
+
+To add another, see [tools/README.md](../../../tools/README.md) — including
+what has to be read and recorded before a face is vendored.
+
 ## Source formats
 
 ### MDFS — `VDU 23` sequences
@@ -181,6 +203,24 @@ Archives: `mdfs.net/Apps/Font/Fonts1.zip` through `Fonts4.zip`, plus
 `Font4px.zip`, `Font6px.zip`, `Font7px.zip` for narrower faces — which are worth
 having, given the width arithmetic above. Character sets pictured at
 `mdfs.net/Apps/Font/img/`.
+
+### more-fonts — Lua tables
+
+`github.com/michielp1807/more-fonts` collects pixel faces for ComputerCraft.
+The format is written down nowhere, so it was read off the files and is written
+down in `tools/more_fonts.py`: 256 glyphs, one character to a row of pixels,
+six bits each biased by a space, least significant bit leftmost — so a face
+wider than six pixels takes two characters to a row. Lua's long strings take a
+level and these files use it, because a face with the right two pixels lit
+contains `]]` in its data.
+
+**Worth having for the metrics as much as the designs.** `startX` and
+`lengthX` are the ink bounds of every glyph, so the bearing and the
+proportional advance come out of the file rather than being derived.
+
+Twenty-six of them are shipped. Their licences are not all the same one, and
+the collection's own MIT covers its source rather than the faces: see
+[NOTICE.md](../../../NOTICE.md).
 
 ### ZX Origins and BDF
 
@@ -223,16 +263,18 @@ Roughly in order, each committable on its own.
 
 ## Decisions still open
 
+- ~~**How many faces to ship.**~~ Settled: all of the ones whose terms allow
+  it. Twenty-seven, three to seventeen blocks tall, 230K of text in total —
+  small enough that choosing between them was costing more than keeping them.
 - ~~**Where fonts live.**~~ Settled:
   `sextile/viewdata/fonts/`, shipped as package data, and
   `font.load_font("acorn")` reads one by name. An application with a face of
   its own reads it with `read_font` from wherever it keeps it; whether the
   library should be registrable is still open, and nothing needs it yet.
-- **How many faces to ship.** One default and no more, probably: each is
-  provenance to track, and an application wanting another can convert it.
 - **Whether the renderer picks a face by height.** A page asking for "a banner
-  three cell-rows tall" is a friendlier request than one naming a font, but it
-  needs more than one face to be worth anything.
+  three rows tall" is a friendlier request than one naming a font. This wanted
+  more than one face to be worth anything, and now there are twenty-seven of
+  them, in five different heights of banner.
 - **Colour within a banner.** One colour needs one attribute per row. More than
   one needs `HOLD_GRAPHICS` and an arithmetic that has not been worked out.
 

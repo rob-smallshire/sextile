@@ -26,15 +26,71 @@ use=reference`. Sextile does not train anything.
 
 ## Fonts
 
-`packages/sextile/src/sextile/viewdata/fonts/acorn.font` is the Acorn 8x8 face
-`ArcNormal`, from the font collection at `mdfs.net/Apps/Font/` maintained by
-J.G.Harston, converted into this project's own format by
-`tools/mdfs_font.py`. It is **free for public use**, and each file carries its
-source and terms in its own header as well as here.
+`packages/sextile/src/sextile/viewdata/fonts/` holds bitmap faces converted
+into this project's own format by the scripts in `tools/`. **None of them is
+covered by the MIT grant above**; each carries its source and its terms in its
+own header as well as here, and the conversion changes the format and nothing
+else about the design.
 
-The fonts at `damieng.com/typography/zx-origins/` are deliberately **not**
+### Free for public use
+
+| face | blocks tall | from |
+|---|---|---|
+| `acorn` | 8 | MDFS ArcNormal (mdfs.net/Apps/Font/Fonts1.zip), by J.G.Harston |
+
+From the font collection at `mdfs.net/Apps/Font/` maintained by J.G.Harston.
+
+### Public domain (Creative Commons Zero v1.0)
+
+| face | blocks tall | from |
+|---|---|---|
+| `3x3-mono` | 3 | 3x3 Mono Font by GGBotNet |
+| `boldbash` | 9 | BoldBash by Michiel |
+| `lilliputsteps` | 8 | Lilliput Steps by Raymond Larabie |
+| `pixeloperator-bold` | 13 | Pixel Operator by Jayvee Enaguas (HarvettFox96) |
+| `pixeloperator-hb` | 13 | Pixel Operator by Jayvee Enaguas (HarvettFox96) |
+| `pixeloperator-sc-bold` | 13 | Pixel Operator by Jayvee Enaguas (HarvettFox96) |
+| `pixeloperator-sc-hb` | 13 | Pixel Operator by Jayvee Enaguas (HarvettFox96) |
+| `pixeloperator-sc` | 13 | Pixel Operator by Jayvee Enaguas (HarvettFox96) |
+| `pixeloperator` | 13 | Pixel Operator by Jayvee Enaguas (HarvettFox96) |
+| `pixeloperator8-bold` | 8 | Pixel Operator by Jayvee Enaguas (HarvettFox96) |
+| `pixeloperator8-hb` | 8 | Pixel Operator by Jayvee Enaguas (HarvettFox96) |
+| `pixeloperator8` | 8 | Pixel Operator by Jayvee Enaguas (HarvettFox96) |
+| `pixelplace` | 6 | PixelPlace by Michiel |
+| `publicpixel` | 7 | Public Pixel by GGBotNet |
+
+### SIL Open Font License, Version 1.1
+
+The licence text and the copyright notices are in
+`packages/sextile/src/sextile/viewdata/fonts/OFL-1.1.txt`, which ships with the
+faces because the licence requires it to. Converting a font to another format
+makes a Modified Version, which may not use a reserved font name, so seven of
+these carry a name of ours instead; the original is named in each file's
+`source:` line, and the mapping is in that licence file.
+
+| face | blocks tall | from |
+|---|---|---|
+| `arcade` | 5 | QuinqueFive by GGBotNet |
+| `console-bold` | 8 | Dogica by Roberto Mocci |
+| `console` | 8 | Dogica by Roberto Mocci |
+| `garland` | 17 | Birch Leaf by solirides |
+| `grotesque-bold` | 11 | Pixeloid Sans by GGBotNet |
+| `grotesque` | 11 | Pixeloid Sans by GGBotNet |
+| `roman` | 9 | Times9k by Sammy L. Koch |
+| `scientifica-bold` | 10 | Scientifica by Akshay Oppiliappan |
+| `scientifica-italic` | 10 | Scientifica by Akshay Oppiliappan |
+| `scientifica` | 10 | Scientifica by Akshay Oppiliappan |
+| `silkscreen-bold` | 9 | Silkscreen by Jason Kottke |
+| `silkscreen` | 9 | Silkscreen by Jason Kottke |
+
+The CC0 and Open Font faces above come from `github.com/michielp1807/more-fonts`,
+whose own MIT licence covers its source and not the faces it collects. Two
+fonts in that collection, `hdfont` and `hdfont-outline`, state no licence and
+are **not** included.
+
+The fonts at `damieng.com/typography/zx-origins/` are likewise **not**
 included: they are offered for use "in exchange for a mention in the credits",
-which is a permission rather than a licence. The importer for them, when there
+which is a permission rather than a licence. An importer for them, when there
 is one, is for pointing at your own copy.
 
 ## Spike scripts

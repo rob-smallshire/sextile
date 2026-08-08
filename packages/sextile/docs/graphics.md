@@ -156,71 +156,9 @@ and blocks on one row, and for anything whose feasibility is in doubt.
 `RowWriter.mosaic` exists for the sequential case and pays the same costs, one
 run at a time.
 
-## The font renderer — designed, not built
+## Large lettering
 
-What follows is the plan, recorded so the findings behind it are not lost. None
-of it is written yet.
-
-### Why a format of our own
-
-The corpus worth importing is in several formats and none of them suits a 2×3
-block grid:
-
-- **MDFS** (`mdfs.net/Apps/Font/`) — streams of `VDU 23,ch,r1..r8`: ten bytes a
-  glyph, the standard Acorn user-defined-character command. Verified across five
-  files. `ArcNormal` is 224 glyphs covering 32–255; most others are 95 or 96
-  covering printable ASCII. This is where the intended default comes from.
-- **ZX Origins** (`damieng.com/typography/zx-origins/`) — 8×8, distributed in a
-  dozen legacy formats including a BBC Micro one.
-- **BDF** — the standard interchange format for proportional bitmap fonts of
-  arbitrary size: plain text, per-glyph `DWIDTH` and `BBX`, decades of tooling.
-  The right *import* format, and the one to reach for if a new corpus appears.
-
-What none of them carries is the thing this renderer most needs: a per-glyph
-**advance** measured in blocks. Hence a format of our own, human-readable so
-that a vendored font diffs and reviews, with glyphs written as the picture they
-are.
-
-### Proportional spacing is not a nicety
-
-At eight blocks a glyph, `BBC CEEFAX` is 47 cells and there are **39**. Trimmed
-to each glyph's own width it is 35 and fits comfortably. Ten letters in 78
-blocks is 7.8 blocks each, so a fixed-width 8×8 face cannot draw that banner and
-a proportional one can. The advance belongs to the font — trimming at render
-time would mean re-deciding it on every frame.
-
-### Writing an importer
-
-A converter has one job: produce our format from somebody else's. The shape:
-
-1. **Read the glyphs.** For a fixed-width format this is arithmetic — MDFS is
-   `data[i+1]` for the character code and `data[i+2:i+10]` for eight rows of
-   eight bits, most significant bit leftmost.
-2. **Turn each row of bits into blocks**, most significant bit leftmost, which
-   is what `read_bitmap` expects.
-3. **Decide the advance.** Trim leading and trailing blank columns and add the
-   tracking the font wants; a space has no lit columns and needs its width
-   stated rather than measured.
-4. **Write our format**, one glyph per stanza, and record where the font came
-   from and on what terms.
-
-Converters live beside the framework as scripts rather than inside it: a font is
-converted once and vendored, and the framework should not carry a parser for a
-format nobody will use again.
-
-### Provenance
-
-Fonts are somebody's work and their terms differ. Record every one in
-[NOTICE.md](../../../NOTICE.md) with its source and licence.
-
-Two already checked, and neither is what a summary suggested:
-
-- **MDFS** — the site states no licence; the author is J.G.Harston. Confirmed by
-  the maintainer of this repository as available for public use.
-- **ZX Origins** — *"freely available to be used in games you create in exchange
-  for a mention in the credits section"*. A permission rather than a licence, no
-  SPDX identifier, and phrased around games. Not vendored here; the importer is
-  for pointing at your own download.
-- **More Fonts** (`github.com/MichielP1807/more-fonts`) — the **source** is MIT;
-  the **fonts are not**, each carrying its own terms, usually Creative Commons
-  or SIL OFL. Worth stating because the repository reads as MIT at a glance.
+Not built. The requirements, the source formats and the measurements behind
+them are in [mosaic-fonts.md](mosaic-fonts.md) — including why a format of our
+own is warranted, and why proportional spacing is required rather than merely
+nicer.

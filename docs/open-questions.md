@@ -71,6 +71,13 @@ Beeb for half an hour.
   application needs most of them. Whether some of it should be a smaller,
   friendlier facade is a question for when there are more services.
 
+## Next, and specified
+
+- **Mosaic fonts** — large lettering drawn out of block graphics, for banners
+  and title frames. The layer beneath it is built; the requirements, the source
+  formats and the measurements are written up in
+  [mosaic-fonts.md](../packages/sextile/docs/mosaic-fonts.md).
+
 ## Deliberately not done
 
 - **Emphasis is discarded.** `<strong>` and `<em>` occur twice in thirty posts,

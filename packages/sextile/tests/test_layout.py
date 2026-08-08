@@ -20,8 +20,10 @@ from sextile.content.blocks import (
     Paragraph,
     Quote,
 )
+from sextile.viewdata.canvas import Canvas
+from sextile.viewdata.encoding import cell_count
 from sextile.viewdata.frame import COLUMNS, FRAME_PREAMBLE, Frame
-from sextile.viewdata.layout import BODY_ROWS, lay_out
+from sextile.viewdata.layout import BODY_ROWS, draw_rows, lay_out, paginate
 
 
 def text_of(frame: Frame) -> str:
@@ -170,3 +172,79 @@ def test_a_post_landing_exactly_on_a_boundary_loses_nothing(rows: int) -> None:
     rendered = "\n".join(text_of(frame) for frame in lay_out(content))
     for n in range(rows):
         assert f"m{n}" in rendered
+
+
+class TestEveryBlockIsWrapped:
+    """The frame is forty cells wide whatever the block is.
+
+    Images and attachments were the two that built a row without wrapping it,
+    so a photograph with a long caption crashed the page -- and took the
+    caller's whole session with it, since the handler raised.
+    """
+
+    def test_a_long_image_description_is_wrapped(self) -> None:
+        content = Document(
+            blocks=(Image("New socket sitting waiting for the soldering iron"),)
+        )
+        rows = paginate(content)[0]
+        assert all(cell_count(row.text) + row.indent < COLUMNS for row in rows)
+
+    def test_and_says_what_it_is_on_the_first_row(self) -> None:
+        content = Document(blocks=(Image("A very long description indeed " * 3),))
+        assert paginate(content)[0][0].text.startswith("[IMAGE:")
+
+    def test_a_long_attachment_name_is_wrapped(self) -> None:
+        content = Document(blocks=(Attachment("vlcsnap-2026-08-02-17h29m56s151.png"),))
+        rows = paginate(content)[0]
+        assert all(cell_count(row.text) + row.indent < COLUMNS for row in rows)
+
+    def test_nothing_of_the_description_is_lost(self) -> None:
+        description = "Screenshot 2026-08-03 164815.png"
+        rows = paginate(Document(blocks=(Image(description),)))[0]
+        assert description in " ".join(row.text for row in rows)
+
+    def test_one_inside_a_quotation_is_wrapped_to_the_room_left(self) -> None:
+        #  Where the indent has already taken some of the row.
+        content = Document(
+            blocks=(Quote((Quote((Image("A caption of some considerable length"),)),)),)
+        )
+        rows = paginate(content)[0]
+        assert all(cell_count(row.text) + row.indent < COLUMNS for row in rows)
+
+
+class TestDrawingWhatWasRendered:
+    """The reported crash, reproduced.
+
+    A post with a long image caption raised out of `draw_rows`, which took the
+    caller's whole session with it. The rows a paginator hands back must always
+    be drawable: that is the contract between the two halves.
+    """
+
+    def test_a_long_caption_can_be_drawn(self) -> None:
+        content = Document(
+            blocks=(Image("New socket sitting waiting for the soldering iron"),)
+        )
+        for rows in paginate(content, BODY_ROWS):
+            draw_rows(Canvas(), 0, rows)
+
+    def test_a_caption_with_a_character_that_widens_can_be_drawn(self) -> None:
+        #  The second bug, from the same crash: `…` is drawn as three cells.
+        content = Document(blocks=(Paragraph(("attribute keywords (L, W, R, WR, …)",)),))
+        for rows in paginate(content, BODY_ROWS):
+            draw_rows(Canvas(), 0, rows)
+
+    @pytest.mark.parametrize(
+        "description",
+        [
+            "Screenshot 2026-08-03 164815.png",
+            "vlcsnap-2026-08-02-17h29m56s151.png",
+            "Scherm\xadafbeelding 2026-07-21 om 14.27.11.png",
+            "This has fought me to its dying breath",
+            "New socket sitting waiting for the 'iron",
+        ],
+    )
+    def test_the_captions_that_crashed_the_service(self, description: str) -> None:
+        #  Taken from the archive, by rendering every post it holds and keeping
+        #  the ones that raised.
+        for rows in paginate(Document(blocks=(Image(description),)), BODY_ROWS):
+            draw_rows(Canvas(), 0, rows)

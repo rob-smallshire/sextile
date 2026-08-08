@@ -17,6 +17,7 @@ difference between the two commands, and it is the difference a reader wants
 when the board has moved on since they arrived.
 """
 
+import logging
 from dataclasses import dataclass
 from typing import Final
 
@@ -47,6 +48,8 @@ from sextile.viewdata.command_line import (
 from sextile.viewdata.countdown import countdown_bytes, lit_cells
 from sextile.viewdata.frame import Frame
 from sextile.viewdata.parting import parting_bytes
+
+_logger = logging.getLogger(__name__)
 
 #: How far back a reader can retrace their steps.
 HISTORY_LIMIT: Final = 32
@@ -420,14 +423,27 @@ class Session:
         sequence: "_Sequence | None",
         been: tuple[PageAddress, ...],
     ) -> Page | None:
-        return await self._application.respond(
-            PageRequest(
-                address=address,
-                arrival=sequence.arrival() if sequence else Arrival(),
-                session=self._state,
-                history=been,
+        try:
+            return await self._application.respond(
+                PageRequest(
+                    address=address,
+                    arrival=sequence.arrival() if sequence else Arrival(),
+                    session=self._state,
+                    history=been,
+                )
             )
-        )
+        except Exception:
+            #  A page that will not build costs its page, not the call. A
+            #  session here is a telephone call: hanging up on somebody because
+            #  one post has an awkward image caption makes them dial back in and
+            #  find their way to where they were, which is minutes of a slow
+            #  line for a fault that was ours.
+            #
+            #  Logged with its traceback rather than swallowed. A service that
+            #  quietly says "not here" about a page it has is a service whose
+            #  bugs never get found.
+            _logger.exception("Page *%s# could not be built", address)
+            return None
 
     def _been(self) -> tuple[PageAddress, ...]:
         """Where the reader has been, oldest first, as the history stands."""

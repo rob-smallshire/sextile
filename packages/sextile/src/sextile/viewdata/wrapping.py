@@ -5,6 +5,12 @@ dumps and assembler listings. A word that cannot fit any line is split rather
 than dropped or allowed to overrun: losing part of a link address is worse than
 an ugly break.
 
+Widths are counted in **cells rather than characters**, because that is what the
+frame counts. Transliteration can lengthen a string on its way to the wire -- the
+G0 set has no ellipsis, so `…` is drawn as three full stops -- and a line
+measured in characters can overrun the row it was wrapped for. That was found by
+a crash on a real post rather than by thinking about it.
+
 Lines are **balanced** by default rather than filled greedily. Greedy wrapping
 takes as much as fits on each line in turn, which at forty columns leaves a
 badly ragged edge and a stranded last word often enough to be worth avoiding:
@@ -25,6 +31,8 @@ column screen is a few dozen words.
 """
 
 from typing import Final
+
+from sextile.viewdata.encoding import cell_count
 
 #: What a line that ends a paragraph costs, however much room is left on it.
 _LAST_LINE: Final = 0.0
@@ -57,7 +65,7 @@ def _greedy(pieces: list[str], width: int) -> list[str]:
     for piece in pieces:
         if not current:
             current = piece
-        elif len(current) + 1 + len(piece) <= width:
+        elif cell_count(current) + 1 + cell_count(piece) <= width:
             current = f"{current} {piece}"
         else:
             lines.append(current)
@@ -79,7 +87,7 @@ def _balanced(pieces: list[str], width: int) -> list[str]:
         cost[start] = float("inf")
         length = -1
         for end in range(start, count):
-            length += len(pieces[end]) + 1
+            length += cell_count(pieces[end]) + 1
             if length > width:
                 #  Every line from here on is longer still.
                 break
@@ -99,7 +107,20 @@ def _balanced(pieces: list[str], width: int) -> list[str]:
 
 
 def _fit(word: str, width: int) -> list[str]:
-    """A word, split into pieces that each fit the width."""
-    if len(word) <= width:
+    """A word, split into pieces that each fit the width.
+
+    Counted in cells, so a word of characters that widen is split sooner than
+    its length suggests.
+    """
+    if cell_count(word) <= width:
         return [word]
-    return [word[start : start + width] for start in range(0, len(word), width)]
+    pieces: list[str] = []
+    current = ""
+    for character in word:
+        if cell_count(current) + cell_count(character) > width:
+            pieces.append(current)
+            current = ""
+        current += character
+    if current:
+        pieces.append(current)
+    return pieces

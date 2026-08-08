@@ -11,6 +11,8 @@ and that is deliberate: if the session needed to know it was serving a forum,
 the framework would not be one.
 """
 
+import logging
+
 import pytest
 from exemplar import Board
 
@@ -852,3 +854,60 @@ class TestTheHistoryAHandlerIsGiven:
         await session.receive(b"*222222#")
         await session.receive(b"*0#")
         assert session.address == at("1")
+
+
+class TestAPageThatWillNotBuild:
+    """A handler that raises costs its page, not the call.
+
+    Found the hard way: one post with a long image caption raised out of the
+    renderer, and the caller lost their session -- on a service where a session
+    is a phone call and the reader has to dial back in. A bug in one page is
+    not a reason to hang up on somebody.
+    """
+
+    def board_that_breaks(self) -> Board:
+        board = Board()
+
+        @board.page("7", name="broken")
+        async def broken(request: PageRequest) -> Page:
+            raise ValueError("something a handler got wrong")
+
+        return board
+
+    async def test_the_call_survives(self) -> None:
+        session = Session(self.board_that_breaks())
+        await session.greeting()
+        await session.receive(b"*7#")
+        assert not session.finished
+
+    async def test_the_reader_is_told_rather_than_left_wondering(self) -> None:
+        session = Session(self.board_that_breaks())
+        await session.greeting()
+        response = await session.receive(b"*7#")
+        assert response
+        assert "NOT" in _text(response[-1]).upper()
+
+    async def test_and_stays_where_they_were(self) -> None:
+        session = Session(self.board_that_breaks())
+        await session.greeting()
+        await session.receive(b"*8#")
+        await session.receive(b"*7#")
+        assert session.address == at("8")
+
+    async def test_the_rest_of_the_service_still_works(self) -> None:
+        session = Session(self.board_that_breaks())
+        await session.greeting()
+        await session.receive(b"*7#")
+        await session.receive(b"*8#")
+        assert session.address == at("8")
+
+    async def test_it_is_logged_and_not_swallowed(
+        self, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        #  A page that quietly says "not here" when it is really broken would
+        #  hide the bug. The traceback has to reach the log.
+        session = Session(self.board_that_breaks())
+        await session.greeting()
+        with caplog.at_level(logging.ERROR):
+            await session.receive(b"*7#")
+        assert "something a handler got wrong" in caplog.text

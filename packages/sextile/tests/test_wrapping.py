@@ -7,6 +7,7 @@ longer than the whole line -- are the point rather than the exception.
 
 import pytest
 
+from sextile.viewdata.encoding import cell_count
 from sextile.viewdata.wrapping import wrap_text
 
 
@@ -126,3 +127,25 @@ def _raggedness(lines: list[str]) -> int:
     """Squared slack over every line but the last, which is what balancing minimises."""
     width = max(len(line) for line in lines)
     return sum((width - len(line)) ** 2 for line in lines[:-1])
+
+
+class TestMeasuredInCellsAndNotCharacters:
+    """A character can take more than one cell, and the frame counts cells.
+
+    Transliteration is what does it: the G0 set has no ellipsis, so `…` becomes
+    three full stops, and a line measured as fitting overruns the row it was
+    wrapped for. Found by a crash on a real post.
+    """
+
+    def test_a_character_that_widens_is_counted_as_it_will_be_drawn(self) -> None:
+        lines = wrap_text("attribute keywords (L, W, R, WR, …)", 36)
+        assert all(cell_count(line) <= 36 for line in lines)
+
+    def test_a_line_of_them_still_fits(self) -> None:
+        assert all(cell_count(line) <= 10 for line in wrap_text("… " * 12, 10))
+
+    def test_a_single_word_of_them_is_split_by_cells(self) -> None:
+        assert all(cell_count(line) <= 6 for line in wrap_text("…" * 8, 6))
+
+    def test_and_nothing_is_lost_in_the_splitting(self) -> None:
+        assert "".join(wrap_text("…" * 8, 6)) == "…" * 8

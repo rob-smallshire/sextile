@@ -351,6 +351,14 @@ therefore leave its lower rows blank, and should offer no keys: one saying `0`
 for the index would be a key that does nothing, on a page there is no coming
 back from.
 
+**A page that will not build costs its page, not the call.** A handler raising
+used to end the caller's session, which on a service where a session is a
+telephone call means dialling back in and finding your way to where you were —
+minutes of a slow line for a fault that was ours. The session catches it, logs
+it with its traceback, and shows the not-found notice without moving the reader.
+Logged rather than swallowed: a service that quietly says "not here" about a
+page it has is a service whose bugs never get found.
+
 **Idle callers are warned, then released.** A single-line board held open by
 someone who walked away locks everyone else out, so a caller who says nothing
 for `--idle-timeout` seconds (fifteen minutes by default) is shown the parting

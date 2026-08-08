@@ -119,11 +119,25 @@ def _rows_for(blocks: tuple[Block, ...], depth: int) -> list[Row]:
                     for index, piece in enumerate(wrapped)
                 )
             case Image(description):
-                rows.append(Row(f"[IMAGE: {description}]", Colour.MAGENTA, indent))
+                rows.extend(_marked("IMAGE", description, indent, width))
             case Attachment(name):
-                rows.append(Row(f"[FILE: {name}]", Colour.MAGENTA, indent))
+                rows.extend(_marked("FILE", name, indent, width))
 
     return _without_leading_blanks(rows)
+
+
+def _marked(kind: str, what: str, indent: int, width: int) -> list[Row]:
+    """A picture or a file, named across as many rows as the name needs.
+
+    These were the two blocks that built a row without wrapping it, so a
+    photograph with a long caption overran the frame and raised where every
+    other kind of block had been wrapped for years. Real posts carry captions
+    like `vlcsnap-2026-08-02-17h29m56s151.png`.
+    """
+    return [
+        Row(text, Colour.MAGENTA, indent)
+        for text in wrap_text(f"[{kind}: {what}]", width)
+    ]
 
 
 def _link_rows(content: Document) -> list[Row]:

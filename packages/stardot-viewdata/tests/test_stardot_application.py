@@ -22,6 +22,7 @@ from sextile.templates import MenuItem
 from sextile.viewdata import lettering
 from sextile.viewdata.blocks import BLOCKS_ACROSS, BLOCKS_DOWN
 from sextile.viewdata.charset import mosaic_pattern
+from sextile.viewdata.chrome import CONTENT_FIRST_ROW, CONTENT_ROWS
 from sextile.viewdata.controls import Control
 from sextile.viewdata.font import load_font
 from sextile.viewdata.frame import COLUMNS, Frame
@@ -501,16 +502,25 @@ class TestHowToGetAbout:
         assert PageAddress("91") in (await page_at(app, "1")).destinations
 
     async def test_it_runs_to_more_than_one_frame(self, app: StardotApplication) -> None:
-        #  A compass, then the keys, then the requests.
-        assert len((await page_at(app, "91")).frames) == 3
+        #  The keys with the compass under them, then the star requests.
+        assert len((await page_at(app, "91")).frames) == 2
 
-    async def test_the_first_of_them_is_the_compass(
+    async def test_the_first_frame_carries_the_compass_under_its_words(
         self, app: StardotApplication
     ) -> None:
         #  Drawn rather than described, and by the framework: the four keys it
-        #  shows are the framework's, not this service's.
-        shown = text_of(await page_at(app, "91"))
-        assert "page up" in shown and "page down" in shown
+        #  shows are the framework's, not this service's. Under the keys the
+        #  frame lists, because the words are what a reader came for and the
+        #  picture is what they will remember.
+        page = await page_at(app, "91")
+        rows = text_of(page).splitlines()
+        assert any("choose from a menu" in row for row in rows)
+        spoken = max(index for index, row in enumerate(rows) if "rub out" in row)
+        drawn = min(index for index, row in enumerate(rows) if "page up" in row)
+        assert spoken < drawn
+        #  And it reaches the foot of the frame: the two of them together fill
+        #  the content rows exactly, which is why they fit on one.
+        assert "arrow keys" in rows[CONTENT_FIRST_ROW + CONTENT_ROWS - 1]
 
     @pytest.mark.parametrize(
         "keys", ["1-9", "0", "*nnn#", "W", "A", "*0#", "*00#", "*09#", "**", "*90#"]

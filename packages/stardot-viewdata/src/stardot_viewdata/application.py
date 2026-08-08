@@ -548,21 +548,22 @@ class StardotApplication(Sextile):
         return self._guide(
             request.address,
             [
-                self._compass,
-                self._keys(
-                    [
-                        (f"1-{CHOICES_PER_FRAME}", "choose from a menu"),
-                        (HOME_KEY, "back to the main index"),
-                        (keyed("nnn"), "go straight to a page"),
-                        ("", ""),
-                        (
-                            keys.CONVENTIONAL_NEXT_FRAME,
-                            f"next frame, as {keys.NEXT_FRAME} does",
-                        ),
-                        (keys.CANCEL, "cancel a request being keyed"),
-                        (keys.CANCEL * 2, "cancel and begin again"),
-                        ("DEL", "rub out a character"),
-                    ]
+                self._drawn(
+                    self._keys(
+                        [
+                            (f"1-{CHOICES_PER_FRAME}", "choose from a menu"),
+                            (HOME_KEY, "back to the main index"),
+                            (keyed("nnn"), "go straight to a page"),
+                            (
+                                keys.CONVENTIONAL_NEXT_FRAME,
+                                f"page down, as {keys.NEXT_FRAME} does",
+                            ),
+                            (keys.CANCEL, "cancel a request being keyed"),
+                            (keys.CANCEL * 2, "cancel and begin again"),
+                            ("DEL", "rub out a character"),
+                        ]
+                    ),
+                    self._compass,
                 ),
                 self._keys(
                     [
@@ -604,15 +605,24 @@ class StardotApplication(Sextile):
             )
         return Page(frames=tuple(frames))
 
+    def _drawn(self, *drawings: Callable[[Canvas], None]) -> Callable[[Canvas], None]:
+        """Several things on one frame, drawn in the order they are given."""
+
+        def draw(canvas: Canvas) -> None:
+            for drawing in drawings:
+                drawing(canvas)
+
+        return draw
+
     def _compass(self, canvas: Canvas) -> None:
         """Which way the four keys go, drawn rather than described.
 
         The framework's picture of the framework's own keys: a service drawing
         its own would be drawing the same thing, and would go on drawing it
-        after the keys had moved.
+        after the keys had moved. At the foot of the frame, under whatever the
+        frame says in words.
         """
-        top = CONTENT_FIRST_ROW + (CONTENT_ROWS - ROWS) // 2
-        compass(Composition(), top).draw(canvas)
+        compass(Composition(), CONTENT_FIRST_ROW + CONTENT_ROWS - ROWS).draw(canvas)
 
     def _keys(self, rows: list[tuple[str, str]]) -> Callable[[Canvas], None]:
         """A key on the left, what it does on the right."""

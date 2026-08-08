@@ -47,6 +47,11 @@ left, `RETURN` transmits 0x5F. Those were settled by driving real Commstar under
 an emulator, and are written up in
 [docs/viewdata-encoding.md](docs/viewdata-encoding.md).
 
+**Nobody is cut off without warning.** After half the idle timeout a silent
+caller's footer becomes a bar that drains, reading `Press a key`. The first key
+dismisses it and does nothing else, so it is safe to press whatever comes to
+hand. Every service gets this without writing anything.
+
 **Forty columns, accounted for.** A colour attribute occupies a character cell,
 so a row that changes colour twice has thirty-eight columns for text. `Canvas`
 does that arithmetic so nothing above it has to.

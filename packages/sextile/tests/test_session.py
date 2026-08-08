@@ -574,3 +574,76 @@ class TestRubbingOutIsAlsoIncremental:
         #  not do.
         await session.receive(b"*" + b"9" * 30)
         assert len((await session.receive(b"\x7f"))[-1]) > 20
+
+
+class TestTheIdleWarning:
+    """A silent line is about to be released, and the reader is told.
+
+    The bar is modal: while it is showing, the next key dismisses it and does
+    nothing else. That is the only way to be able to say "press a key" without
+    also saying "and you may end up somewhere you did not ask for".
+    """
+
+    async def test_nothing_is_showing_to_begin_with(self, session: Session) -> None:
+        assert not session.warning_showing
+
+    async def test_warning_draws_the_bar(self, session: Session) -> None:
+        drawn = session.warn(1.0)
+        assert drawn is not None
+        assert "Press a key" in _text(drawn)
+        assert session.warning_showing
+
+    async def test_the_page_beneath_is_not_cleared(self, session: Session) -> None:
+        drawn = session.warn(1.0)
+        assert drawn is not None
+        assert 0x0C not in drawn
+
+    async def test_an_unchanged_bar_sends_nothing(self, session: Session) -> None:
+        session.warn(1.0)
+        assert session.warn(1.0) is None
+
+    async def test_a_bar_that_has_drained_further_is_sent(self, session: Session) -> None:
+        session.warn(1.0)
+        assert session.warn(0.2) is not None
+
+    async def test_a_key_dismisses_it_and_does_nothing_else(self, session: Session) -> None:
+        await session.receive(b"*8#")
+        before = session.address
+        session.warn(0.5)
+        response = await session.receive(b"1")
+        assert session.address == before, "the key must not navigate"
+        assert not session.warning_showing
+        assert response
+
+    async def test_the_page_s_own_footer_comes_back(self, session: Session) -> None:
+        session.warn(0.5)
+        response = await session.receive(b"1")
+        assert "menu" in _text(response[-1])
+        assert "Press a key" not in _text(response[-1])
+
+    async def test_the_next_key_works_as_usual(self, session: Session) -> None:
+        await session.receive(b"*8#")
+        session.warn(0.5)
+        await session.receive(b"1")
+        await session.receive(b"1")
+        assert session.address == at("821024")
+
+    async def test_a_part_typed_request_survives_the_warning(
+        self, session: Session
+    ) -> None:
+        #  The command line occupies the same row. Drawing over a request the
+        #  reader is in the middle of typing would lose what they had typed.
+        await session.receive(b"*82")
+        assert session.warn(0.5) is None
+        assert not session.warning_showing
+
+    async def test_a_request_being_typed_still_completes(self, session: Session) -> None:
+        await session.receive(b"*8")
+        session.warn(0.5)
+        await session.receive(b"#")
+        assert session.address == at("8")
+
+    async def test_dismissing_when_nothing_is_showing_changes_nothing(
+        self, session: Session
+    ) -> None:
+        assert session.dismiss() is None

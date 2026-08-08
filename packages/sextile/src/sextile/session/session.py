@@ -44,6 +44,7 @@ from sextile.viewdata.command_line import (
     footer_bytes,
     incremental_bytes,
 )
+from sextile.viewdata.countdown import countdown_bytes, lit_cells
 from sextile.viewdata.frame import Frame
 
 #: How far back a reader can retrace their steps.
@@ -108,6 +109,9 @@ class Session:
         #  asked, and asking is something that has to be awaited.
         self._page: Page | None = None
         self._frame_index = 0
+        #  How much of the idle-warning bar is lit, or None when it is not
+        #  showing. Kept so an unchanged bar costs nothing on the wire.
+        self._warning_cells: int | None = None
 
     # -- where we are -------------------------------------------------------
 
@@ -140,6 +144,41 @@ class Session:
         await self._arrive(self._address)
         return self._send()
 
+    # -- the idle warning ---------------------------------------------------
+    #
+    #  A caller who has read one frame for ten minutes cannot know the line is
+    #  about to be released, and being disconnected without warning looks like a
+    #  fault. So the footer becomes a draining bar, and the next key dismisses
+    #  it and does nothing else -- which is the only way to promise that
+    #  pressing something is safe.
+
+    @property
+    def warning_showing(self) -> bool:
+        return self._warning_cells is not None
+
+    def warn(self, remaining: float) -> bytes | None:
+        """Draw or update the warning bar, or None if the row would not change.
+
+        ``remaining`` is the fraction of the warning period left. Nothing is
+        drawn over a request being typed: that occupies the same row, and the
+        reader would lose what they had entered.
+        """
+        if self._parser.entry:
+            return None
+        cells = lit_cells(remaining)
+        if cells == self._warning_cells:
+            return None
+        self._warning_cells = cells
+        return countdown_bytes(remaining)
+
+    def dismiss(self) -> bytes | None:
+        """Put the page's own footer back, or None if the bar was not showing."""
+        if self._warning_cells is None:
+            return None
+        self._warning_cells = None
+        frame = self.current_frame()
+        return footer_bytes(frame) if frame is not None else None
+
     # -- being spoken to ----------------------------------------------------
 
     async def receive(self, data: bytes) -> list[bytes]:
@@ -147,7 +186,25 @@ class Session:
         if self._page is None:
             await self._arrive(self._address)
         responses: list[bytes] = []
+        #  The bar said "press a key", so a key has to be safe to press: the
+        #  first thing the reader does wakes the line and does nothing else.
+        #
+        #  A whole *command* is suppressed rather than a byte, which matters for
+        #  a request arriving all at once. Dropping the first byte of `*8#`
+        #  would leave `8#` to be read as a selection and a page turn -- two
+        #  things the reader never asked for -- where dropping the request
+        #  entire merely means keying it again. A `*` on its own produces no
+        #  command at all, so a reader who wakes the line by starting a request
+        #  can simply carry on typing it.
+        waking = self._warning_cells is not None
+        if waking:
+            restored = self.dismiss()
+            if restored is not None:
+                responses.append(restored)
         for command in self._parser.feed(data):
+            if waking:
+                waking = False
+                continue
             reply = await self._act(command)
             if reply is not None:
                 responses.append(reply)

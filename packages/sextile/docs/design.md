@@ -231,13 +231,35 @@ and from `nc`. A line feed after a carriage return is swallowed as the other
 half of one terminator — it has to be told apart from a bare `0x0A`, which is
 the BBC's cursor-down key.
 
-**Idle callers are released.** A single-line board held open by someone who
-walked away locks everyone else out, so a caller who says nothing for
-`--idle-timeout` seconds (fifteen minutes by default) is sent a short notice and
-disconnected. `--idle-timeout 0` holds the line indefinitely, which is right for
-a dedicated terminal and wrong for a service anyone can dial. There is no
+**Idle callers are warned, then released.** A single-line board held open by
+someone who walked away locks everyone else out, so a caller who says nothing
+for `--idle-timeout` seconds (fifteen minutes by default) is sent a short notice
+and disconnected. `--idle-timeout 0` holds the line indefinitely, which is right
+for a dedicated terminal and wrong for a service anyone can dial. There is no
 session timeout distinct from this one: the session lives exactly as long as the
 socket, so releasing the line *is* ending the session.
+
+Half way through that silence — `--warn-after` — the footer becomes a bar that
+drains, reading `Press a key`, turning red for the last quarter. This is **the
+one thing the service says unprompted**, and it is why `_converse` races the
+read against a clock rather than merely giving it a deadline.
+
+The bar is **modal**: the first command the reader gives dismisses it and does
+nothing else. That is what makes "press a key" honest — a key that both woke the
+line and selected from a menu could not be pressed safely by someone who only
+wanted to stay connected.
+
+Two details that are less obvious than they look. What is suppressed is the
+first *command*, not the first byte: dropping the first byte of a `*8#` that
+arrived in one packet would leave `8#` to be read as a selection and a page
+turn, where dropping the request entire merely means keying it again. And a
+bare `*` produces no command at all, so a reader who wakes the line by starting
+a request can carry on typing it.
+
+The bar is not drawn over a request being typed, since the command line occupies
+the same row and the reader would lose what they had entered. It is redrawn only
+when a cell changes — twenty-five cells over several minutes, so about twice a
+minute, at a third of a second each at 1200 baud.
 
 **Sequences.** When a reader steps into a page from a menu, the session
 remembers the menu's `destinations` and where in them they are, and passes the

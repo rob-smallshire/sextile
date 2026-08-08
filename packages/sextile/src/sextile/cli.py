@@ -14,7 +14,12 @@ from typing import Final
 
 from sextile.addressing import PageAddress, UnknownPageError
 from sextile.application import Application, PageRequest
-from sextile.server import DEFAULT_IDLE_TIMEOUT, DEFAULT_PORT, serve
+from sextile.server import (
+    DEFAULT_IDLE_TIMEOUT,
+    DEFAULT_PORT,
+    DEFAULT_WARN_FRACTION,
+    serve,
+)
 from sextile.viewdata.ansi import render_ansi
 from sextile.viewdata.frame import Frame
 
@@ -80,6 +85,16 @@ def add_listening_arguments(parser: argparse.ArgumentParser) -> None:
             f"(default {DEFAULT_IDLE_TIMEOUT:.0f}; 0 to hold the line indefinitely)"
         ),
     )
+    parser.add_argument(
+        "--warn-after",
+        type=_seconds,
+        default=None,
+        metavar="SECONDS",
+        help=(
+            "Warn a silent caller after this long, with a bar that drains "
+            f"(default: {DEFAULT_WARN_FRACTION:.0%} of the idle timeout; 0 for no warning)"
+        ),
+    )
 
 
 def _seconds(text: str) -> float:
@@ -137,6 +152,7 @@ async def run_service(application: Application, arguments: argparse.Namespace) -
             host=arguments.host,
             port=arguments.port,
             idle_timeout=idle_timeout,
+            warn_after=arguments.warn_after,
         )
         print(
             f"Sextile answering on {arguments.host}:{arguments.port}, "

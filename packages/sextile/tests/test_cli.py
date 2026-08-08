@@ -81,7 +81,9 @@ class TestRunningAService:
         monkeypatch.setattr("sextile.cli.serve", fake_serve)
         arguments = parse("--host", "0.0.0.0", "--port", "1", "--idle-timeout", "90")
         await run_service(Board(), arguments)
-        assert seen == {"host": "0.0.0.0", "port": 1, "idle_timeout": 90.0}
+        assert seen["host"] == "0.0.0.0"
+        assert seen["port"] == 1
+        assert seen["idle_timeout"] == 90.0
 
     async def test_zero_becomes_no_timeout_at_all(
         self, monkeypatch: pytest.MonkeyPatch
@@ -133,3 +135,26 @@ class TestLoadingAnApplication:
     def test_something_that_is_not_an_application(self) -> None:
         with pytest.raises(ApplicationSpecError):
             load_application("exemplar:ITEMS")
+
+
+class TestTheIdleWarning:
+    def test_it_is_left_to_the_server_by_default(self) -> None:
+        #  None asks for half the idle timeout, which only the server knows.
+        assert parse().warn_after is None
+
+    def test_a_time_can_be_given(self) -> None:
+        assert parse("--warn-after", "30").warn_after == 30.0
+
+    def test_zero_turns_it_off(self) -> None:
+        assert parse("--warn-after", "0").warn_after == 0.0
+
+    async def test_it_is_passed_on(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        seen: dict[str, Any] = {}
+
+        async def fake_serve(application: Application, **keywords: Any) -> _StoppedServer:
+            seen.update(keywords)
+            return _StoppedServer()
+
+        monkeypatch.setattr("sextile.cli.serve", fake_serve)
+        await run_service(Board(), parse("--warn-after", "30"))
+        assert seen["warn_after"] == 30.0

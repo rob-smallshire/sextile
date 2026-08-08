@@ -33,8 +33,11 @@ nc localhost 6850
 A caller arrives on page 1 unless the application says otherwise —
 `Sextile(home="8")` — and is released after fifteen minutes of silence, since a
 single-line board held open by someone who walked away locks everyone else out.
-`--idle-timeout` changes that, and `--idle-timeout 0` holds the line for as long
-as the caller keeps it.
+Half way through that, the footer becomes a draining bar reading `Press a key`,
+so that being disconnected is never a surprise; the first key dismisses it and
+does nothing else. Both are the framework's, and every service gets them without
+writing anything. `--idle-timeout` and `--warn-after` change the timings, and
+`0` turns either off.
 
 ## Numbering
 

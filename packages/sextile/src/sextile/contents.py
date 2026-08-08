@@ -27,7 +27,7 @@ or does without:
 from collections.abc import Sequence
 from typing import TYPE_CHECKING, Final
 
-from sextile.addressing import PageAddress
+from sextile.addressing import PageAddress, keyed
 from sextile.page import Page
 from sextile.templates import Listing, MenuItem
 
@@ -54,7 +54,7 @@ def contents_page(
     digit names a namespace already means.
     """
     entries = [
-        MenuItem(text=f"*{page.keyed}#", detail=page.title)
+        MenuItem(text=keyed(page.keyed), detail=page.title)
         for page in sorted(pages, key=lambda page: page.keyed)
     ]
     return Listing(

@@ -5,7 +5,7 @@ wrapped body text, a page number -- so a glance at ``sextile render --demo``
 shows whether anything is obviously wrong. Nothing else depends on it.
 """
 
-from sextile.addressing import PageAddress
+from sextile.addressing import PageAddress, keyed
 from sextile.viewdata.canvas import Canvas
 from sextile.viewdata.controls import Colour
 from sextile.viewdata.drawing import rule
@@ -54,5 +54,5 @@ def _footer(canvas: Canvas, row: int) -> None:
         " for next frame", Colour.WHITE
     )
     canvas.row(row + 1).text("Key ", Colour.WHITE).text(
-        f"*{_MAIN_INDEX_NUMBER}#", Colour.YELLOW
+        keyed(_MAIN_INDEX_NUMBER), Colour.YELLOW
     ).text(" for the main index", Colour.WHITE)

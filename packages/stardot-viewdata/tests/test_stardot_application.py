@@ -15,8 +15,8 @@ from datetime import UTC, datetime, timedelta, timezone
 import pytest
 
 from sextile import keys
-from sextile.addressing import PageAddress, UnknownPageError
-from sextile.application import Arrival, PageRequest
+from sextile.addressing import PageAddress, UnknownPageError, keyed
+from sextile.application import Arrival, PageRequest, page
 from sextile.page import Page
 from sextile.templates import MenuItem
 from sextile.viewdata import lettering
@@ -30,6 +30,7 @@ from stardot_viewdata import StardotApplication
 from stardot_viewdata.application import (
     BANNER_FACE,
     BANNER_ROW,
+    CONVENTIONAL_NEXT_FRAME_KEY,
     SERVICE_KIND,
     SERVICE_NAME,
     SUBTITLE_FACE,
@@ -600,6 +601,54 @@ class TestEveryPage:
         #  than none, and this one is built from the registrations so it cannot.
         #  Parameterised numbers are shown as patterns, so only the plain ones
         #  can be built and looked up.
-        for page in app.pages():
-            if "<" not in page.keyed:
-                assert app.route(PageAddress(page.keyed)) is not None
+        for about in app.pages():
+            if "<" not in about.keyed:
+                assert app.route(PageAddress(about.keyed)) is not None
+
+
+class TestTheTitleFrameSaysWhatTheServiceDoes:
+    """The two instructions on it are built, not written out.
+
+    A frame that says "key *91# for how to get about" and a help page that has
+    moved to another number is worse than no instruction: the reader does what
+    they are told and it does not work. So the number, the words and the key
+    all come from the service itself, and these tests fail if any of the three
+    is written down twice instead.
+    """
+
+    async def test_the_number_it_names_is_the_one_the_router_builds(
+        self, app: StardotApplication
+    ) -> None:
+        assert keyed(app.address_for("help")) in text_of(await page_at(app, "0"))
+
+    async def test_the_words_are_the_ones_the_pages_were_registered_with(
+        self, app: StardotApplication
+    ) -> None:
+        shown = text_of(await page_at(app, "0"))
+        for name in ("main", "help"):
+            about = app.page_info(name)
+            assert about is not None
+            assert about.title.lower() in shown
+
+    async def test_and_the_key_it_says_to_press_is_one_the_frame_answers(
+        self, app: StardotApplication
+    ) -> None:
+        page = await page_at(app, "0")
+        assert CONVENTIONAL_NEXT_FRAME_KEY in page.frames[0].moves
+        assert f"Key {CONVENTIONAL_NEXT_FRAME_KEY}" in text_of(page)
+
+    async def test_moving_the_help_page_moves_what_the_title_frame_says(
+        self, repository: Repository
+    ) -> None:
+        #  The test that would have caught the drift. A service whose guide is
+        #  somewhere else says so on its title frame, without that frame being
+        #  edited: nothing in it knows the number 91.
+        class Moved(StardotApplication):
+            @page("95", name="help", title="How to get about")
+            async def _help(self, request: PageRequest) -> Page:
+                return await super()._help(request)
+
+        moved = Moved(repository=repository)
+        shown = text_of(await page_at(moved, "0"))
+        assert keyed(PageAddress("95")) in shown
+        assert keyed(PageAddress("91")) not in shown

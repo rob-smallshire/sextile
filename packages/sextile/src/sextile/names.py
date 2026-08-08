@@ -25,7 +25,7 @@ numbering or does without:
 from collections.abc import Callable, Mapping
 from typing import Final
 
-from sextile.addressing import PageAddress
+from sextile.addressing import PageAddress, keyed
 from sextile.page import Page
 from sextile.templates import Listing, MenuItem
 
@@ -44,7 +44,7 @@ def names_page(
 ) -> Page:
     """Build the page of named jumps, one row per word."""
     entries = [
-        MenuItem(text=f"*{word}#", detail=describe(named[word])) for word in sorted(named)
+        MenuItem(text=keyed(word), detail=describe(named[word])) for word in sorted(named)
     ]
     return Listing(
         title=title, entries=entries, home=home, empty=_NOTHING

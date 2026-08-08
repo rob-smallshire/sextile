@@ -270,6 +270,24 @@ app.pages()                              # every page that has a title
 says it may be listed, so a title frame or a logoff page stays off the contents
 without a flag.
 
+## Saying where a page is, once
+
+`addressing.keyed` gives a page number as a reader keys it — `*91#` — and
+`MenuItem.for_page(app, name)` gives the words the page was registered with.
+Between them, a page that tells a reader to press something need not spell out
+either:
+
+```python
+guide = MenuItem.for_page(self, "help")
+canvas.row(19).text("Key", Colour.WHITE).text(
+    keyed(self.address_for("help")), Colour.YELLOW
+).text(f"for {guide.text.lower()}.", Colour.WHITE)
+```
+
+Move the help page to another number and the instruction moves with it. A frame
+that says `*91#` when the guide has moved is worse than no instruction at all:
+the reader does as they are told and it does not work.
+
 ## Pages that come with the framework
 
 Three pages are built for you and registered nowhere, so that a service maps

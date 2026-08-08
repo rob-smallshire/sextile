@@ -25,7 +25,7 @@ offering the one the reader is looking at.
 from collections.abc import Callable, Sequence
 from typing import Final
 
-from sextile.addressing import PageAddress
+from sextile.addressing import PageAddress, keyed
 from sextile.page import Page
 from sextile.templates import Menu, MenuItem
 
@@ -55,7 +55,7 @@ def history_page(
             #  the first frame -- keys run 1-9 on every frame, as any other
             #  viewdata menu's do, so that no entry is shown which cannot be
             #  chosen.
-            detail=f"*{where}#  {_how_far(step)}",
+            detail=f"{keyed(where)}  {_how_far(step)}",
             destination=where,
         )
         for step, where in enumerate(

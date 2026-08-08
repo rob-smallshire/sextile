@@ -63,3 +63,14 @@ def frame_letter(index: int) -> str:
     if not 0 <= index < _FRAMES_PER_PAGE:
         raise ValueError(f"a page has at most {_FRAMES_PER_PAGE} frames, not frame {index}")
     return chr(ord("a") + index)
+
+
+def keyed(address: "PageAddress | str") -> str:
+    """A page number as a reader keys it: `*91#`.
+
+    Here rather than in each place that says it, because a service says it
+    everywhere -- in a guide, on a contents page, in a not-found message -- and
+    one that spells it out each time will eventually spell it differently. It
+    takes a keyword as readily as a number, `*MAIN#` being keyed the same way.
+    """
+    return f"*{address}#"

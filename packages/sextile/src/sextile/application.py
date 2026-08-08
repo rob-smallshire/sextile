@@ -28,7 +28,7 @@ from collections.abc import Awaitable, Callable, Mapping, MutableMapping, Sequen
 from dataclasses import dataclass, field
 from typing import Final
 
-from sextile.addressing import PageAddress, UnknownPageError
+from sextile.addressing import PageAddress, UnknownPageError, keyed
 from sextile.contents import contents_page
 from sextile.history import history_page
 from sextile.names import names_page
@@ -234,7 +234,7 @@ class Application(ABC):
         from the route's own name, which is the application's word for the thing
         and so needs no framework knowledge of what a service is about.
         """
-        return f"*{address}#"
+        return keyed(address)
 
     async def history(self, request: PageRequest) -> Page:
         """Where this caller has been, newest first, as a menu of shortcuts.
@@ -303,7 +303,9 @@ class Application(ABC):
         Silence would be indistinguishable from a line fault, which on a service
         that answers slowly by design is exactly the wrong thing to be.
         """
-        return _plain_notice("UNKNOWN PAGE", f"*{target[:_QUOTED]}# is NOT a page here.")
+        return _plain_notice(
+            "UNKNOWN PAGE", f"{keyed(target[:_QUOTED])} is NOT a page here."
+        )
 
     @property
     def name(self) -> str:
@@ -330,7 +332,7 @@ class Application(ABC):
         """
         return _plain_notice(
             "SERVICE ERROR",
-            f"*{address}# could not be built.",
+            f"{keyed(address)} could not be built.",
             "",
             "This is a fault at our end, not yours,",
             "and the service has made a note of it.",

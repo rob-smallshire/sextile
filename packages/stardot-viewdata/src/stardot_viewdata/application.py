@@ -28,7 +28,7 @@ from pathlib import Path
 from typing import Final
 
 from sextile import keys
-from sextile.addressing import PageAddress
+from sextile.addressing import PageAddress, keyed
 from sextile.application import Arrival, PageRequest, Parting, Sextile, page
 from sextile.page import Page, PageFrame
 from sextile.templates import Menu, MenuItem, Prose
@@ -486,27 +486,35 @@ class StardotApplication(Sextile):
         layout.draw(canvas)
         rule(canvas, 10)
         canvas.row(12).text("The Stardot forum for users of Acorn", Colour.WHITE)
-        canvas.row(13).text("computers, as 40-column frames.", Colour.WHITE)
+        canvas.row(13).text("computers and emulators.", Colour.WHITE)
         canvas.row(15).text(f"{held} posts held.", Colour.GREEN)
+        #  Both instructions are built from the pages they name and the keys
+        #  this frame actually answers, so neither can come to say something
+        #  the service no longer does. The words are the ones the pages were
+        #  registered with, the numbers are the ones the router would build,
+        #  and the key is the one in `moves` below.
+        index, guide = MenuItem.for_page(self, "main"), MenuItem.for_page(self, "help")
+        main, about = self.address_for("main"), self.address_for("help")
+        moves = frozenset({NEXT_FRAME_KEY, CONVENTIONAL_NEXT_FRAME_KEY})
         #  Each colour change costs a cell, which shows as a space -- so the
         #  attribute is the space, rather than being paid for on top of one.
-        canvas.row(17).text("Key", Colour.WHITE).text("#", Colour.YELLOW).text(
-            "for the main index.", Colour.WHITE
-        )
-        canvas.row(19).text("Key", Colour.WHITE).text("*91#", Colour.YELLOW).text(
-            "for how to get about.", Colour.WHITE
-        )
+        canvas.row(17).text("Key", Colour.WHITE).text(
+            CONVENTIONAL_NEXT_FRAME_KEY, Colour.YELLOW
+        ).text(f"for the {index.text.lower()}.", Colour.WHITE)
+        canvas.row(19).text("Key", Colour.WHITE).text(
+            keyed(about), Colour.YELLOW
+        ).text(f"for {guide.text.lower()}.", Colour.WHITE)
         return Page(
             frames=(
                 PageFrame(
                     frame=canvas.frame,
-                    choices={"1": self.address_for("main")},
-                    moves=frozenset({NEXT_FRAME_KEY, CONVENTIONAL_NEXT_FRAME_KEY}),
+                    choices={"1": main},
+                    moves=moves,
                 ),
             ),
             #  `#` is the one key a viewdata reader tries without being told, and
             #  a title frame is nothing but an invitation to press it.
-            follows=self.address_for("main"),
+            follows=main,
         )
 
     @page(

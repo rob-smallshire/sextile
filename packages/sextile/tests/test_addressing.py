@@ -11,7 +11,7 @@ there is more below, but it is never keyed.
 
 import pytest
 
-from sextile.addressing import PageAddress, UnknownPageError, frame_letter
+from sextile.addressing import PageAddress, UnknownPageError, frame_letter, keyed
 
 
 class TestParsing:
@@ -77,3 +77,16 @@ class TestDisplay:
     def test_there_is_no_frame_before_the_first(self) -> None:
         with pytest.raises(ValueError):
             frame_letter(-1)
+
+
+class TestKeyingAPageNumber:
+    def test_a_number_is_keyed_between_a_star_and_a_hash(self) -> None:
+        assert keyed(PageAddress("91")) == "*91#"
+
+    def test_and_so_is_a_keyword(self) -> None:
+        #  `*MAIN#` is keyed exactly as `*1#` is, which is why this takes both.
+        assert keyed("MAIN") == "*MAIN#"
+
+    def test_a_pattern_is_shown_the_way_it_is_keyed_too(self) -> None:
+        #  What a contents page lists: the fields stay as they are written.
+        assert keyed("82<post_id>") == "*82<post_id>#"

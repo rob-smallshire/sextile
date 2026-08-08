@@ -12,7 +12,7 @@ import sys
 from contextlib import suppress
 from typing import Final
 
-from sextile.addressing import PageAddress, UnknownPageError
+from sextile.addressing import PageAddress, UnknownPageError, keyed
 from sextile.application import Application, PageRequest
 from sextile.server import (
     DEFAULT_IDLE_TIMEOUT,
@@ -122,7 +122,7 @@ async def render_page(application: Application, arguments: argparse.Namespace) -
     try:
         page = await application.respond(PageRequest(address=address))
         if page is None:
-            print(f"*{address}# is not a page there.", file=sys.stderr)
+            print(f"{keyed(address)} is not a page there.", file=sys.stderr)
             return 2
         index = int(arguments.frame)
         found = page.frame(index)
@@ -132,7 +132,10 @@ async def render_page(application: Application, arguments: argparse.Namespace) -
         choices = ", ".join(
             f"{key}->*{destination}#" for key, destination in sorted(found.choices.items())
         )
-        print(f"*{address.frame_number(index)}#   choices: {choices}", file=sys.stderr)
+        print(
+            f"{keyed(address.frame_number(index))}   choices: {choices}",
+            file=sys.stderr,
+        )
         print(rendered(found.frame, arguments.form, colour=not arguments.no_colour))
     finally:
         await application.shutdown()

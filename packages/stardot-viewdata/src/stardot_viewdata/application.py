@@ -550,7 +550,7 @@ class StardotApplication(Sextile):
             (HOME_KEY, "back to the main index"),
             (keyed("nnn"), "go straight to a page"),
             (keyed("<keyword>"), "go to named page"),
-            (keys.CONVENTIONAL_NEXT_FRAME, f"page down, as {keys.NEXT_FRAME} does"),
+            (keys.CONVENTIONAL_NEXT_FRAME, "next frame in series"),
             ("DEL", "rub out a character"),
         ]
         asking = [

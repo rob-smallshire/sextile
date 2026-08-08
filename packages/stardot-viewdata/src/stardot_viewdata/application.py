@@ -226,7 +226,7 @@ class StardotApplication(Sextile):
     )
     async def _latest_posts(self, request: PageRequest) -> Page:
         posts = await self._read(lambda repository: repository.latest_posts(limit=60))
-        return self._posts_menu(request.address, "LATEST POSTS", posts)
+        return self._posts_menu(request.address, posts)
 
     @page(
         "3",
@@ -238,7 +238,7 @@ class StardotApplication(Sextile):
     async def _days_index(self, request: PageRequest) -> Page:
         days = await self._read(lambda repository: repository.days(limit=60))
         if not days:
-            return self._notice(request.address, "BY DAY", ["NO POSTS held yet."])
+            return self._notice(request.address, None, ["NO POSTS held yet."])
         items = [
             MenuItem(
                 _day_title(day),
@@ -247,12 +247,12 @@ class StardotApplication(Sextile):
             )
             for day, count in days
         ]
-        return self._menu(request.address, title="BY DAY", items=items)
+        return self._menu(request.address, items=items)
 
     @page("32{day:date}", name="day", title="One day")
     async def _day(self, request: PageRequest, day: date) -> Page:
         posts = await self._read(lambda repository: repository.posts_on(day))
-        return self._posts_menu(request.address, _day_title(day), posts)
+        return self._posts_menu(request.address, posts, _day_title(day))
 
     @page(
         "4",
@@ -264,7 +264,7 @@ class StardotApplication(Sextile):
     async def _forums_index(self, request: PageRequest) -> Page:
         forums = await self._read(lambda repository: repository.forums())
         if not forums:
-            return self._notice(request.address, "BY FORUM", ["NO POSTS held yet."])
+            return self._notice(request.address, None, ["NO POSTS held yet."])
         items = [
             MenuItem(
                 name,
@@ -273,7 +273,7 @@ class StardotApplication(Sextile):
             )
             for forum_id, name, count in forums
         ]
-        return self._menu(request.address, title="BY FORUM", items=items)
+        return self._menu(request.address, items=items)
 
     @page("42{forum_id:int}", name="forum", title="One forum")
     async def _forum(self, request: PageRequest, forum_id: int) -> Page:
@@ -284,7 +284,7 @@ class StardotApplication(Sextile):
         forums = await self._read(lambda repository: repository.forums())
         named = {found_id: name for found_id, name, _ in forums}
         title = named.get(forum_id) or f"FORUM {forum_id}"
-        return self._posts_menu(request.address, title, posts)
+        return self._posts_menu(request.address, posts, title)
 
     @page(
         "5",
@@ -296,7 +296,7 @@ class StardotApplication(Sextile):
     async def _contributors_index(self, request: PageRequest) -> Page:
         contributors = await self._read(lambda repository: repository.contributors())
         if not contributors:
-            return self._notice(request.address, "BY CONTRIBUTOR", ["NO POSTS held yet."])
+            return self._notice(request.address, None, ["NO POSTS held yet."])
         items = [
             MenuItem(
                 name,
@@ -305,13 +305,13 @@ class StardotApplication(Sextile):
             )
             for user_id, name, count in contributors
         ]
-        return self._menu(request.address, title="BY CONTRIBUTOR", items=items)
+        return self._menu(request.address, items=items)
 
     @page("52{user_id:int}", name="contributor", title="One contributor")
     async def _contributor(self, request: PageRequest, user_id: int) -> Page:
         posts = await self._read(lambda repository: repository.posts_by_author(user_id))
         title = posts[0].author_name if posts else f"USER {user_id}"
-        return self._posts_menu(request.address, title, posts)
+        return self._posts_menu(request.address, posts, title)
 
     @page(
         "7",
@@ -327,7 +327,7 @@ class StardotApplication(Sextile):
                 "NO TOPICS held yet.",
                 "Topics are known only for posts seen since the board's feed "
                 "began carrying them. Older posts have none.",
-                title="BY TOPIC",
+                title=self._headed(request.address),
                 home=self.index,
             ).build(request.address)
         items = [
@@ -338,15 +338,27 @@ class StardotApplication(Sextile):
             )
             for topic_id, title, count in topics
         ]
-        return self._menu(request.address, title="BY TOPIC", items=items)
+        return self._menu(request.address, items=items)
 
     @page("72{topic_id:int}", name="topic", title="One topic")
     async def _topic(self, request: PageRequest, topic_id: int) -> Page:
         posts = await self._read(lambda repository: repository.posts_in_topic(topic_id))
         title = posts[0].topic_title if posts else f"TOPIC {topic_id}"
-        return self._posts_menu(request.address, title, posts)
+        return self._posts_menu(request.address, posts, title)
 
-    def _posts_menu(self, address: PageAddress, title: str, posts: list[Post]) -> Page:
+    def _headed(self, address: PageAddress) -> str:
+        """What goes at the top of a page: what it was registered as, shouted.
+
+        A page that names itself in its decorator and again in its own chrome
+        has two copies of its name to keep in step, and they do not stay in
+        step. Pages whose heading is not their name -- a post's forum, a day's
+        date -- say so; the rest say nothing and get this.
+        """
+        return self.describe(address).upper()
+
+    def _posts_menu(
+        self, address: PageAddress, posts: list[Post], title: str | None = None
+    ) -> Page:
         if not posts:
             return self._notice(address, title, ["NO POSTS held for this page."])
         items = [
@@ -363,14 +375,14 @@ class StardotApplication(Sextile):
         self,
         address: PageAddress,
         *,
-        title: str,
+        title: str | None = None,
         items: list[MenuItem],
         preamble: list[str] | None = None,
         empty: str = "",
     ) -> Page:
         """A menu, dealt nine to a frame by the framework's template."""
         return Menu(
-            title=title,
+            title=title if title is not None else self._headed(address),
             entries=items,
             home=self.index,
             preamble=preamble or (),
@@ -568,7 +580,7 @@ class StardotApplication(Sextile):
             moving = _frame_moves(index, len(batches))
             draw_chrome(
                 canvas,
-                title="HOW TO GET ABOUT",
+                title=self._headed(address),
                 page_number=address.frame_number(index),
                 prompt=_prompt(moving, selecting=False),
             )
@@ -684,7 +696,7 @@ class StardotApplication(Sextile):
     def _notice(
         self,
         address: PageAddress,
-        title: str,
+        title: str | None,
         lines: list[str],
         *,
         hang_up: bool = False,
@@ -695,7 +707,7 @@ class StardotApplication(Sextile):
         #  everything else says and degrades the same way.
         draw_chrome(
             canvas,
-            title=title,
+            title=title if title is not None else self._headed(address),
             page_number=address.frame_number(0),
             prompt=_prompt({}, selecting=False),
         )

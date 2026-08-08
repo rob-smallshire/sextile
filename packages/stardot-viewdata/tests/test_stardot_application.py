@@ -652,3 +652,42 @@ class TestTheTitleFrameSaysWhatTheServiceDoes:
         shown = text_of(await page_at(moved, "0"))
         assert keyed(PageAddress("95")) in shown
         assert keyed(PageAddress("91")) not in shown
+
+
+class TestAPageIsHeadedWithWhatItWasRegisteredAs:
+    """The heading and the declaration are the same words, not two copies.
+
+    A page called "By day" in its decorator and headed "BY DAY" in its own
+    chrome has two of everything to keep in step -- and the decorator's copy is
+    the one that shows in menus, contents pages and the history, so the two
+    drift where nobody is looking at both at once.
+    """
+
+    @pytest.mark.parametrize("digits", ["3", "4", "5", "7", "8", "91"])
+    async def test_the_heading_is_the_registered_title(
+        self, digits: str, app: StardotApplication
+    ) -> None:
+        page = await page_at(app, digits)
+        found = app.route(PageAddress(digits))
+        assert found is not None and found.name is not None
+        about = app.page_info(found.name)
+        assert about is not None
+        assert about.title.upper() in text_of(page)
+
+    async def test_and_renaming_a_page_renames_its_heading(
+        self, repository: Repository
+    ) -> None:
+        class Renamed(StardotApplication):
+            @page("3", name="days", title="Day by day", keywords=("DAYS",))
+            async def _days_index(self, request: PageRequest) -> Page:
+                return await super()._days_index(request)
+
+        renamed = Renamed(repository=repository)
+        assert "DAY BY DAY" in text_of(await page_at(renamed, "3"))
+
+    async def test_a_page_whose_heading_is_not_its_name_still_says_so(
+        self, app: StardotApplication
+    ) -> None:
+        #  A day's frames are headed with the date, not with "One day".
+        shown = text_of(await page_at(app, "3220260802"))
+        assert "ONE DAY" not in shown

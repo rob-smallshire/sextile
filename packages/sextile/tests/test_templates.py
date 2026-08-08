@@ -8,8 +8,8 @@ what five hand-written copies had each got slightly differently.
 
 from sextile.addressing import PageAddress
 from sextile.page import Page
-from sextile.templates import CHOICES_PER_FRAME, Entry, Listing, Menu, MenuItem
-from sextile.viewdata.chrome import CONTENT_ROWS
+from sextile.templates import CHOICES_PER_FRAME, Entry, Listing, Menu, MenuItem, Prose
+from sextile.viewdata.chrome import CONTENT_FIRST_ROW, CONTENT_ROWS
 
 
 def at(digits: str) -> PageAddress:
@@ -211,3 +211,59 @@ class TestAnApplicationsOwnShape:
         page = Roomy(title="ROOMY", entries=items(20), home=at("1")).build(at("8"))
         assert page.frames[0].destination("5") is not None
         assert page.frames[0].destination("6") is None
+
+
+class TestProse:
+    """Running text, wrapped here rather than by whoever wrote it."""
+
+    def test_it_wraps_to_the_frame(self) -> None:
+        page = Prose.of(
+            "A Viewdata service carrying posts from stardot.org.uk, for users "
+            "of Acorn computers and emulators.",
+            title="ABOUT",
+            home=at("1"),
+        ).build(at("9"))
+        rows = [row for row in text_of(page).splitlines() if row.strip()]
+        assert all(len(row) <= 40 for row in rows)
+        assert "stardot.org.uk" in text_of(page)
+
+    def test_a_paragraph_break_costs_a_row(self) -> None:
+        page = Prose.of("First.", "Second.", title="ABOUT", home=at("1")).build(at("9"))
+        rows = text_of(page).splitlines()
+        first = next(index for index, row in enumerate(rows) if "First." in row)
+        second = next(index for index, row in enumerate(rows) if "Second." in row)
+        assert second == first + 2
+
+    def test_nothing_is_numbered(self) -> None:
+        page = Prose.of("Words.", title="ABOUT", home=at("1")).build(at("9"))
+        assert page.frames[0].destination("1") is None
+
+    def test_zero_still_goes_home(self) -> None:
+        page = Prose.of("Words.", title="ABOUT", home=at("1")).build(at("9"))
+        assert page.frames[0].destination("0") == at("1")
+
+    def test_long_text_runs_on_to_another_frame(self) -> None:
+        page = Prose.of(*(f"Paragraph {n} of some length." for n in range(20)),
+                        title="ABOUT", home=at("1")).build(at("9"))
+        assert len(page.frames) > 1
+        assert "S" in page.frames[0].moves
+
+    def test_a_word_too_long_for_a_row_is_split_rather_than_lost(self) -> None:
+        #  Losing part of a link address is worse than an ugly break. Counted
+        #  over the content rows alone: the footer says "0 index".
+        page = Prose.of("See " + "x" * 60, title="ABOUT", home=at("1")).build(at("9"))
+        body = text_of(page).splitlines()[CONTENT_FIRST_ROW:CONTENT_FIRST_ROW + CONTENT_ROWS]
+        assert sum(row.count("x") for row in body) == 60
+
+    def test_it_takes_rendered_rows_as_readily_as_paragraphs(self) -> None:
+        #  Which is what lets a notice have a quotation or a listing in it,
+        #  rendered exactly as a post's would be.
+        from sextile.content.blocks import Code, Document
+        from sextile.viewdata.layout import rows_for
+
+        page = Prose(
+            title="ABOUT",
+            entries=rows_for(Document(blocks=(Code(("LDA &FE",)),))),
+            home=at("1"),
+        ).build(at("9"))
+        assert "LDA &FE" in text_of(page)

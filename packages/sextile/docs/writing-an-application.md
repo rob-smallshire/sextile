@@ -145,7 +145,28 @@ class Line:
     def destination(self) -> PageAddress: return app.address_for("post", post_id=...)
 ```
 
-For a shape neither template has, subclass `Template` and say how tall an entry
+For running text, don't break your own lines:
+
+```python
+Prose.of(
+    "A Viewdata service carrying posts from stardot.org.uk, for users of "
+    "Acorn computers and emulators.",
+    f"{held} posts held.",
+    title="ABOUT STARDOT",
+    home=self.index,
+).build(request.address)
+```
+
+Each argument is a paragraph; the framework wraps them, spaces them, and pages
+them. It also takes rendered rows rather than plain paragraphs, which is how a
+notice gets a quotation or a code listing rendered exactly as a forum post's
+would be:
+
+```python
+Prose(title="...", entries=rows_for(document), home=self.index)
+```
+
+For a shape none of the three has, subclass `Template` and say how tall an entry
 is and how to draw it; the pagination, chrome and keys come with it.
 
 ## Pages, frames and keys

@@ -421,9 +421,21 @@ one, and whether entries take a digit. Two come with the framework:
 |---|---|
 | `Menu` | nine to a frame, numbered, a line of detail beneath each |
 | `Listing` | twenty to a frame, nothing numbered, detail in a second column |
+| `Prose` | running text, wrapped, in as many rows as it takes |
 
-An application wanting a third shape subclasses `Template` rather than starting
-again — which is the point of it being a class and not two functions.
+An application wanting a fourth shape subclasses `Template` rather than starting
+again — which is the point of it being a class rather than three functions. The
+base is generic in *what* it deals: menus and listings deal entries, prose deals
+rendered rows.
+
+**`Prose` is the one that already had its machinery.** `wrap_text`,
+`Canvas.paragraph`, the `Document` block model and `viewdata/layout.py` were all
+there — nested quotations in cyan, listings in green, over-long words split
+rather than dropped — and only two pages in the whole workspace used any of it.
+Every notice wrote its own lines out pre-broken at forty columns, with empty
+strings for the gaps, which has to be redone by hand whenever a word changes.
+`Prose.of("...", "...")` reaches the machinery that was already there, and the
+wrapped output is identical to what the hand-broken literals produced.
 
 **What a template consumes is the `Entry` protocol** — `text`, `detail`, and a
 `destination` that may be `None` — so a service with a richer notion of a menu

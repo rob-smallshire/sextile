@@ -31,7 +31,7 @@ from sextile import keys
 from sextile.addressing import PageAddress
 from sextile.application import Arrival, PageRequest, Parting, Sextile, page
 from sextile.page import Page, PageFrame
-from sextile.templates import Menu, MenuItem
+from sextile.templates import Menu, MenuItem, Prose
 from sextile.viewdata.canvas import Canvas
 from sextile.viewdata.chrome import CONTENT_FIRST_ROW, CONTENT_ROWS, draw_chrome
 from sextile.viewdata.controls import Colour, Control, graphics_colour
@@ -292,17 +292,13 @@ class StardotApplication(Sextile):
     async def _topics_index(self, request: PageRequest) -> Page:
         topics = await self._read(lambda repository: repository.topics(limit=60))
         if not topics:
-            return self._notice(
-                request.address,
-                "BY TOPIC",
-                [
-                    "NO TOPICS held yet.",
-                    "",
-                    "Topics are known only for posts seen",
-                    "since the board's feed began carrying",
-                    "them. Older posts have none.",
-                ],
-            )
+            return Prose.of(
+                "NO TOPICS held yet.",
+                "Topics are known only for posts seen since the board's feed "
+                "began carrying them. Older posts have none.",
+                title="BY TOPIC",
+                home=self.index,
+            ).build(request.address)
         items = [
             MenuItem(
                 title,
@@ -356,17 +352,13 @@ class StardotApplication(Sextile):
     async def _post(self, request: PageRequest, post_id: int) -> Page:
         post = await self._read(lambda repository: repository.post(post_id))
         if post is None:
-            return self._notice(
-                request.address,
-                "POST",
-                [
-                    f"Post {post_id} is NOT in the archive.",
-                    "",
-                    "This service holds what it has seen in",
-                    "the board's feed, which reaches back",
-                    "only a little way.",
-                ],
-            )
+            return Prose.of(
+                f"Post {post_id} is NOT in the archive.",
+                "This service holds what it has seen in the board's feed, "
+                "which reaches back only a little way.",
+                title="POST",
+                home=self.index,
+            ).build(request.address)
 
         body_rows = CONTENT_ROWS - _POST_HEADING_ROWS
         pages = paginate(parse_post_body(post.content_html), body_rows)
@@ -548,24 +540,16 @@ class StardotApplication(Sextile):
     @page("9", name="about", title="About this service", keywords=("ABOUT",))
     async def _about(self, request: PageRequest) -> Page:
         held = await self._read(lambda repository: repository.count_posts())
-        return self._notice(
-            request.address,
-            f"ABOUT {self.name.upper()}",
-            [
-                "A Viewdata service carrying posts from",
-                "stardot.org.uk, for users of Acorn",
-                "computers and emulators.",
-                "",
-                f"{held} posts held.",
-                "",
-                "Page numbers follow the board's own",
-                "identifiers, so *82489493# here is post",
-                "489493 there.",
-                "",
-                "Served by Sextile, named after the star",
-                "key on a viewdata keypad.",
-            ],
-        )
+        return Prose.of(
+            "A Viewdata service carrying posts from stardot.org.uk, for users "
+            "of Acorn computers and emulators.",
+            f"{held} posts held.",
+            "Page numbers follow the board's own identifiers, so *82489493# "
+            "here is post 489493 there.",
+            "Served by Sextile, named after the star key on a viewdata keypad.",
+            title=f"ABOUT {self.name.upper()}",
+            home=self.index,
+        ).build(request.address)
 
     #  Titled, and so listed: the contents page is a directory of numbers that
     #  do something rather than a menu of places to go, and a reader looking for

@@ -55,15 +55,24 @@ class Row:
     indent: int = 0
 
 
+def rows_for(content: Document) -> list[Row]:
+    """Render a document into rows, without dealing them into frames.
+
+    For a caller that wants to do its own pagination -- a template that has a
+    lead-in on the first frame, say, and so cannot use a fixed frame size.
+    """
+    rows = list(_rows_for(content.blocks, depth=0))
+    rows.extend(_link_rows(content))
+    return rows
+
+
 def paginate(content: Document, rows_per_frame: int = BODY_ROWS) -> list[list[Row]]:
     """Render a document and deal it into frame-sized pages of rows.
 
     Stops short of drawing, so a page builder can place these rows beneath its
     own chrome and title block without this module knowing either exists.
     """
-    rows = list(_rows_for(content.blocks, depth=0))
-    rows.extend(_link_rows(content))
-    return _deal(rows, rows_per_frame)
+    return _deal(rows_for(content), rows_per_frame)
 
 
 def draw_rows(canvas: Canvas, first_row: int, rows: list[Row]) -> None:

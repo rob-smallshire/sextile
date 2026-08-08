@@ -10,10 +10,13 @@ There are two shapes, and they differ in three things:
 
     Menu       nine to a frame, each entry numbered, a line of detail beneath
     Listing    twenty to a frame, nothing numbered, detail in a second column
+    Prose      running text, wrapped, in whatever rows it takes
 
 so `Template` does the six steps and a subclass says how tall an entry is, how
-to draw one, and whether it can be chosen. An application wanting a third shape
-subclasses it rather than starting again.
+to draw one, and whether it can be chosen. An application wanting a fourth shape
+subclasses it rather than starting again -- which is what the base class being
+generic in *what* it deals is for: menus and listings deal entries, prose deals
+rendered rows.
 
 What a template consumes is the `Entry` protocol -- text, detail, and where it
 leads -- so a service with its own richer notion of a menu entry passes that
@@ -27,6 +30,7 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING, ClassVar, Final, Protocol, runtime_checkable
 
 from sextile.addressing import PageAddress
+from sextile.content.blocks import Document, Paragraph
 from sextile.keys import CONVENTIONAL_NEXT_FRAME, NEXT_FRAME, PREVIOUS_FRAME
 from sextile.page import Page, PageFrame
 from sextile.viewdata.canvas import Canvas, RowWriter
@@ -34,6 +38,7 @@ from sextile.viewdata.chrome import CONTENT_FIRST_ROW, CONTENT_ROWS, draw_chrome
 from sextile.viewdata.controls import Colour
 from sextile.viewdata.encoding import cell_count
 from sextile.viewdata.frame import COLUMNS
+from sextile.viewdata.layout import Row, rows_for
 
 if TYPE_CHECKING:
     from sextile.application import Sextile
@@ -90,7 +95,7 @@ class MenuItem:
         )
 
 
-class Template(ABC):
+class Template[E](ABC):
     """Rows dealt into frames, with the chrome and keys that go with them.
 
     A subclass says how tall an entry is, how to draw one, and whether entries
@@ -112,7 +117,7 @@ class Template(ABC):
         self,
         *,
         title: str,
-        entries: Sequence[Entry],
+        entries: Sequence[E],
         home: PageAddress | None = None,
         preamble: Sequence[str] = (),
         empty: str = "",
@@ -128,13 +133,18 @@ class Template(ABC):
     # -- what a subclass decides --------------------------------------------
 
     @abstractmethod
-    def draw(self, row: RowWriter, entry: Entry, digit: str | None) -> None:
+    def draw(self, row: RowWriter, entry: E, digit: str | None) -> None:
         """Draw one entry's first row. Later rows are `draw_detail`'s."""
 
     #  Empty on purpose, and not abstract: a shape one row tall has no second
     #  row to draw.
-    def draw_detail(self, row: RowWriter, entry: Entry) -> None:  # noqa: B027
+    def draw_detail(self, row: RowWriter, entry: E) -> None:  # noqa: B027
         """Draw an entry's second row, where the shape has one."""
+
+    def destination(self, entry: E) -> PageAddress | None:
+        """Where choosing this entry leads. Nowhere, unless a shape says so."""
+        del entry
+        return None
 
     def prompt(self, *, selecting: bool, back: bool, on: bool) -> str:
         """Name every key that does something here, and no key that does not."""
@@ -171,8 +181,9 @@ class Template(ABC):
                 canvas.row(row).text(_fitted(self.empty, COLUMNS - 1), Colour.WHITE)
             for offset, entry in enumerate(batch):
                 digit = str(offset + 1) if self.numbered else None
-                if digit is not None and entry.destination is not None:
-                    choices[digit] = entry.destination
+                where = self.destination(entry) if digit is not None else None
+                if digit is not None and where is not None:
+                    choices[digit] = where
                 self.draw(canvas.row(row), entry, digit)
                 if self.rows_per_entry > 1 and row + 1 < _last_content_row():
                     self.draw_detail(canvas.row(row + 1), entry)
@@ -197,11 +208,11 @@ class Template(ABC):
         #  two things.
         return row + 1 if self.preamble else row
 
-    def _deal(self) -> list[Sequence[Entry]]:
+    def _deal(self) -> list[Sequence[E]]:
         """Entries, frame by frame. The first frame is the short one."""
         first = self._capacity(len(self.preamble) + (1 if self.preamble else 0))
         rest = self._capacity(0)
-        batches: list[Sequence[Entry]] = []
+        batches: list[Sequence[E]] = []
         start = 0
         while start < len(self.entries):
             room = first if not batches else rest
@@ -215,7 +226,7 @@ class Template(ABC):
         return min(room, CHOICES_PER_FRAME) if self.numbered else room
 
 
-class Menu(Template):
+class Menu(Template[Entry]):
     """Nine choices to a frame, each with a line of detail beneath it.
 
     The shape most viewdata pages take: a reader selects with one keypress, so
@@ -225,6 +236,9 @@ class Menu(Template):
     rows_per_entry = 2
     numbered = True
     selecting_hint = "1-9 select"
+
+    def destination(self, entry: Entry) -> PageAddress | None:
+        return entry.destination
 
     def draw(self, row: RowWriter, entry: Entry, digit: str | None) -> None:
         if digit is not None:
@@ -236,7 +250,7 @@ class Menu(Template):
             row.skip(2).text(_fitted(entry.detail, COLUMNS - 4), Colour.GREEN)
 
 
-class Listing(Template):
+class Listing(Template[Entry]):
     """Two columns, twenty to a frame, nothing to select.
 
     For a page that is a reference rather than a menu -- what a service is made
@@ -266,6 +280,52 @@ class Listing(Template):
         row.text(
             _fitted(entry.detail, COLUMNS - self.column - self._ATTRIBUTES), Colour.WHITE
         )
+
+
+class Prose(Template[Row]):
+    """Running text, wrapped and dealt into frames.
+
+    The third shape, and the one every notice page was writing out by hand --
+    string literals broken at forty columns with blank strings for the gaps
+    between paragraphs, which has to be redone by hand whenever a word changes
+    and cannot survive a change of column width at all.
+
+    What it deals is rendered rows rather than entries, which is what the base
+    class is generic for. The rendering itself is `viewdata.layout`'s, so a
+    notice gets the same treatment as a forum post: quotations in cyan, listings
+    in green, nesting indented, over-long words split rather than dropped.
+    """
+
+    rows_per_entry = 1
+    numbered = False
+
+    @classmethod
+    def of(
+        cls,
+        *paragraphs: str,
+        title: str,
+        home: PageAddress | None = None,
+        preamble: Sequence[str] = (),
+        empty: str = "",
+    ) -> "Prose":
+        """A page of plain paragraphs, wrapped here rather than by the caller."""
+        return cls(
+            title=title,
+            entries=rows_for(
+                Document(blocks=tuple(Paragraph((text,)) for text in paragraphs if text))
+            ),
+            home=home,
+            preamble=preamble,
+            empty=empty,
+        )
+
+    def draw(self, row: RowWriter, entry: Row, digit: str | None) -> None:
+        del digit  # prose numbers nothing
+        if entry.text:
+            #  No truncation here: `layout` has already wrapped to the room a
+            #  row has, colour attribute and indent included. Cutting again
+            #  would take a character off every line it had filled exactly.
+            row.skip(entry.indent).text(entry.text, entry.colour)
 
 
 def _last_content_row() -> int:

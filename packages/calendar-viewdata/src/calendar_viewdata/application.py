@@ -25,7 +25,7 @@ from datetime import UTC, date, datetime, timedelta
 from typing import Final
 
 from sextile import Page, PageAddress, PageFrame, PageRequest, Sextile, page
-from sextile.templates import Menu, MenuItem
+from sextile.templates import Menu, MenuItem, Prose
 from sextile.viewdata.canvas import Canvas
 from sextile.viewdata.chrome import CONTENT_FIRST_ROW, CONTENT_ROWS, draw_chrome
 from sextile.viewdata.controls import Colour
@@ -197,21 +197,15 @@ class CalendarApplication(Sextile):
 
     @page("9", title="About this service", keywords=("ABOUT", "HELP"))
     async def about(self, request: PageRequest) -> Page:
-        return self._notice(
-            request.address,
-            "ABOUT",
-            [
-                "A calendar, served as Viewdata frames.",
-                "",
-                "It exists to demonstrate that Sextile is",
-                "a framework and not one service: nothing",
-                "here knows about forums, and nothing in",
-                "the framework knows about calendars.",
-                "",
-                "Everything it shows comes from the",
-                "standard library.",
-            ],
-        )
+        return Prose.of(
+            "A calendar, served as Viewdata frames.",
+            "It exists to demonstrate that Sextile is a framework and not one "
+            "service: nothing here knows about forums, and nothing in the "
+            "framework knows about calendars.",
+            "Everything it shows comes from the standard library.",
+            title="ABOUT",
+            home=self.index,
+        ).build(request.address)
 
     #  Listed: the contents page is a directory of numbers that do something,
     #  and a reader looking for how to ring off should find it there.

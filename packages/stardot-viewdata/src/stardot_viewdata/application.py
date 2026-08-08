@@ -450,9 +450,10 @@ class StardotApplication(Sextile):
         held = await self._read(lambda repository: repository.count_posts())
         canvas = Canvas()
         _rule(canvas, 1)
-        _centred(canvas, 3, SERVICE_NAME, Colour.YELLOW)
-        _centred(canvas, 5, "V I E W D A T A", Colour.CYAN)
-        _rule(canvas, 7)
+        #  Twice the height, which takes the row below it as well.
+        _centred_double(canvas, 3, SERVICE_NAME, Colour.YELLOW)
+        _centred(canvas, 6, "V I E W D A T A", Colour.CYAN)
+        _rule(canvas, 8)
         canvas.row(10).text("The Stardot forum for users of Acorn", Colour.WHITE)
         canvas.row(11).text("computers, as 40-column frames.", Colour.WHITE)
         canvas.row(13).text(f"{held} posts held.", Colour.GREEN)
@@ -658,6 +659,17 @@ def _centred(canvas: Canvas, row: int, text: str, colour: Colour) -> None:
     """Text across the middle of a row, the colour attribute paid for."""
     room = COLUMNS - 1
     canvas.row(row).skip(max((room - cell_count(text)) // 2, 0)).text(text, colour)
+
+
+def _centred_double(canvas: Canvas, row: int, text: str, colour: Colour) -> None:
+    """Text at twice the height, across the middle of a row and the one below.
+
+    Two cells go on attributes -- the double height and the colour -- so the
+    room to centre within is two fewer than the row.
+    """
+    room = COLUMNS - 2
+    column = max((room - cell_count(text)) // 2, 0)
+    canvas.double_height(row, text, colour, column=column)
 
 
 def _rule(canvas: Canvas, row: int) -> None:

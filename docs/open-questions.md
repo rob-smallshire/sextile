@@ -78,6 +78,9 @@ Beeb for half an hour.
   listing from the author's own words.
 - **Separated graphics render as contiguous** in the ANSI preview. Unicode has
   no separated variants and the difference is decorative.
+- **Double height renders as two identical rows** in the ANSI preview, which is
+  what the frame actually holds and not what the screen shows. `--form grid` is
+  the honest view; a terminal has no way to draw one line at twice the height.
 - **Search is reserved but not built.** The numbering leaves `<root>1` free for
   it in every namespace.
 - **Login and posting.** The whole design is read-only, and the feed offers no

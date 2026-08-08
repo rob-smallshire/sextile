@@ -105,6 +105,39 @@ Not measured but read directly from the emulation, which is a better oracle:
 So a row never inherits anything from the row above, white text needs no
 attribute at all, and `Canvas` writes each row independently.
 
+## Double height takes the row below, and needs the text on it too
+
+Read from the emulation rather than measured, and **not what a reasonable guess
+would say**. A guess would have left the row beneath blank.
+
+`0x0D` selects double height and `0x0C` returns to normal, both spacing
+attributes occupying a cell. In `Saa5050.hpp`:
+
+```cpp
+cell.double_height_top    = (m_raster_shift == 1 && m_raster_offset == 0);
+cell.double_height_bottom = (m_raster_shift == 1 && m_raster_offset != 0);
+```
+
+`m_raster_shift` is set by `0x0D` and, like every other attribute, resets at the
+start of each row. `m_raster_offset` is the row-level state that steps 0 → 20 →
+0 as character rows complete while any double height is in force. So:
+
+- the row carrying the attribute is drawn as the **top halves** of its
+  characters;
+- the row below is drawn as the **bottom halves** — but only if it carries the
+  attribute as well, since `double_height_bottom` requires the shift on that row
+  too;
+- so **both rows hold the same text**, which is exactly the old BBC BASIC idiom
+  of printing a double-height line twice, both prefixed with `CHR$(141)`.
+
+Nothing else can go on the lower row: whatever were there would be drawn as the
+bottom of something. `Canvas.double_height` writes both rows and refuses the
+last row of the frame, there being no row beneath it.
+
+Worth measuring against Commstar when someone is in front of a real screen — the
+inference chain is short but it is still an inference about a *display*, and this
+document's whole point is keeping that distinction.
+
 ## The character set is corroborated
 
 `docs/discussion/teletext-repertoire-choice.md` in the Beebium tree tabulates

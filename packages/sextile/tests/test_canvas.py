@@ -12,7 +12,12 @@ import pytest
 
 from sextile.viewdata.canvas import DEFAULT_COLOUR, Canvas
 from sextile.viewdata.controls import Colour, Control
-from sextile.viewdata.frame import COLUMNS
+from sextile.viewdata.frame import COLUMNS, ROWS
+
+
+def rows_of(canvas: Canvas) -> list[str]:
+    characters, _ = canvas.frame.to_grid()
+    return characters
 
 
 class TestRowDefaults:
@@ -236,3 +241,59 @@ class TestWritingAfterSomethingElse:
         canvas.right(0, "1a", Colour.WHITE)
         _, attributes = canvas.frame.to_grid()
         assert attributes[0] == "." * COLUMNS
+
+
+class TestDoubleHeight:
+    """Twice the height, which costs the row below.
+
+    Settled from Beebium's SAA5050 rather than by inference, and the mechanism
+    is not what a reasonable guess would say. A row carrying the attribute is
+    drawn as the *top* halves of its characters; the row below is drawn as the
+    bottom halves -- but only if it carries the attribute too, since
+    `double_height_bottom` requires the shift to be set on that row as well.
+    So both rows hold the same text, which is exactly the old BBC BASIC idiom
+    of printing a double-height line twice.
+    """
+
+    def test_the_text_appears_on_the_row_asked_for(self) -> None:
+        canvas = Canvas()
+        canvas.double_height(4, "STARDOT")
+        assert "STARDOT" in rows_of(canvas)[4]
+
+    def test_and_again_on_the_row_below(self) -> None:
+        canvas = Canvas()
+        canvas.double_height(4, "STARDOT")
+        assert rows_of(canvas)[5] == rows_of(canvas)[4]
+
+    def test_both_rows_carry_the_attribute(self) -> None:
+        canvas = Canvas()
+        canvas.double_height(4, "STARDOT")
+        for row in (4, 5):
+            assert canvas.frame.cell(row, 0) == Control.DOUBLE_HEIGHT
+
+    def test_the_attribute_occupies_a_cell(self) -> None:
+        canvas = Canvas()
+        canvas.double_height(0, "X")
+        assert canvas.frame.is_attribute(0, 0)
+        assert rows_of(canvas)[0] == " X" + " " * (COLUMNS - 2)
+
+    def test_a_colour_costs_a_cell_of_its_own(self) -> None:
+        canvas = Canvas()
+        canvas.double_height(0, "X", Colour.YELLOW)
+        assert rows_of(canvas)[0] == "  X" + " " * (COLUMNS - 3)
+
+    def test_it_can_be_placed_along_the_row(self) -> None:
+        canvas = Canvas()
+        canvas.double_height(0, "X", column=10)
+        assert rows_of(canvas)[0][:12] == " " * 11 + "X"
+
+    def test_text_that_would_overrun_the_row_is_refused(self) -> None:
+        canvas = Canvas()
+        with pytest.raises(ValueError):
+            canvas.double_height(0, "X" * COLUMNS)
+
+    def test_the_last_row_cannot_be_doubled(self) -> None:
+        #  There is no row below it to draw the bottom halves on.
+        canvas = Canvas()
+        with pytest.raises(ValueError):
+            canvas.double_height(ROWS - 1, "X")

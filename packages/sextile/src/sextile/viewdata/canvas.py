@@ -11,9 +11,9 @@ are obtained one at a time from ``Canvas.row`` for exactly that reason.
 
 from typing import Self
 
-from sextile.viewdata.controls import Colour, alpha_colour
+from sextile.viewdata.controls import Colour, Control, alpha_colour
 from sextile.viewdata.encoding import cell_count
-from sextile.viewdata.frame import COLUMNS, Frame
+from sextile.viewdata.frame import COLUMNS, ROWS, Frame
 from sextile.viewdata.wrapping import wrap_text
 
 #: Every row begins displaying white alphanumerics.
@@ -121,6 +121,45 @@ class Canvas:
     def row(self, row: int) -> RowWriter:
         """A writer positioned at the start of a row."""
         return RowWriter(self._frame, row)
+
+    def double_height(
+        self,
+        row: int,
+        text: str,
+        colour: Colour | None = None,
+        *,
+        column: int = 0,
+    ) -> None:
+        """Write text at twice the height, which costs the row below as well.
+
+        The mechanism is not what a reasonable guess would say, and is read from
+        Beebium's SAA5050 rather than inferred. A row carrying the double-height
+        attribute is drawn as the *top* halves of its characters, and the row
+        below as the bottom halves -- but only if that row carries the attribute
+        too, `double_height_bottom` requiring the shift to be set there as well.
+
+        So both rows hold the same text, which is exactly the BBC BASIC idiom of
+        printing a double-height line twice. Nothing else can be put on the row
+        below: whatever is there would be drawn as the bottom of something.
+        """
+        if not 0 <= row < ROWS - 1:
+            raise ValueError(
+                f"row {row} cannot be doubled: the bottom halves need the row beneath"
+            )
+        cells = 1 + (1 if colour is not None else 0) + cell_count(text)
+        if column + cells > COLUMNS:
+            raise ValueError(
+                f"{text!r} needs {cells} cells from column {column}, "
+                f"which overruns the frame's {COLUMNS} columns"
+            )
+        for half in (row, row + 1):
+            at = column
+            self._frame.set_attribute(half, at, Control.DOUBLE_HEIGHT)
+            at += 1
+            if colour is not None:
+                self._frame.set_attribute(half, at, alpha_colour(colour))
+                at += 1
+            self._frame.write(half, at, text)
 
     def centre(self, row: int, text: str, colour: Colour | None = None) -> RowWriter:
         """Write text centred in the row.

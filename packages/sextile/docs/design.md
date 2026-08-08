@@ -345,6 +345,10 @@ separates what was verified from what was inferred; the scripts are in
 - **Attributes reset at the start of every row**, so rows are written
   independently and white text needs no attribute at all. Read from Beebium's
   `Saa5050::start_of_line()` rather than guessed.
+- **Double height consumes the row below, and needs the same text on it.** Also
+  read from the emulation, and not what a guess would say: the lower row is
+  drawn as the bottom halves only if it carries the attribute too, so
+  `Canvas.double_height` writes both rows.
 
 [rendering.md](rendering.md) follows one document from blocks to bytes;
 [navigation.md](navigation.md) follows one keypress to a reply.

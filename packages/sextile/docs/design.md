@@ -257,9 +257,15 @@ bare `*` produces no command at all, so a reader who wakes the line by starting
 a request can carry on typing it.
 
 The bar is not drawn over a request being typed, since the command line occupies
-the same row and the reader would lose what they had entered. It is redrawn only
-when a cell changes — twenty-five cells over several minutes, so about twice a
-minute, at a third of a second each at 1200 baud.
+the same row and the reader would lose what they had entered.
+
+It costs one row and never a frame: 45 bytes, a third of a second at 1200 baud,
+and only when a cell of the bar actually changes — twenty-five cells over
+several minutes, so about twice a minute. Sending only the changed cell would
+save almost nothing, because there is no absolute cursor addressing on the wire
+and reaching column *c* of the footer row costs `2 + c` bytes of `HOME`, `UP`
+and `RIGHT`. Blanking the right-hand end of a full bar is 42 bytes against the
+row's 45.
 
 **Sequences.** When a reader steps into a page from a menu, the session
 remembers the menu's `destinations` and where in them they are, and passes the

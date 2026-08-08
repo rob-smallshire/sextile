@@ -6,9 +6,18 @@ service that answers slowly by design, is indistinguishable from a fault -- and
 the remedy, pressing something, is not one a reader can guess at.
 
 So after a period of silence the footer row becomes a bar that drains, with an
-instruction. Drawn over that row alone, as the command line is, and only when
-what it would say has changed: twenty-five cells over several minutes changes
-about twice a minute, and a row costs a third of a second at 1200 baud.
+instruction. Drawn over that row alone, as the command line is -- never the
+frame -- and only when what it would say has changed: twenty-five cells over
+several minutes changes about twice a minute, and the row costs 45 bytes, a
+third of a second at 1200 baud.
+
+The whole row goes each time, rather than only the cell the bar has given up,
+and the reason is not laziness. There is no absolute cursor addressing on the
+wire: reaching column *c* of row 23 costs `2 + c` bytes of `HOME`, `UP` and
+`RIGHT`. Blanking one cell at the right-hand end of a full bar therefore costs
+42 bytes against the row's 45, and only becomes worthwhile as the bar empties
+and the cell to change moves leftward. Three bytes is not worth a second way of
+drawing this.
 
 The bar is mosaic graphics rather than punctuation because it has to read as a
 quantity at a glance from across a room, which `======----` does not.

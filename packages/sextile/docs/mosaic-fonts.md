@@ -28,14 +28,14 @@ double-height text, which is two rows and one size:
  8 |  ▮▮▮▮▮▮▮▮▮▮▮▮▮▮▮▮▮▮▮▮▮▮▮▮▮▮▮▮▮▮▮▮▮▮▮▮▮▮
 ```
 
-and now sets it in `acorn`, three rows of blocks:
+and now sets it in `boldbash`, three rows of blocks:
 
 ```
  0 |  ▮▮▮▮▮▮▮▮▮▮▮▮▮▮▮▮▮▮▮▮▮▮▮▮▮▮▮▮▮▮▮▮▮▮▮▮▮▮
  1 |
- 2 |         ▄▀▀ ▀█▀ ▄▀▀▄ █▀▄ █▀▄  ▄▀▀▄ ▀█▀
- 3 |         ▀▀▄  █  █▀▀█ █▀▄ █ █  █  █  █
- 4 |         ▀▀   ▀  ▀  ▀ ▀ ▀ ▀▀   ▀▀▀   ▀
+ 2 |          ▛▀▘▀█▘▛▀▙▛▀▙▛▀▙▛▀▙▝█▘
+ 3 |          ▀▀▖ █ █▀▜█▀▘█ ██ █ █
+ 4 |          ▀▀  ▀ ▀ ▀▀  ▀▀ ▝▀▘  ▀
  5 |
  6 |             V I E W D A T A
  7 |
@@ -263,9 +263,10 @@ Roughly in order, each committable on its own.
 6. **The ZX Origins importer**, beside `tools/mdfs_font.py`. A font is
    converted once and the result vendored, so the framework carries no parser
    for a format read once in the life of a face.
-7. ~~**Stardot's title frame** in it.~~ Done: `STARDOT` kerned in `acorn`,
+7. ~~**Stardot's title frame** in it.~~ Done: `STARDOT` kerned in `boldbash`,
    yellow, on rows 2 to 4, with the rule moved to the top row so the banner has
-   a blank row above and below it.
+   a blank row above and below it. Twenty-two cells of heavy strokes where
+   double height gave two rows of ordinary letters.
 
 ## Decisions still open
 

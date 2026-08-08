@@ -25,7 +25,7 @@ from sextile.viewdata.font import load_font
 from sextile.viewdata.frame import COLUMNS
 from sextile.viewdata.lettering import Spacing
 from stardot_viewdata import StardotApplication
-from stardot_viewdata.application import BANNER_ROW, SERVICE_NAME
+from stardot_viewdata.application import BANNER_FACE, BANNER_ROW, SERVICE_NAME
 from stardot_viewdata.model import Post
 from stardot_viewdata.store.repository import Repository
 
@@ -353,7 +353,9 @@ class TestTheTitleFrame:
         #  font produces -- checked against the font rather than against a
         #  transcription of it, so a change to either is a failure here.
         frame = (await page_at(app, "0")).frames[0].frame
-        wanted = lettering.cells(SERVICE_NAME, load_font("acorn"), spacing=Spacing.KERNED)
+        wanted = lettering.cells(
+            SERVICE_NAME, load_font(BANNER_FACE), spacing=Spacing.KERNED
+        )
         #  Centred, with the colour attribute in the cell before it.
         at = (COLUMNS - len(wanted[0])) // 2
         drawn = [

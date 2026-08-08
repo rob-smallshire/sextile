@@ -50,9 +50,11 @@ from stardot_viewdata.store.repository import BOARD_TIMEZONE, Repository
 #: What this service is called, which is not what the framework is called.
 SERVICE_NAME: Final = "STARDOT"
 
-#: The face the title frame's name is set in, and the row it starts on. Three
-#: rows of the frame, which is what an eight-block face comes to.
-BANNER_FACE: Final = "acorn"
+#: The face the title frame's name is set in, and the row it starts on. Heavy
+#: strokes and a solid top, which is what a title frame wants and what the
+#: framework's own default face -- the shape a Beeb's ROM draws -- is not.
+#: Three rows of the frame, the same as the double height it replaced.
+BANNER_FACE: Final = "boldbash"
 BANNER_ROW: Final = 2
 
 #: Named for the service rather than for the framework serving it, and

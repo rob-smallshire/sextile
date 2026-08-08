@@ -24,7 +24,7 @@ from collections.abc import Callable
 from datetime import UTC, date, datetime, timedelta
 from typing import Final
 
-from sextile import Page, PageAddress, PageFrame, PageRequest, Sextile
+from sextile import Page, PageAddress, PageFrame, PageRequest, Sextile, page
 from sextile.viewdata.canvas import Canvas
 from sextile.viewdata.chrome import CONTENT_FIRST_ROW, CONTENT_ROWS, draw_chrome
 from sextile.viewdata.controls import Colour
@@ -53,30 +53,6 @@ class CalendarApplication(Sextile):
         """
         super().__init__(name=SERVICE_NAME.title())
         self._now = now or (lambda: datetime.now(UTC))
-        self._register()
-
-    def _register(self) -> None:
-        self.page("1", name="main")(self.main)
-        self.page("2", name="now")(self.now_page)
-        self.page("3", name="this_month")(self.this_month)
-        self.page("32{day:date}", name="month")(self.month)
-        self.page("4", name="ahead")(self.ahead)
-        self.page("42{day:date}", name="day")(self.day)
-        self.page("9", name="about")(self.about)
-        self.page("90", name="goodbye")(self.goodbye)
-
-        for keyword, route in (
-            ("MAIN", "main"),
-            ("INDEX", "main"),
-            ("TIME", "now"),
-            ("NOW", "now"),
-            ("MONTH", "this_month"),
-            ("AHEAD", "ahead"),
-            ("ABOUT", "about"),
-            ("HELP", "about"),
-            ("BYE", "goodbye"),
-        ):
-            self.alias(keyword, self.address_for(route))
 
     @property
     def today(self) -> date:
@@ -84,6 +60,7 @@ class CalendarApplication(Sextile):
 
     # -- the pages ----------------------------------------------------------
 
+    @page("1", title="The index", keywords=("MAIN", "INDEX"))
     async def main(self, request: PageRequest) -> Page:
         return self._menu(
             request.address,
@@ -97,6 +74,13 @@ class CalendarApplication(Sextile):
             ],
         )
 
+    @page(
+        "2",
+        name="now",
+        title="The time now",
+        detail="to the second",
+        keywords=("TIME", "NOW"),
+    )
     async def now_page(self, request: PageRequest) -> Page:
         moment = self._now()
         return self._notice(
@@ -112,12 +96,15 @@ class CalendarApplication(Sextile):
             ],
         )
 
+    @page("3", title="This month", detail="as a grid", keywords=("MONTH",))
     async def this_month(self, request: PageRequest) -> Page:
         return self._month_page(request.address, self.today)
 
+    @page("32{day:date}", title="One month")
     async def month(self, request: PageRequest, day: date) -> Page:
         return self._month_page(request.address, day)
 
+    @page("4", title="The days to come", detail="the next 28", keywords=("AHEAD",))
     async def ahead(self, request: PageRequest) -> Page:
         today = self.today
         days = [today + timedelta(days=offset) for offset in range(DAYS_AHEAD)]
@@ -134,6 +121,7 @@ class CalendarApplication(Sextile):
             ],
         )
 
+    @page("42{day:date}", title="One day")
     async def day(self, request: PageRequest, day: date) -> Page:
         _, weeks_in_year, _ = day.isocalendar()
         lines = [
@@ -173,6 +161,29 @@ class CalendarApplication(Sextile):
             )
         )
 
+    @page(
+        "92",
+        name="history",
+        title="Where you have been",
+        detail="this call, newest first",
+        keywords=("HISTORY",),
+    )
+    async def _history(self, request: PageRequest) -> Page:
+        """The framework's page, at this service's number."""
+        return await self.history(request)
+
+    @page(
+        "93",
+        name="contents",
+        title="Every page",
+        detail="and the number that fetches it",
+        keywords=("PAGES",),
+    )
+    async def _contents(self, request: PageRequest) -> Page:
+        """The framework's page, at this service's number."""
+        return await self.contents(request)
+
+    @page("9", title="About this service", keywords=("ABOUT", "HELP"))
     async def about(self, request: PageRequest) -> Page:
         return self._notice(
             request.address,
@@ -190,6 +201,8 @@ class CalendarApplication(Sextile):
             ],
         )
 
+    #  No title: a page there is no coming back from is not somewhere to go.
+    @page("90", keywords=("BYE",))
     async def goodbye(self, request: PageRequest) -> Page:
         return self._farewell("GOODBYE", ["Thank you for calling.", "", "Ring off."])
 

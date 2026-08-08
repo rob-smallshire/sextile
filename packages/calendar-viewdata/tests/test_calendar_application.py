@@ -204,3 +204,36 @@ class TestEveryPageOffersTheWayBack:
         #  nothing -- and a frame names only the keys that do something.
         page = await page_at(app, "90")
         assert page.frames[0].choices == {}
+
+
+class TestThePagesThatComeFree:
+    """Two framework pages, mapped in with three lines each.
+
+    They are here as much to show what a service gets for nothing as to be
+    useful: the calendar wrote neither of them.
+    """
+
+    async def test_where_you_have_been(self, app: CalendarApplication) -> None:
+        page_shown = await page_at(app, "92")
+        assert "WHERE YOU HAVE BEEN" in text_of(page_shown)
+
+    async def test_every_page(self, app: CalendarApplication) -> None:
+        shown = text_of(await page_at(app, "93"))
+        assert "The days to come" in shown
+        assert "*42<day>#" in shown
+
+    async def test_the_pages_are_titled_where_they_are_written(
+        self, app: CalendarApplication
+    ) -> None:
+        assert app.describe(PageAddress("4")) == "The days to come"
+
+    async def test_a_page_with_no_title_stays_off_the_list(
+        self, app: CalendarApplication
+    ) -> None:
+        assert "*90#" not in text_of(await page_at(app, "93"))
+
+    @pytest.mark.parametrize("keyword", ["HISTORY", "PAGES"])
+    def test_their_keywords_are_declared_beside_them(
+        self, keyword: str, app: CalendarApplication
+    ) -> None:
+        assert app.resolve(keyword) is not None

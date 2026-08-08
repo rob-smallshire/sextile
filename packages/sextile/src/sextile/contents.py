@@ -56,14 +56,22 @@ def contents_page(
     if not pages:
         return _nothing_to_show(address, home, title)
 
+    #  Ordered by the number rather than by the order a service happens to
+    #  declare its pages in. Sorting the digits as text puts each namespace root
+    #  next to its members -- 5 then 52<user_id> -- which is what a scheme whose
+    #  first digit names a namespace already means.
+    listing = sorted(pages, key=lambda page: page.keyed)
+
     #  The numbers are set in a column, so the widest decides where the titles
     #  begin -- and if that leaves too little for a title, the numbers win: a
     #  number that has been truncated is a number that fetches the wrong page.
-    keyed = {page.name: f"*{page.keyed}#" for page in pages}
+    keyed = {page.name: f"*{page.keyed}#" for page in listing}
     column = min(max(cell_count(shown) for shown in keyed.values()) + 1, COLUMNS // 2)
 
     per_frame = CONTENT_ROWS
-    batches = [pages[start : start + per_frame] for start in range(0, len(pages), per_frame)]
+    batches = [
+        listing[start : start + per_frame] for start in range(0, len(listing), per_frame)
+    ]
     frames = []
     for index, batch in enumerate(batches):
         canvas = Canvas()

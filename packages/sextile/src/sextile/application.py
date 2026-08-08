@@ -24,7 +24,7 @@ a device. The one caller kept waiting should not be all of them.
 """
 
 from abc import ABC, abstractmethod
-from collections.abc import Awaitable, Callable, Mapping, MutableMapping
+from collections.abc import Awaitable, Callable, Mapping, MutableMapping, Sequence
 from dataclasses import dataclass, field
 from typing import Final
 
@@ -119,6 +119,67 @@ class PageInfo:
 
     detail: str = ""
     """A second line, for a menu with room for one."""
+
+
+#: Where a declared page keeps what was said about it until a service is built.
+_DECLARED: Final = "__sextile_page__"
+
+
+@dataclass(frozen=True)
+class _Declaration:
+    """A page declared on a class, waiting for an instance to register it on."""
+
+    pattern: str
+    name: str | None
+    title: str
+    detail: str
+    keywords: tuple[str, ...]
+
+
+def page[H](
+    pattern: str,
+    *,
+    name: str | None = None,
+    title: str = "",
+    detail: str = "",
+    keywords: Sequence[str] = (),
+) -> Callable[[H], H]:
+    """Declare a page beside the method that builds it.
+
+        class Board(Sextile):
+            @page("5", title="By contributor", detail="browse by poster")
+            async def contributors(self, request: PageRequest) -> Page:
+                ...
+
+    `app.page(...)` does the same thing, but only where an application object
+    already exists to hang it on. A service whose handlers are methods -- which
+    is every service holding an archive or an HTTP client -- has no `self` at
+    class-definition time, so its registrations end up in a block a long way
+    from the functions they describe. This puts them back together.
+
+    Collected when the application is constructed, in the order they are
+    written, base classes first. The route takes the method's name unless given
+    one, leading underscores stripped.
+
+    Unbounded in the handler's type: what is decorated here is an unbound
+    method, taking a `self` that does not exist yet.
+    """
+
+    def declare(handler: H) -> H:
+        setattr(
+            handler,
+            _DECLARED,
+            _Declaration(
+                pattern=pattern,
+                name=name,
+                title=title,
+                detail=detail,
+                keywords=tuple(keywords),
+            ),
+        )
+        return handler
+
+    return declare
 
 
 type Handler = Callable[..., Awaitable[Page]]
@@ -285,6 +346,7 @@ class Sextile(Application):
         self._home = home if isinstance(home, PageAddress) else PageAddress(home)
         wanted = self._home if index is None else index
         self._index = wanted if isinstance(wanted, PageAddress) else PageAddress(wanted)
+        self._register_declared()
 
     @property
     def name(self) -> str:
@@ -337,6 +399,31 @@ class Sextile(Application):
             return handler
 
         return register
+
+    def _register_declared(self) -> None:
+        """Register the pages this class declared with `@page`.
+
+        Base classes first, and within each the order they are written, so that
+        `pages()` lists a service the way its source reads. Keyed by attribute
+        so that a subclass overriding a page replaces it rather than colliding
+        with it.
+        """
+        declared: dict[str, _Declaration] = {}
+        for klass in reversed(type(self).__mro__):
+            for attribute, value in vars(klass).items():
+                found = getattr(value, _DECLARED, None)
+                if isinstance(found, _Declaration):
+                    declared[attribute] = found
+        for attribute, declaration in declared.items():
+            route = declaration.name or attribute.lstrip("_")
+            self.page(
+                declaration.pattern,
+                name=route,
+                title=declaration.title,
+                detail=declaration.detail,
+            )(getattr(self, attribute))
+            for keyword in declaration.keywords:
+                self.alias(keyword, self.address_for(route))
 
     def page_info(self, name: str) -> PageInfo | None:
         """What was said about a named page when it was registered."""

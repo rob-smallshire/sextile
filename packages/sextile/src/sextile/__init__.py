@@ -22,7 +22,15 @@ Named after the star key on a viewdata keypad.
 from importlib.metadata import version
 
 from sextile.addressing import PageAddress, UnknownPageError
-from sextile.application import Application, Arrival, PageRequest, Sextile
+from sextile.application import (
+    Application,
+    Arrival,
+    PageInfo,
+    PageRequest,
+    Parting,
+    Sextile,
+    page,
+)
 from sextile.page import Page, PageFrame
 from sextile.routing import Converter
 
@@ -32,6 +40,8 @@ __all__ = [
     "Application",
     "Arrival",
     "Converter",
+    "PageInfo",
+    "Parting",
     "Page",
     "PageAddress",
     "PageFrame",
@@ -39,4 +49,5 @@ __all__ = [
     "Sextile",
     "UnknownPageError",
     "__version__",
+    "page",
 ]

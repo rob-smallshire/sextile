@@ -80,3 +80,25 @@ class TestLongerServices:
     def test_zero_leads_home_from_each(self) -> None:
         for frame in self.build(21).frames:
             assert frame.destination("0") == at("1")
+
+
+class TestTheOrder:
+    def test_pages_are_listed_by_number(self) -> None:
+        #  Not by the order a service declares them in, which is about how its
+        #  source reads.
+        rows = text_of(listed(ONE, CONTRIBUTORS)).splitlines()
+        assert rows[2].index("*5#") >= 0
+        assert "By contributor" in rows[2]
+        assert "One contributor" in rows[3]
+
+    def test_which_puts_a_namespace_next_to_its_members(self) -> None:
+        #  Sorting the digits as text does this for free, because that is what a
+        #  scheme whose first digit names a namespace already means.
+        pages = [
+            PageInfo(name="post", keyed="82<post_id>", title="One post"),
+            PageInfo(name="main", keyed="1", title="Main index"),
+            PageInfo(name="posts", keyed="8", title="Latest posts"),
+            PageInfo(name="about", keyed="9", title="About"),
+        ]
+        shown = [row.strip() for row in text_of(listed(*pages)).splitlines() if "*" in row]
+        assert [row.split()[0] for row in shown] == ["*1#", "*8#", "*82<post-id>#", "*9#"]

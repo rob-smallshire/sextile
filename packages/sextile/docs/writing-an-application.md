@@ -163,16 +163,38 @@ the lower rows blank**. A key offering the index would be a key that does
 nothing, and the framework puts the cursor two rows below the last thing said
 and turns it on, so that the reader has somewhere to type to their modem.
 
-## Say what a page is where you register it
+## Say what a page is where you write it
+
+For a service that is a class — which is every service holding an archive or an
+HTTP client — declare pages beside the methods that build them:
 
 ```python
+from sextile import Sextile, page
+
+class Board(Sextile):
+    @page("5", name="contributors", title="By contributor",
+          detail="browse by poster", keywords=("WHO", "USERS"))
+    async def contributors_index(self, request: PageRequest) -> Page:
+        ...
+```
+
+They are collected when the application is constructed, in the order they are
+written, base classes first. The route takes the method's name unless given one,
+leading underscores stripped.
+
+`app.page(...)` is the same thing for a service built round a module-level
+application, where there is an object to hang the decorator on:
+
+```python
+app = Sextile()
+
 @app.page("5", name="contributors", title="By contributor", detail="browse by poster")
 async def contributors(request: PageRequest) -> Page:
     ...
 ```
 
-Those words are what the page is called wherever it is *listed* rather than
-shown — a menu offering it, a history naming it, the contents. Say them once
+The title and detail are what the page is called wherever it is *listed* rather
+than shown — a menu offering it, a history naming it, the contents. Say them once
 here and nothing downstream needs its own copy:
 
 ```python
@@ -191,9 +213,13 @@ Two pages are built for you and registered nowhere, so that a service maps them
 into its own numbering or does without:
 
 ```python
-self.page("92", name="history", title="Where you have been")(self.history)
-self.page("93", name="contents", title="Every page")(self.contents)
-self.alias("HISTORY", self.address_for("history"))
+@page("92", name="history", title="Where you have been", keywords=("HISTORY",))
+async def _history(self, request: PageRequest) -> Page:
+    return await self.history(request)
+
+@page("93", name="contents", title="Every page", keywords=("PAGES",))
+async def _contents(self, request: PageRequest) -> Page:
+    return await self.contents(request)
 ```
 
 `contents` lists what the service is made of, taking pages with fields as

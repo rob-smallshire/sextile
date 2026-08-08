@@ -30,7 +30,7 @@ from typing import Final
 
 from sextile import keys
 from sextile.addressing import PageAddress
-from sextile.application import Arrival, PageRequest, Parting, Sextile
+from sextile.application import Arrival, PageRequest, Parting, Sextile, page
 from sextile.page import Page, PageFrame
 from sextile.viewdata.canvas import Canvas
 from sextile.viewdata.chrome import CONTENT_FIRST_ROW, CONTENT_ROWS, draw_chrome
@@ -125,7 +125,6 @@ class StardotApplication(Sextile):
         self._database_filepath = database_filepath
         self._repository = repository
         self._ours = repository is None
-        self._register()
 
     # -- the archive --------------------------------------------------------
 
@@ -154,89 +153,6 @@ class StardotApplication(Sextile):
         return await asyncio.to_thread(query, repository)
 
     # -- the numbering ------------------------------------------------------
-
-    def _register(self) -> None:
-        """Say which page numbers exist, and what answers them.
-
-        The first digit names a namespace and the second says what kind of page
-        within it, so the scheme has room to grow without renumbering anything.
-        A namespace's index is the bare root and never `<root>0`, because
-        accepting both would give one page two numbers.
-        """
-        #  The title frame. `*0#` is the back command, so this page cannot be
-        #  keyed and does not display a number; a caller arrives on it because
-        #  the line opened, and leaves it by pressing on.
-        self.page("0", name="title")(self._title)
-        self.page("1", name="main", title="Main index")(self._main_index)
-        self.page("8", name="posts", title="Latest posts", detail="the newest first")(
-            self._latest_posts
-        )
-        self.page("82{post_id:int}", name="post", title="One post")(self._post)
-        self.page("7", name="topics", title="By topic", detail="read whole threads")(
-            self._topics_index
-        )
-        self.page("72{topic_id:int}", name="topic", title="One topic")(self._topic)
-        self.page("3", name="days", title="By day", detail="browse by date")(
-            self._days_index
-        )
-        self.page("32{day:date}", name="day", title="One day")(self._day)
-        self.page("4", name="forums", title="By forum", detail="browse by section")(
-            self._forums_index
-        )
-        self.page("42{forum_id:int}", name="forum", title="One forum")(self._forum)
-        self.page(
-            "5", name="contributors", title="By contributor", detail="browse by poster"
-        )(self._contributors_index)
-        self.page("52{user_id:int}", name="contributor", title="One contributor")(
-            self._contributor
-        )
-        self.page("9", name="about", title="About this service")(self._about)
-        #  In the system namespace, where the second digit is a function rather
-        #  than a content operation.
-        self.page(
-            "91", name="help", title="How to get about", detail="the keys, and what they do"
-        )(self._help)
-        #  The framework's own pages, mapped into this service's numbering. They
-        #  need nothing from here but a number and the words above.
-        self.page(
-            "92", name="history", title="Where you have been", detail="this call, newest first"
-        )(self.history)
-        self.page(
-            "93", name="contents", title="Every page", detail="and the number that fetches it"
-        )(self.contents)
-        #  9 is the system namespace, where the second digit is a system
-        #  function rather than a content operation, so that *90# can keep its
-        #  conventional Prestel meaning. No title: a page there is no coming
-        #  back from does not belong in a list of places to go.
-        self.page("90", name="logoff")(self._logoff)
-
-        #  Named jumps. Prestel itself was almost entirely numeric, but other
-        #  viewdata services accepted keywords and there is no reason for our
-        #  own service to be bound by Prestel's database conventions.
-        for keyword, route in (
-            ("MAIN", "main"),
-            ("INDEX", "main"),
-            ("HOME", "main"),
-            ("LATEST", "posts"),
-            ("NEW", "posts"),
-            ("POSTS", "posts"),
-            ("DAYS", "days"),
-            ("FORUMS", "forums"),
-            ("WHO", "contributors"),
-            ("USERS", "contributors"),
-            ("TOPICS", "topics"),
-            ("ABOUT", "about"),
-            ("HELP", "help"),
-            ("GUIDE", "help"),
-            ("KEYS", "help"),
-            ("HISTORY", "history"),
-            ("BEEN", "history"),
-            ("PAGES", "contents"),
-            ("CONTENTS", "contents"),
-            ("BYE", "logoff"),
-            ("OFF", "logoff"),
-        ):
-            self.alias(keyword, self.address_for(route))
 
     def describe(self, address: PageAddress) -> str:
         """What to call a page where one is listed rather than shown.
@@ -269,6 +185,7 @@ class StardotApplication(Sextile):
 
     # -- menus --------------------------------------------------------------
 
+    @page("1", name="main", title="Main index", keywords=("MAIN", "INDEX", "HOME"))
     async def _main_index(self, request: PageRequest) -> Page:
         held = await self._read(lambda repository: repository.count_posts())
         items = [
@@ -292,10 +209,24 @@ class StardotApplication(Sextile):
             preamble=["Stardot, for users of Acorn computers.", f"{held} posts held."],
         )
 
+    @page(
+        "8",
+        name="posts",
+        title="Latest posts",
+        detail="the newest first",
+        keywords=("LATEST", "NEW", "POSTS"),
+    )
     async def _latest_posts(self, request: PageRequest) -> Page:
         posts = await self._read(lambda repository: repository.latest_posts(limit=60))
         return self._posts_menu(request.address, "LATEST POSTS", posts)
 
+    @page(
+        "3",
+        name="days",
+        title="By day",
+        detail="browse by date",
+        keywords=("DAYS",),
+    )
     async def _days_index(self, request: PageRequest) -> Page:
         days = await self._read(lambda repository: repository.days(limit=60))
         if not days:
@@ -310,10 +241,18 @@ class StardotApplication(Sextile):
         ]
         return self._menu(request.address, title="BY DAY", items=items)
 
+    @page("32{day:date}", name="day", title="One day")
     async def _day(self, request: PageRequest, day: date) -> Page:
         posts = await self._read(lambda repository: repository.posts_on(day))
         return self._posts_menu(request.address, _day_title(day), posts)
 
+    @page(
+        "4",
+        name="forums",
+        title="By forum",
+        detail="browse by section",
+        keywords=("FORUMS",),
+    )
     async def _forums_index(self, request: PageRequest) -> Page:
         forums = await self._read(lambda repository: repository.forums())
         if not forums:
@@ -328,6 +267,7 @@ class StardotApplication(Sextile):
         ]
         return self._menu(request.address, title="BY FORUM", items=items)
 
+    @page("42{forum_id:int}", name="forum", title="One forum")
     async def _forum(self, request: PageRequest, forum_id: int) -> Page:
         posts = await self._read(lambda repository: repository.posts_in_forum(forum_id))
         #  Ask the archive rather than the post: a post first seen in a
@@ -338,6 +278,13 @@ class StardotApplication(Sextile):
         title = named.get(forum_id) or f"FORUM {forum_id}"
         return self._posts_menu(request.address, title, posts)
 
+    @page(
+        "5",
+        name="contributors",
+        title="By contributor",
+        detail="browse by poster",
+        keywords=("WHO", "USERS"),
+    )
     async def _contributors_index(self, request: PageRequest) -> Page:
         contributors = await self._read(lambda repository: repository.contributors())
         if not contributors:
@@ -352,11 +299,19 @@ class StardotApplication(Sextile):
         ]
         return self._menu(request.address, title="BY CONTRIBUTOR", items=items)
 
+    @page("52{user_id:int}", name="contributor", title="One contributor")
     async def _contributor(self, request: PageRequest, user_id: int) -> Page:
         posts = await self._read(lambda repository: repository.posts_by_author(user_id))
         title = posts[0].author_name if posts else f"USER {user_id}"
         return self._posts_menu(request.address, title, posts)
 
+    @page(
+        "7",
+        name="topics",
+        title="By topic",
+        detail="read whole threads",
+        keywords=("TOPICS",),
+    )
     async def _topics_index(self, request: PageRequest) -> Page:
         topics = await self._read(lambda repository: repository.topics(limit=60))
         if not topics:
@@ -381,6 +336,7 @@ class StardotApplication(Sextile):
         ]
         return self._menu(request.address, title="BY TOPIC", items=items)
 
+    @page("72{topic_id:int}", name="topic", title="One topic")
     async def _topic(self, request: PageRequest, topic_id: int) -> Page:
         posts = await self._read(lambda repository: repository.posts_in_topic(topic_id))
         title = posts[0].topic_title if posts else f"TOPIC {topic_id}"
@@ -469,6 +425,7 @@ class StardotApplication(Sextile):
 
     # -- content pages ------------------------------------------------------
 
+    @page("82{post_id:int}", name="post", title="One post")
     async def _post(self, request: PageRequest, post_id: int) -> Page:
         post = await self._read(lambda repository: repository.post(post_id))
         if post is None:
@@ -518,6 +475,7 @@ class StardotApplication(Sextile):
             choices["4"] = self.address_for("topic", topic_id=post.topic_id)
         return choices
 
+    @page("0", name="title")
     async def _title(self, request: PageRequest) -> Page:
         """The frame the line opens on: what this is, and how to get in.
 
@@ -555,6 +513,13 @@ class StardotApplication(Sextile):
             follows=self.address_for("main"),
         )
 
+    @page(
+        "91",
+        name="help",
+        title="How to get about",
+        detail="the keys, and what they do",
+        keywords=("HELP", "GUIDE", "KEYS"),
+    )
     async def _help(self, request: PageRequest) -> Page:
         """How to get about, in two frames.
 
@@ -620,6 +585,29 @@ class StardotApplication(Sextile):
             )
         return Page(frames=tuple(frames))
 
+    @page(
+        "92",
+        name="history",
+        title="Where you have been",
+        detail="this call, newest first",
+        keywords=("HISTORY", "BEEN"),
+    )
+    async def _history(self, request: PageRequest) -> Page:
+        """The framework's page, at this service's number."""
+        return await self.history(request)
+
+    @page(
+        "93",
+        name="contents",
+        title="Every page",
+        detail="and the number that fetches it",
+        keywords=("PAGES", "CONTENTS"),
+    )
+    async def _contents(self, request: PageRequest) -> Page:
+        """The framework's page, at this service's number."""
+        return await self.contents(request)
+
+    @page("9", name="about", title="About this service", keywords=("ABOUT",))
     async def _about(self, request: PageRequest) -> Page:
         held = await self._read(lambda repository: repository.count_posts())
         return self._notice(
@@ -641,6 +629,10 @@ class StardotApplication(Sextile):
             ],
         )
 
+    #  No title: a page there is no coming back from does not belong in a
+    #  list of places to go. 9 is the system namespace, where the second
+    #  digit is a function, so *90# keeps its conventional Prestel meaning.
+    @page("90", name="logoff", keywords=("BYE", "OFF"))
     async def _logoff(self, request: PageRequest) -> Page:
         return self._farewell(
             "GOODBYE",

@@ -189,8 +189,15 @@ disagree.
 page and should not acquire one: which number means goodbye is the application's
 affair.
 
-**A page says what it is where it is registered.** `title` and `detail` on
-`app.page(...)` are the words for that page wherever it is listed rather than
+**A page says what it is where it is written.** `@page(...)` declares a pattern,
+a title, a detail and any keywords beside the method that builds the page, and
+the constructor collects them — base classes first, in the order they are
+written. `app.page(...)` does the same where a module-level application exists to
+hang a decorator on; the class-level form exists because a service whose handlers
+are methods has no `self` at class-definition time, and its registrations would
+otherwise sit in a block a long way from the functions they describe.
+
+The words are what the page is called wherever it is listed rather than
 shown — in a menu, in the history, in the contents. Saying them once is the
 point: a service that names each page in its menu, again wherever one is
 listed, and again in its own guide has three copies which do not stay in step,
@@ -211,7 +218,10 @@ registrations. Its point is the pages whose numbers carry a field:
 
 Nobody can list every contributor on a screen; everybody holding a contributor
 number can be told where to put it, and only the framework knows the patterns
-well enough to say. `Route.keyed` renders one for reading — the converter is
+well enough to say. The list is ordered by number rather than by declaration,
+which puts a namespace root next to its members — `5` then `52<user-id>` —
+because sorting digits as text is what a scheme whose first digit names a
+namespace already means. `Route.keyed` renders one for reading — the converter is
 left out, since what a field accepts is the router's business.
 
 (The hyphen in `<user-id>` is the character set, not a typo: G0 has no

@@ -191,10 +191,26 @@ class CalendarApplication(Sextile):
         )
 
     async def goodbye(self, request: PageRequest) -> Page:
-        page = self._notice(
-            request.address, "GOODBYE", ["Thank you for calling.", "", "Ring off."]
+        return self._farewell("GOODBYE", ["Thank you for calling.", "", "Ring off."])
+
+    async def timed_out(self) -> Page:
+        return self._farewell(
+            "RINGING OFF", ["No reply for some time.", "", "The line has been released."]
         )
-        return Page(frames=page.frames, hang_up=True)
+
+    def _farewell(self, title: str, lines: list[str]) -> Page:
+        """The last thing a caller sees: no chrome, and room beneath to type.
+
+        A footer offering the index would be a lie on a page there is no coming
+        back from, and the reader needs somewhere blank for the cursor to be
+        left -- they are about to be talking to their modem.
+        """
+        canvas = Canvas()
+        canvas.row(0).text(title, Colour.CYAN)
+        for offset, line in enumerate(lines):
+            if line:
+                canvas.row(2 + offset).text(_fitted(line), Colour.WHITE)
+        return Page(frames=(PageFrame(frame=canvas.frame),), hang_up=True)
 
     # -- drawing ------------------------------------------------------------
 

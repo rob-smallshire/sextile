@@ -47,10 +47,6 @@ _READ_SIZE: Final = 256
 
 _logger = logging.getLogger(__name__)
 
-_TIMED_OUT_NOTICE: Final = (
-    b"\r\n\r\nNo reply for some time; ringing off.\r\n"
-)
-
 
 async def serve(
     application: Application,
@@ -106,7 +102,7 @@ async def _converse(
             await asyncio.wait({reading}, timeout=clock.until_something_happens())
             if not reading.done():
                 if clock.expired():
-                    await _write(writer, _TIMED_OUT_NOTICE)
+                    await _write(writer, await session.time_out())
                     break
                 update = session.warn(clock.warning_remaining())
                 if update is not None:
@@ -114,10 +110,15 @@ async def _converse(
                 continue
             data, reading = reading.result(), None
             if not data:
-                break
+                #  The caller went first. There is nobody left to say anything
+                #  to, and writing to a closed line only raises.
+                return
             clock.heard_something()
             for response in await session.receive(data):
                 await _write(writer, response)
+        #  Whoever ended it, the terminal is handed back usable: the reader has
+        #  a modem to talk to next.
+        await _write(writer, session.parting())
     except (ConnectionError, asyncio.IncompleteReadError):
         #  A caller who pulls the plug is ordinary, not exceptional.
         _logger.info("Call from %s ended abruptly", caller)

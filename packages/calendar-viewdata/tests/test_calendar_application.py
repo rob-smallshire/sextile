@@ -192,7 +192,15 @@ class TestTheClock:
 
 class TestEveryPageOffersTheWayBack:
     async def test_zero_returns_to_the_index(self, app: CalendarApplication) -> None:
-        for digits in ["1", "2", "3", "3220260802", "4", "4220260802", "9", "90"]:
+        for digits in ["1", "2", "3", "3220260802", "4", "4220260802", "9"]:
             page = await page_at(app, digits)
             for frame in page.frames:
                 assert frame.destination("0") == PageAddress("1")
+
+    async def test_except_from_the_page_that_rings_off(
+        self, app: CalendarApplication
+    ) -> None:
+        #  There is no coming back from it, so a key saying otherwise would do
+        #  nothing -- and a frame names only the keys that do something.
+        page = await page_at(app, "90")
+        assert page.frames[0].choices == {}

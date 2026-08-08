@@ -72,6 +72,7 @@ class PageRequest:
 
 type Handler = Callable[..., Awaitable[Page]]
 type NotFoundHandler = Callable[[str], Awaitable[Page]]
+type PartingHandler = Callable[[], Awaitable[Page]]
 
 
 class Application(ABC):
@@ -114,7 +115,25 @@ class Application(ABC):
         Silence would be indistinguishable from a line fault, which on a service
         that answers slowly by design is exactly the wrong thing to be.
         """
-        return _plain_notice(target)
+        return _plain_notice("UNKNOWN PAGE", f"*{target[:_QUOTED]}# is NOT a page here.")
+
+    async def timed_out(self) -> Page:
+        """Say that the line is being released for want of a reply.
+
+        A page rather than a line of text over whatever was showing, for the
+        same reason every other thing this service says is a page: a message
+        overprinting a frame is hard to pick out from the frame.
+
+        A service ringing off deliberately says goodbye on a page of its own,
+        being a page like any other with `hang_up` set. This is the involuntary
+        one, which no page number reaches, so the framework has to ask for it.
+        """
+        return _plain_notice(
+            "RINGING OFF",
+            "No reply for some time.",
+            "The line has been released.",
+            hang_up=True,
+        )
 
     #  Empty on purpose, and not abstract: an application with nothing to open
     #  should not have to say so.
@@ -132,6 +151,7 @@ class Sextile(Application):
         self._router: Router[Handler] = Router()
         self._mounted: list[tuple[str, Application]] = []
         self._not_found: NotFoundHandler | None = None
+        self._timed_out: PartingHandler | None = None
         self._home = home if isinstance(home, PageAddress) else PageAddress(home)
 
     @property
@@ -189,6 +209,11 @@ class Sextile(Application):
         self._not_found = handler
         return handler
 
+    def on_timed_out[H: PartingHandler](self, handler: H) -> H:
+        """Register what this service says as it releases an idle caller."""
+        self._timed_out = handler
+        return handler
+
     # -- answering ----------------------------------------------------------
 
     async def respond(self, request: PageRequest) -> Page | None:
@@ -218,6 +243,11 @@ class Sextile(Application):
             return await super().not_found(target)
         return await self._not_found(target)
 
+    async def timed_out(self) -> Page:
+        if self._timed_out is None:
+            return await super().timed_out()
+        return await self._timed_out()
+
     def address_for(self, name: str, **params: object) -> PageAddress:
         """The address a named route answers, built from its own pattern."""
         return self._router.address_for(name, **params)
@@ -237,14 +267,18 @@ class Sextile(Application):
             await application.shutdown()
 
 
-def _plain_notice(target: str) -> Page:
-    """The framework's own way of saying a page is not here.
+def _plain_notice(title: str, *lines: str, hang_up: bool = False) -> Page:
+    """The framework's own way of saying something for itself.
 
     Deliberately plain, and drawn without the header-and-footer furniture that
     `sextile.viewdata.chrome` offers. A service that has furniture of its own
-    should say this in it, and one that has not should still be legible.
+    should say these things in it, and one that has not should still be legible.
+
+    Kept to the top few rows, which leaves somewhere for the cursor to go if
+    this turns out to be the last thing the reader sees.
     """
     canvas = Canvas()
-    canvas.row(0).text("UNKNOWN PAGE", Colour.CYAN)
-    canvas.row(2).text(f"*{target[:_QUOTED]}# is NOT a page here.", Colour.WHITE)
-    return Page(frames=(PageFrame(canvas.frame),))
+    canvas.row(0).text(title, Colour.CYAN)
+    for offset, line in enumerate(lines):
+        canvas.row(2 + offset).text(line, Colour.WHITE)
+    return Page(frames=(PageFrame(canvas.frame),), hang_up=hang_up)

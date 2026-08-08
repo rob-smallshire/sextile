@@ -231,10 +231,26 @@ and from `nc`. A line feed after a carriage return is swallowed as the other
 half of one terminator — it has to be told apart from a bare `0x0A`, which is
 the BBC's cursor-down key.
 
+**Ringing off is a page, both ways round.** A service that says goodbye does so
+on a page like any other, with `hang_up` set. The involuntary parting has one
+too — `Application.timed_out()`, overridable with `@app.on_timed_out` — because
+no page number reaches it and something has to ask. Both are whole frames: a
+line of text written over whatever was showing is hard to pick out from the
+frame it lands on, which is what the first version of this did.
+
+**And the terminal is handed back usable.** Every frame begins by hiding the
+cursor, but once the line has gone the reader is talking to their modem again —
+`+++`, `ATDT` — and a hidden cursor under a full screen of somebody else's frame
+gives them nothing to type at. So the last bytes down the line put the cursor
+two rows below the last thing said and turn it on. A parting page should
+therefore leave its lower rows blank, and should offer no keys: one saying `0`
+for the index would be a key that does nothing, on a page there is no coming
+back from.
+
 **Idle callers are warned, then released.** A single-line board held open by
 someone who walked away locks everyone else out, so a caller who says nothing
-for `--idle-timeout` seconds (fifteen minutes by default) is sent a short notice
-and disconnected. `--idle-timeout 0` holds the line indefinitely, which is right
+for `--idle-timeout` seconds (fifteen minutes by default) is shown the parting
+page above and disconnected. `--idle-timeout 0` holds the line indefinitely, which is right
 for a dedicated terminal and wrong for a service anyone can dial. There is no
 session timeout distinct from this one: the session lives exactly as long as the
 socket, so releasing the line *is* ending the session.

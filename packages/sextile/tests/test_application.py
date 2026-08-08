@@ -365,3 +365,38 @@ class TestRegistrationMistakes:
         app = Sextile()
         with pytest.raises(NoSuchRouteError):
             app.address_for("post", post_id=1)
+
+
+class TestRingingOffForWantOfAReply:
+    #  A page rather than a line of text written over whatever was showing.
+    #  Being cut off is worth a screen of its own, and a message overprinting a
+    #  frame is hard to pick out from the frame.
+
+    async def test_there_is_something_to_show(self) -> None:
+        app = Sextile()
+        page = await app.timed_out()
+        assert "no reply" in text_of(page, row=2).lower()
+
+    async def test_it_says_the_line_has_gone(self) -> None:
+        app = Sextile()
+        assert "OFF" in text_of(await app.timed_out()).upper()
+
+    async def test_a_service_can_say_it_its_own_way(self) -> None:
+        app = Sextile()
+
+        @app.on_timed_out
+        async def gone() -> Page:
+            return saying("STILL THERE? NO.")
+
+        assert text_of(await app.timed_out()) == "STILL THERE? NO."
+
+    async def test_it_leaves_room_to_type_beneath(self) -> None:
+        #  The reader is about to talk to their modem, and the cursor is put
+        #  below the last thing said.
+        app = Sextile()
+        page = await app.timed_out()
+        assert page.frames[0].frame.last_written_row() < 20
+
+    async def test_an_application_that_is_not_a_router_has_one_too(self) -> None:
+        app = Recording()
+        assert "no reply" in text_of(await app.timed_out(), row=2).lower()

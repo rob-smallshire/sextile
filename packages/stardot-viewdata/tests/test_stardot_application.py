@@ -229,8 +229,19 @@ class TestWhereTheKeysLead:
     ) -> None:
         for digits in EVERY_PAGE:
             page = await page_at(app, digits)
+            if page.hang_up:
+                continue  # see below
             for page_frame in page.frames:
                 assert page_frame.destination("0") == PageAddress("1")
+
+    async def test_the_page_that_rings_off_offers_nothing(
+        self, app: StardotApplication
+    ) -> None:
+        #  The one exception, and the reason for it: a key offering the index
+        #  on a page there is no coming back from is a key that does nothing,
+        #  and a frame names only the keys that do something.
+        page = await page_at(app, "90")
+        assert page.frames[0].choices == {}
 
     async def test_a_post_offers_its_forum_its_author_its_day_and_its_topic(
         self, app: StardotApplication

@@ -139,6 +139,20 @@ To end the call, say so on the page:
 return Page(frames=(...), hang_up=True)
 ```
 
+There is a second parting the service does not choose — the idle caller who is
+released — and it has a page of its own:
+
+```python
+@app.on_timed_out
+async def gone() -> Page:
+    ...
+```
+
+Both are the last thing a reader sees, so **draw them without a footer and leave
+the lower rows blank**. A key offering the index would be a key that does
+nothing, and the framework puts the cursor two rows below the last thing said
+and turns it on, so that the reader has somewhere to type to their modem.
+
 ## The request
 
 ```python

@@ -452,12 +452,37 @@ class StardotApplication(Sextile):
         )
 
     async def _logoff(self, request: PageRequest) -> Page:
-        return self._notice(
-            request.address,
+        return self._farewell(
             "GOODBYE",
             ["Thank you for calling Sextile.", "", "Ring off."],
-            hang_up=True,
         )
+
+    async def timed_out(self) -> Page:
+        """Said in the service's own voice as an idle caller is released."""
+        return self._farewell(
+            "RINGING OFF",
+            [
+                "No reply for some time, so the line",
+                "has been released for somebody else.",
+                "",
+                "Do call again.",
+            ],
+        )
+
+    def _farewell(self, title: str, lines: list[str]) -> Page:
+        """The last thing a caller sees, and the last thing this service draws.
+
+        No chrome. A footer offering the index would be a lie on a page there is
+        no coming back from, and the rows it and the rules occupy are exactly
+        the ones the framework wants to leave blank: the reader is about to be
+        talking to their modem, and the cursor is put below the last thing said.
+        """
+        canvas = Canvas()
+        canvas.row(0).text(title, Colour.CYAN)
+        for offset, line in enumerate(lines):
+            if line:
+                canvas.row(2 + offset).text(_fitted(line, COLUMNS - 1), Colour.WHITE)
+        return Page(frames=(PageFrame(frame=canvas.frame),), hang_up=True)
 
     def _notice(
         self,

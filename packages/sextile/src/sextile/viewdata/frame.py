@@ -92,7 +92,7 @@ class Frame:
         be compared on real hardware.
         """
         stream = bytearray(FRAME_PREAMBLE)
-        last_row = self._last_written_row() if trim else ROWS - 1
+        last_row = self.last_written_row() if trim else ROWS - 1
         for row in range(last_row + 1):
             used = self._used_columns(row) if trim else COLUMNS
             offset = row * COLUMNS
@@ -120,8 +120,13 @@ class Frame:
                 stream.append(code)
         return bytes(stream)
 
-    def _last_written_row(self) -> int:
-        """The last row with anything on it, or -1 if the frame is blank."""
+    def last_written_row(self) -> int:
+        """The last row with anything on it, or -1 if the frame is blank.
+
+        Where the cursor is left once the frame has been sent, trailing blanks
+        not being sent, which is what lets anything drawn afterwards find its
+        way from there.
+        """
         for row in reversed(range(ROWS)):
             if self._used_columns(row):
                 return row

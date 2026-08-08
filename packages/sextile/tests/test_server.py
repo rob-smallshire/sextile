@@ -16,7 +16,10 @@ from contextlib import suppress
 import pytest
 from exemplar import Board
 
+from sextile.addressing import PageAddress
+from sextile.page import Page
 from sextile.server import DEFAULT_PORT, serve
+from sextile.viewdata.encoding import ScreenControl
 from sextile.viewdata.frame import FRAME_PREAMBLE
 
 
@@ -322,9 +325,9 @@ class TestWarningBeforeRingingOff:
         )
         reader, writer = await connect_to(running)
         await read_frame(reader)
-        #  Straight to the goodbye, with no bar in between.
+        #  Straight to the parting frame, with no bar in between.
         notice = await asyncio.wait_for(reader.read(4096), timeout=5.0)
-        assert "ringing off" in text_of(notice)
+        assert "RINGING OFF" in text_of(notice)
         await close(writer, running)
 
 
@@ -341,3 +344,70 @@ async def close(writer: asyncio.StreamWriter, running: asyncio.Server) -> None:
         await writer.wait_closed()
     running.close()
     await running.wait_closed()
+
+
+class TestHandingTheTerminalBack:
+    """What the reader is left with once the line has gone.
+
+    They are talking to their modem again by then, so the last thing sent is
+    the cursor, somewhere there is room to type.
+    """
+
+    async def test_the_timeout_sends_a_whole_frame(self) -> None:
+        #  Not a line of text over whatever was showing, which is hard to pick
+        #  out from the frame it lands on.
+        running = await serve(
+            Board(), host="127.0.0.1", port=0, idle_timeout=0.3, warn_after=0
+        )
+        reader, writer = await connect_to(running)
+        await read_frame(reader)
+        parting = await asyncio.wait_for(reader.read(4096), timeout=5.0)
+        assert parting.startswith(FRAME_PREAMBLE)
+        assert "RINGING OFF" in text_of(parting)
+        await close(writer, running)
+
+    async def test_the_cursor_is_left_on_after_a_timeout(self) -> None:
+        running = await serve(
+            Board(), host="127.0.0.1", port=0, idle_timeout=0.3, warn_after=0
+        )
+        reader, writer = await connect_to(running)
+        await read_frame(reader)
+        parting = await _everything_left(reader)
+        assert parting.endswith(bytes([ScreenControl.CURSOR_ON]))
+        await close(writer, running)
+
+    async def test_the_cursor_is_left_on_after_a_deliberate_goodbye(self) -> None:
+        running = await serve(Board(), host="127.0.0.1", port=0)
+        reader, writer = await connect_to(running)
+        await read_frame(reader)
+        writer.write(b"*90#")
+        await writer.drain()
+        parting = await _everything_left(reader)
+        assert "GOODBYE" in text_of(parting)
+        assert parting.endswith(bytes([ScreenControl.CURSOR_ON]))
+        await close(writer, running)
+
+    async def test_a_service_can_word_the_timeout_itself(self) -> None:
+        board = Board()
+
+        @board.on_timed_out
+        async def gone() -> Page:
+            return board.menu(PageAddress("1"), "COME BACK SOON", [])
+
+        running = await serve(
+            board, host="127.0.0.1", port=0, idle_timeout=0.3, warn_after=0
+        )
+        reader, writer = await connect_to(running)
+        await read_frame(reader)
+        assert "COME BACK SOON" in text_of(await _everything_left(reader))
+        await close(writer, running)
+
+
+async def _everything_left(reader: asyncio.StreamReader) -> bytes:
+    """Read until the far end closes."""
+    buffer = b""
+    while True:
+        chunk = await asyncio.wait_for(reader.read(4096), timeout=5.0)
+        if not chunk:
+            return buffer
+        buffer += chunk

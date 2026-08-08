@@ -46,6 +46,7 @@ from sextile.viewdata.command_line import (
 )
 from sextile.viewdata.countdown import countdown_bytes, lit_cells
 from sextile.viewdata.frame import Frame
+from sextile.viewdata.parting import parting_bytes
 
 #: How far back a reader can retrace their steps.
 HISTORY_LIMIT: Final = 32
@@ -143,6 +144,31 @@ class Session:
         """The first frame, sent when a terminal connects."""
         await self._arrive(self._address)
         return self._send()
+
+    # -- ringing off --------------------------------------------------------
+
+    async def time_out(self) -> bytes:
+        """The frame shown as the line is released for want of a reply.
+
+        The application's, so that a service can say it in its own furniture.
+        A whole frame rather than a line of text over whatever was showing:
+        being cut off is worth a screen of its own, and a message overprinting
+        a frame is hard to pick out from the frame.
+        """
+        self._page = await self._application.timed_out()
+        self._frame_index = 0
+        self._finished = True
+        return self._send()
+
+    def parting(self) -> bytes:
+        """Hand the terminal back, after the last frame has gone.
+
+        The reader is about to be talking to their modem again, and a terminal
+        with the cursor hidden under a full screen of somebody else's frame
+        gives them nothing to type at.
+        """
+        frame = self.current_frame()
+        return parting_bytes(frame) if frame is not None else b""
 
     # -- the idle warning ---------------------------------------------------
     #

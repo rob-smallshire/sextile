@@ -4,32 +4,97 @@ Forty columns is narrow, and writing about retrocomputing is full of URLs, hex
 dumps and assembler listings. A word that cannot fit any line is split rather
 than dropped or allowed to overrun: losing part of a link address is worse than
 an ugly break.
+
+Lines are **balanced** by default rather than filled greedily. Greedy wrapping
+takes as much as fits on each line in turn, which at forty columns leaves a
+badly ragged edge and a stranded last word often enough to be worth avoiding:
+a long word early in a paragraph pushes a short line, and every line after it
+inherits the damage. Balancing chooses the set of breaks that minimises the
+squared slack summed over the paragraph, which spreads that unavoidable gap
+across several lines instead of dumping it on one.
+
+The last line is free -- it costs nothing however short it is -- since a
+paragraph's final line is expected to be short and penalising it would cram the
+lines before it.
+
+Squared slack rather than plain slack: it is the choice that makes two lines
+three columns short preferable to one line six columns short, which is what
+"balanced" means to somebody looking at the screen. The dynamic programme is
+the textbook one, and it is affordable here because a paragraph on a forty
+column screen is a few dozen words.
 """
 
+from typing import Final
 
-def wrap_text(text: str, width: int) -> list[str]:
+#: What a line that ends a paragraph costs, however much room is left on it.
+_LAST_LINE: Final = 0.0
+
+
+def wrap_text(text: str, width: int, *, balanced: bool = True) -> list[str]:
     """Break text into lines of at most ``width`` characters.
 
     Whitespace runs collapse to a single space and no line carries leading or
     trailing space. A word longer than ``width`` is split across as many lines
     as it needs.
+
+    ``balanced=False`` fills each line in turn instead, which is what a
+    typewriter does and what every other wrapper does by default. Kept because
+    it is the thing to compare against when a paragraph looks wrong.
     """
     if width < 1:
         raise ValueError(f"width must be at least 1, got {width}")
 
+    pieces = [piece for word in text.split() for piece in _fit(word, width)]
+    if not pieces:
+        return []
+    return _balanced(pieces, width) if balanced else _greedy(pieces, width)
+
+
+def _greedy(pieces: list[str], width: int) -> list[str]:
+    """As much on each line as will fit, taking them in turn."""
     lines: list[str] = []
     current = ""
-    for word in text.split():
-        for piece in _fit(word, width):
-            if not current:
-                current = piece
-            elif len(current) + 1 + len(piece) <= width:
-                current = f"{current} {piece}"
-            else:
-                lines.append(current)
-                current = piece
+    for piece in pieces:
+        if not current:
+            current = piece
+        elif len(current) + 1 + len(piece) <= width:
+            current = f"{current} {piece}"
+        else:
+            lines.append(current)
+            current = piece
     if current:
         lines.append(current)
+    return lines
+
+
+def _balanced(pieces: list[str], width: int) -> list[str]:
+    """The breaks that leave the least squared slack over the paragraph."""
+    count = len(pieces)
+    #  cost[i] is the least slack achievable laying out pieces[i:].
+    cost = [0.0] + [float("inf")] * count
+    cost[count] = _LAST_LINE
+    #  Where the line beginning at i is best broken.
+    following = list(range(1, count + 2))
+    for start in reversed(range(count)):
+        cost[start] = float("inf")
+        length = -1
+        for end in range(start, count):
+            length += len(pieces[end]) + 1
+            if length > width:
+                #  Every line from here on is longer still.
+                break
+            slack = width - length
+            last = end == count - 1
+            here = cost[end + 1] + (_LAST_LINE if last else float(slack * slack))
+            if here < cost[start]:
+                cost[start] = here
+                following[start] = end + 1
+    lines = []
+    start = 0
+    while start < count:
+        end = following[start]
+        lines.append(" ".join(pieces[start:end]))
+        start = end
     return lines
 
 

@@ -65,3 +65,64 @@ class TestInvalidWidths:
     def test_a_width_of_less_than_one_is_rejected(self, width: int) -> None:
         with pytest.raises(ValueError, match="width"):
             wrap_text("text", width)
+
+
+class TestBalancing:
+    """Lines chosen together rather than filled one at a time.
+
+    Greedy wrapping takes what fits on each line in turn, so one long word early
+    on strands a short line and every line after it inherits the damage.
+    Balancing spreads that gap instead.
+    """
+
+    def test_the_ragged_edge_is_narrower(self) -> None:
+        text = "The quick brown fox jumps over the lazy dog and keeps running"
+        balanced = wrap_text(text, 20)
+        greedy = wrap_text(text, 20, balanced=False)
+        assert _raggedness(balanced) < _raggedness(greedy)
+
+    def test_no_line_is_ever_wider_than_asked_for(self) -> None:
+        text = "The quick brown fox jumps over the lazy dog and keeps on running"
+        for width in range(8, 41):
+            assert all(len(line) <= width for line in wrap_text(text, width))
+
+    def test_not_a_word_is_lost_or_moved(self) -> None:
+        #  From the width of the longest word up: narrower than that and words
+        #  are split, which is a different promise, kept below.
+        text = "The quick brown fox jumps over the lazy dog"
+        for width in range(len(max(text.split(), key=len)), 41):
+            assert " ".join(wrap_text(text, width)) == text
+
+    def test_the_last_line_is_free(self) -> None:
+        #  A paragraph's final line is expected to be short; penalising it would
+        #  cram the lines before it to avoid a gap nobody minds.
+        assert wrap_text("aaa bbb ccc ddd", 7) == ["aaa bbb", "ccc ddd"]
+
+    def test_a_word_too_long_to_fit_is_still_split(self) -> None:
+        assert wrap_text("x" * 12, 5) == ["xxxxx", "xxxxx", "xx"]
+
+    def test_and_the_rest_of_the_paragraph_balances_around_it(self) -> None:
+        lines = wrap_text("see " + "x" * 12 + " now", 5)
+        assert "".join(lines).count("x") == 12
+        assert all(len(line) <= 5 for line in lines)
+
+
+class TestGreedyIsStillThere:
+    def test_it_fills_each_line_in_turn(self) -> None:
+        assert wrap_text("aaa bbb ccc ddd", 7, balanced=False) == ["aaa bbb", "ccc ddd"]
+
+    def test_and_can_differ_from_the_balanced_answer(self) -> None:
+        #  Real prose from the calendar's about page. Greedy crams line two and
+        #  strands line three eight columns short; balancing moves one word.
+        text = (
+            "It exists to demonstrate that Sextile is a framework and not one "
+            "service: nothing here knows about forums."
+        )
+        assert wrap_text(text, 30, balanced=False)[1].endswith("and not")
+        assert wrap_text(text, 30)[1].endswith("and")
+
+
+def _raggedness(lines: list[str]) -> int:
+    """Squared slack over every line but the last, which is what balancing minimises."""
+    width = max(len(line) for line in lines)
+    return sum((width - len(line)) ** 2 for line in lines[:-1])

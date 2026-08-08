@@ -163,6 +163,28 @@ the lower rows blank**. A key offering the index would be a key that does
 nothing, and the framework puts the cursor two rows below the last thing said
 and turns it on, so that the reader has somewhere to type to their modem.
 
+## Pages that come with the framework
+
+One page is built for you and registered nowhere, so that a service maps it into
+its own numbering or does without:
+
+```python
+self.page("92", name="history")(self.history)     # where this caller has been
+self.alias("HISTORY", self.address_for("history"))
+```
+
+Key 1 goes back one page — the same as `*0#` — 2 goes back two, and longer
+histories page with `W`/`S`/`#`. The entries are labelled by
+`Application.describe`, which by default reads the route's own name and fields,
+so `82{post_id:int}` named `post` shows as "post 489493". Override it to say
+what a reader would say:
+
+```python
+def describe(self, address: PageAddress) -> str:
+    found = self.route(address)          # the numbering, read backwards
+    ...
+```
+
 ## The request
 
 ```python
@@ -170,6 +192,7 @@ async def post(request: PageRequest, post_id: int) -> Page:
     request.address            # the page number asked for
     request.arrival.following  # the next page in the sequence, if any
     request.session["user"]    # this caller's own state, for as long as the line is up
+    request.history            # every page visited before this one, oldest first
 ```
 
 `arrival` is what makes "next" mean something: a page reached through one menu

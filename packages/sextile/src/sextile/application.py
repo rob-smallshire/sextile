@@ -29,8 +29,9 @@ from dataclasses import dataclass, field
 from typing import Final
 
 from sextile.addressing import PageAddress, UnknownPageError
+from sextile.history import history_page
 from sextile.page import Page, PageFrame
-from sextile.routing import Converter, Router
+from sextile.routing import Converter, Match, Router
 from sextile.viewdata.canvas import Canvas
 from sextile.viewdata.controls import Colour
 
@@ -68,6 +69,11 @@ class PageRequest:
     """What this caller has accumulated over their connection. The connection is
     the session -- the terminal keeps nothing but the frame on screen -- so this
     is where anything outlasting a single page belongs."""
+
+    history: tuple[PageAddress, ...] = ()
+    """Where this caller has been, oldest first, as far back as the session
+    keeps. The terminal remembers none of it, so a service wanting to offer a
+    way back through the call has to be handed the way back."""
 
 
 @dataclass(frozen=True)
@@ -122,6 +128,35 @@ class Application(ABC):
         somewhere, and the terminal has no address of its own to offer.
         """
         return PageAddress("1")
+
+    def describe(self, address: PageAddress) -> str:
+        """What to call a page in a list of pages.
+
+        Used by the built-in history page, and worth overriding for anything a
+        reader would rather see a title than a number for. `Sextile` derives it
+        from the route's own name, which is the application's word for the thing
+        and so needs no framework knowledge of what a service is about.
+        """
+        return f"*{address}#"
+
+    async def history(self, request: PageRequest) -> Page:
+        """Where this caller has been, newest first, as a menu of shortcuts.
+
+        Not registered anywhere by the framework: a service maps it into its own
+        numbering, or does not offer it at all.
+
+            self.page("92", name="history")(self.history)
+            self.alias("HISTORY", self.address_for("history"))
+
+        Key 1 for the page before this one -- the same as `*0#` -- 2 for the one
+        before that, and so on.
+        """
+        return history_page(
+            address=request.address,
+            been=request.history,
+            describe=self.describe,
+            home=self.home,
+        )
 
     def resolve(self, target: str) -> PageAddress:
         """The page a typed request names, or raise ``UnknownPageError``.
@@ -293,6 +328,22 @@ class Sextile(Application):
     def address_for(self, name: str, **params: object) -> PageAddress:
         """The address a named route answers, built from its own pattern."""
         return self._router.address_for(name, **params)
+
+    def route(self, address: PageAddress) -> Match[Handler] | None:
+        """What answers this address, and what its pattern captured.
+
+        The numbering read backwards, for an application that has an address and
+        wants to know what it names -- taking the digits apart again would be
+        the scheme written down twice.
+        """
+        return self._router.match(address)
+
+    def describe(self, address: PageAddress) -> str:
+        found = self.route(address)
+        if found is None or found.name is None:
+            return super().describe(address)
+        fields = " ".join(str(value) for value in found.params.values())
+        return f"{found.name} {fields}".strip()
 
     def keywords(self) -> dict[str, PageAddress]:
         """The named jumps, for a page that wants to list them."""

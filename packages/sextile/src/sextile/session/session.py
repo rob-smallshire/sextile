@@ -159,7 +159,7 @@ class Session:
             Parting(
                 address=self._address,
                 frame_index=self._frame_index,
-                history=tuple(place.address for place in self._history),
+                history=self._been(),
                 session=dict(self._state),
             )
         )
@@ -318,7 +318,9 @@ class Session:
         *,
         told: str | None = None,
     ) -> bytes | None:
-        page = await self._build(address, sequence)
+        #  Plus the page being left: from where the reader is going, that is
+        #  where they have just been, and is what `*0#` would return to.
+        page = await self._build(address, sequence, self._been() + (self._address,))
         if page is None:
             #  Say so, and leave the reader where they were. Silence would be
             #  indistinguishable from a line fault, and moving them to a page
@@ -385,7 +387,8 @@ class Session:
         if not self._history:
             return None
         place = self._history[-1]
-        page = await self._build(place.address, None)
+        #  Without the place being returned to: it is about to be popped.
+        page = await self._build(place.address, None, self._been()[:-1])
         if page is None:
             #  The page has gone since the reader was on it. Staying put is
             #  better than unwinding to somewhere they did not ask for.
@@ -398,7 +401,8 @@ class Session:
         return self._send()
 
     async def _refresh(self) -> bytes | None:
-        page = await self._build(self._address, self._sequence)
+        #  Unchanged: the reader is on this page, not arriving at it.
+        page = await self._build(self._address, self._sequence, self._been())
         if page is None:
             return None
         self._page = page
@@ -407,17 +411,27 @@ class Session:
 
     async def _arrive(self, address: PageAddress) -> None:
         """Put the reader somewhere on connecting, come what may."""
-        page = await self._build(address, None)
+        page = await self._build(address, None, ())
         self._page = page if page is not None else await self._application.not_found(str(address))
 
-    async def _build(self, address: PageAddress, sequence: "_Sequence | None") -> Page | None:
+    async def _build(
+        self,
+        address: PageAddress,
+        sequence: "_Sequence | None",
+        been: tuple[PageAddress, ...],
+    ) -> Page | None:
         return await self._application.respond(
             PageRequest(
                 address=address,
                 arrival=sequence.arrival() if sequence else Arrival(),
                 session=self._state,
+                history=been,
             )
         )
+
+    def _been(self) -> tuple[PageAddress, ...]:
+        """Where the reader has been, oldest first, as the history stands."""
+        return tuple(place.address for place in self._history)
 
     def _remember(self) -> None:
         self._history.append(_Place(self._address, self._frame_index))

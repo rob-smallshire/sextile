@@ -81,6 +81,23 @@ _BETWEEN: Final = "―"  # HORIZONTAL BAR, G0 0x60
 _FOOTER_ATTRIBUTE: Final = 1
 
 
+#: What a reader would call each of the pages that has no field in its number.
+#: The parameterised ones are spelled out in `describe`.
+_PAGE_NAMES: Final = {
+    "title": "Title frame",
+    "main": "Main index",
+    "posts": "Latest posts",
+    "topics": "Topics",
+    "days": "By day",
+    "forums": "By forum",
+    "contributors": "By contributor",
+    "about": "About this service",
+    "help": "How to get about",
+    "history": "Where you have been",
+    "logoff": "Goodbye",
+}
+
+
 @dataclass(frozen=True)
 class MenuItem:
     """One selectable line of a menu."""
@@ -166,6 +183,10 @@ class StardotApplication(Sextile):
         #  In the system namespace, where the second digit is a function rather
         #  than a content operation.
         self.page("91", name="help")(self._help)
+        #  The framework's own page, mapped into this service's numbering. It
+        #  needs nothing from here but a number and a word for each page, which
+        #  `describe` below supplies.
+        self.page("92", name="history")(self.history)
         #  9 is the system namespace, where the second digit is a system
         #  function rather than a content operation, so that *90# can keep its
         #  conventional Prestel meaning.
@@ -190,10 +211,41 @@ class StardotApplication(Sextile):
             ("HELP", "help"),
             ("GUIDE", "help"),
             ("KEYS", "help"),
+            ("HISTORY", "history"),
+            ("BEEN", "history"),
             ("BYE", "logoff"),
             ("OFF", "logoff"),
         ):
             self.alias(keyword, self.address_for(route))
+
+    def describe(self, address: PageAddress) -> str:
+        """What to call a page where one is listed rather than shown.
+
+        The framework would say "post 489493", from the route's own name, which
+        is serviceable; this says what a reader would call it.
+
+        Subjects and forum names are deliberately not looked up. A history frame
+        lists nine pages, which would be nine queries for a label, and the page
+        number beside each entry already says which post it is.
+        """
+        found = self.route(address)
+        if found is None or found.name is None:
+            return super().describe(address)
+        plain = _PAGE_NAMES.get(found.name)
+        if plain is not None:
+            return plain
+        match found.name, found.params:
+            case "post", {"post_id": int() as post_id}:
+                return f"Post {post_id}"
+            case "topic", {"topic_id": int() as topic_id}:
+                return f"Topic {topic_id}"
+            case "forum", {"forum_id": int() as forum_id}:
+                return f"Forum {forum_id}"
+            case "contributor", {"user_id": int() as user_id}:
+                return f"Contributor {user_id}"
+            case "day", {"day": date() as day}:
+                return _day_title(day)
+        return super().describe(address)
 
     # -- menus --------------------------------------------------------------
 
@@ -205,6 +257,11 @@ class StardotApplication(Sextile):
             MenuItem("By day", "browse by date", self.address_for("days")),
             MenuItem("By forum", "browse by section", self.address_for("forums")),
             MenuItem("By contributor", "browse by poster", self.address_for("contributors")),
+            MenuItem(
+                "Where you have been",
+                "this call, newest first",
+                self.address_for("history"),
+            ),
             MenuItem("How to get about", "the keys, and what they do", self.address_for("help")),
             MenuItem("About this service", "", self.address_for("about")),
         ]

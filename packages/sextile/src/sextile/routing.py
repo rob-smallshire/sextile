@@ -202,6 +202,8 @@ class Match[T]:
     address: PageAddress
     target: T
     params: Mapping[str, object]
+    name: str | None = None
+    """The route's name, for a caller reading an address back to what it is."""
 
 
 class Router[T]:
@@ -296,7 +298,9 @@ class Router[T]:
                 #  The digits fit the shape but not the meaning -- the 31st of
                 #  February. Another route may yet want them.
                 continue
-            return Match(address=address, target=route.target, params=params)
+            return Match(
+                address=address, target=route.target, params=params, name=route.name
+            )
         return None
 
     def address_for(self, name: str, **params: object) -> PageAddress:

@@ -458,3 +458,85 @@ class TestWhereTheCallerHadGot:
 
     def test_a_caller_who_went_nowhere_has_no_history(self) -> None:
         assert Parting(address=PageAddress("1")).history == ()
+
+
+class TestWhereTheReaderHasBeen:
+    #  The terminal keeps nothing, so if a service wants to offer a way back
+    #  through the call it has to be told the way back.
+
+    async def test_a_request_carries_no_history_by_default(self) -> None:
+        assert request_for("1").history == ()
+
+    async def test_a_handler_is_told_where_the_reader_has_been(self) -> None:
+        app = Sextile()
+
+        @app.page("1")
+        async def main(request: PageRequest) -> Page:
+            return saying(" ".join(str(been) for been in request.history))
+
+        page = await app.respond(
+            PageRequest(
+                address=PageAddress("1"),
+                history=(PageAddress("8"), PageAddress("82489493")),
+            )
+        )
+        assert text_of(page) == "8 82489493"
+
+
+class TestAskingWhatAnAddressIs:
+    """An application's own numbering, read back.
+
+    Working out what `82489493` is by taking the digits apart again would be the
+    numbering scheme written down twice.
+    """
+
+    def test_a_routed_address_gives_its_route_and_fields(self) -> None:
+        app = Sextile()
+
+        @app.page("82{post_id:int}", name="post")
+        async def post(request: PageRequest, post_id: int) -> Page:
+            return one_frame()
+
+        found = app.route(PageAddress("82489493"))
+        assert found is not None
+        assert found.name == "post"
+        assert found.params == {"post_id": 489493}
+
+    def test_an_address_with_no_route_gives_nothing(self) -> None:
+        assert Sextile().route(PageAddress("6")) is None
+
+
+class TestDescribingAPage:
+    """What to call a page in a list of them.
+
+    Route names are the application's own words, so a generic description comes
+    out in the service's vocabulary without the framework knowing any of it.
+    """
+
+    def test_a_page_is_described_by_its_route(self) -> None:
+        app = Sextile()
+
+        @app.page("8", name="latest posts")
+        async def posts(request: PageRequest) -> Page:
+            return one_frame()
+
+        assert app.describe(PageAddress("8")) == "latest posts"
+
+    def test_its_fields_come_after_the_name(self) -> None:
+        app = Sextile()
+
+        @app.page("82{post_id:int}", name="post")
+        async def post(request: PageRequest, post_id: int) -> Page:
+            return one_frame()
+
+        assert app.describe(PageAddress("82489493")) == "post 489493"
+
+    def test_an_unrouted_page_is_described_by_its_number(self) -> None:
+        assert Sextile().describe(PageAddress("6")) == "*6#"
+
+    def test_a_service_can_describe_its_own_pages(self) -> None:
+        class Mine(Sextile):
+            def describe(self, address: PageAddress) -> str:
+                return f"page {address}, obviously"
+
+        assert Mine().describe(PageAddress("8")) == "page 8, obviously"

@@ -189,6 +189,32 @@ disagree.
 page and should not acquire one: which number means goodbye is the application's
 affair.
 
+**A history page comes with the framework, unregistered.** The session already
+keeps a history so that `*0#` can retrace it one page at a time; showing the
+whole of it turns a stack into a map. `Application.history` is a handler a
+service maps into its own numbering — or does not offer at all:
+
+```python
+self.page("92", name="history")(self.history)
+self.alias("HISTORY", self.address_for("history"))
+```
+
+It can live in the framework because there is nothing service-specific about it.
+What it lists are addresses, and what it *calls* them comes from
+`Application.describe`, whose default reads the route's own name and fields —
+"post 489493" — so the labels come out in the application's vocabulary without
+the framework knowing what a service is about. A service wanting better words
+overrides `describe`, and `Sextile.route(address)` is the numbering read
+backwards for anything else that needs it.
+
+Two details that took a live walk to get right. Keys run 1–9 on *every* frame,
+as any other viewdata menu's do, because an entry shown but not selectable is
+worse than one not shown; how far back each is goes in the detail line, since
+the digit only counts steps on the first frame. And `request.history` is every
+page visited *before this request*, which means it ends with the page being left
+— the definition that makes key 1 agree with `*0#`. Anything else leaves the page
+off by one against the key it exists to save.
+
 **`Page.follows` says where `#` leads once the frames run out.** Prestel's `#`
 advanced through a route as well as through the frames of one long page, and
 some pages are nothing but an invitation to press it — a title frame, or the

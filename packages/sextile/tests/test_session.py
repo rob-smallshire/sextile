@@ -759,3 +759,96 @@ class TestReadingOn:
         await session.receive(b"#")
         await session.receive(b"*0#")
         assert session.address == at("6")
+
+
+class TestTheHistoryAHandlerIsGiven:
+    """`request.history` is every page visited before this request.
+
+    The definition that matters is agreement with `*0#`: the last entry must be
+    the page `*0#` would return to. Anything else makes a history page off by
+    one against the key it exists to save.
+    """
+
+    async def test_a_caller_who_has_just_arrived_has_been_nowhere(
+        self, board: Board
+    ) -> None:
+        seen: list[tuple[PageAddress, ...]] = []
+
+        @board.page("6", name="watcher")
+        async def watcher(request: PageRequest) -> Page:
+            seen.append(request.history)
+            return await board.notice(request)
+
+        session = Session(board, start=at("6"))
+        await session.greeting()
+        assert seen == [()]
+
+    async def test_it_ends_with_the_page_being_left(self, board: Board) -> None:
+        seen: list[tuple[PageAddress, ...]] = []
+
+        @board.page("6", name="watcher")
+        async def watcher(request: PageRequest) -> Page:
+            seen.append(request.history)
+            return await board.notice(request)
+
+        session = Session(board)
+        await session.greeting()
+        await session.receive(b"*8#")
+        await session.receive(b"*6#")
+        assert seen[-1] == (at("1"), at("8"))
+
+    async def test_which_is_where_going_back_would_land(self, board: Board) -> None:
+        seen: list[tuple[PageAddress, ...]] = []
+
+        @board.page("6", name="watcher")
+        async def watcher(request: PageRequest) -> Page:
+            seen.append(request.history)
+            return await board.notice(request)
+
+        session = Session(board)
+        await session.greeting()
+        await session.receive(b"*8#")
+        await session.receive(b"*6#")
+        await session.receive(b"*0#")
+        assert session.address == seen[-1][-1]
+
+    async def test_refreshing_does_not_add_the_page_to_its_own_history(
+        self, board: Board
+    ) -> None:
+        seen: list[tuple[PageAddress, ...]] = []
+
+        @board.page("6", name="watcher")
+        async def watcher(request: PageRequest) -> Page:
+            seen.append(request.history)
+            return await board.notice(request)
+
+        session = Session(board)
+        await session.greeting()
+        await session.receive(b"*6#")
+        await session.receive(b"*09#")
+        assert seen[-1] == (at("1"),)
+
+    async def test_going_back_leaves_the_history_it_will_have(
+        self, board: Board
+    ) -> None:
+        seen: list[tuple[PageAddress, ...]] = []
+
+        @board.page("6", name="watcher")
+        async def watcher(request: PageRequest) -> Page:
+            seen.append(request.history)
+            return await board.notice(request)
+
+        session = Session(board, start=at("6"))
+        await session.greeting()
+        await session.receive(b"*8#")
+        await session.receive(b"*0#")
+        #  Back to 6, whose history is empty again -- 6 was the start.
+        assert seen[-1] == ()
+
+    async def test_a_page_that_is_not_there_leaves_the_history_alone(
+        self, session: Session
+    ) -> None:
+        await session.receive(b"*8#")
+        await session.receive(b"*222222#")
+        await session.receive(b"*0#")
+        assert session.address == at("1")

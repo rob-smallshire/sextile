@@ -38,8 +38,14 @@ from collections.abc import Sequence
 from enum import Enum
 from typing import Final
 
-from sextile.viewdata.blocks import BLOCKS_DOWN, block_runs
-from sextile.viewdata.composition import Align, Composition, Panel, Where
+from sextile.viewdata.blocks import BLOCKS_ACROSS, BLOCKS_DOWN, block_runs
+from sextile.viewdata.composition import (
+    Align,
+    Composition,
+    DoesNotFit,
+    Panel,
+    Where,
+)
 from sextile.viewdata.controls import Colour
 from sextile.viewdata.font import Font, Glyph
 
@@ -205,9 +211,23 @@ def cells(
     `margin` widens the field by that many blocks on every side, which is what
     an inverted banner wants: the letters are holes in a lit field, and without
     a margin the field ends where the ink does and the letters touch its edge.
+
+    **The line sits in the middle of the rows it takes.** A cell is three
+    blocks deep and a line of letters is rarely a multiple of three, so there
+    is slack; leaving all of it under the letters puts them at the top of their
+    rows, which shows the moment anything is drawn behind them.
     """
     picture = bitmap(text, font, spacing=spacing, gap=gap, limit=limit, trim=trim)
-    return block_runs(_bordered(picture, margin), inverted=inverted)
+    return block_runs(_settled(_bordered(picture, margin)), inverted=inverted)
+
+
+def _settled(picture: list[list[bool]]) -> list[list[bool]]:
+    """The picture padded to whole rows of cells, the slack shared top and bottom."""
+    width = len(picture[0]) if picture else 0
+    slack = -len(picture) % BLOCKS_DOWN
+    above = slack // 2
+    blank = [[False] * width]
+    return blank * above + picture + blank * (slack - above)
 
 
 def _bordered(picture: list[list[bool]], margin: int) -> list[list[bool]]:
@@ -290,13 +310,17 @@ def boxed(
     -- which is why the box is fitted here, where the letters can be measured,
     rather than by a caller counting them.
 
-    **A box shorter than its letters is a stripe behind them**, and it goes
-    across their middle: one row behind a three-row word puts a band through
-    the waist of it and leaves the rest on the frame's own black. A box the
-    same height or taller holds the letters, which are centred in it both ways,
-    to the block -- so a line that does not fill its rows sits in the middle of
-    them rather than at the top.
+    The letters are centred in it both ways, to the block. A box **shorter**
+    than its letters is not a box at all but a stripe behind them, and it is
+    not this function's business: draw the stripe with `Composition.panel` and
+    the letters with `place`, both centred, and the composition will work out
+    that the row they share is coloured. Two things, drawn separately.
     """
+    if rows is not None and rows < len(cells(text, font, spacing=spacing, trim=trim)):
+        raise DoesNotFit(
+            f"a box of {rows} row(s) is shorter than the letters it is to hold; "
+            f"for a stripe behind them, draw a panel and the lettering separately"
+        )
     patterns = cells(text, font, spacing=spacing, gap=gap, limit=limit, trim=trim)
     deep = len(patterns)
     tall = rows if rows is not None else deep
@@ -315,18 +339,33 @@ def boxed(
 def _rows_of(row: Where, deep: int, tall: int) -> tuple[Where, Where]:
     """Where the box starts and where the letters do, given a row for one.
 
-    Two different things, and which is centred on which depends on their sizes.
     A box that holds the letters grows around them, upwards as well as down, so
     they stay near the row asked for -- except at the top of the frame, where
-    there is nowhere above to grow into. A stripe shorter than the letters is
-    centred on *them*, and they stay where they were put.
+    there is nowhere above to grow into.
     """
     if not isinstance(row, int):
         return row, Align.CENTRE
-    if tall < deep:
-        return row + (deep - tall) // 2, row
     above = (tall - deep) // 2
     return max(row - above, 0), max(row - above, 0) + above
+
+
+def cells_for(
+    text: str,
+    font: Font,
+    *,
+    spacing: Spacing = Spacing.PROPORTIONAL,
+    gap: int = _GAP,
+    limit: int = _LIMIT,
+    padding: int = 0,
+) -> int:
+    """How many cells across a line would take, for sizing something round it.
+
+    The companion of `rows_for`, and what a page needs to draw a stripe behind
+    a word without drawing the word first: a panel of this width and the
+    lettering, both centred, line up without either knowing about the other.
+    """
+    across = width(text, font, spacing=spacing, gap=gap, limit=limit)
+    return -(-across // BLOCKS_ACROSS) + 2 * padding
 
 
 def rows_for(font: Font, *, margin: int = 0) -> int:

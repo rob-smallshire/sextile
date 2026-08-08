@@ -72,6 +72,10 @@ SERVICE_KIND: Final = "VIEWDATA"
 SUBTITLE_FACE: Final = "acorn"
 SUBTITLE_ROW: Final = 6
 
+#: Cells of colour either side of that word. The stripe is drawn to this width
+#: and the word is drawn centred; neither is told where the other is.
+SUBTITLE_MARGIN: Final = 2
+
 #: Named for the service rather than for the framework serving it, and
 #: relative to the working directory -- so `serve` and `ingest` must be run
 #: from the same place, which is the first thing that went wrong in practice.
@@ -457,19 +461,26 @@ class StardotApplication(Sextile):
             spacing=Spacing.KERNED,
         )
         #  What the service is, in the lighter face -- the Beeb's own shapes --
-        #  so that it reads as the second line and not a second title. The
-        #  stripe behind it is a row where the word is three, which puts a band
-        #  through its waist and leaves the rest on the frame's black: the same
-        #  two colours as the name above, said more quietly.
-        lettering.boxed(
+        #  so that it reads as the second line and not a second title. Two
+        #  things that know nothing of each other: a stripe a row deep and a
+        #  word three rows tall, both centred, so they line up without either
+        #  being told where the other is. The composition sees that the middle
+        #  row is coloured and colours the letters on it accordingly.
+        subtitle = load_font(SUBTITLE_FACE)
+        layout.panel(
+            SUBTITLE_ROW + 1,
+            Align.CENTRE,
+            width=lettering.cells_for(
+                SERVICE_KIND, subtitle, spacing=Spacing.KERNED, padding=SUBTITLE_MARGIN
+            ),
+            colour=BANNER_BACKGROUND,
+        )
+        lettering.place(
             layout,
             SUBTITLE_ROW,
             SERVICE_KIND,
-            load_font(SUBTITLE_FACE),
+            subtitle,
             BANNER_COLOUR,
-            BANNER_BACKGROUND,
-            rows=1,
-            padding=2,
             spacing=Spacing.KERNED,
         )
         layout.draw(canvas)

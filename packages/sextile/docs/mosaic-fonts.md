@@ -167,7 +167,11 @@ file's own header.
 | 5 | `pixeloperator`, `pixeloperator-bold`, `pixeloperator-hb`, `pixeloperator-sc`, `pixeloperator-sc-bold`, `pixeloperator-sc-hb` |
 | 6 | `garland` |
 
-The rows in that table are what the face needs at worst. **A line is trimmed to
+**A line sits in the middle of the rows it takes.** A cell is three blocks deep
+and a line of letters is rarely a multiple of three, so there is slack; it is
+shared above and below rather than all left underneath, which shows the moment
+anything is drawn behind the letters. The rows in that table are what the face
+needs at worst. **A line is trimmed to
 its own ink**, top and bottom as well as on the right, so a line of capitals in
 a face that leaves room for descenders comes out shorter — `garland` in four
 rows rather than six, `pixeloperator` in three rather than five. Two lines that
@@ -280,7 +284,8 @@ Roughly in order, each committable on its own.
    letters. The stripe is a `panel` and the letters are centred in it both
    ways; the page names neither a column nor a row.
    `VIEWDATA` follows it in `acorn`, the lighter face, with a stripe a row deep
-   behind a word three rows tall — the same two colours said more quietly.
+   behind a word three rows tall — the same two colours said more quietly, and
+   drawn as two things that know nothing of each other.
 
 ## Decisions still open
 

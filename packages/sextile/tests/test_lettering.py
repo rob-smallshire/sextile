@@ -4,7 +4,7 @@ import pytest
 from test_drawing import middle_of as middle_of_row
 
 from sextile.viewdata import lettering
-from sextile.viewdata.blocks import BLOCKS_ACROSS
+from sextile.viewdata.blocks import BLOCKS_ACROSS, BLOCKS_DOWN
 from sextile.viewdata.canvas import Canvas
 from sextile.viewdata.composition import Align, Composition, DoesNotFit
 from sextile.viewdata.controls import Colour, Control
@@ -400,22 +400,61 @@ class TestABoxFittedRoundItsLetters:
         )
         assert box.rows[0] == (ROWS - len(box.rows)) // 2
 
-    def test_a_box_shorter_than_its_letters_is_a_stripe_through_them(self) -> None:
-        #  One row behind a three-row word: a band through its waist, with the
-        #  rest of the letters on the frame's own black.
+    def test_a_box_shorter_than_its_letters_is_refused_as_such(self) -> None:
+        #  Because it is not a box: it is a stripe behind them, which is two
+        #  things drawn separately and not this function's business.
         layout = Composition()
-        box = lettering.boxed(layout, 6, "VIEWDATA", load_font("acorn"), rows=1)
-        assert box.rows == (7,)
-        assert sorted(layout.runs) == [6, 7, 8]
+        with pytest.raises(DoesNotFit, match="stripe"):
+            lettering.boxed(layout, 6, "VIEWDATA", load_font("acorn"), rows=1)
 
-    def test_and_only_the_row_it_covers_takes_its_colour(self) -> None:
+
+class TestAStripeBehindLetteringIsTwoThings:
+    """A panel and some lettering, drawn separately and left to the compositor.
+
+    Neither knows about the other. They are both centred, so they line up; the
+    row they share is coloured because the composition can see that it is.
+    """
+
+    def test_the_row_they_share_takes_the_stripe_s_colour(self) -> None:
         canvas = Canvas(Frame())
         layout = Composition()
-        lettering.boxed(layout, 6, "VIEWDATA", load_font("acorn"), Colour.YELLOW,
-                        Colour.BLUE, rows=1)
+        face = load_font("acorn")
+        layout.panel(
+            7,
+            Align.CENTRE,
+            width=lettering.cells_for("VIEWDATA", face, padding=2),
+            colour=Colour.BLUE,
+        )
+        lettering.place(layout, 6, "VIEWDATA", face, Colour.YELLOW)
         layout.draw(canvas)
-        assert any(canvas.frame.cell(7, column) == Control.NEW_BACKGROUND
-                   for column in range(COLUMNS))
-        assert not any(canvas.frame.cell(row, column) == Control.NEW_BACKGROUND
-                       for row in (6, 8)
-                       for column in range(COLUMNS))
+        assert any(
+            canvas.frame.cell(7, column) == Control.NEW_BACKGROUND
+            for column in range(COLUMNS)
+        )
+        assert not any(
+            canvas.frame.cell(row, column) == Control.NEW_BACKGROUND
+            for row in (6, 8)
+            for column in range(COLUMNS)
+        )
+
+    def test_and_the_letters_sit_evenly_above_and_below_it(self) -> None:
+        #  A line of letters sits in the middle of the rows it takes, so a
+        #  stripe through the middle row has as much of them above it as below.
+        face = load_font("acorn")
+        picture = lettering.cells("VIEWDATA", face)
+        lit = [
+            row * BLOCKS_DOWN + third
+            for row, patterns in enumerate(picture)
+            for third, mask in enumerate((0b000011, 0b001100, 0b110000))
+            if any(pattern & mask for pattern in patterns)
+        ]
+        band = range(BLOCKS_DOWN, 2 * BLOCKS_DOWN)
+        assert len([block for block in lit if block < band.start]) == len(
+            [block for block in lit if block >= band.stop]
+        )
+
+    def test_a_stripe_is_as_wide_as_the_word_and_its_padding(self) -> None:
+        face = load_font("acorn")
+        bare = lettering.cells_for("VIEWDATA", face)
+        assert lettering.cells_for("VIEWDATA", face, padding=2) == bare + 4
+        assert bare == len(lettering.cells("VIEWDATA", face)[0])

@@ -184,11 +184,28 @@ the attribute that colours it. The letters are centred in the box both ways,
 and the box is returned, so more can go in it.
 
 A box taller than what goes in it grows upwards as well as down, so that asking
-for one at row 8 leaves the letters near row 8. **A box shorter than its letters
-is a stripe behind them**, centred on them rather than the other way about: one
-row behind a three-row word puts a band through its waist and leaves the rest of
-it on the frame's own black, which the composition does by giving the panel only
-the middle row of the three.
+for one at row 8 leaves the letters near row 8. A box **shorter** than its
+letters is refused, because it is not a box — see below.
+
+### A stripe behind lettering is two things, not one
+
+A band through the middle of a word — a row of colour where the word is three
+rows tall — is a panel and some lettering, drawn separately:
+
+```python
+layout.panel(7, Align.CENTRE, width=lettering.cells_for(word, face, padding=2),
+             colour=Colour.BLUE)
+lettering.place(layout, 6, word, face, Colour.YELLOW)
+```
+
+Neither knows about the other. They line up because both are centred, and the
+row they share comes out coloured because the composition can see that it is:
+the run on that row is covered by the panel and takes its background, while the
+runs above and below are not and do not. Nothing had to be told that a stripe
+was wanted.
+
+`lettering.cells_for` is what lets the panel be sized without the word being
+drawn first — the companion of `rows_for`.
 
 ### What a style costs
 

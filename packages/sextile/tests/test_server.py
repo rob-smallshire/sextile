@@ -216,9 +216,12 @@ class TestIdleCallers:
     async def test_a_silent_caller_is_eventually_released(self) -> None:
         #  A single-line board held open by someone who walked away locks
         #  everyone else out.
-        #  No warning here: this is about the timeout alone.
+        #  No warning here: this is about the timeout alone. Half a second
+        #  rather than a fifth: the shorter one failed once on a loaded machine,
+        #  and a test that fails when the box is busy teaches people to ignore
+        #  the suite.
         running = await serve(
-            Board(), host="127.0.0.1", port=0, idle_timeout=0.2, warn_after=0
+            Board(), host="127.0.0.1", port=0, idle_timeout=0.5, warn_after=0
         )
         host, port = running.sockets[0].getsockname()[:2]
         reader, writer = await asyncio.open_connection(host, port)

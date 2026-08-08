@@ -38,6 +38,7 @@ from sextile.viewdata.chrome import CONTENT_FIRST_ROW, CONTENT_ROWS, draw_chrome
 from sextile.viewdata.controls import Colour
 from sextile.viewdata.drawing import fitted
 from sextile.viewdata.encoding import cell_count
+from sextile.viewdata.footer import ROOM, FooterItem, Priority, movement, render_footer
 from sextile.viewdata.frame import COLUMNS
 from sextile.viewdata.layout import Row, rows_for
 
@@ -112,7 +113,7 @@ class Template[E](ABC):
     numbered: ClassVar[bool] = False
 
     #: What the prompt says about choosing, where there is anything to choose.
-    selecting_hint: ClassVar[str] = ""
+    selecting_hint: ClassVar[FooterItem | None] = None
 
     def __init__(
         self,
@@ -148,16 +149,22 @@ class Template[E](ABC):
         return None
 
     def prompt(self, *, selecting: bool, back: bool, on: bool) -> str:
-        """Name every key that does something here, and no key that does not."""
-        parts = []
-        if selecting and self.selecting_hint:
-            parts.append(self.selecting_hint)
-        axis = _axis(back=back, on=on)
-        if axis:
-            parts.append(axis)
+        """Name every key that does something here, and no key that does not.
+
+        Composed as items rather than as a string, so a frame with room says
+        what its keys do and only a crowded one falls back to the letters.
+        """
+        items = []
+        if selecting and self.selecting_hint is not None:
+            items.append(self.selecting_hint)
+        items += movement(
+            key
+            for key, answered in ((PREVIOUS_FRAME, back), (NEXT_FRAME, on))
+            if answered
+        )
         if self.home is not None:
-            parts.append(f"{HOME_KEY} index")
-        return ", ".join(parts)
+            items.append(FooterItem(HOME_KEY, "index", Priority.ESSENTIAL))
+        return render_footer(items, ROOM)
 
     # -- what the template does ---------------------------------------------
 
@@ -236,7 +243,7 @@ class Menu(Template[Entry]):
 
     rows_per_entry = 2
     numbered = True
-    selecting_hint = "1-9 select"
+    selecting_hint = FooterItem("1-9", "select", Priority.PRIMARY)
 
     def destination(self, entry: Entry) -> PageAddress | None:
         return entry.destination
@@ -344,11 +351,3 @@ def _moves(*, back: bool, on: bool) -> frozenset[str]:
     return frozenset(keys)
 
 
-def _axis(*, back: bool, on: bool) -> str:
-    if back and on:
-        return f"{PREVIOUS_FRAME}{NEXT_FRAME} frame"
-    if on:
-        return f"{NEXT_FRAME} frame"
-    if back:
-        return f"{PREVIOUS_FRAME} frame"
-    return ""

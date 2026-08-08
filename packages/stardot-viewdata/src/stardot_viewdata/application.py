@@ -40,7 +40,13 @@ from sextile.viewdata.composition import Align, Composition
 from sextile.viewdata.controls import Colour
 from sextile.viewdata.drawing import fitted, rule
 from sextile.viewdata.font import load_font
-from sextile.viewdata.footer import FooterItem, Priority, render_footer
+from sextile.viewdata.footer import (
+    ROOM,
+    FooterItem,
+    Priority,
+    movement,
+    render_footer,
+)
 from sextile.viewdata.frame import COLUMNS
 from sextile.viewdata.layout import draw_rows, paginate
 from sextile.viewdata.lettering import Spacing
@@ -837,36 +843,27 @@ def _neighbour_choices(arrival: Arrival) -> dict[str, PageAddress]:
 def _prompt(moving: dict[str, str], *, selecting: bool) -> str:
     """Name every key that does something here, and no key that does not.
 
-    Composed as items with priorities rather than as a string, so that when the
-    row will not hold them all the footer sheds what the reader can best spare.
-    At its longest today it fills the row exactly, so the next axis added will
-    need that.
+    One item to a key, each saying in words what pressing it does, and each
+    with a shorter way of saying it for when the row is tight. The footer then
+    says as much as the row will hold: a page with keys to spare gets the
+    sentence, and only the busiest page falls back to the short words.
+
+    It used to pack a pair of keys into one item and label it with a noun --
+    the frame keys as one item called "frame" -- which fitted the busiest page
+    exactly and was then used on every page, including the ones with half a row
+    going spare. A reader had to work out that the noun was what the keys moved
+    through rather than what pressing them did.
     """
     items = []
     if selecting:
         items.append(FooterItem("1-9", "select", Priority.PRIMARY))
-    for before, after, what in (
-        (PREVIOUS_FRAME_KEY, NEXT_FRAME_KEY, "frame"),
-        (PREVIOUS_ITEM_KEY, NEXT_ITEM_KEY, "post"),
-    ):
-        axis = _axis(moving, before, after)
-        if axis:
-            items.append(FooterItem(axis, what, Priority.SECONDARY))
+    items += movement(moving, item="post")
     if NEXT_FRAME_KEY in moving:
         #  Named so the conventional viewdata key is discoverable rather than
-        #  merely working -- and first to lose its label, since `S` already says
-        #  the same thing.
-        items.append(FooterItem(CONVENTIONAL_NEXT_FRAME_KEY, "next", Priority.REDUNDANT))
-    items.append(FooterItem("0", "menu", Priority.ESSENTIAL))
-    return render_footer(items, COLUMNS - _FOOTER_ATTRIBUTE)
-
-
-def _axis(moving: dict[str, str], before: str, after: str) -> str:
-    """One axis of movement, with an arrow beside each key that is available."""
-    if before in moving and after in moving:
-        return f"{_BEFORE}{before}{_BETWEEN}{after}{_AFTER}"
-    if after in moving:
-        return f"{after}{_AFTER}"
-    if before in moving:
-        return f"{_BEFORE}{before}"
-    return ""
+        #  merely working -- and the first thing off the row, since the key
+        #  above it already says what it does.
+        items.append(
+            FooterItem(CONVENTIONAL_NEXT_FRAME_KEY, "next frame", Priority.REDUNDANT)
+        )
+    items.append(FooterItem(HOME_KEY, "index", Priority.ESSENTIAL))
+    return render_footer(items, ROOM)

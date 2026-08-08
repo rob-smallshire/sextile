@@ -20,7 +20,7 @@ so it is meant to be read.
 """
 
 import calendar
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 from datetime import UTC, date, datetime, timedelta
 from typing import Final
 
@@ -31,6 +31,13 @@ from sextile.viewdata.canvas import Canvas
 from sextile.viewdata.chrome import CONTENT_FIRST_ROW, CONTENT_ROWS, draw_chrome
 from sextile.viewdata.controls import Colour
 from sextile.viewdata.drawing import fitted
+from sextile.viewdata.footer import (
+    ROOM,
+    FooterItem,
+    Priority,
+    movement,
+    render_footer,
+)
 from sextile.viewdata.frame import COLUMNS, Frame
 
 SERVICE_NAME: Final = "CALENDAR"
@@ -141,20 +148,23 @@ class CalendarApplication(Sextile):
             "0": self.address_for("main"),
             "1": self.address_for("month", day=day),
         }
-        offered = ["1 month"]
         if request.arrival.preceding is not None:
             choices["A"] = request.arrival.preceding
         if request.arrival.following is not None:
             choices["D"] = request.arrival.following
-        axis = _axis("A" in choices, "D" in choices, "day")
-        if axis:
-            offered.append(axis)
-        offered.append("0 menu")
         return Page(
             frames=(
                 PageFrame(
                     frame=self._notice_frame(
-                        request.address, _month_name(day), lines, prompt=", ".join(offered)
+                        request.address,
+                        _month_name(day),
+                        lines,
+                        prompt=_prompt(
+                            set(choices),
+                            selecting=False,
+                            item="day",
+                            offering=[FooterItem("1", "month", Priority.PRIMARY)],
+                        ),
                     ),
                     choices=choices,
                 ),
@@ -234,7 +244,7 @@ class CalendarApplication(Sextile):
             canvas,
             title=_month_name(day).upper(),
             page_number=address.frame_number(0),
-            prompt="←A―D→ month, 0 menu",
+            prompt=_prompt({"A", "D"}, selecting=False, item="month"),
         )
         canvas.row(CONTENT_FIRST_ROW).text(
             "  ".join(weekday[:2] for weekday in _WEEKDAYS), Colour.CYAN
@@ -295,7 +305,7 @@ class CalendarApplication(Sextile):
                         address,
                         title if title is not None else self._headed(address),
                         lines,
-                        prompt=f"{HOME_KEY} menu",
+                        prompt=_prompt(set(), selecting=False),
                     ),
                     choices={"0": self.address_for("main")},
                 ),
@@ -346,28 +356,23 @@ def _in_words(gap: timedelta) -> str:
     return f"{-days} days ago"
 
 
-def _axis(before: bool, after: bool, what: str) -> str:
-    """One axis of movement, named only where it goes somewhere."""
-    if before and after:
-        return f"←A―D→ {what}"
-    if after:
-        return f"D→ {what}"
-    if before:
-        return f"←A {what}"
-    return ""
+def _prompt(
+    moves: set[str],
+    *,
+    selecting: bool,
+    item: str = "item",
+    offering: Sequence[FooterItem] = (),
+) -> str:
+    """Name every key that does something here, and no key that does not.
 
-
-def _prompt(moves: set[str], *, selecting: bool) -> str:
-    parts = []
+    The framework has the words -- the same ones the templates use -- so a page
+    built by hand and a page built by a template say the same thing about the
+    same key, and a frame with room to spare says it in full.
+    """
+    items = []
     if selecting:
-        parts.append("1-9 select")
-    if "W" in moves and "S" in moves:
-        parts.append("←W―S→ frame")
-    elif "S" in moves:
-        parts.append("S→ frame")
-    elif "W" in moves:
-        parts.append("←W frame")
-    parts.append("0 menu")
-    return ", ".join(parts)
-
-
+        items.append(FooterItem("1-9", "select", Priority.PRIMARY))
+    items += offering
+    items += movement(moves, item=item)
+    items.append(FooterItem(HOME_KEY, "index", Priority.ESSENTIAL))
+    return render_footer(items, ROOM)

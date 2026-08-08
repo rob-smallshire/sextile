@@ -495,6 +495,22 @@ is 78 blocks wide in practice rather than 80. Where a gap would show,
 mosaic instead of blanking, which is how teletext art has always changed colour
 mid-picture.
 
+**Pictures become blocks** in `viewdata/blocks.py`: a bitmap in, six-bit cell
+patterns out, padded to whole cells.
+
+`inverted` lives there rather than in whatever draws the letters, and the reason
+is the interesting part. The SAA5050 has **no alpha-black attribute** — the
+colour codes run 0x01–0x07 and there is no way to ask for a black foreground. So
+a Ceefax banner of black letters on cyan is not black letters at all: it is a
+solid cyan field with letter-shaped holes, the unlit blocks showing the default
+black background through. It costs one graphics attribute per row and no
+background attributes whatever, which is *cheaper* than the coloured-background
+version it appears to be.
+
+Inverting a glyph on its own would leave the space around it black, so what has
+to be inverted is the whole field the picture occupies — including the padding,
+or the field has a ragged edge exactly where a banner must not.
+
 **This is where mosaic graphics belong when they come.** The block characters
 are already how the rules and the countdown bar are drawn — the G1 set gives
 each cell a 2×3 grid of blocks, so a frame is 80×72 addressable points, and

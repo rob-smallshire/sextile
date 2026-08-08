@@ -524,7 +524,7 @@ class TestHowToGetAbout:
 
     @pytest.mark.parametrize(
         "keys",
-        ["1-9", "0", "*nnn#", "*<keyword>#", "W", "A", "*0#", "*00#", "*09#", "*90#"],
+        ["1-9", "0", "*<number>#", "*<keyword>#", "W", "A", "*0#", "*00#", "*09#", "*90#"],
     )
     async def test_it_names_the_keys_the_service_answers(
         self, keys: str, app: StardotApplication
@@ -780,3 +780,16 @@ class TestTheGuideSKeyColumn:
     ) -> None:
         for row in all_text_of(await page_at(app, "91")).splitlines():
             assert len(row) <= COLUMNS
+
+
+class TestHowThePlaceholdersAreWritten:
+    async def test_a_field_a_reader_fills_in_is_written_the_same_way(
+        self, app: StardotApplication
+    ) -> None:
+        #  As the contents page writes the ones inside a page number, so a
+        #  reader meets one shape of placeholder and not two. The underscore
+        #  of the route's own field name is not in the character set, so what
+        #  reaches the screen is *82<post-id>#.
+        guide = all_text_of(await page_at(app, "91"))
+        assert "*<number>#" in guide and "*<keyword>#" in guide
+        assert "*82<post-id>#" in all_text_of(await page_at(app, "93"))

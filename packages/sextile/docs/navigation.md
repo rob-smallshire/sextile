@@ -33,7 +33,7 @@ keeps working alongside `S`, being the one key a viewdata reader will try
 without being told, and there are tests to keep the two identical.
 
 ```
-*nnn#     go to a page              1-9   select from the menu
+*<number># go to a page             1-9   select from the menu
 *0#       back, through history     0     the main index
 *00#      show this frame again     *     cancel a request being typed
 *09#      fetch it afresh           DEL   rub out; over the star, cancel

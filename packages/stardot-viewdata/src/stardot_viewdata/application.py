@@ -548,7 +548,7 @@ class StardotApplication(Sextile):
         moving = [
             (f"1-{CHOICES_PER_FRAME}", "choose from a menu"),
             (HOME_KEY, "back to the main index"),
-            (keyed("nnn"), "go straight to a page"),
+            (keyed("<number>"), "go straight to a page"),
             (keyed("<keyword>"), "go to named page"),
             (keys.CONVENTIONAL_NEXT_FRAME, "next frame in series"),
             ("DEL", "rub out a character"),

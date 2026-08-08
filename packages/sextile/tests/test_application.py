@@ -540,3 +540,124 @@ class TestDescribingAPage:
                 return f"page {address}, obviously"
 
         assert Mine().describe(PageAddress("8")) == "page 8, obviously"
+
+
+class TestSayingWhatAPageIsAtRegistration:
+    """The words go where the page is declared, and everything else reads them.
+
+    Otherwise a service names each page three times over -- in its menu, in
+    whatever labels a history, and in its own guide -- and the three drift.
+    """
+
+    def test_a_page_can_be_given_a_title(self) -> None:
+        app = Sextile()
+
+        @app.page("5", name="contributors", title="By contributor")
+        async def contributors(request: PageRequest) -> Page:
+            return one_frame()
+
+        found = app.page_info("contributors")
+        assert found is not None
+        assert found.title == "By contributor"
+
+    def test_and_a_line_of_detail(self) -> None:
+        app = Sextile()
+
+        @app.page("5", name="contributors", title="By contributor", detail="who posts")
+        async def contributors(request: PageRequest) -> Page:
+            return one_frame()
+
+        found = app.page_info("contributors")
+        assert found is not None
+        assert found.detail == "who posts"
+
+    def test_the_title_is_what_describes_it(self) -> None:
+        app = Sextile()
+
+        @app.page("5", name="contributors", title="By contributor")
+        async def contributors(request: PageRequest) -> Page:
+            return one_frame()
+
+        assert app.describe(PageAddress("5")) == "By contributor"
+
+    def test_a_titled_page_with_fields_is_described_with_them(self) -> None:
+        app = Sextile()
+
+        @app.page("52{user_id:int}", name="contributor", title="Contributor")
+        async def contributor(request: PageRequest, user_id: int) -> Page:
+            return one_frame()
+
+        assert app.describe(PageAddress("5210058")) == "Contributor 10058"
+
+    def test_an_untitled_page_falls_back_to_its_route_name(self) -> None:
+        app = Sextile()
+
+        @app.page("5", name="contributors")
+        async def contributors(request: PageRequest) -> Page:
+            return one_frame()
+
+        assert app.describe(PageAddress("5")) == "contributors"
+
+    def test_asking_about_a_page_there_is_not(self) -> None:
+        assert Sextile().page_info("nothing") is None
+
+
+class TestListingThePages:
+    #  What a service is made of, from the registrations rather than from a
+    #  list somebody has to remember to update.
+
+    def build(self) -> Sextile:
+        async def anything(request: PageRequest, **fields: object) -> Page:
+            return one_frame()
+
+        app = Sextile()
+        app.page("1", name="main", title="Main index")(anything)
+        app.page("5", name="contributors", title="By contributor")(anything)
+        app.page("52{user_id:int}", name="contributor", title="One contributor")(anything)
+        app.page("90", name="logoff")(anything)
+        return app
+
+    def test_titled_pages_are_listed(self) -> None:
+        assert [page.name for page in self.build().pages()] == [
+            "main",
+            "contributors",
+            "contributor",
+        ]
+
+    def test_a_page_with_no_title_is_left_out(self) -> None:
+        #  Giving one a title is how a service says it may be advertised, so a
+        #  logoff page or a title frame stays off the list without a flag.
+        assert "logoff" not in [page.name for page in self.build().pages()]
+
+    def test_each_carries_the_number_a_reader_would_key(self) -> None:
+        listed = {page.name: page.keyed for page in self.build().pages()}
+        assert listed["contributors"] == "5"
+        assert listed["contributor"] == "52<user_id>"
+
+    def test_they_come_in_the_order_they_were_registered(self) -> None:
+        #  Not the order the router tries them in, which is about matching.
+        assert [page.keyed for page in self.build().pages()] == ["1", "5", "52<user_id>"]
+
+
+class TestWhereZeroGoes:
+    """`home` is where a caller arrives; `index` is where `0` goes.
+
+    The same question until a service has something to show before its index --
+    a title frame is arrived at once and never returned to.
+    """
+
+    def test_they_are_the_same_by_default(self) -> None:
+        app = Sextile()
+        assert app.index == app.home == PageAddress("1")
+
+    def test_a_service_opening_on_a_title_frame_keeps_them_apart(self) -> None:
+        app = Sextile(home="0", index="1")
+        assert app.home == PageAddress("0")
+        assert app.index == PageAddress("1")
+
+    async def test_the_framework_s_own_pages_use_the_index(self) -> None:
+        app = Sextile(home="0", index="1")
+        page = await app.history(
+            PageRequest(address=PageAddress("92"), history=(PageAddress("8"),))
+        )
+        assert page.frames[0].destination("0") == PageAddress("1")

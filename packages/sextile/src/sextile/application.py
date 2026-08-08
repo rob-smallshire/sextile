@@ -29,6 +29,7 @@ from dataclasses import dataclass, field
 from typing import Final
 
 from sextile.addressing import PageAddress, UnknownPageError
+from sextile.contents import contents_page
 from sextile.history import history_page
 from sextile.page import Page, PageFrame
 from sextile.routing import Converter, Match, Router
@@ -98,6 +99,28 @@ class Parting:
     """What they had accumulated over the call."""
 
 
+@dataclass(frozen=True)
+class PageInfo:
+    """What a service said about a page when it registered it.
+
+    The words belong where the page is declared. A service that names each page
+    again in its menu, again wherever one is listed, and again in its own guide
+    has three copies to keep in step, and they do not stay in step.
+    """
+
+    name: str
+    """The route's name, which `address_for` also answers to."""
+
+    keyed: str
+    """The number a reader would key, fields shown as `<name>`: `52<user_id>`."""
+
+    title: str
+    """What to call it. A page with no title is not advertised."""
+
+    detail: str = ""
+    """A second line, for a menu with room for one."""
+
+
 type Handler = Callable[..., Awaitable[Page]]
 type NotFoundHandler = Callable[[str], Awaitable[Page]]
 type PartingHandler = Callable[[Parting], Awaitable[Page]]
@@ -129,6 +152,17 @@ class Application(ABC):
         """
         return PageAddress("1")
 
+    @property
+    def index(self) -> PageAddress:
+        """Where `0` goes: the page a reader who is lost can rely on.
+
+        The same as `home` for most services, and not for one that opens on a
+        title frame -- a caller arrives there once and should never be sent back
+        to it. The two are the same question only until a service has something
+        to show before its index.
+        """
+        return self.home
+
     def describe(self, address: PageAddress) -> str:
         """What to call a page in a list of pages.
 
@@ -155,8 +189,24 @@ class Application(ABC):
             address=request.address,
             been=request.history,
             describe=self.describe,
-            home=self.home,
+            home=self.index,
         )
+
+    async def contents(self, request: PageRequest) -> Page:
+        """Every page this service advertises, with the number that fetches it.
+
+        Registered nowhere, like `history`; a service maps it in or does not.
+        Pages with fields are listed as `*52<user_id>#` rather than enumerated,
+        which is the point: nobody can list every contributor on a screen, and
+        everybody holding a contributor number can be told where to put it.
+        """
+        return contents_page(
+            address=request.address, pages=self.advertised(), home=self.index
+        )
+
+    def advertised(self) -> tuple[PageInfo, ...]:
+        """The pages this service is willing to list. None, unless it says so."""
+        return ()
 
     def resolve(self, target: str) -> PageAddress:
         """The page a typed request names, or raise ``UnknownPageError``.
@@ -219,13 +269,22 @@ class Application(ABC):
 class Sextile(Application):
     """An application that answers by routing page numbers to handlers."""
 
-    def __init__(self, *, name: str = "", home: str | PageAddress = "1") -> None:
+    def __init__(
+        self,
+        *,
+        name: str = "",
+        home: str | PageAddress = "1",
+        index: str | PageAddress | None = None,
+    ) -> None:
         self._name = name
         self._router: Router[Handler] = Router()
         self._mounted: list[tuple[str, Application]] = []
+        self._pages: dict[str, PageInfo] = {}
         self._not_found: NotFoundHandler | None = None
         self._timed_out: PartingHandler | None = None
         self._home = home if isinstance(home, PageAddress) else PageAddress(home)
+        wanted = self._home if index is None else index
+        self._index = wanted if isinstance(wanted, PageAddress) else PageAddress(wanted)
 
     @property
     def name(self) -> str:
@@ -235,13 +294,30 @@ class Sextile(Application):
     def home(self) -> PageAddress:
         return self._home
 
+    @property
+    def index(self) -> PageAddress:
+        return self._index
+
     # -- building it --------------------------------------------------------
 
-    def page[H: Handler](self, pattern: str, *, name: str | None = None) -> Callable[[H], H]:
+    def page[H: Handler](
+        self,
+        pattern: str,
+        *,
+        name: str | None = None,
+        title: str = "",
+        detail: str = "",
+    ) -> Callable[[H], H]:
         """Register a handler for every page number matching ``pattern``.
 
         The route takes the handler's own name unless told otherwise, so a page
         linking to another names it once rather than twice.
+
+        ``title`` and ``detail`` are what to call this page where it is listed
+        rather than shown -- in a menu, in the history, in the contents. Saying
+        them here means saying them once. A page given no title is not
+        advertised in the contents, which is how a title frame or a logoff page
+        stays off it without needing a flag of its own.
 
         Generic in the handler so that decorating one does not throw its own
         signature away: a service checked strictly should stay checked strictly
@@ -249,10 +325,34 @@ class Sextile(Application):
         """
 
         def register(handler: H) -> H:
-            self._router.add(pattern, handler, name=name or handler.__name__)
+            route = name or handler.__name__
+            self._router.add(pattern, handler, name=route)
+            if title:
+                self._pages[route] = PageInfo(
+                    name=route,
+                    keyed=self._router.named(route).keyed,
+                    title=title,
+                    detail=detail,
+                )
             return handler
 
         return register
+
+    def page_info(self, name: str) -> PageInfo | None:
+        """What was said about a named page when it was registered."""
+        return self._pages.get(name)
+
+    def advertised(self) -> tuple[PageInfo, ...]:
+        return self.pages()
+
+    def pages(self) -> tuple[PageInfo, ...]:
+        """Every page this service advertises, in the order it registered them.
+
+        Registration order rather than the router's, which is about matching and
+        would put the most literal pattern first for reasons a reader does not
+        care about.
+        """
+        return tuple(self._pages.values())
 
     def alias(self, keyword: str, address: str | PageAddress) -> None:
         """Let a word be keyed in place of a page number: `*MAIN#` for `*1#`."""
@@ -342,8 +442,10 @@ class Sextile(Application):
         found = self.route(address)
         if found is None or found.name is None:
             return super().describe(address)
+        about = self._pages.get(found.name)
+        called = about.title if about is not None else found.name
         fields = " ".join(str(value) for value in found.params.values())
-        return f"{found.name} {fields}".strip()
+        return f"{called} {fields}".strip()
 
     def keywords(self) -> dict[str, PageAddress]:
         """The named jumps, for a page that wants to list them."""

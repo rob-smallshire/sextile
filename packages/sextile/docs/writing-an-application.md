@@ -163,15 +163,42 @@ the lower rows blank**. A key offering the index would be a key that does
 nothing, and the framework puts the cursor two rows below the last thing said
 and turns it on, so that the reader has somewhere to type to their modem.
 
-## Pages that come with the framework
-
-One page is built for you and registered nowhere, so that a service maps it into
-its own numbering or does without:
+## Say what a page is where you register it
 
 ```python
-self.page("92", name="history")(self.history)     # where this caller has been
+@app.page("5", name="contributors", title="By contributor", detail="browse by poster")
+async def contributors(request: PageRequest) -> Page:
+    ...
+```
+
+Those words are what the page is called wherever it is *listed* rather than
+shown — a menu offering it, a history naming it, the contents. Say them once
+here and nothing downstream needs its own copy:
+
+```python
+app.page_info("contributors").title      # "By contributor"
+app.describe(PageAddress("5"))           # "By contributor"
+app.pages()                              # every page that has a title
+```
+
+**A page with no title is not advertised.** Giving one a title is how a service
+says it may be listed, so a title frame or a logoff page stays off the contents
+without a flag.
+
+## Pages that come with the framework
+
+Two pages are built for you and registered nowhere, so that a service maps them
+into its own numbering or does without:
+
+```python
+self.page("92", name="history", title="Where you have been")(self.history)
+self.page("93", name="contents", title="Every page")(self.contents)
 self.alias("HISTORY", self.address_for("history"))
 ```
+
+`contents` lists what the service is made of, taking pages with fields as
+patterns rather than enumerating them — `*52<user-id>#  One contributor` — which
+is the one thing a hand-written index cannot do.
 
 Key 1 goes back one page — the same as `*0#` — 2 goes back two, and longer
 histories page with `W`/`S`/`#`. The entries are labelled by

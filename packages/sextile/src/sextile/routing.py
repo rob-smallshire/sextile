@@ -194,6 +194,18 @@ class Route[T]:
     def fields(self) -> tuple[str, ...]:
         return tuple(part.name for part in self.parts if isinstance(part, _Field))
 
+    @property
+    def keyed(self) -> str:
+        """The pattern as a reader would see it: `82<post_id>`.
+
+        For a page that lists pages. The converter is left out: what a field
+        accepts is the router's business, and what the reader has in their hand
+        is a post number.
+        """
+        return "".join(
+            part if isinstance(part, str) else f"<{part.name}>" for part in self.parts
+        )
+
 
 @dataclass(frozen=True)
 class Match[T]:
@@ -330,6 +342,13 @@ class Router[T]:
     def routes(self) -> tuple[Route[T], ...]:
         """Every route, most literal first."""
         return tuple(self._routes)
+
+    def named(self, name: str) -> Route[T]:
+        """The route registered under a name, or raise ``NoSuchRouteError``."""
+        found = self._named.get(name)
+        if found is None:
+            raise NoSuchRouteError(f"{name!r} names no route")
+        return found
 
     # -- reading a pattern --------------------------------------------------
 

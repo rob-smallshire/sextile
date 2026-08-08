@@ -19,6 +19,7 @@ from sextile.addressing import PageAddress, UnknownPageError
 from sextile.application import Arrival, PageRequest
 from sextile.page import Page
 from stardot_viewdata import StardotApplication
+from stardot_viewdata.application import MenuItem
 from stardot_viewdata.model import Post
 from stardot_viewdata.store.repository import Repository
 
@@ -99,6 +100,7 @@ def text_of(page: Page, index: int = 0) -> str:
 EVERY_PAGE: list[str] = [
     "0",
     "1",
+    "93",
     "8",
     "82489000",
     "82999999",
@@ -401,3 +403,85 @@ class TestHowToGetAbout:
         for word in ("MAIN", "LATEST", "TOPICS", "DAYS", "FORUMS", "WHO"):
             assert f"*{word}#" in shown
             app.resolve(word)
+
+
+class TestThePagesSayWhatTheyAre:
+    """The words live at the registration, and everything else reads them.
+
+    Before this, a page was named in the menu, again wherever one was listed,
+    and again in the guide. Three copies of a name do not stay in step.
+    """
+
+    def test_a_menu_item_is_taken_from_the_page_it_offers(
+        self, app: StardotApplication
+    ) -> None:
+        item = MenuItem.for_page(app, "contributors")
+        assert item.text == "By contributor"
+        assert item.detail == "browse by poster"
+        assert item.destination == PageAddress("5")
+
+    def test_asking_for_a_page_that_says_nothing_about_itself(
+        self, app: StardotApplication
+    ) -> None:
+        #  The logoff page has no title, deliberately.
+        with pytest.raises(ValueError):
+            MenuItem.for_page(app, "logoff")
+
+    async def test_the_main_index_offers_what_the_pages_call_themselves(
+        self, app: StardotApplication
+    ) -> None:
+        page = await page_at(app, "1")
+        shown = "\n".join(text_of(page, index) for index in range(len(page.frames)))
+        for title in ("Latest posts", "By topic", "By day", "By forum", "By contributor"):
+            assert title in shown
+
+    def test_a_page_with_no_field_is_described_by_its_title(
+        self, app: StardotApplication
+    ) -> None:
+        assert app.describe(PageAddress("5")) == "By contributor"
+
+    def test_one_with_a_field_says_which(self, app: StardotApplication) -> None:
+        #  "One contributor" is the right title in a list of kinds of page and
+        #  the wrong one in a list of pages a reader has been to.
+        assert app.describe(PageAddress("5210058")) == "Contributor 10058"
+
+    def test_a_day_is_described_as_a_reader_would_say_it(
+        self, app: StardotApplication
+    ) -> None:
+        assert app.describe(PageAddress("3220260802")) == "SUN 02 AUG 2026"
+
+
+class TestEveryPage:
+    async def test_it_lists_the_pages_with_their_numbers(
+        self, app: StardotApplication
+    ) -> None:
+        shown = text_of(await page_at(app, "93"))
+        assert "*5#" in shown
+        assert "By contributor" in shown
+
+    async def test_a_number_with_a_field_is_shown_as_one(
+        self, app: StardotApplication
+    ) -> None:
+        assert "*52<user-id>#" in text_of(await page_at(app, "93"))
+
+    async def test_the_pages_a_reader_cannot_go_to_are_left_off(
+        self, app: StardotApplication
+    ) -> None:
+        #  The title frame cannot be keyed and the logoff page is not somewhere
+        #  to go; neither is given a title, which is how they stay off the list.
+        shown = text_of(await page_at(app, "93"))
+        assert "*0#" not in shown
+        assert "*90#" not in shown
+
+    @pytest.mark.parametrize("keyword", ["PAGES", "CONTENTS"])
+    def test_a_keyword_reaches_it(self, keyword: str, app: StardotApplication) -> None:
+        assert app.resolve(keyword) == PageAddress("93")
+
+    def test_every_page_listed_can_be_reached(self, app: StardotApplication) -> None:
+        #  A directory that has drifted from the thing it describes is worse
+        #  than none, and this one is built from the registrations so it cannot.
+        #  Parameterised numbers are shown as patterns, so only the plain ones
+        #  can be built and looked up.
+        for page in app.pages():
+            if "<" not in page.keyed:
+                assert app.route(PageAddress(page.keyed)) is not None

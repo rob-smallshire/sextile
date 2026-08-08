@@ -81,23 +81,6 @@ _BETWEEN: Final = "―"  # HORIZONTAL BAR, G0 0x60
 _FOOTER_ATTRIBUTE: Final = 1
 
 
-#: What a reader would call each of the pages that has no field in its number.
-#: The parameterised ones are spelled out in `describe`.
-_PAGE_NAMES: Final = {
-    "title": "Title frame",
-    "main": "Main index",
-    "posts": "Latest posts",
-    "topics": "Topics",
-    "days": "By day",
-    "forums": "By forum",
-    "contributors": "By contributor",
-    "about": "About this service",
-    "help": "How to get about",
-    "history": "Where you have been",
-    "logoff": "Goodbye",
-}
-
-
 @dataclass(frozen=True)
 class MenuItem:
     """One selectable line of a menu."""
@@ -105,6 +88,20 @@ class MenuItem:
     text: str
     detail: str
     destination: PageAddress
+
+    @classmethod
+    def for_page(cls, app: "StardotApplication", name: str) -> "MenuItem":
+        """A menu line taken from what the page said about itself.
+
+        The words are at the registration, so a menu offering a page and a list
+        naming it cannot drift apart -- they are the same words.
+        """
+        about = app.page_info(name)
+        if about is None:
+            raise ValueError(f"{name!r} is not a page that says what it is")
+        return cls(
+            text=about.title, detail=about.detail, destination=app.address_for(name)
+        )
 
 
 class StardotApplication(Sextile):
@@ -122,7 +119,9 @@ class StardotApplication(Sextile):
         the application stops. That is what a test wants, and what a caller
         holding the archive for some other purpose wants too.
         """
-        super().__init__(name=SERVICE_NAME.title(), home="0")
+        #  A caller arrives on the title frame once; `0` means the index, which
+        #  is not the same page and never has been sent back to.
+        super().__init__(name=SERVICE_NAME.title(), home="0", index="1")
         self._database_filepath = database_filepath
         self._repository = repository
         self._ours = repository is None
@@ -168,28 +167,47 @@ class StardotApplication(Sextile):
         #  keyed and does not display a number; a caller arrives on it because
         #  the line opened, and leaves it by pressing on.
         self.page("0", name="title")(self._title)
-        self.page("1", name="main")(self._main_index)
-        self.page("8", name="posts")(self._latest_posts)
-        self.page("82{post_id:int}", name="post")(self._post)
-        self.page("7", name="topics")(self._topics_index)
-        self.page("72{topic_id:int}", name="topic")(self._topic)
-        self.page("3", name="days")(self._days_index)
-        self.page("32{day:date}", name="day")(self._day)
-        self.page("4", name="forums")(self._forums_index)
-        self.page("42{forum_id:int}", name="forum")(self._forum)
-        self.page("5", name="contributors")(self._contributors_index)
-        self.page("52{user_id:int}", name="contributor")(self._contributor)
-        self.page("9", name="about")(self._about)
+        self.page("1", name="main", title="Main index")(self._main_index)
+        self.page("8", name="posts", title="Latest posts", detail="the newest first")(
+            self._latest_posts
+        )
+        self.page("82{post_id:int}", name="post", title="One post")(self._post)
+        self.page("7", name="topics", title="By topic", detail="read whole threads")(
+            self._topics_index
+        )
+        self.page("72{topic_id:int}", name="topic", title="One topic")(self._topic)
+        self.page("3", name="days", title="By day", detail="browse by date")(
+            self._days_index
+        )
+        self.page("32{day:date}", name="day", title="One day")(self._day)
+        self.page("4", name="forums", title="By forum", detail="browse by section")(
+            self._forums_index
+        )
+        self.page("42{forum_id:int}", name="forum", title="One forum")(self._forum)
+        self.page(
+            "5", name="contributors", title="By contributor", detail="browse by poster"
+        )(self._contributors_index)
+        self.page("52{user_id:int}", name="contributor", title="One contributor")(
+            self._contributor
+        )
+        self.page("9", name="about", title="About this service")(self._about)
         #  In the system namespace, where the second digit is a function rather
         #  than a content operation.
-        self.page("91", name="help")(self._help)
-        #  The framework's own page, mapped into this service's numbering. It
-        #  needs nothing from here but a number and a word for each page, which
-        #  `describe` below supplies.
-        self.page("92", name="history")(self.history)
+        self.page(
+            "91", name="help", title="How to get about", detail="the keys, and what they do"
+        )(self._help)
+        #  The framework's own pages, mapped into this service's numbering. They
+        #  need nothing from here but a number and the words above.
+        self.page(
+            "92", name="history", title="Where you have been", detail="this call, newest first"
+        )(self.history)
+        self.page(
+            "93", name="contents", title="Every page", detail="and the number that fetches it"
+        )(self.contents)
         #  9 is the system namespace, where the second digit is a system
         #  function rather than a content operation, so that *90# can keep its
-        #  conventional Prestel meaning.
+        #  conventional Prestel meaning. No title: a page there is no coming
+        #  back from does not belong in a list of places to go.
         self.page("90", name="logoff")(self._logoff)
 
         #  Named jumps. Prestel itself was almost entirely numeric, but other
@@ -213,6 +231,8 @@ class StardotApplication(Sextile):
             ("KEYS", "help"),
             ("HISTORY", "history"),
             ("BEEN", "history"),
+            ("PAGES", "contents"),
+            ("CONTENTS", "contents"),
             ("BYE", "logoff"),
             ("OFF", "logoff"),
         ):
@@ -221,30 +241,30 @@ class StardotApplication(Sextile):
     def describe(self, address: PageAddress) -> str:
         """What to call a page where one is listed rather than shown.
 
-        The framework would say "post 489493", from the route's own name, which
-        is serviceable; this says what a reader would call it.
+        Only the pages whose numbers carry a field need saying here: the rest
+        are titled where they are registered, and the framework reads those.
+        "One post" is the right title in a list of *kinds* of page and the wrong
+        one in a list of pages a reader has been to, which is the whole reason
+        this override exists.
 
         Subjects and forum names are deliberately not looked up. A history frame
         lists nine pages, which would be nine queries for a label, and the page
         number beside each entry already says which post it is.
         """
         found = self.route(address)
-        if found is None or found.name is None:
-            return super().describe(address)
-        plain = _PAGE_NAMES.get(found.name)
-        if plain is not None:
-            return plain
-        match found.name, found.params:
-            case "post", {"post_id": int() as post_id}:
-                return f"Post {post_id}"
-            case "topic", {"topic_id": int() as topic_id}:
-                return f"Topic {topic_id}"
-            case "forum", {"forum_id": int() as forum_id}:
-                return f"Forum {forum_id}"
-            case "contributor", {"user_id": int() as user_id}:
-                return f"Contributor {user_id}"
-            case "day", {"day": date() as day}:
-                return _day_title(day)
+        if found is not None and found.params:
+            match found.name, found.params:
+                case "post", {"post_id": int() as post_id}:
+                    return f"Post {post_id}"
+                case "topic", {"topic_id": int() as topic_id}:
+                    return f"Topic {topic_id}"
+                case "forum", {"forum_id": int() as forum_id}:
+                    return f"Forum {forum_id}"
+                case "contributor", {"user_id": int() as user_id}:
+                    return f"Contributor {user_id}"
+                case "day", {"day": date() as day}:
+                    return _day_title(day)
+        #  Everything else is what the page said it was when it was registered.
         return super().describe(address)
 
     # -- menus --------------------------------------------------------------
@@ -252,18 +272,18 @@ class StardotApplication(Sextile):
     async def _main_index(self, request: PageRequest) -> Page:
         held = await self._read(lambda repository: repository.count_posts())
         items = [
-            MenuItem("Latest posts", "the newest first", self.address_for("posts")),
-            MenuItem("By topic", "read whole threads", self.address_for("topics")),
-            MenuItem("By day", "browse by date", self.address_for("days")),
-            MenuItem("By forum", "browse by section", self.address_for("forums")),
-            MenuItem("By contributor", "browse by poster", self.address_for("contributors")),
-            MenuItem(
-                "Where you have been",
-                "this call, newest first",
-                self.address_for("history"),
-            ),
-            MenuItem("How to get about", "the keys, and what they do", self.address_for("help")),
-            MenuItem("About this service", "", self.address_for("about")),
+            MenuItem.for_page(self, name)
+            for name in (
+                "posts",
+                "topics",
+                "days",
+                "forums",
+                "contributors",
+                "history",
+                "help",
+                "contents",
+                "about",
+            )
         ]
         return self._menu(
             request.address,

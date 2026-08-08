@@ -189,6 +189,41 @@ disagree.
 page and should not acquire one: which number means goodbye is the application's
 affair.
 
+**A page says what it is where it is registered.** `title` and `detail` on
+`app.page(...)` are the words for that page wherever it is listed rather than
+shown — in a menu, in the history, in the contents. Saying them once is the
+point: a service that names each page in its menu, again wherever one is
+listed, and again in its own guide has three copies which do not stay in step,
+and that is exactly what Stardot had.
+
+`Application.describe` reads them, `Sextile.pages()` lists them, and
+`Sextile.page_info(name)` fetches one. **A page given no title is not
+advertised** — which is how a title frame or a logoff page stays off the
+contents without a flag of its own.
+
+**A contents page comes with the framework, unregistered**, built from those
+registrations. Its point is the pages whose numbers carry a field:
+
+```
+*5#             By contributor
+*52<user-id>#   One contributor
+```
+
+Nobody can list every contributor on a screen; everybody holding a contributor
+number can be told where to put it, and only the framework knows the patterns
+well enough to say. `Route.keyed` renders one for reading — the converter is
+left out, since what a field accepts is the router's business.
+
+(The hyphen in `<user-id>` is the character set, not a typo: G0 has no
+underscore — 0x5F is `#` — so transliteration lands on a hyphen, which reads
+better anyway.)
+
+**`home` and `index` are different questions.** `home` is where a caller
+arrives; `index` is where `0` goes. The same page for most services, and not for
+one that opens on a title frame — arrived at once, and never to be sent back to.
+`index` defaults to `home`, so a service without a title frame need not know the
+distinction exists.
+
 **A history page comes with the framework, unregistered.** The session already
 keeps a history so that `*0#` can retrace it one page at a time; showing the
 whole of it turns a stack into a map. `Application.history` is a handler a

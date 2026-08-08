@@ -427,3 +427,32 @@ class TestApplicationConverters:
         router.converter("pair", Converter(field_pattern="[0-9]{2}", width=2))
         with pytest.raises(RouteError):
             router.converter("pair", Converter(field_pattern="[0-9]{3}", width=3))
+
+
+class TestSpellingAPatternOut:
+    """A pattern as a reader would see it, for a page that lists pages.
+
+    `82{post_id:int}` is not something to put on a screen; `82<post_id>` says
+    the same thing to somebody holding a post number.
+    """
+
+    def test_a_literal_pattern_is_itself(self) -> None:
+        router: Router[str] = Router()
+        router.add("1", "main", name="main")
+        assert router.routes()[0].keyed == "1"
+
+    def test_a_field_becomes_its_name_in_angle_brackets(self) -> None:
+        router: Router[str] = Router()
+        router.add("82{post_id:int}", "post", name="post")
+        assert router.routes()[0].keyed == "82<post_id>"
+
+    def test_the_converter_is_not_shown(self) -> None:
+        #  Its business is what the field accepts, not what the reader keys.
+        router: Router[str] = Router()
+        router.add("32{day:date}", "day", name="day")
+        assert router.routes()[0].keyed == "32<day>"
+
+    def test_several_fields_are_all_shown(self) -> None:
+        router: Router[str] = Router()
+        router.add("6{year:int(4)}{month:int(2)}", "month", name="month")
+        assert router.routes()[0].keyed == "6<year><month>"

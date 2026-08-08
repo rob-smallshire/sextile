@@ -402,7 +402,7 @@ functions, so your own sit beside them:
 ```python
 from sextile.viewdata.drawing import bar, centred, centred_double, fitted, rule
 
-rule(canvas, 1)                                    # a full-width mosaic rule
+rule(canvas, 1)                                    # a mosaic rule across the row
 centred(canvas, 3, "STARDOT", Colour.YELLOW)       # across the middle of a row
 centred_double(canvas, 5, "STARDOT", Colour.CYAN)  # and at twice the height
 bar(canvas, 20, colour=Colour.GREEN, cells=20, lit=13)   # a gauge

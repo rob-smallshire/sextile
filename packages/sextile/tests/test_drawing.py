@@ -76,10 +76,12 @@ class TestCentringAtTwiceTheHeight:
 
 
 class TestRules:
-    def test_a_rule_fills_the_row(self) -> None:
+    def test_a_rule_crosses_the_row_but_for_its_margins(self) -> None:
+        #  Two cells at each end: the colour and the separated attribute have
+        #  to go somewhere on the left, and the right matches them.
         canvas = Canvas()
         rule(canvas, 1)
-        assert rows_of(canvas)[1].count(SOLID) == COLUMNS - 2
+        assert rows_of(canvas)[1].count(SOLID) == COLUMNS - 4
 
     def test_it_is_separated_graphics(self) -> None:
         canvas = Canvas()
@@ -124,3 +126,56 @@ class TestBars:
         canvas = Canvas()
         with pytest.raises(ValueError):
             bar(canvas, 0, colour=Colour.YELLOW, column=COLUMNS)
+
+
+def middle_of(canvas: Canvas, row: int) -> float:
+    """The middle of what is drawn on a row, in cells, ignoring attributes.
+
+    An attribute displays as a blank, so it is not part of what a reader sees
+    to be centred or not.
+    """
+    lit = [
+        column
+        for column in range(COLUMNS)
+        if not canvas.frame.is_attribute(row, column)
+        and canvas.frame.cell(row, column) not in (0x20, 0)
+    ]
+    return (lit[0] + lit[-1] + 1) / 2 if lit else 0.0
+
+
+class TestOneMiddleForTheWholeFrame:
+    """Everything centred on a frame agrees where the middle is.
+
+    Three things centre themselves here -- text, rules, and lettering made of
+    blocks -- and each of them once worked it out for itself. They came out as
+    much as a cell and a half apart, which on a title frame is plainly visible:
+    the heading sat left of the rule above it.
+    """
+
+    @pytest.mark.parametrize("text", ["A", "AB", "ABC", "V I E W D A T A", "X" * 30])
+    def test_a_line_of_text_sits_in_the_middle(self, text: str) -> None:
+        canvas = Canvas()
+        centred(canvas, 0, text)
+        assert abs(middle_of(canvas, 0) - COLUMNS / 2) <= 0.5
+
+    @pytest.mark.parametrize("text", ["A", "AB", "ABC", "V I E W D A T A"])
+    def test_and_a_colour_does_not_move_it(self, text: str) -> None:
+        #  The attribute comes out of the room before the text, so the text
+        #  lands where it would have without one. It used to land a cell right.
+        plain, coloured = Canvas(), Canvas()
+        centred(plain, 0, text)
+        centred(coloured, 0, text, Colour.YELLOW)
+        assert middle_of(plain, 0) == middle_of(coloured, 0)
+
+    def test_a_rule_leaves_the_same_margin_at_each_end(self) -> None:
+        #  A rule cannot begin before its attributes, so the room they take on
+        #  the left is left on the right as well rather than being run into.
+        canvas = Canvas()
+        rule(canvas, 0)
+        assert middle_of(canvas, 0) == COLUMNS / 2
+
+    def test_and_a_rule_and_a_heading_share_it(self) -> None:
+        canvas = Canvas()
+        rule(canvas, 0)
+        centred(canvas, 1, "V I E W D A T A", Colour.CYAN)
+        assert abs(middle_of(canvas, 0) - middle_of(canvas, 1)) <= 0.5

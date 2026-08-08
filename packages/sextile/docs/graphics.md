@@ -111,6 +111,13 @@ each gap is whether the attributes fit in it. A left-to-right pass is therefore
 optimal and there is nothing to search. Placement becomes a search only if runs
 are free to *move*, which is a different feature and not this one.
 
+**Centring is by the block.** `drawing.centre` gives the column an item of a
+given width starts at, left-biased where it cannot be exact and always the same
+way, so text, rules and lettering agree where the middle of a frame is. Blocks
+go one better: `lettering.place` centres to the nearest block and takes a blank
+block before the run where that is nearer, since a blank block and an attribute
+cell look the same on the screen.
+
 **Rows are independent.** Every row begins white, in alpha, with contiguous
 graphics selected, whatever the row above ended in. So a frame composition is a
 row composition done twenty-four times and nothing reasons across rows.

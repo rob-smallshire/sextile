@@ -175,6 +175,13 @@ Every one of them sets `STARDOT` inside a row, from 25 blocks in `3x3-mono` to
 75 in `garland`. `acorn` remains the default: it is the face a BBC Micro's own
 ROM is drawn in.
 
+Lettering is centred to the block rather than to the cell it lands in: a cell
+is two blocks, so cell-wise centring left a banner up to three quarters of a
+cell off, which is plainly visible above a line of text. Where the ink has to
+begin half way into a cell it is given a blank block to start from, which costs
+nothing — an attribute cell and a blank block look the same on the screen.
+`drawing.centre` is the one rule everything on a frame centres by.
+
 To add another, see [tools/README.md](../../../tools/README.md) — including
 what has to be read and recorded before a face is vendored.
 
@@ -252,8 +259,9 @@ Roughly in order, each committable on its own.
    `KERNED`. A character the face has no glyph for is substituted, as
    transliteration does.
 3. ~~**Rendering** — text to a bitmap, then `block_runs`, then `Composition`.~~
-   Done: `lettering.cells` and `lettering.place`, which centres unless given a
-   column and never at column zero, where the attribute has to go. The inverted
+   Done: `lettering.cells` and `lettering.place`, which centres to the nearest
+   *block* unless given a column, and never at column zero, where the
+   attribute has to go. The inverted
    case takes a `margin`, because the field has to extend past the letters or
    they touch its edge.
 4. **Wrapping** in blocks, reusing the balanced algorithm in `wrapping.py`

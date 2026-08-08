@@ -1,12 +1,15 @@
 """Setting text in a mosaic font: the three spacings, and what they measure."""
 
 import pytest
+from test_drawing import middle_of as middle_of_row
 
 from sextile.viewdata import lettering
+from sextile.viewdata.blocks import BLOCKS_ACROSS
 from sextile.viewdata.canvas import Canvas
 from sextile.viewdata.composition import Composition, DoesNotFit
 from sextile.viewdata.controls import Colour
-from sextile.viewdata.font import load_font, read_font
+from sextile.viewdata.drawing import rule
+from sextile.viewdata.font import font_names, load_font, read_font
 from sextile.viewdata.frame import COLUMNS, Frame
 from sextile.viewdata.lettering import Spacing
 
@@ -245,3 +248,53 @@ class TestOntoAFrame:
         layout.draw(canvas)
         for row in (4, 5, 6):
             assert sum(byte < 0x20 for byte in canvas.frame.row_bytes(row)) == 1
+
+
+def middle_of(layout: Composition) -> float:
+    """The middle of the ink of a placed banner, in blocks across the frame."""
+    left, right = 0b010101, 0b101010
+    lit = [
+        (run.column + index) * BLOCKS_ACROSS + half
+        for runs in layout.runs.values()
+        for run in runs
+        for index, pattern in enumerate(run.patterns)
+        for half, mask in ((0, left), (1, right))
+        if pattern & mask
+    ]
+    return (min(lit) + max(lit) + 1) / 2
+
+
+class TestCentringOnTheFrame:
+    """Lettering is centred to the block, not to the cell it lands in.
+
+    A cell is two blocks, so centring a banner by whole cells leaves it up to a
+    block and a half off -- three quarters of a cell, and plainly visible above
+    a line of text that centred itself properly.
+    """
+
+    @pytest.mark.parametrize("name", font_names())
+    def test_every_face_puts_a_banner_in_the_middle(self, name: str) -> None:
+        layout = lettering.place(Composition(), 0, "STARDOT", load_font(name))
+        assert abs(middle_of(layout) - COLUMNS * BLOCKS_ACROSS / 2) <= 1
+
+    def test_which_takes_a_blank_block_before_it_when_it_has_to(self) -> None:
+        #  console's STARDOT leaves 38 blocks of margin, 19 a side, so the ink
+        #  begins half way into a cell. That is a blank block the composition
+        #  is given rather than a cell it is denied.
+        layout = lettering.place(Composition(), 0, "STARDOT", load_font("console"))
+        assert middle_of(layout) == COLUMNS * BLOCKS_ACROSS / 2
+        #  The left half of the first cell is blank and the right half is not:
+        #  the ink starts in the middle of a cell, which is the whole point.
+        assert not layout.runs[0][0].patterns[0] & 0b010101
+        assert layout.runs[0][0].patterns[0] & 0b101010
+
+    def test_and_a_column_given_is_still_a_column(self) -> None:
+        layout = lettering.place(Composition(), 0, "STARDOT", TOY, column=4)
+        assert layout.runs[0][0].column == 4
+
+    def test_a_banner_and_a_rule_share_a_middle(self) -> None:
+        #  The complaint that started this: STARDOT sat left of the rule above.
+        canvas = Canvas(Frame())
+        rule(canvas, 0)
+        lettering.place(Composition(), 2, "STARDOT", load_font("boldbash")).draw(canvas)
+        assert abs(middle_of_row(canvas, 0) - middle_of_row(canvas, 2)) <= 0.5

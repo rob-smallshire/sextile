@@ -49,6 +49,21 @@ def fitted(text: str, cells: int) -> str:
     return shortened
 
 
+def centre(width: int, *, room: int = COLUMNS) -> int:
+    """The column something `width` cells wide starts at to sit in the middle.
+
+    **One rule, used by everything on a frame that centres itself.** Text,
+    rules and lettering made of blocks each used to work this out for
+    themselves and came out as much as a cell and a half apart, which on a
+    title frame is plainly visible.
+
+    Left-biased where it cannot be exact -- an odd number of spare cells has to
+    go somewhere -- and always the same way, so two things centred on the same
+    frame are out by at most half a cell and never in opposite directions.
+    """
+    return max((room - width) // 2, 0)
+
+
 def centred(
     canvas: Canvas,
     row: int,
@@ -59,14 +74,13 @@ def centred(
 ) -> None:
     """Write text across the middle of a row.
 
-    The colour attribute is paid for out of the room before the text, so the
-    text itself lands where it would have without one.
+    The colour attribute is paid for out of the room *before* the text, so the
+    text lands in the same cells whether there is one or not.
     """
-    room = width - (1 if colour is not None else 0)
-    shortened = fitted(text, room)
-    canvas.row(row).skip(max((room - cell_count(shortened)) // 2, 0)).text(
-        shortened, colour
-    )
+    attribute = 1 if colour is not None else 0
+    shortened = fitted(text, width - attribute)
+    start = centre(cell_count(shortened), room=width)
+    canvas.row(row).skip(max(start - attribute, 0)).text(shortened, colour)
 
 
 def centred_double(
@@ -77,16 +91,22 @@ def centred_double(
     Two cells go on attributes here -- the double height and the colour -- so
     the room to centre within is two fewer than the row.
     """
-    room = COLUMNS - 1 - (1 if colour is not None else 0)
-    shortened = fitted(text, room)
-    canvas.double_height(
-        row, shortened, colour, column=max((room - cell_count(shortened)) // 2, 0)
-    )
+    attributes = 1 + (1 if colour is not None else 0)
+    shortened = fitted(text, COLUMNS - attributes)
+    start = centre(cell_count(shortened))
+    canvas.double_height(row, shortened, colour, column=max(start - attributes, 0))
 
 
 def rule(canvas: Canvas, row: int, colour: Colour = Colour.BLUE) -> None:
-    """A full-width rule in separated mosaic graphics."""
-    bar(canvas, row, colour=colour, separated=True)
+    """A rule in separated mosaic graphics, centred on the row.
+
+    A run of blocks cannot begin before the attributes that colour it, so the
+    two cells they take on the left are left free on the right as well. A rule
+    inset at one end and flush at the other reads as a mistake, and sets a
+    different middle from everything else on the frame.
+    """
+    margin = _SEPARATED_ATTRIBUTES
+    bar(canvas, row, colour=colour, separated=True, cells=COLUMNS - 2 * margin)
 
 
 def bar(

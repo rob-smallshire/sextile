@@ -523,7 +523,8 @@ class TestHowToGetAbout:
         assert "arrow keys" in rows[CONTENT_FIRST_ROW + CONTENT_ROWS - 1]
 
     @pytest.mark.parametrize(
-        "keys", ["1-9", "0", "*nnn#", "W", "A", "*0#", "*00#", "*09#", "**", "*90#"]
+        "keys",
+        ["1-9", "0", "*nnn#", "*<keyword>#", "W", "A", "*0#", "*00#", "*09#", "*90#"],
     )
     async def test_it_names_the_keys_the_service_answers(
         self, keys: str, app: StardotApplication
@@ -756,3 +757,26 @@ class TestTheGuideDescribesTheServiceItIsPartOf:
         shown = all_text_of(await page_at(Moved(repository=repository), "91"))
         assert keyed(PageAddress("96")) in shown
         assert keyed(PageAddress("90")) not in shown
+
+
+class TestTheGuideSKeyColumn:
+    async def test_the_two_frames_line_up_with_each_other(
+        self, app: StardotApplication
+    ) -> None:
+        #  One column width for the whole guide, from the widest key in it, so
+        #  neither frame is set by hand and a longer key widens both.
+        page = await page_at(app, "91")
+        starts = {
+            row.index(word)
+            for index in range(len(page.frames))
+            for row in text_of(page, index).splitlines()
+            for word in ("choose from", "back to the main", "show this frame")
+            if word in row
+        }
+        assert len(starts) == 1
+
+    async def test_and_nothing_runs_off_the_end_of_a_row(
+        self, app: StardotApplication
+    ) -> None:
+        for row in all_text_of(await page_at(app, "91")).splitlines():
+            assert len(row) <= COLUMNS

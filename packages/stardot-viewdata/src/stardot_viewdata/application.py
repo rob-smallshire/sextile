@@ -545,39 +545,33 @@ class StardotApplication(Sextile):
         #  answers, taken from the framework or from the router. The words are
         #  this page's own: a description in a table of keys is a paraphrase
         #  and cannot come to be untrue, but a number can, and did.
+        moving = [
+            (f"1-{CHOICES_PER_FRAME}", "choose from a menu"),
+            (HOME_KEY, "back to the main index"),
+            (keyed("nnn"), "go straight to a page"),
+            (keyed("<keyword>"), "go to named page"),
+            (keys.CONVENTIONAL_NEXT_FRAME, f"page down, as {keys.NEXT_FRAME} does"),
+            ("DEL", "rub out a character"),
+        ]
+        asking = [
+            (keyed(keys.BACK), "back, through where you"),
+            ("", "  have been"),
+            (keyed(keys.REDISPLAY), "show this frame again"),
+            (keyed(keys.REFRESH), "fetch it afresh"),
+            ("", ""),
+            (keyed(self.address_for("logoff")), "ring off"),
+            ("", ""),
+            (keyed(self.address_for("contents")), "every page and its number"),
+            (keyed(self.address_for("names")), "every word you can key"),
+        ]
+        #  One column width for the whole guide, from the widest key in it, so
+        #  the two frames line up with each other and neither is set by hand.
+        column = max(len(key) for key, _ in moving + asking) + 1
         return self._guide(
             request.address,
             [
-                self._drawn(
-                    self._keys(
-                        [
-                            (f"1-{CHOICES_PER_FRAME}", "choose from a menu"),
-                            (HOME_KEY, "back to the main index"),
-                            (keyed("nnn"), "go straight to a page"),
-                            (
-                                keys.CONVENTIONAL_NEXT_FRAME,
-                                f"page down, as {keys.NEXT_FRAME} does",
-                            ),
-                            (keys.CANCEL, "cancel a request being keyed"),
-                            (keys.CANCEL * 2, "cancel and begin again"),
-                            ("DEL", "rub out a character"),
-                        ]
-                    ),
-                    self._compass,
-                ),
-                self._keys(
-                    [
-                        (keyed(keys.BACK), "back, through where you"),
-                        ("", "  have been"),
-                        (keyed(keys.REDISPLAY), "show this frame again"),
-                        (keyed(keys.REFRESH), "fetch it afresh"),
-                        ("", ""),
-                        (keyed(self.address_for("logoff")), "ring off"),
-                        ("", ""),
-                        (keyed(self.address_for("contents")), "every page and its number"),
-                        (keyed(self.address_for("names")), "every word you can key"),
-                    ]
-                ),
+                self._drawn(self._keys(moving, column), self._compass),
+                self._keys(asking, column),
             ],
         )
 
@@ -624,18 +618,26 @@ class StardotApplication(Sextile):
         """
         compass(Composition(), CONTENT_FIRST_ROW + CONTENT_ROWS - ROWS).draw(canvas)
 
-    def _keys(self, rows: list[tuple[str, str]]) -> Callable[[Canvas], None]:
-        """A key on the left, what it does on the right."""
+    def _keys(
+        self, rows: list[tuple[str, str]], column: int
+    ) -> Callable[[Canvas], None]:
+        """A key on the left, what it does on the right.
+
+        Two cells go on attributes -- the yellow of the key and the white of
+        what it does -- so what is left for the words is the row less the
+        column and those two.
+        """
+        room = COLUMNS - column - 2
 
         def draw(canvas: Canvas) -> None:
             for offset, (key, meaning) in enumerate(rows):
                 row = canvas.row(CONTENT_FIRST_ROW + offset)
                 if key:
-                    row.text(f"{key:<7}", Colour.YELLOW)
+                    row.text(f"{key:<{column}}", Colour.YELLOW)
                 else:
-                    row.skip(7)
+                    row.skip(column)
                 if meaning:
-                    row.text(fitted(meaning, COLUMNS - 8), Colour.WHITE)
+                    row.text(fitted(meaning, room), Colour.WHITE)
 
         return draw
 

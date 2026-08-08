@@ -323,6 +323,12 @@ compass(Composition(), CONTENT_FIRST_ROW).draw(canvas)
 frame. A service that drew its own would be drawing the same thing, and would
 go on drawing it after the keys had moved.
 
+It calls the vertical pair **page up** and **page down**. A frame is what the
+wire calls it, but the frames of a page are the pages of one document to
+whoever is reading — and saying so keeps *previous* and *next* for the other
+axis, where they mean the items. It also says that the cursor keys work, which
+they do: `keys.ARROWS` maps all four.
+
 The arrows are mosaics rather than letters because the character set has only
 three of them — `←`, `→` and `↑`, and no down arrow at all — so one of the four
 had to be drawn whatever happened, and three letters beside one picture look

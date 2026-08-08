@@ -36,8 +36,8 @@ class TestWhatItSays:
 
     def test_and_each_key_is_beside_its_own_word(self) -> None:
         rows = drawn()
-        assert rows[0].strip() == "previous frame"
-        assert rows[9].strip() == "next frame"
+        assert rows[0].strip() == "page up"
+        assert rows[9].strip() == "page down"
         assert rows[4].index(keys.PREVIOUS_ITEM) > rows[4].index("previous")
         assert rows[4].index(keys.NEXT_ITEM) < rows[4].index("next")
 
@@ -66,7 +66,7 @@ class TestWhatItDraws:
         assert compass(Composition(), 0).fits()
 
     def test_and_can_be_put_lower_down_one(self) -> None:
-        assert drawn(6)[6].strip() == "previous frame"
+        assert drawn(6)[6].strip() == "page up"
 
 
 class TestTheArrowsThemselves:
@@ -131,3 +131,25 @@ def _ink_rows(canvas: Canvas) -> list[int]:
                 if pattern & mask:
                     lit.append(row * 3 + third)
     return sorted(set(lit))
+
+
+class TestWhatItCallsThings:
+    def test_the_frames_of_a_page_are_called_pages(self) -> None:
+        #  A frame is what the wire calls it. To whoever is reading, the frames
+        #  of a page are the pages of one document -- and saying so keeps
+        #  "previous" and "next" for the other axis, where they mean the items.
+        rows = drawn()
+        assert "page up" in rows[0] and "page down" in rows[9]
+        assert "frame" not in "\n".join(rows)
+
+    def test_and_it_says_the_cursor_keys_work_too(self) -> None:
+        assert "arrow keys" in drawn()[ROWS - 1]
+
+    def test_which_they_do(self) -> None:
+        #  The claim is only worth making if the framework answers them.
+        assert set(keys.ARROWS.values()) == {
+            keys.PREVIOUS_FRAME,
+            keys.NEXT_FRAME,
+            keys.PREVIOUS_ITEM,
+            keys.NEXT_ITEM,
+        }

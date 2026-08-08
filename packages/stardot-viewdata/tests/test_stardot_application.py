@@ -510,7 +510,7 @@ class TestHowToGetAbout:
         #  Drawn rather than described, and by the framework: the four keys it
         #  shows are the framework's, not this service's.
         shown = text_of(await page_at(app, "91"))
-        assert "previous frame" in shown and "next frame" in shown
+        assert "page up" in shown and "page down" in shown
 
     @pytest.mark.parametrize(
         "keys", ["1-9", "0", "*nnn#", "W", "A", "*0#", "*00#", "*09#", "**", "*90#"]

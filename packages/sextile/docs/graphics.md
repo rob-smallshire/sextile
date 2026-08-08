@@ -48,6 +48,33 @@ runs = block_runs(read_bitmap([
 ]))                                  # -> [[patterns], ...] one list per cell row
 ```
 
+### An icon is written as the picture it is
+
+Six-bit patterns typed as numbers are write-only, and a picture drawn in a
+comment beside them is a copy that goes stale. So a small picture — an arrow, a
+symbol, anything the character set has not got — is drawn in the source:
+
+```python
+ARROW = icon("""
+       #
+        #
+    ######
+        #
+       #
+""")
+
+layout.picture(4, Align.CENTRE, ARROW.cells(), Colour.CYAN)
+```
+
+The blank lines at either end go, and so does the indentation the source needed
+— the common part of it, so what one row is drawn further along than another
+survives. Anything that is not `#` is a block that is off, so it reads drawn in
+dots or in spaces.
+
+`turned()` gives a quarter turn anticlockwise, which is how four arrows are one
+arrow; `cells(inverted=True)` gives the Ceefax field. `across`/`down` are its
+blocks and `cells_across`/`rows` what it costs a frame.
+
 ### Inverted, and why it lives here
 
 **The SAA5050 has no alpha-black attribute.** The colour codes run `0x01`–`0x07`
@@ -258,15 +285,15 @@ run at a time.
 ## A worked example: the compass
 
 `sextile/compass.py` draws the four movement keys as arrows, and is a short
-read for how these layers go together: four bitmaps written out as strings,
-`read_bitmap` and `block_runs` to turn each into cells, and a `Composition` to
-place them among the letters that label them.
+read for how these layers go together: **one** arrow drawn as an `icon`, three
+`turned()` from it, and a `Composition` to place them among the letters that
+label them.
 
 It is also why the block grid earns its place. The G0 character set has `←`,
 `→` and `↑` and no down arrow, so a compass drawn in letters is impossible.
 
 Each arrow is a quarter turn of the last, which is what keeps the four looking
-like one set:
+like one set — and is why only one of them is drawn:
 
 ```
    #                          #

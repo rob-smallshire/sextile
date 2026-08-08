@@ -70,23 +70,18 @@ class TestWhatItDraws:
 
 class TestTheArrowsThemselves:
     def test_each_is_a_quarter_turn_of_the_last(self) -> None:
-        #  Which is what keeps the four looking like one set. The turn is done
-        #  here rather than at draw time so the shapes can be read in the file.
+        #  Which is what keeps the four looking like one set, and is why only
+        #  one of them is drawn in the source.
         from sextile.compass import _DOWN, _LEFT, _RIGHT, _UP
 
-        assert _turned(_RIGHT) == list(_UP)
-        assert _turned(_UP) == list(_LEFT)
-        assert _turned(_LEFT) == list(_DOWN)
-        assert _turned(_DOWN) == list(_RIGHT)
+        assert _RIGHT.turned() == _UP
+        assert _UP.turned() == _LEFT
+        assert _LEFT.turned() == _DOWN
+        assert _DOWN.turned() == _RIGHT
 
     def test_and_each_fits_three_cells_by_two_rows(self) -> None:
         from sextile.compass import _DOWN, _LEFT, _RIGHT, _UP
 
         for arrow in (_UP, _DOWN, _LEFT, _RIGHT):
-            assert len(arrow) <= 6 and len(arrow[0]) <= 6
-
-
-def _turned(arrow: tuple[str, ...]) -> list[str]:
-    """A quarter turn anticlockwise."""
-    width = len(arrow[0])
-    return ["".join(row[width - 1 - column] for row in arrow) for column in range(width)]
+            assert arrow.cells_across <= 3
+            assert arrow.rows <= 2

@@ -1,5 +1,19 @@
 """Turning a picture into the blocks a frame can draw.
 
+**A small picture is written in the source as the picture it is**, which is
+what `icon` is for: an arrow, a symbol, a rule end, anything a page wants that
+the character set has not got. Six-bit patterns typed as numbers are write-only,
+and a picture drawn in a comment beside them is a copy that goes stale.
+
+    ARROW = icon(\"\"\"
+           #
+            #
+        ######
+            #
+           #
+    \"\"\")
+
+
 A mosaic cell is a 2x3 grid of blocks, so a frame is 80x72 of them -- 78 in
 practice, an attribute cell going on the left of each row a picture spans. This
 turns a bitmap into the six-bit patterns those cells carry.
@@ -19,6 +33,8 @@ be inverted is the whole field the picture occupies.
 """
 
 from collections.abc import Sequence
+from dataclasses import dataclass
+from textwrap import dedent
 from typing import Final
 
 #: Block positions within a cell, from the least significant bit up. Read from
@@ -128,3 +144,70 @@ def _lowered(rows: Sequence[Sequence[int]]) -> list[list[int]]:
         )
         carried = [(pattern & _LOWER_BLOCKS) >> 4 for pattern in padded]
     return [*lowered, carried] if any(carried) else lowered
+
+
+@dataclass(frozen=True)
+class Icon:
+    """A small picture on the block grid, drawn in the source as itself."""
+
+    bitmap: tuple[tuple[bool, ...], ...]
+
+    @property
+    def across(self) -> int:
+        """Blocks wide."""
+        return len(self.bitmap[0]) if self.bitmap else 0
+
+    @property
+    def down(self) -> int:
+        """Blocks tall."""
+        return len(self.bitmap)
+
+    @property
+    def cells_across(self) -> int:
+        return -(-self.across // BLOCKS_ACROSS)
+
+    @property
+    def rows(self) -> int:
+        """Rows of the frame it takes."""
+        return -(-self.down // BLOCKS_DOWN)
+
+    def turned(self, quarters: int = 1) -> "Icon":
+        """A quarter turn anticlockwise, `quarters` times.
+
+        Which is how a set of four arrows is one arrow: the blocks that make a
+        diagonal lying down make the same diagonal standing up, corner to
+        corner, that being the only diagonal a block grid has.
+        """
+        turned = self
+        for _ in range(quarters % 4):
+            turned = Icon(
+                bitmap=tuple(
+                    tuple(row[turned.across - 1 - column] for row in turned.bitmap)
+                    for column in range(turned.across)
+                )
+            )
+        return turned
+
+    def cells(self, *, inverted: bool = False) -> list[list[int]]:
+        """The mosaic patterns for it, ready for `Composition.picture`."""
+        return block_runs(self.bitmap, inverted=inverted)
+
+
+def icon(art: str, *, lit: str = "#") -> Icon:
+    """A picture written out as itself, indented to suit the code around it.
+
+    Blank lines at either end go, and so does the indentation the source needed
+    -- the common part of it, so what one row is drawn further along than
+    another survives. Anything that is not `lit` is a block that is off, so a
+    picture reads whether it is drawn in dots or in spaces.
+    """
+    lines = dedent(art.strip("\n")).splitlines()
+    return Icon(bitmap=tuple(tuple(block for block in row) for row in _lit(lines, lit)))
+
+
+def _lit(lines: Sequence[str], lit: str) -> list[list[bool]]:
+    width = max((len(line) for line in lines), default=0)
+    return [
+        [index < len(line) and line[index] in lit for index in range(width)]
+        for line in lines
+    ]

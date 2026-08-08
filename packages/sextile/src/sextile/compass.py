@@ -26,18 +26,23 @@ things a reader keys, whereas this is about which way is which.
 from typing import Final
 
 from sextile import keys
-from sextile.viewdata.blocks import block_runs, read_bitmap
+from sextile.viewdata.blocks import icon
 from sextile.viewdata.composition import Align, Composition
 from sextile.viewdata.controls import Colour
 
-#: A long shaft and a head of two blocks a side, stepping diagonally back from
-#: the tip. Each arrow is a quarter turn of the last, which is what keeps the
-#: four looking like one set -- and the turn costs the head nothing, because
+#: One arrow, and the three turns of it. A long shaft and a head of two blocks
+#: a side stepping back from the tip; the turn costs the head nothing, because
 #: blocks laid corner to corner read as the diagonal they are.
-_RIGHT: Final = ("...#..", "....#.", "######", "....#.", "...#..")
-_UP: Final = ("..#..", ".###.", "#.#.#", "..#..", "..#..", "..#..")
-_LEFT: Final = ("..#...", ".#....", "######", ".#....", "..#...")
-_DOWN: Final = ("..#..", "..#..", "..#..", "#.#.#", ".###.", "..#..")
+_RIGHT: Final = icon("""
+       #
+        #
+    ######
+        #
+       #
+""")
+_UP: Final = _RIGHT.turned()
+_LEFT: Final = _UP.turned()
+_DOWN: Final = _LEFT.turned()
 
 #: Rows the whole thing takes: a word, a key, two of arrow, the middle row and
 #: its labels, two more of arrow, a key and a word. Every arrow is three cells
@@ -68,19 +73,15 @@ def compass(
     """Draw the compass with its top row at `row`, taking `ROWS` in all."""
     composition.text(row, Align.CENTRE, "previous frame", word)
     composition.text(row + 1, Align.CENTRE, keys.PREVIOUS_FRAME, key)
-    composition.picture(row + 2, Align.CENTRE, _blocks(_UP), colour)
+    composition.picture(row + 2, Align.CENTRE, _UP.cells(), colour)
     composition.text(row + 4, _LEFT_WORD, "previous", word)
     composition.text(row + 4, _LEFT_KEY, keys.PREVIOUS_ITEM, key)
-    composition.picture(row + 4, _LEFT_ARROW, _blocks(_LEFT), colour)
-    composition.picture(row + 4, _RIGHT_ARROW, _blocks(_RIGHT), colour)
+    composition.picture(row + 4, _LEFT_ARROW, _LEFT.cells(), colour)
+    composition.picture(row + 4, _RIGHT_ARROW, _RIGHT.cells(), colour)
     composition.text(row + 4, _RIGHT_KEY, keys.NEXT_ITEM, key)
     composition.text(row + 4, _RIGHT_WORD, "next", word)
     composition.text(row + 6, _LEFT_WORD + _UNDER, "item", word)
     composition.text(row + 6, _RIGHT_WORD, "item", word)
-    composition.picture(row + 7, Align.CENTRE, _blocks(_DOWN), colour)
+    composition.picture(row + 7, Align.CENTRE, _DOWN.cells(), colour)
     composition.text(row + 9, Align.CENTRE, keys.NEXT_FRAME, key)
     return composition.text(row + 10, Align.CENTRE, "next frame", word)
-
-
-def _blocks(arrow: tuple[str, ...]) -> list[list[int]]:
-    return block_runs(read_bitmap(arrow))

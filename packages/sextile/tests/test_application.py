@@ -774,3 +774,42 @@ class TestDeclaringAndInheriting:
 
         with pytest.raises(ValueError):
             Board()
+
+
+class TestWhenAPageBreaks:
+    """The viewdata equivalent of a 500.
+
+    Distinct from the unknown-page notice on purpose: one says the reader asked
+    for something that is not here, the other says the service could not build
+    something that is. Telling them the first when it is the second sends them
+    away thinking they mistyped.
+    """
+
+    async def test_there_is_something_to_show(self) -> None:
+        page = await Sextile().failed(PageAddress("82489493"))
+        assert "SERVICE ERROR" in text_of(page).upper()
+
+    async def test_it_names_the_page_that_broke(self) -> None:
+        page = await Sextile().failed(PageAddress("82489493"))
+        assert "*82489493#" in text_of(page, row=2)
+
+    async def test_it_says_whose_fault_it_is(self) -> None:
+        #  A reader on a 1200 baud line will otherwise assume they did it.
+        page = await Sextile().failed(PageAddress("8"))
+        assert "our end" in "\n".join(page.frames[0].frame.to_grid()[0]).lower()
+
+    async def test_a_service_can_say_it_its_own_way(self) -> None:
+        app = Sextile()
+
+        @app.on_failed
+        async def broke(address: PageAddress) -> Page:
+            return saying(f"SORRY ABOUT *{address}#")
+
+        assert text_of(await app.failed(PageAddress("8"))) == "SORRY ABOUT *8#"
+
+    async def test_an_application_that_is_not_a_router_has_one_too(self) -> None:
+        assert "SERVICE ERROR" in text_of(await Recording().failed(PageAddress("1"))).upper()
+
+    async def test_it_leaves_room_to_type_beneath(self) -> None:
+        page = await Sextile().failed(PageAddress("1"))
+        assert page.frames[0].frame.last_written_row() < 20

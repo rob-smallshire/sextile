@@ -350,6 +350,17 @@ async def missing(target: str) -> Page:
     ...
 ```
 
+**A handler that raises is a different thing**, and gets a different page: the
+viewdata equivalent of a 500. The session catches it, logs the traceback and
+shows `failed` without moving the reader, so a bug in one page costs that page
+rather than the call.
+
+```python
+@app.on_failed
+async def broke(address: PageAddress) -> Page:
+    ...
+```
+
 There is a difference worth keeping between a page that does not exist and a
 page that exists but has nothing to show. The second should be a real page that
 says why — an empty menu with no explanation looks like a fault, and on a

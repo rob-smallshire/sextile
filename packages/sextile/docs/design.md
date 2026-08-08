@@ -355,9 +355,18 @@ back from.
 used to end the caller's session, which on a service where a session is a
 telephone call means dialling back in and finding your way to where you were —
 minutes of a slow line for a fault that was ours. The session catches it, logs
-it with its traceback, and shows the not-found notice without moving the reader.
-Logged rather than swallowed: a service that quietly says "not here" about a
-page it has is a service whose bugs never get found.
+it with its traceback, and shows `Application.failed` without moving the reader.
+
+**That is a page of its own** — `@app.on_failed` to override — and deliberately
+not the not-found notice. One says the reader asked for something that is not
+here; the other says the service could not build something that is. Saying the
+first when it is the second sends them away thinking they mistyped, and hides
+the fault from whoever could fix it. It names the number so a reader can report
+which page it was, and says whose fault it is, because somebody on a 1200 baud
+line will otherwise assume they did it.
+
+Logged rather than swallowed: a service that quietly says anything at all about
+a page it has and could not draw is a service whose bugs never get found.
 
 **Idle callers are warned, then released.** A single-line board held open by
 someone who walked away locks everyone else out, so a caller who says nothing

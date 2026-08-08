@@ -186,6 +186,7 @@ def page[H](
 type Handler = Callable[..., Awaitable[Page]]
 type NotFoundHandler = Callable[[str], Awaitable[Page]]
 type PartingHandler = Callable[[Parting], Awaitable[Page]]
+type FailureHandler = Callable[[PageAddress], Awaitable[Page]]
 
 
 class Application(ABC):
@@ -314,6 +315,30 @@ class Application(ABC):
         """
         return ""
 
+    async def failed(self, address: PageAddress) -> Page:
+        """Say that a page which exists could not be built.
+
+        The viewdata equivalent of a 500, and deliberately not the same page as
+        `not_found`. One says the reader asked for something that is not here;
+        this says the service could not build something that is. Telling them
+        the first when it is the second sends them away thinking they mistyped,
+        and hides the fault from whoever could fix it.
+
+        It names the number, so that a reader can report which page it was, and
+        says whose fault it is -- somebody on a 1200 baud line will otherwise
+        assume they did it.
+        """
+        return _plain_notice(
+            "SERVICE ERROR",
+            f"*{address}# could not be built.",
+            "",
+            "This is a fault at our end, not yours,",
+            "and the service has made a note of it.",
+            "",
+            "Key 0 for the index, or *09# to try it",
+            "again.",
+        )
+
     async def timed_out(self, parting: Parting) -> Page:
         """Say that the line is being released for want of a reply.
 
@@ -362,6 +387,7 @@ class Sextile(Application):
         self._pages: dict[str, PageInfo] = {}
         self._not_found: NotFoundHandler | None = None
         self._timed_out: PartingHandler | None = None
+        self._failed: FailureHandler | None = None
         self._home = home if isinstance(home, PageAddress) else PageAddress(home)
         wanted = self._home if index is None else index
         self._index = wanted if isinstance(wanted, PageAddress) else PageAddress(wanted)
@@ -497,6 +523,11 @@ class Sextile(Application):
         self._timed_out = handler
         return handler
 
+    def on_failed[H: FailureHandler](self, handler: H) -> H:
+        """Register what this service says when a page will not build."""
+        self._failed = handler
+        return handler
+
     # -- answering ----------------------------------------------------------
 
     async def respond(self, request: PageRequest) -> Page | None:
@@ -530,6 +561,11 @@ class Sextile(Application):
         if self._timed_out is None:
             return await super().timed_out(parting)
         return await self._timed_out(parting)
+
+    async def failed(self, address: PageAddress) -> Page:
+        if self._failed is None:
+            return await super().failed(address)
+        return await self._failed(address)
 
     def address_for(self, name: str, **params: object) -> PageAddress:
         """The address a named route answers, built from its own pattern."""

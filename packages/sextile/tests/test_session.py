@@ -880,12 +880,46 @@ class TestAPageThatWillNotBuild:
         await session.receive(b"*7#")
         assert not session.finished
 
-    async def test_the_reader_is_told_rather_than_left_wondering(self) -> None:
+    async def test_the_reader_is_told_it_is_our_fault_and_not_theirs(self) -> None:
+        #  Not the unknown-page notice: saying "no such page" about a page that
+        #  exists and broke is a lie, and one that hides the fault.
         session = Session(self.board_that_breaks())
         await session.greeting()
         response = await session.receive(b"*7#")
         assert response
-        assert "NOT" in _text(response[-1]).upper()
+        shown = _text(response[-1])
+        assert "SERVICE ERROR" in shown.upper()
+        assert "*7" in shown, "the number is named, so a reader can report it"
+
+    async def test_the_page_that_broke_is_named(self) -> None:
+        session = Session(self.board_that_breaks())
+        await session.greeting()
+        response = await session.receive(b"*7#")
+        assert "*7" in _text(response[-1])
+
+    async def test_going_back_to_a_page_that_now_breaks_says_so(self) -> None:
+        board = self.board_that_breaks()
+        session = Session(board, start=at("7"))
+        #  It broke on arrival, so there is a page to show and it is the error.
+        await session.greeting()
+        assert "SERVICE ERROR" in screen(session).upper()
+
+    async def test_refreshing_a_page_that_breaks_says_so(self) -> None:
+        board = Board()
+        broken = {"yet": False}
+
+        @board.page("7", name="sometimes")
+        async def sometimes(request: PageRequest) -> Page:
+            if broken["yet"]:
+                raise ValueError("it broke this time")
+            return await board.notice(request)
+
+        session = Session(board)
+        await session.greeting()
+        await session.receive(b"*7#")
+        broken["yet"] = True
+        response = await session.receive(b"*09#")
+        assert "SERVICE ERROR" in _text(response[-1]).upper()
 
     async def test_and_stays_where_they_were(self) -> None:
         session = Session(self.board_that_breaks())

@@ -12,6 +12,7 @@ members = [
     "sextile",
     "sextile-workspace",
     "stardot-viewdata",
+    "weather-viewdata",
 ]
 
 [[package]]
@@ -371,6 +372,7 @@ dependencies = [
     { name = "calendar-viewdata" },
     { name = "sextile" },
     { name = "stardot-viewdata" },
+    { name = "weather-viewdata" },
 ]
 
 [package.dev-dependencies]
@@ -386,6 +388,7 @@ requires-dist = [
     { name = "calendar-viewdata", editable = "packages/calendar-viewdata" },
     { name = "sextile", editable = "packages/sextile" },
     { name = "stardot-viewdata", editable = "packages/stardot-viewdata" },
+    { name = "weather-viewdata", editable = "packages/weather-viewdata" },
 ]
 
 [package.metadata.requires-dev]
@@ -418,4 +421,19 @@ source = { registry = "https://sixtynorthartifactory1.jfrog.io/artifactory/api/p
 sdist = { url = "https://sixtynorthartifactory1.jfrog.io/artifactory/api/pypi/python-packages/packages/packages/f6/cc/6253133b5bb138fc3306cebfbda2c520f545d36b5be2c7255cc528bb45d6/typing_extensions-4.16.0.tar.gz", hash = "sha256:dc983d19a509c94dba722ee6abd33940f7c05a89e243c47e907eb4db6f1a43e5" }
 wheels = [
     { url = "https://sixtynorthartifactory1.jfrog.io/artifactory/api/pypi/python-packages/packages/packages/49/d3/b8441a820a491ddfc024b0b0cf0393375b75ea13866d9c66727e54c2fc80/typing_extensions-4.16.0-py3-none-any.whl", hash = "sha256:481caa481374e813c1b176ada14e97f1f67a4539ce9cfeb3f350d78d6370c2e8" },
+]
+
+[[package]]
+name = "weather-viewdata"
+version = "0.1.0"
+source = { editable = "packages/weather-viewdata" }
+dependencies = [
+    { name = "httpx" },
+    { name = "sextile" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "httpx", specifier = ">=0.27" },
+    { name = "sextile", editable = "packages/sextile" },
 ]

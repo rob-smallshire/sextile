@@ -15,6 +15,7 @@ dependencies = [
     "sextile",
     "stardot-viewdata",
     "calendar-viewdata",
+    "weather-viewdata",
 ]
 
 [tool.uv.workspace]
@@ -26,6 +27,7 @@ members = ["packages/*"]
 sextile = { workspace = true }
 stardot-viewdata = { workspace = true }
 calendar-viewdata = { workspace = true }
+weather-viewdata = { workspace = true }
 
 [build-system]
 requires = ["hatchling"]
@@ -53,6 +55,7 @@ src = [
     "packages/sextile/src",
     "packages/stardot-viewdata/src",
     "packages/calendar-viewdata/src",
+    "packages/weather-viewdata/src",
 ]
 #  Spikes are preserved as a record of how a question was answered, not as
 #  maintained code, and they import packages this project does not depend on.
@@ -72,4 +75,5 @@ tools:\
 packages/sextile/src:\
 packages/stardot-viewdata/src:\
 packages/calendar-viewdata/src:\
+packages/weather-viewdata/src:\
 packages/sextile/tests"""

@@ -188,7 +188,7 @@ class TestForumsAndContributors:
 
 class TestPersistence:
     def test_the_archive_outlives_the_process(self, tmp_path: Path) -> None:
-        database_filepath = tmp_path / "sextile.sqlite"
+        database_filepath = tmp_path / "stardot.sqlite"
         with Repository.open(database_filepath) as repository:
             repository.add_post(make_post())
         with Repository.open(database_filepath) as reopened:
@@ -196,7 +196,7 @@ class TestPersistence:
             assert reopened.post(489493) is not None
 
     def test_opening_an_existing_archive_does_not_disturb_it(self, tmp_path: Path) -> None:
-        database_filepath = tmp_path / "sextile.sqlite"
+        database_filepath = tmp_path / "stardot.sqlite"
         with Repository.open(database_filepath) as repository:
             repository.add_post(make_post())
         with Repository.open(database_filepath):

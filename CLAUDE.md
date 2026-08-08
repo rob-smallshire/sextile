@@ -117,7 +117,7 @@ uv run stardot-viewdata serve                       # answer calls on port 6850
 nc localhost 6850                                   # and call it
 ```
 
-`serve` and `ingest` both default to `sextile.sqlite` **in the working
+`serve` and `ingest` both default to `stardot.sqlite` **in the working
 directory**, so run them from the same place.
 
 [docs/open-questions.md](docs/open-questions.md) lists what is known to be

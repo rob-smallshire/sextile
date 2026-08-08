@@ -46,7 +46,10 @@ from stardot_viewdata.store.repository import BOARD_TIMEZONE, Repository
 #: What this service is called, which is not what the framework is called.
 SERVICE_NAME: Final = "STARDOT"
 
-DEFAULT_DATABASE_FILEPATH: Final = Path("sextile.sqlite")
+#: Named for the service rather than for the framework serving it, and
+#: relative to the working directory -- so `serve` and `ingest` must be run
+#: from the same place, which is the first thing that went wrong in practice.
+DEFAULT_DATABASE_FILEPATH: Final = Path("stardot.sqlite")
 
 #: A reader selects with one keypress, so nine is the most a frame can offer.
 CHOICES_PER_FRAME: Final = 9

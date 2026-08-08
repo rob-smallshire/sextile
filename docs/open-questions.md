@@ -47,7 +47,7 @@ Beeb for half an hour.
   process, so a supervisor restarting the poller would bypass the site's
   60-second crawl delay. The last-request time should be persisted in the
   archive. This matters as soon as anything but a human starts the poller.
-- **The archive path is relative to the working directory.** `sextile.sqlite`
+- **The archive path is relative to the working directory.** `stardot.sqlite`
   by default, which means `stardot-viewdata serve` and `ingest` silently
   disagree if run from different directories — the first thing that went wrong in practice. A fixed
   location under `platformdirs` would be kinder.

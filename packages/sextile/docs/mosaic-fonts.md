@@ -1,9 +1,9 @@
 # Mosaic fonts
 
 Large lettering drawn out of teletext block graphics — banners, title frames,
-headings bigger than double height can give. **The format, its reader, one converted
-face and the importer that converted it are built; nothing that draws with them
-is.** The rest is written down as
+headings bigger than double height can give. **The format, one converted face, the
+importer that converted it and the setting of a line of text are built; what
+puts the result on a frame is not.** The rest is written down as
 requirements, so that the research behind them does not have to be done twice.
 
 The layer beneath is built and described in [graphics.md](graphics.md): the
@@ -65,10 +65,16 @@ the row is only 78 blocks wide, so a block recovered on each pair is worth
 having.
 
 Kerning needs no table: each glyph's left and right profiles are in the bitmap
-already, so a pair can be closed up until the tightest scanline reaches the
-minimum gap. The profiles are cheap to compute and the fit is exact rather than
-estimated. A table would only be needed for pairs where the right answer is not
-the tightest one, and there is no evidence yet that any exist here.
+already, so a pair can be closed up until the tightest row reaches the minimum
+gap. A row where either letter is blank has no say, which is exactly where the
+room is. Two things bound the fitting, and both stop it eating what it should
+not: a pair may close up by no more than a set number of blocks, and **kerning
+does not cross a blank glyph** — otherwise a narrow letter after a space slides
+back into the space and the words run together.
+
+In practice with `acorn` it is the one-block gap between letters that binds
+rather than the limit, and `STARDOT` comes in three blocks narrower than
+proportional setting gives.
 
 Measured with the shipped `acorn` face, and reproducible with it:
 
@@ -76,8 +82,10 @@ Measured with the shipped `acorn` face, and reproducible with it:
 |---|---|---|---|
 | `BBC CEEFAX`, fixed | 80 | 41 | **no** |
 | `BBC CEEFAX`, proportional | 66 | 34 | yes |
-| `STARDOT`, fixed | 56 | 29 | yes |
-| `STARDOT`, proportional | 49 | 26 | yes |
+| `BBC CEEFAX`, kerned | 64 | 33 | yes |
+| `STARDOT`, fixed | 55 | 29 | yes |
+| `STARDOT`, proportional | 48 | 25 | yes |
+| `STARDOT`, kerned | 45 | 24 | yes |
 
 Ten letters in the 78 blocks a row has is 7.8 blocks each. A fixed-width 8×8
 face cannot draw the Ceefax banner — it is over by a cell — and a proportional
@@ -181,9 +189,10 @@ Roughly in order, each committable on its own.
 
 1. ~~**The format**, its reader, and one converted font.~~ Done. `acorn`, 191
    glyphs of ASCII and Latin-1, converted by `tools/mdfs_font.py`.
-2. **`Font`** — glyphs by character, advance, height; `measure(text)` in blocks;
-   a missing glyph substituted rather than raising, as transliteration does.
-   Then the three spacings: fixed, proportional, and kerned by profile fit.
+2. ~~**`Font`**, and the three spacings.~~ Done: `lettering.width` measures a
+   line in blocks and `lettering.bitmap` sets it, `FIXED`, `PROPORTIONAL` or
+   `KERNED`. A character the face has no glyph for is substituted, as
+   transliteration does.
 3. **Rendering** — text to a bitmap, then `block_runs`, then `Composition`. The
    inverted case needs the *field*, not the glyphs, so the renderer decides the
    band's extent.

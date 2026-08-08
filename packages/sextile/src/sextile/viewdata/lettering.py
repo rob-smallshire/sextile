@@ -290,33 +290,43 @@ def boxed(
     -- which is why the box is fitted here, where the letters can be measured,
     rather than by a caller counting them.
 
-    The letters are then centred in it both ways, to the block: a line that
-    does not fill its rows sits in the middle of them rather than at the top.
+    **A box shorter than its letters is a stripe behind them**, and it goes
+    across their middle: one row behind a three-row word puts a band through
+    the waist of it and leaves the rest on the frame's own black. A box the
+    same height or taller holds the letters, which are centred in it both ways,
+    to the block -- so a line that does not fill its rows sits in the middle of
+    them rather than at the top.
     """
     patterns = cells(text, font, spacing=spacing, gap=gap, limit=limit, trim=trim)
+    deep = len(patterns)
+    tall = rows if rows is not None else deep
+    first, letters = _rows_of(row, deep, tall)
     panel = composition.panel(
-        _first(row, len(patterns), rows),
+        first,
         where,
         width=len(patterns[0]) + 2 * padding + _ATTRIBUTE,
         colour=background,
-        rows=rows if rows is not None else len(patterns),
+        rows=tall,
     )
-    composition.picture(Align.CENTRE, Align.CENTRE, patterns, colour, within=panel)
+    composition.picture(letters, Align.CENTRE, patterns, colour, within=panel)
     return panel
 
 
-def _first(row: Where, deep: int, rows: int | None) -> Where:
-    """The row a fitted box starts on, if the caller named one for its letters.
+def _rows_of(row: Where, deep: int, tall: int) -> tuple[Where, Where]:
+    """Where the box starts and where the letters do, given a row for one.
 
-    A box taller than what goes in it grows upwards as well as downwards, so
-    that the letters stay near the row they were asked for -- except at the top
-    of the frame, where there is nowhere above to grow into.
+    Two different things, and which is centred on which depends on their sizes.
+    A box that holds the letters grows around them, upwards as well as down, so
+    they stay near the row asked for -- except at the top of the frame, where
+    there is nowhere above to grow into. A stripe shorter than the letters is
+    centred on *them*, and they stay where they were put.
     """
     if not isinstance(row, int):
-        return row
-    if rows is None:
-        return row
-    return max(row - (rows - deep) // 2, 0)
+        return row, Align.CENTRE
+    if tall < deep:
+        return row + (deep - tall) // 2, row
+    above = (tall - deep) // 2
+    return max(row - above, 0), max(row - above, 0) + above
 
 
 def rows_for(font: Font, *, margin: int = 0) -> int:

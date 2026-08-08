@@ -27,7 +27,14 @@ from sextile.viewdata.font import load_font
 from sextile.viewdata.frame import COLUMNS, Frame
 from sextile.viewdata.lettering import Spacing
 from stardot_viewdata import StardotApplication
-from stardot_viewdata.application import BANNER_FACE, BANNER_ROW, SERVICE_NAME
+from stardot_viewdata.application import (
+    BANNER_FACE,
+    BANNER_ROW,
+    SERVICE_KIND,
+    SERVICE_NAME,
+    SUBTITLE_FACE,
+    SUBTITLE_ROW,
+)
 from stardot_viewdata.model import Post
 from stardot_viewdata.store.repository import Repository
 
@@ -410,10 +417,42 @@ class TestTheTitleFrame:
             for column in range(COLUMNS)
         )
 
-    async def test_and_still_says_what_it_is_underneath(
+    async def test_and_says_what_it_is_underneath_in_the_same_way(
         self, app: StardotApplication
     ) -> None:
-        assert "V I E W D A T A" in text_of(await page_at(app, "0"))
+        frame = (await page_at(app, "0")).frames[0].frame
+        face = load_font(SUBTITLE_FACE)
+        wanted = lettering.bitmap(SERVICE_KIND, face, spacing=Spacing.KERNED)
+        drawn = _blocks_of(frame, SUBTITLE_ROW, lettering.rows_for(face))
+        assert _ink_of(drawn) == _ink_of(wanted)
+
+    async def test_with_a_stripe_a_third_of_its_height_behind_it(
+        self, app: StardotApplication
+    ) -> None:
+        #  A row of colour behind a word three rows tall, so the band runs
+        #  through its waist and the rest of it is on the frame's own black.
+        frame = (await page_at(app, "0")).frames[0].frame
+        striped = [
+            row
+            for row in range(SUBTITLE_ROW, SUBTITLE_ROW + 3)
+            if any(
+                frame.cell(row, column) == Control.NEW_BACKGROUND
+                for column in range(COLUMNS)
+            )
+        ]
+        assert striped == [SUBTITLE_ROW + 1]
+
+    async def test_and_the_stripe_is_no_wider_than_the_word(
+        self, app: StardotApplication
+    ) -> None:
+        #  Unlike the name above it, which has a stripe across the frame: this
+        #  one is fitted, which is what makes it read as a second line.
+        frame = (await page_at(app, "0")).frames[0].frame
+        row = SUBTITLE_ROW + 1
+        assert any(
+            frame.cell(row, column) == Control.BLACK_BACKGROUND
+            for column in range(COLUMNS)
+        )
 
     async def test_it_shows_no_page_number(self, app: StardotApplication) -> None:
         #  A number a reader cannot key is an instruction that misleads them.

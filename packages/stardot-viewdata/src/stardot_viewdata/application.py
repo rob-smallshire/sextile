@@ -37,7 +37,7 @@ from sextile.viewdata.canvas import Canvas
 from sextile.viewdata.chrome import CONTENT_FIRST_ROW, CONTENT_ROWS, draw_chrome
 from sextile.viewdata.composition import Align, Composition
 from sextile.viewdata.controls import Colour
-from sextile.viewdata.drawing import centred, fitted, rule
+from sextile.viewdata.drawing import fitted, rule
 from sextile.viewdata.font import load_font
 from sextile.viewdata.footer import FooterItem, Priority, render_footer
 from sextile.viewdata.frame import COLUMNS
@@ -64,6 +64,13 @@ BANNER_ROW: Final = 2
 #: and yellow is the brightest thing to put on the darkest.
 BANNER_BACKGROUND: Final = Colour.BLUE
 BANNER_COLOUR: Final = Colour.YELLOW
+
+#: What the service is, under its name: a lighter face -- the shapes a Beeb's
+#: own ROM draws -- so that it reads as a second line rather than a second
+#: title, with a stripe a third its height behind it.
+SERVICE_KIND: Final = "VIEWDATA"
+SUBTITLE_FACE: Final = "acorn"
+SUBTITLE_ROW: Final = 6
 
 #: Named for the service rather than for the framework serving it, and
 #: relative to the working directory -- so `serve` and `ingest` must be run
@@ -449,18 +456,33 @@ class StardotApplication(Sextile):
             within=stripe,
             spacing=Spacing.KERNED,
         )
+        #  What the service is, in the lighter face -- the Beeb's own shapes --
+        #  so that it reads as the second line and not a second title. The
+        #  stripe behind it is a row where the word is three, which puts a band
+        #  through its waist and leaves the rest on the frame's black: the same
+        #  two colours as the name above, said more quietly.
+        lettering.boxed(
+            layout,
+            SUBTITLE_ROW,
+            SERVICE_KIND,
+            load_font(SUBTITLE_FACE),
+            BANNER_COLOUR,
+            BANNER_BACKGROUND,
+            rows=1,
+            padding=2,
+            spacing=Spacing.KERNED,
+        )
         layout.draw(canvas)
-        centred(canvas, 6, "V I E W D A T A", Colour.CYAN)
-        rule(canvas, 8)
-        canvas.row(10).text("The Stardot forum for users of Acorn", Colour.WHITE)
-        canvas.row(11).text("computers, as 40-column frames.", Colour.WHITE)
-        canvas.row(13).text(f"{held} posts held.", Colour.GREEN)
+        rule(canvas, 10)
+        canvas.row(12).text("The Stardot forum for users of Acorn", Colour.WHITE)
+        canvas.row(13).text("computers, as 40-column frames.", Colour.WHITE)
+        canvas.row(15).text(f"{held} posts held.", Colour.GREEN)
         #  Each colour change costs a cell, which shows as a space -- so the
         #  attribute is the space, rather than being paid for on top of one.
-        canvas.row(16).text("Key", Colour.WHITE).text("#", Colour.YELLOW).text(
+        canvas.row(17).text("Key", Colour.WHITE).text("#", Colour.YELLOW).text(
             "for the main index.", Colour.WHITE
         )
-        canvas.row(18).text("Key", Colour.WHITE).text("*91#", Colour.YELLOW).text(
+        canvas.row(19).text("Key", Colour.WHITE).text("*91#", Colour.YELLOW).text(
             "for how to get about.", Colour.WHITE
         )
         return Page(

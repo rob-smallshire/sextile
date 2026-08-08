@@ -23,8 +23,9 @@ double-height text, which is two rows and one size:
  3 |                 STARDOT          <- double height: rows 3 and 4
  4 |                 STARDOT             are the same text
  5 |
- 6 |             V I E W D A T A
- 7 |
+ 6 |          ▙▌▌▐ ▛▘▌▌▌▛▙ ▄ ▀█▘▄
+ 7 |     █████▐▌▌▐▐▛▘▌▌▌▐▐▐▛▙ █ ▛▙█████
+ 8 |          ▝▘▝▘▝▀▘▀▀▘▀▘▝▘▝▘▀▘▝▘▘
  8 |  ▮▮▮▮▮▮▮▮▮▮▮▮▮▮▮▮▮▮▮▮▮▮▮▮▮▮▮▮▮▮▮▮▮▮▮▮▮▮
 ```
 
@@ -37,8 +38,9 @@ and now sets it in `boldbash`, three rows of blocks on a stripe of colour:
  3 | ████████▀▀▖ █ █▀▜█▀▘█ ██ █ ██████████
  4 | ████████▀▀  ▀ ▀ ▀▀  ▀▀ ▝▀▘  ▀█████████
  5 |
- 6 |             V I E W D A T A
- 7 |
+ 6 |          ▙▌▌▐ ▛▘▌▌▌▛▙ ▄ ▀█▘▄
+ 7 |     █████▐▌▌▐▐▛▘▌▌▌▐▐▐▛▙ █ ▛▙█████
+ 8 |          ▝▘▝▘▝▀▘▀▀▘▀▘▝▘▝▘▀▘▝▘▘
  8 |  ▮▮▮▮▮▮▮▮▮▮▮▮▮▮▮▮▮▮▮▮▮▮▮▮▮▮▮▮▮▮▮▮▮▮▮▮▮▮
 ```
 
@@ -277,6 +279,8 @@ Roughly in order, each committable on its own.
    cells of heavy strokes where double height gave two rows of ordinary
    letters. The stripe is a `panel` and the letters are centred in it both
    ways; the page names neither a column nor a row.
+   `VIEWDATA` follows it in `acorn`, the lighter face, with a stripe a row deep
+   behind a word three rows tall — the same two colours said more quietly.
 
 ## Decisions still open
 

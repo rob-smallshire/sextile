@@ -184,7 +184,11 @@ the attribute that colours it. The letters are centred in the box both ways,
 and the box is returned, so more can go in it.
 
 A box taller than what goes in it grows upwards as well as down, so that asking
-for one at row 8 leaves the letters near row 8.
+for one at row 8 leaves the letters near row 8. **A box shorter than its letters
+is a stripe behind them**, centred on them rather than the other way about: one
+row behind a three-row word puts a band through its waist and leaves the rest of
+it on the frame's own black, which the composition does by giving the panel only
+the middle row of the three.
 
 ### What a style costs
 

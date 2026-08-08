@@ -399,3 +399,23 @@ class TestABoxFittedRoundItsLetters:
             layout, Align.CENTRE, "NEWS", load_font("acorn"), where=Align.CENTRE
         )
         assert box.rows[0] == (ROWS - len(box.rows)) // 2
+
+    def test_a_box_shorter_than_its_letters_is_a_stripe_through_them(self) -> None:
+        #  One row behind a three-row word: a band through its waist, with the
+        #  rest of the letters on the frame's own black.
+        layout = Composition()
+        box = lettering.boxed(layout, 6, "VIEWDATA", load_font("acorn"), rows=1)
+        assert box.rows == (7,)
+        assert sorted(layout.runs) == [6, 7, 8]
+
+    def test_and_only_the_row_it_covers_takes_its_colour(self) -> None:
+        canvas = Canvas(Frame())
+        layout = Composition()
+        lettering.boxed(layout, 6, "VIEWDATA", load_font("acorn"), Colour.YELLOW,
+                        Colour.BLUE, rows=1)
+        layout.draw(canvas)
+        assert any(canvas.frame.cell(7, column) == Control.NEW_BACKGROUND
+                   for column in range(COLUMNS))
+        assert not any(canvas.frame.cell(row, column) == Control.NEW_BACKGROUND
+                       for row in (6, 8)
+                       for column in range(COLUMNS))

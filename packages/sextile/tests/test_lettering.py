@@ -119,8 +119,35 @@ class TestKerning:
         assert lettering.width("LT", TOY, spacing=Spacing.KERNED, gap=2) == 7
 
 
+class TestTrimmingWhatIsNotDrawn:
+    def test_a_line_is_only_as_tall_as_its_own_ink(self) -> None:
+        #  A face leaves room for descenders and accents whether the line uses
+        #  them or not, and three blank block-rows is a whole row of a screen
+        #  that has twenty-four. STARDOT in silkscreen is five blocks of ink
+        #  in a nine-block face.
+        assert len(lettering.bitmap("STARDOT", load_font("silkscreen"))) == 5
+        assert len(lettering.cells("STARDOT", load_font("silkscreen"))) == 2
+
+    def test_and_a_line_that_uses_them_keeps_them(self) -> None:
+        #  Silkscreen's lowercase are small capitals with nothing below the
+        #  line, so this needs a face that has descenders to say anything.
+        acorn = load_font("acorn")
+        assert len(lettering.bitmap("Stardot pg", acorn)) > len(
+            lettering.bitmap("STARDOT", acorn)
+        )
+
+    def test_the_face_can_be_kept_at_its_full_height_instead(self) -> None:
+        #  Two lines set separately only sit on the same baseline if neither
+        #  is trimmed, so this is how a page asks for that.
+        silkscreen = load_font("silkscreen")
+        assert len(lettering.bitmap("STARDOT", silkscreen, trim=False)) == silkscreen.height
+
+    def test_nothing_at_all_still_has_the_height_of_the_face(self) -> None:
+        assert len(lettering.bitmap("", TOY)) == TOY.height
+
+
 class TestWhatIsSet:
-    def test_the_lettering_is_as_tall_as_the_face(self) -> None:
+    def test_the_lettering_is_as_tall_as_the_ink(self) -> None:
         assert len(lettering.bitmap("I", TOY)) == TOY.height
 
     def test_nothing_at_all_is_a_bitmap_of_no_width(self) -> None:

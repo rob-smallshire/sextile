@@ -67,8 +67,16 @@ def bitmap(
     spacing: Spacing = Spacing.PROPORTIONAL,
     gap: int = _GAP,
     limit: int = _LIMIT,
+    trim: bool = True,
 ) -> list[list[bool]]:
-    """`text` set in `font`, as rows of blocks, as tall as the face."""
+    """`text` set in `font`, as rows of blocks, as tall as the ink.
+
+    A face leaves room for descenders and accents whether a line uses them or
+    not, and three blank block-rows is a whole row of a screen that has
+    twenty-four -- so the blank rows above and below the line go, as the blank
+    columns after it do. `trim=False` keeps the face's full height, which is
+    what two lines that must share a baseline want.
+    """
     placed = _placements(text, font, spacing, gap, limit)
     width = _width(placed)
     rows = [[False] * width for _ in range(font.height)]
@@ -77,7 +85,17 @@ def bitmap(
             for x, block in enumerate(row):
                 if block:
                     rows[y][left + x] = True
-    return rows
+    return _trimmed(rows) if trim else rows
+
+
+def _trimmed(rows: list[list[bool]]) -> list[list[bool]]:
+    """The line with its blank rows taken off the top and the bottom.
+
+    A line with no ink at all is left as it is: it is a gap of the face's
+    height, and a gap of no height is not what anybody asked for.
+    """
+    inked = [index for index, row in enumerate(rows) if any(row)]
+    return rows[inked[0] : inked[-1] + 1] if inked else rows
 
 
 def width(
@@ -177,6 +195,7 @@ def cells(
     limit: int = _LIMIT,
     inverted: bool = False,
     margin: int = 0,
+    trim: bool = True,
 ) -> list[list[int]]:
     """`text` set in `font` as mosaic patterns, a list of them for each cell row.
 
@@ -184,7 +203,7 @@ def cells(
     an inverted banner wants: the letters are holes in a lit field, and without
     a margin the field ends where the ink does and the letters touch its edge.
     """
-    picture = bitmap(text, font, spacing=spacing, gap=gap, limit=limit)
+    picture = bitmap(text, font, spacing=spacing, gap=gap, limit=limit, trim=trim)
     return block_runs(_bordered(picture, margin), inverted=inverted)
 
 
@@ -209,6 +228,7 @@ def place(
     limit: int = _LIMIT,
     inverted: bool = False,
     margin: int = 0,
+    trim: bool = True,
     separated: bool = False,
 ) -> Composition:
     """Add `text`, set in `font`, to a composition with its top row at `row`.
@@ -225,6 +245,7 @@ def place(
         limit=limit,
         inverted=inverted,
         margin=margin,
+        trim=trim,
     )
     at = column if column is not None else max(1, (COLUMNS - len(patterns[0])) // 2)
     for index, run in enumerate(patterns):
@@ -233,5 +254,9 @@ def place(
 
 
 def rows_for(font: Font, *, margin: int = 0) -> int:
-    """How many rows of the frame a face needs, at `margin` blocks of border."""
+    """How many rows of the frame a face needs at most, with `margin` of border.
+
+    The most, not the number a given line takes: a line of capitals is trimmed
+    to its own ink and may come out shorter.
+    """
     return -(-(font.height + 2 * margin) // BLOCKS_DOWN)

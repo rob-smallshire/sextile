@@ -165,6 +165,12 @@ file's own header.
 | 5 | `pixeloperator`, `pixeloperator-bold`, `pixeloperator-hb`, `pixeloperator-sc`, `pixeloperator-sc-bold`, `pixeloperator-sc-hb` |
 | 6 | `garland` |
 
+The rows in that table are what the face needs at worst. **A line is trimmed to
+its own ink**, top and bottom as well as on the right, so a line of capitals in
+a face that leaves room for descenders comes out shorter — `garland` in four
+rows rather than six, `pixeloperator` in three rather than five. Two lines that
+must share a baseline ask for `trim=False`.
+
 Every one of them sets `STARDOT` inside a row, from 25 blocks in `3x3-mono` to
 75 in `garland`. `acorn` remains the default: it is the face a BBC Micro's own
 ROM is drawn in.

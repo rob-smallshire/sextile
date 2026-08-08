@@ -44,15 +44,27 @@ and a handler is a function of a request rather than of a number.
 **The wire, measured rather than assumed.** Attributes travel as `ESC` + code +
 0x40, a frame is 24 rows of 40 that wraps at the bottom-right back to the top
 left, `RETURN` transmits 0x5F. Those were settled by driving real Commstar under
-an emulator, and are written up in the repository's `docs/viewdata-encoding.md`.
+an emulator, and are written up in
+[docs/viewdata-encoding.md](docs/viewdata-encoding.md).
 
 **Forty columns, accounted for.** A colour attribute occupies a character cell,
 so a row that changes colour twice has thirty-eight columns for text. `Canvas`
 does that arithmetic so nothing above it has to.
 
+## Documentation
+
+| | |
+|---|---|
+| [design.md](docs/design.md) | the framework as built, and which decisions are load-bearing |
+| [writing-an-application.md](docs/writing-an-application.md) | how to write a service |
+| [rendering.md](docs/rendering.md) | how a document becomes bytes, stage by stage |
+| [navigation.md](docs/navigation.md) | how a reader moves about, and why the controls are what they are |
+| [viewdata-encoding.md](docs/viewdata-encoding.md) | what the BBC end actually does, and how we know |
+
 ## Status
 
 Young, and extracted from a working service rather than designed in the
-abstract. See `stardot-viewdata` in the same repository for a real one.
+abstract. Two applications use it: `stardot-viewdata` in the same repository is
+a real one, and `calendar-viewdata` is a small one written to be read.
 
 MIT licensed.

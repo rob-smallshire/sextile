@@ -5,7 +5,7 @@ Sextile owns everything else: the connection, the session, the routing, and the
 bytes on the wire.
 
 The worked example is
-[`calendar-viewdata`](../packages/calendar-viewdata/), which is small, depends
+[`calendar-viewdata`](../../calendar-viewdata/), which is small, depends
 on nothing but the standard library, and is meant to be read.
 
 ## The smallest thing that answers
@@ -227,4 +227,4 @@ uv run sextile render my_service:app --page 1 --form bytes # the wire, as a hex 
 way to check a menu is wired up correctly.
 
 For a real terminal, see the dialling instructions in
-[stardot-viewdata's README](../packages/stardot-viewdata/README.md).
+[stardot-viewdata's README](../../stardot-viewdata/README.md).

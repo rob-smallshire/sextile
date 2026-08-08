@@ -28,11 +28,13 @@ the framework asks for.
 It is deliberately small and depends on nothing but the standard library and
 Sextile: no archive, no network, nothing to configure. That makes it the worked
 example the framework's documentation is written against —
-[docs/writing-an-application.md](../../docs/writing-an-application.md) — and a
+[writing-an-application.md](../sextile/docs/writing-an-application.md) — and a
 reasonable thing to copy when starting a service of your own.
 
 The one thing it depends on that is not a pure function is the clock, which is
 therefore a constructor argument. A service whose pages change under it cannot
 be tested otherwise.
+
+[docs/design.md](docs/design.md) is the design as built.
 
 MIT licensed.

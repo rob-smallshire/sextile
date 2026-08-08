@@ -33,7 +33,7 @@ Commstar does with bytes, not about how they arrived.
 | `spike_trimmed_frames.py` | Is a trimmed frame identical on screen? | Yes, across six frames including the one that would break it — a row filled to column 40. |
 
 What they established is written up in
-[../viewdata-encoding.md](../viewdata-encoding.md), which keeps what was
+[../viewdata-encoding.md](../../packages/sextile/docs/viewdata-encoding.md), which keeps what was
 verified separate from what was inferred.
 
 ## Writing another

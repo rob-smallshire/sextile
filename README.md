@@ -56,6 +56,20 @@ has to adopt the other's execution model.
 [docs/target-architecture.md](docs/target-architecture.md) has the whole picture
 and the invariants that keep it honest.
 
+## Where things are written up
+
+Each package is documented as built:
+
+| | |
+|---|---|
+| [sextile](packages/sextile/docs/design.md) | the seam, addressing, routing, the session, the wire |
+| [stardot-viewdata](packages/stardot-viewdata/docs/design.md) | the numbering, the archive, the polite ingest, phpBB's HTML |
+| [calendar-viewdata](packages/calendar-viewdata/docs/design.md) | the second application, and what it was for |
+
+[docs/architecture.md](docs/architecture.md) maps the whole workspace, and
+[writing-an-application.md](packages/sextile/docs/writing-an-application.md) is
+the framework's front door.
+
 ## What was measured rather than assumed
 
 Much of the design rests on facts established by driving real Commstar under an
@@ -70,7 +84,7 @@ emulator rather than on documentation:
 
 The scripts that settled each are in [docs/spikes/](docs/spikes/), and what they
 established is written up in
-[docs/viewdata-encoding.md](docs/viewdata-encoding.md), which distinguishes what
+[viewdata-encoding.md](packages/sextile/docs/viewdata-encoding.md), which distinguishes what
 was verified from what was inferred. **Keep that distinction** in anything new.
 
 ## Working on it

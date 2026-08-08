@@ -10,14 +10,20 @@ packages/stardot-viewdata/     the Stardot phpBB forum, as Viewdata
 packages/calendar-viewdata/    a calendar; the framework's worked example
 ```
 
-Read [docs/architecture.md](docs/architecture.md) first; it explains the
-layering and, more usefully, where the seams are and why. Then
-[docs/target-architecture.md](docs/target-architecture.md) for where this is
-going — a phpBB extension replacing the Atom feed — and
-[docs/writing-an-application.md](docs/writing-an-application.md),
-[docs/rendering.md](docs/rendering.md) or
-[docs/navigation.md](docs/navigation.md) depending on which end you are working
-at.
+Read [docs/architecture.md](docs/architecture.md) first; it maps the workspace
+and says where the seams are. Then whichever of these you are working in — each
+is written up as built:
+
+- [sextile/docs/design.md](packages/sextile/docs/design.md)
+- [stardot-viewdata/docs/design.md](packages/stardot-viewdata/docs/design.md)
+- [calendar-viewdata/docs/design.md](packages/calendar-viewdata/docs/design.md)
+
+[docs/target-architecture.md](docs/target-architecture.md) says where this is
+going: a phpBB extension replacing the Atom feed. For writing a new service,
+[writing-an-application.md](packages/sextile/docs/writing-an-application.md);
+for the two end-to-end narratives,
+[rendering.md](packages/sextile/docs/rendering.md) and
+[navigation.md](packages/sextile/docs/navigation.md).
 
 ## The two invariants
 
@@ -55,7 +61,7 @@ Commstar under Beebium:
 
 The spikes that established these are in `docs/spikes/`. They need a local
 Beebium checkout and are not part of the test suite. Findings are written up in
-[docs/viewdata-encoding.md](docs/viewdata-encoding.md), which separates what was
+[viewdata-encoding.md](packages/sextile/docs/viewdata-encoding.md), which separates what was
 verified from what was inferred. **Keep that distinction** in anything new.
 
 Beebium's own source is a good oracle where a spike would be slow:
@@ -73,6 +79,10 @@ second, and the session says so without moving the reader.
 in `packages/stardot-viewdata/tests/`, so a change in the board's configuration
 surfaces as a failure rather than going unnoticed. See
 [feed-limitations.md](packages/stardot-viewdata/docs/feed-limitations.md).
+
+**Keep the design documents as built.** Each package has one, and they describe
+what is there rather than what was planned. A design that has drifted from the
+code is worse than none, because it is believed.
 
 ## Conventions
 

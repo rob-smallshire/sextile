@@ -148,7 +148,7 @@ one byte and a rub-out three.
 for a new number — what Prestel's `**` did, for a reader who types it out of
 habit.
 
-[docs/navigation.md](../../docs/navigation.md) has the whole model and the reasoning
+[docs/navigation.md](../sextile/docs/navigation.md) has the whole model and the reasoning
 behind it.
 
 **A frame names only the keys that do something on it**, in a footer that says
@@ -234,11 +234,12 @@ terminal to a reply.
 
 | | |
 |---|---|
-| [architecture.md](../../docs/architecture.md) | the module map, the seams, and where the awkwardness lives |
-| [rendering.md](../../docs/rendering.md) | how a post becomes bytes, stage by stage |
-| [navigation.md](../../docs/navigation.md) | how a reader moves about, and why the controls are what they are |
+| [design.md](docs/design.md) | this service as built: numbering, archive, ingest, phpBB's HTML |
+| [architecture.md](../../docs/architecture.md) | the workspace, and where the seams are |
+| [rendering.md](../sextile/docs/rendering.md) | how a post becomes bytes, stage by stage |
+| [navigation.md](../sextile/docs/navigation.md) | how a reader moves about, and why the controls are what they are |
 | [page-numbering.md](docs/page-numbering.md) | the numbering scheme and why it uses Stardot's own ids |
-| [viewdata-encoding.md](../../docs/viewdata-encoding.md) | what the BBC end actually does, and how we know |
+| [viewdata-encoding.md](../sextile/docs/viewdata-encoding.md) | what the BBC end actually does, and how we know |
 | [spikes/README.md](../../docs/spikes/README.md) | the eight questions measured on real hardware, and their answers |
 | [feed-limitations.md](docs/feed-limitations.md) | what the Atom feed cannot tell us |
 | [phpbb-feed-code-newlines.md](docs/phpbb-feed-code-newlines.md) | a defect in phpBB's feed, found here and since fixed |

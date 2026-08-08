@@ -106,6 +106,48 @@ That is what stops a numbering scheme existing in two places and drifting.
 app.alias("MAIN", app.address_for("main"))
 ```
 
+## Menus and listings
+
+Most pages are a list of things, so the framework builds those:
+
+```python
+from sextile.templates import Listing, Menu, MenuItem
+
+Menu(
+    title="BY CONTRIBUTOR",
+    entries=[MenuItem(text=name, detail=f"{count} posts", destination=where) ...],
+    home=self.index,
+    preamble=["Everyone who has posted."],   # first frame only
+    empty="NO POSTS held yet.",              # said instead of an empty frame
+).build(request.address)
+```
+
+`Menu` numbers its entries 1–9 and deals them nine to a frame, each with a line
+of detail beneath. `Listing` is the same mechanism for a reference page: twenty
+to a frame, nothing selectable, the detail in a second column. Both draw the
+chrome, build the prompt from what the frame actually offers, wire up `W`/`S`/`#`
+and send `0` home.
+
+**Entries are a protocol, not a type.** Anything with `text`, `detail` and
+`destination` will do, so a service with its own richer entry — carrying the post,
+the timestamp, whatever it needs — hands that over directly:
+
+```python
+@dataclass(frozen=True)
+class Line:
+    post: Post
+
+    @property
+    def text(self) -> str: return self.post.subject
+    @property
+    def detail(self) -> str: return self.post.author_name
+    @property
+    def destination(self) -> PageAddress: return app.address_for("post", post_id=...)
+```
+
+For a shape neither template has, subclass `Template` and say how tall an entry
+is and how to draw it; the pagination, chrome and keys come with it.
+
 ## Pages, frames and keys
 
 A page is one or more frames, and **each frame says what its keys do while it is

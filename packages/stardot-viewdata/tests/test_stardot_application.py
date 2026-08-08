@@ -18,8 +18,8 @@ from sextile import keys
 from sextile.addressing import PageAddress, UnknownPageError
 from sextile.application import Arrival, PageRequest
 from sextile.page import Page
+from sextile.templates import MenuItem
 from stardot_viewdata import StardotApplication
-from stardot_viewdata.application import MenuItem
 from stardot_viewdata.model import Post
 from stardot_viewdata.store.repository import Repository
 

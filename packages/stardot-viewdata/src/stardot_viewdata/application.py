@@ -23,7 +23,6 @@ forum as on a BBC Micro.
 
 import asyncio
 from collections.abc import Callable
-from dataclasses import dataclass
 from datetime import date, datetime
 from pathlib import Path
 from typing import Final
@@ -32,6 +31,7 @@ from sextile import keys
 from sextile.addressing import PageAddress
 from sextile.application import Arrival, PageRequest, Parting, Sextile, page
 from sextile.page import Page, PageFrame
+from sextile.templates import Menu, MenuItem
 from sextile.viewdata.canvas import Canvas
 from sextile.viewdata.chrome import CONTENT_FIRST_ROW, CONTENT_ROWS, draw_chrome
 from sextile.viewdata.controls import Colour, Control, graphics_colour
@@ -79,29 +79,6 @@ _BETWEEN: Final = "―"  # HORIZONTAL BAR, G0 0x60
 
 #  The footer is written in one colour, which costs a cell of the forty.
 _FOOTER_ATTRIBUTE: Final = 1
-
-
-@dataclass(frozen=True)
-class MenuItem:
-    """One selectable line of a menu."""
-
-    text: str
-    detail: str
-    destination: PageAddress
-
-    @classmethod
-    def for_page(cls, app: "StardotApplication", name: str) -> "MenuItem":
-        """A menu line taken from what the page said about itself.
-
-        The words are at the registration, so a menu offering a page and a list
-        naming it cannot drift apart -- they are the same words.
-        """
-        about = app.page_info(name)
-        if about is None:
-            raise ValueError(f"{name!r} is not a page that says what it is")
-        return cls(
-            text=about.title, detail=about.detail, destination=app.address_for(name)
-        )
 
 
 class StardotApplication(Sextile):
@@ -362,66 +339,16 @@ class StardotApplication(Sextile):
         title: str,
         items: list[MenuItem],
         preamble: list[str] | None = None,
+        empty: str = "",
     ) -> Page:
-        """Build a menu, dealing its items nine to a frame."""
-        lead = preamble or []
-        first_frame_capacity = (CONTENT_ROWS - len(lead) - (1 if lead else 0)) // _ROWS_PER_CHOICE
-        per_frame = min(CHOICES_PER_FRAME, max(first_frame_capacity, 1))
-
-        batches = [
-            items[start : start + per_frame] for start in range(0, len(items), per_frame)
-        ] or [[]]
-        frames = [
-            self._menu_frame(
-                address,
-                index,
-                title=title,
-                batch=batch,
-                preamble=lead,
-                moving=_frame_moves(index, len(batches)),
-            )
-            for index, batch in enumerate(batches)
-        ]
-        return Page(frames=tuple(frames))
-
-    def _menu_frame(
-        self,
-        address: PageAddress,
-        index: int,
-        *,
-        title: str,
-        batch: list[MenuItem],
-        preamble: list[str],
-        moving: dict[str, str],
-    ) -> PageFrame:
-        canvas = Canvas()
-        draw_chrome(
-            canvas,
+        """A menu, dealt nine to a frame by the framework's template."""
+        return Menu(
             title=title,
-            page_number=address.frame_number(index),
-            prompt=_prompt(moving, selecting=bool(batch)),
-        )
-
-        row = CONTENT_FIRST_ROW
-        for line in preamble:
-            canvas.row(row).text(_fitted(line, COLUMNS - 1), Colour.WHITE)
-            row += 1
-        if preamble:
-            row += 1
-
-        choices: dict[str, PageAddress] = {"0": self.address_for("main")}
-        for offset, item in enumerate(batch):
-            digit = offset + 1
-            choices[str(digit)] = item.destination
-            canvas.row(row).text(f"{digit} ", Colour.YELLOW).text(
-                _fitted(item.text, COLUMNS - 4), Colour.WHITE
-            )
-            row += 1
-            if item.detail and row < CONTENT_FIRST_ROW + CONTENT_ROWS:
-                canvas.row(row).skip(2).text(_fitted(item.detail, COLUMNS - 4), Colour.GREEN)
-            row += 1
-
-        return PageFrame(frame=canvas.frame, choices=choices, moves=_moves(moving))
+            entries=items,
+            home=self.index,
+            preamble=preamble or (),
+            empty=empty,
+        ).build(address)
 
     # -- content pages ------------------------------------------------------
 

@@ -406,6 +406,36 @@ neighbours to the handler as `request.arrival`. Walking on with `D` keeps the
 sequence; leaving for an unrelated page drops it. The handler only decides
 whether to offer what it was told of.
 
+## Templates
+
+Five places had grown their own version of the same six steps — take a list,
+deal it into frames, draw the chrome, write the rows, wire up the keys, return a
+`Page`. About 275 lines, and they had drifted: two disagreed about how much room
+a preamble costs, and one advertised a `1-9 select` on a frame with nothing to
+select.
+
+`Template` does the six steps; a subclass says how tall an entry is, how to draw
+one, and whether entries take a digit. Two come with the framework:
+
+| | |
+|---|---|
+| `Menu` | nine to a frame, numbered, a line of detail beneath each |
+| `Listing` | twenty to a frame, nothing numbered, detail in a second column |
+
+An application wanting a third shape subclasses `Template` rather than starting
+again — which is the point of it being a class and not two functions.
+
+**What a template consumes is the `Entry` protocol** — `text`, `detail`, and a
+`destination` that may be `None` — so a service with a richer notion of a menu
+entry passes that instead of copying into somebody else's dataclass. `MenuItem`
+is there for services with no such notion, and `MenuItem.for_page(app, name)`
+builds one from what a page said about itself when it was registered.
+
+Two things the extraction settled that five copies could not. **The preamble
+costs only the frame it is on**, where the hand-written versions spent its rows
+on every frame. And **the prompt is built from the same description as the
+choices**, so a frame cannot name a key it does not answer.
+
 ## The wire
 
 Everything in this section was **measured against real Commstar under Beebium**,

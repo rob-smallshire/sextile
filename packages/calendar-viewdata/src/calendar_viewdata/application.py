@@ -25,6 +25,7 @@ from datetime import UTC, date, datetime, timedelta
 from typing import Final
 
 from sextile import Page, PageAddress, PageFrame, PageRequest, Sextile, page
+from sextile.templates import Menu, MenuItem
 from sextile.viewdata.canvas import Canvas
 from sextile.viewdata.chrome import CONTENT_FIRST_ROW, CONTENT_ROWS, draw_chrome
 from sextile.viewdata.controls import Colour
@@ -270,45 +271,16 @@ class CalendarApplication(Sextile):
         items: list[tuple[str, str, PageAddress]],
         preamble: list[str] | None = None,
     ) -> Page:
-        """Deal items nine to a frame, each with a line of detail beneath."""
-        lead = preamble or []
-        capacity = min(CHOICES_PER_FRAME, max((CONTENT_ROWS - len(lead)) // 2, 1))
-        batches = [
-            items[start : start + capacity] for start in range(0, len(items), capacity)
-        ] or [[]]
-        frames = []
-        for index, batch in enumerate(batches):
-            canvas = Canvas()
-            moves = set()
-            if index > 0:
-                moves.add("W")
-            if index + 1 < len(batches):
-                moves.update({"S", "#"})
-            draw_chrome(
-                canvas,
-                title=title,
-                page_number=address.frame_number(index),
-                prompt=_prompt(moves, selecting=bool(batch)),
-            )
-            row = CONTENT_FIRST_ROW
-            for line in lead:
-                if line:
-                    canvas.row(row).text(_fitted(line), Colour.WHITE)
-                row += 1
-            choices = {"0": self.address_for("main")}
-            for offset, (text, detail, destination) in enumerate(batch):
-                choices[str(offset + 1)] = destination
-                canvas.row(row).text(f"{offset + 1} ", Colour.YELLOW).text(
-                    _fitted(text, COLUMNS - 4), Colour.WHITE
-                )
-                row += 1
-                if detail and row < CONTENT_FIRST_ROW + CONTENT_ROWS:
-                    canvas.row(row).skip(2).text(_fitted(detail, COLUMNS - 4), Colour.GREEN)
-                row += 1
-            frames.append(
-                PageFrame(frame=canvas.frame, choices=choices, moves=frozenset(moves))
-            )
-        return Page(frames=tuple(frames))
+        """A menu, dealt nine to a frame by the framework's template."""
+        return Menu(
+            title=title,
+            entries=[
+                MenuItem(text=text, detail=detail, destination=where)
+                for text, detail, where in items
+            ],
+            home=self.index,
+            preamble=preamble or (),
+        ).build(address)
 
     def _notice(self, address: PageAddress, title: str, lines: list[str]) -> Page:
         """A page that simply says something, with no choices but the way back."""

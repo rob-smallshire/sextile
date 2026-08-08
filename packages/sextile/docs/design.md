@@ -438,6 +438,42 @@ and a row, and none of them knows what a page is.
 columns three dots saying "there was more" cost more than the three characters
 they would hide.
 
+**Composition** is the declarative half. `Canvas` writes left to right and
+inserts an attribute whenever the state changes, which is right for a page built
+a phrase at a time and wrong for placing things *at* positions: each call
+re-establishes the state it wants without knowing what the next one will want,
+and it cannot say whether the row fits until it has half drawn it.
+
+`Composition` takes the whole frame first, and that buys three things. It says
+**whether the layout is possible**, naming the row, the column and the
+arithmetic, before a cell is written. **Two runs in one style cost one
+attribute**, because it can see there is no text between them and so never
+returns to alpha — the case a sequential writer cannot see. And it is **exact
+rather than clever**: an attribute displays as a blank and a blank in graphics
+is the no-blocks mosaic, so an attribute may sit anywhere in the gap before the
+run it affects, which makes a left-to-right pass optimal and leaves nothing to
+search for. Placement becomes a search only if runs are free to move, which is a
+different feature.
+
+`Style` carries every attribute the hardware has, because the transitions are
+not uniform and that is the whole reason to hand a compositor a style rather
+than write controls by hand:
+
+| | |
+|---|---|
+| colour, flash, height, hold, separated | one cell each |
+| a background | **three** — there is no "set background", only "make the current foreground the background", so it is choose, promote, choose again |
+| a background matching the foreground | two, the third being nothing to change back to |
+| returning to black | one |
+| conceal | one, and **it cannot be undone** — the hardware clears it at the end of a row and nowhere else, so a composition asking for that is refused |
+
+Double height places its run on the row below as well, that being how the
+hardware draws the bottom halves, and the thing everyone gets wrong by leaving
+the row blank.
+
+Rows are independent, so a frame composition is a row composition done
+twenty-four times and nothing has to reason across rows.
+
 **Mixing text and blocks on one row costs cells, knowably.** A colour attribute
 chooses the character set as well as the colour — `GRAPHICS_YELLOW` means
 "yellow, and read what follows as blocks" — so `RowWriter` tracks the mode

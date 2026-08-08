@@ -56,6 +56,17 @@ class Frame:
         """Place a spacing attribute, which occupies the cell and displays as a space."""
         self._cells[self._offset(row, column)] = control
 
+    def set_cell(self, row: int, column: int, code: int) -> None:
+        """Put a displayable code in a cell, as the SAA5050 will read it.
+
+        What it draws depends on the character set in force where it lands,
+        which is the caller's business: the same byte is a letter in alpha and
+        a pattern of blocks in graphics. `Canvas` tracks that; this does not.
+        """
+        if not 0x20 <= code <= 0x7F:
+            raise ValueError(f"0x{code:02X} is not a displayable character code")
+        self._cells[self._offset(row, column)] = code
+
     def write(self, row: int, column: int, text: str) -> None:
         """Place text, transliterating and encoding it into G0 positions."""
         encoded = encode_text(text)

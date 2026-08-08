@@ -9,9 +9,12 @@ independently of its neighbours and white text needs no attribute at all. Rows
 are obtained one at a time from ``Canvas.row`` for exactly that reason.
 """
 
+from collections.abc import Sequence
+from enum import Enum, auto
 from typing import Self
 
-from sextile.viewdata.controls import Colour, Control, alpha_colour
+from sextile.viewdata.charset import mosaic_code
+from sextile.viewdata.controls import Colour, Control, alpha_colour, graphics_colour
 from sextile.viewdata.encoding import cell_count
 from sextile.viewdata.frame import COLUMNS, ROWS, Frame
 from sextile.viewdata.wrapping import wrap_text
@@ -26,14 +29,32 @@ _GRAPHICS_COLOURS = range(0x11, 0x18)
 _GRAPHICS_OFFSET = 0x10
 
 
+class _Mode(Enum):
+    """Whether the cells being written are read as letters or as blocks.
+
+    A colour attribute chooses this as well as the colour -- `GRAPHICS_YELLOW`
+    means "yellow, and read what follows as mosaics" -- so the two are tracked
+    together or a row of text after a rule comes out as mosaic rubbish.
+    """
+
+    ALPHA = auto()
+    GRAPHICS = auto()
+
+
 class RowWriter:
-    """A cursor along one row, tracking the colour in effect."""
+    """A cursor along one row, tracking the colour and mode in effect."""
 
     def __init__(self, frame: Frame, row: int) -> None:
         self._frame = frame
         self._row = row
         self._column = 0
         self._colour = DEFAULT_COLOUR
+        #  Every row begins in alpha with contiguous graphics selected, whatever
+        #  the row above ended in. Which graphics set is *selected* is separate
+        #  state from whether graphics are *in force*: the separated attribute
+        #  chooses the set, and a colour attribute is what enters it.
+        self._mode = _Mode.ALPHA
+        self._separated = False
 
     @property
     def column(self) -> int:
@@ -46,10 +67,20 @@ class RowWriter:
         return COLUMNS - self._column
 
     def text(self, text: str, colour: Colour | None = None) -> Self:
-        """Append text, preceded by a colour attribute if the colour changes."""
+        """Append text, preceded by a colour attribute if one is needed.
+
+        One is needed if the colour changes, and also if the row is in graphics:
+        the attribute that returns to alpha is the same attribute that sets the
+        colour, so leaving a mosaic run costs a cell whether the colour changes
+        or not.
+        """
         cells = cell_count(text)
-        needs_attribute = colour is not None and colour is not self._colour
+        wanted = colour if colour is not None else self._colour
+        needs_attribute = (
+            colour is not None and colour is not self._colour
+        ) or self._mode is _Mode.GRAPHICS
         if needs_attribute:
+            colour = wanted
             cells += 1
         if cells > self.remaining:
             raise ValueError(
@@ -61,8 +92,61 @@ class RowWriter:
             self._frame.set_attribute(self._row, self._column, alpha_colour(colour))
             self._column += 1
             self._colour = colour
+            self._mode = _Mode.ALPHA
         self._frame.write(self._row, self._column, text)
         self._column += cell_count(text)
+        return self
+
+    def mosaic(
+        self,
+        patterns: Sequence[int],
+        colour: Colour,
+        *,
+        separated: bool = False,
+    ) -> Self:
+        """Append mosaic cells, preceded by whatever attributes they need.
+
+        Each pattern is six bits, one per block, in the order `mosaic_code`
+        names them.
+
+        Two attributes may be wanted and they do different things. The
+        separated attribute chooses *which* graphics set is selected, and takes
+        effect whether or not graphics are in force; the colour attribute is
+        what enters graphics, and carries the colour with it. So a contiguous
+        run in a colour already in force costs one cell, a separated one costs
+        two, and staying in the same run costs nothing.
+
+        Attributes display as spaces, which is why a region drawn this way has a
+        margin on its left whether it wants one or not. That cost is knowable
+        and has to be planned around -- it is why the rules this service draws
+        begin at column 2 -- and `HOLD_GRAPHICS` is the way out of it where a
+        gap would show, since it makes an attribute cell repeat the last mosaic
+        instead of blanking.
+        """
+        choosing = self._separated is not separated
+        entering = self._mode is not _Mode.GRAPHICS or self._colour is not colour
+        needed = len(patterns) + choosing + entering
+        if needed > self.remaining:
+            raise ValueError(
+                f"{len(patterns)} mosaic cells need {needed} with their attributes, "
+                f"but only {self.remaining} remain in row {self._row}"
+            )
+        if choosing:
+            self._frame.set_attribute(
+                self._row,
+                self._column,
+                Control.SEPARATED_GRAPHICS if separated else Control.CONTIGUOUS_GRAPHICS,
+            )
+            self._column += 1
+            self._separated = separated
+        if entering:
+            self._frame.set_attribute(self._row, self._column, graphics_colour(colour))
+            self._column += 1
+            self._colour = colour
+            self._mode = _Mode.GRAPHICS
+        for pattern in patterns:
+            self._frame.set_cell(self._row, self._column, mosaic_code(pattern))
+            self._column += 1
         return self
 
     def skip(self, cells: int) -> Self:

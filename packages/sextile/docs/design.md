@@ -438,6 +438,27 @@ and a row, and none of them knows what a page is.
 columns three dots saying "there was more" cost more than the three characters
 they would hide.
 
+**Mixing text and blocks on one row costs cells, knowably.** A colour attribute
+chooses the character set as well as the colour — `GRAPHICS_YELLOW` means
+"yellow, and read what follows as blocks" — so `RowWriter` tracks the mode
+beside the colour. Entering graphics costs a cell; asking for separated graphics
+when contiguous are selected costs another; returning to text costs one whether
+the colour changes or not. Every row begins in alpha with contiguous selected,
+whatever the row above ended in.
+
+Which graphics *set* is selected is separate state from whether graphics are in
+*force*: the separated attribute chooses the set even when alpha is showing, and
+a colour attribute is what enters it. Modelling those as one thing gets the
+arithmetic wrong by a cell in exactly the cases that matter.
+
+The consequence a page has to plan around is that **an attribute displays as a
+space**, so a block region has a margin on its left whether it wants one or not
+— which is why the rules this service draws begin at column 2, and why a frame
+is 78 blocks wide in practice rather than 80. Where a gap would show,
+`HOLD_GRAPHICS` is the way out: it makes an attribute cell repeat the last
+mosaic instead of blanking, which is how teletext art has always changed colour
+mid-picture.
+
 **This is where mosaic graphics belong when they come.** The block characters
 are already how the rules and the countdown bar are drawn — the G1 set gives
 each cell a 2×3 grid of blocks, so a frame is 80×72 addressable points, and

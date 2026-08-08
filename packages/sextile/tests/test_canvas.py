@@ -298,3 +298,73 @@ class TestDoubleHeight:
         canvas = Canvas()
         with pytest.raises(ValueError):
             canvas.double_height(ROWS - 1, "X")
+
+
+class TestMosaicRuns:
+    """Mosaics on a row that also carries text.
+
+    A colour attribute switches the character set as well as the colour, so
+    entering graphics costs a cell and returning to text costs another. Canvas
+    already did that arithmetic for colour; it has to do it for mode too, or a
+    row of text after a rule comes out as mosaic rubbish.
+    """
+
+    def test_a_run_of_mosaics_is_written(self) -> None:
+        canvas = Canvas()
+        canvas.row(0).mosaic([0b111111] * 3, Colour.YELLOW)
+        assert canvas.frame.cell(0, 1) == 0x7F
+
+    def test_entering_graphics_costs_a_cell(self) -> None:
+        canvas = Canvas()
+        writer = canvas.row(0)
+        writer.mosaic([0b111111], Colour.YELLOW)
+        assert writer.column == 2  # the attribute, then the block
+
+    def test_the_attribute_is_a_graphics_colour(self) -> None:
+        canvas = Canvas()
+        canvas.row(0).mosaic([0b111111], Colour.YELLOW)
+        assert canvas.frame.cell(0, 0) == Control.GRAPHICS_YELLOW
+
+    def test_staying_in_graphics_costs_nothing_more(self) -> None:
+        canvas = Canvas()
+        writer = canvas.row(0)
+        writer.mosaic([0b111111], Colour.YELLOW)
+        writer.mosaic([0b111111], Colour.YELLOW)
+        assert writer.column == 3
+
+    def test_changing_the_graphics_colour_costs_a_cell(self) -> None:
+        canvas = Canvas()
+        writer = canvas.row(0)
+        writer.mosaic([0b111111], Colour.YELLOW)
+        writer.mosaic([0b111111], Colour.RED)
+        assert writer.column == 4
+
+    def test_separated_graphics_cost_a_cell_of_their_own(self) -> None:
+        canvas = Canvas()
+        writer = canvas.row(0)
+        writer.mosaic([0b111111], Colour.BLUE, separated=True)
+        assert writer.column == 3
+        assert canvas.frame.cell(0, 0) == Control.SEPARATED_GRAPHICS
+
+    def test_going_back_to_text_costs_a_cell(self) -> None:
+        #  Without this the text would be drawn as mosaics: the colour attribute
+        #  chooses the character set as well as the colour.
+        canvas = Canvas()
+        writer = canvas.row(0)
+        writer.mosaic([0b111111], Colour.YELLOW)
+        writer.text("AB", Colour.YELLOW)
+        assert canvas.frame.cell(0, 2) == Control.ALPHA_YELLOW
+        assert writer.column == 5
+
+    def test_text_in_the_same_colour_still_pays_to_leave_graphics(self) -> None:
+        canvas = Canvas()
+        writer = canvas.row(0)
+        writer.mosaic([0b111111], Colour.WHITE)
+        before = writer.column
+        writer.text("A")
+        assert writer.column == before + 2
+
+    def test_a_run_that_overruns_the_row_is_refused(self) -> None:
+        canvas = Canvas()
+        with pytest.raises(ValueError):
+            canvas.row(0).mosaic([0b111111] * COLUMNS, Colour.YELLOW)

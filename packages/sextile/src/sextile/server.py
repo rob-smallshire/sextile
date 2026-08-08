@@ -23,7 +23,9 @@ from sextile.session.session import Session
 #: After the MC6850 ACIA, which drives the BBC Micro's serial port.
 DEFAULT_PORT: Final = 6850
 
-#: How long a caller may say nothing before the line is released.
+#: How long a caller may say nothing before the line is released. None holds the
+#: line indefinitely, which is right for a dedicated terminal and wrong for a
+#: service anyone can dial.
 DEFAULT_IDLE_TIMEOUT: Final = 15 * 60.0
 
 _READ_SIZE: Final = 256
@@ -40,7 +42,7 @@ async def serve(
     *,
     host: str = "127.0.0.1",
     port: int = DEFAULT_PORT,
-    idle_timeout: float = DEFAULT_IDLE_TIMEOUT,
+    idle_timeout: float | None = DEFAULT_IDLE_TIMEOUT,
 ) -> asyncio.Server:
     """Start listening. Returns the server, so a caller can close it.
 
@@ -62,7 +64,7 @@ async def _converse(
     reader: asyncio.StreamReader,
     writer: asyncio.StreamWriter,
     application: Application,
-    idle_timeout: float,
+    idle_timeout: float | None,
 ) -> None:
     """One caller's session, from connection to ringing off."""
     caller = writer.get_extra_info("peername")
@@ -90,7 +92,7 @@ async def _converse(
         await _hang_up(writer)
 
 
-async def _read(reader: asyncio.StreamReader, idle_timeout: float) -> bytes | None:
+async def _read(reader: asyncio.StreamReader, idle_timeout: float | None) -> bytes | None:
     """Bytes from the caller, or None if they have said nothing for too long."""
     try:
         return await asyncio.wait_for(reader.read(_READ_SIZE), timeout=idle_timeout)

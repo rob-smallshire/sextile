@@ -14,7 +14,7 @@ from typing import Final
 
 from sextile.addressing import PageAddress, UnknownPageError
 from sextile.application import Application, PageRequest
-from sextile.server import DEFAULT_PORT, serve
+from sextile.server import DEFAULT_IDLE_TIMEOUT, DEFAULT_PORT, serve
 from sextile.viewdata.ansi import render_ansi
 from sextile.viewdata.frame import Frame
 
@@ -65,11 +65,34 @@ def add_form_arguments(parser: argparse.ArgumentParser) -> None:
 
 
 def add_listening_arguments(parser: argparse.ArgumentParser) -> None:
-    """The arguments deciding where a service answers."""
+    """The arguments deciding where a service answers, and for how long."""
     parser.add_argument("--host", default="127.0.0.1", help="Address to listen on")
     parser.add_argument(
         "--port", type=int, default=DEFAULT_PORT, help=f"Port to listen on (default {DEFAULT_PORT})"
     )
+    parser.add_argument(
+        "--idle-timeout",
+        type=_seconds,
+        default=DEFAULT_IDLE_TIMEOUT,
+        metavar="SECONDS",
+        help=(
+            f"Release a caller who says nothing for this long "
+            f"(default {DEFAULT_IDLE_TIMEOUT:.0f}; 0 to hold the line indefinitely)"
+        ),
+    )
+
+
+def _seconds(text: str) -> float:
+    """A non-negative number of seconds, for argparse to report on."""
+    try:
+        value = float(text)
+    except ValueError:
+        raise argparse.ArgumentTypeError(f"{text!r} is not a number of seconds") from None
+    if value < 0:
+        #  A negative timeout would release the line before the greeting had
+        #  finished arriving, which looks like a fault rather than a setting.
+        raise argparse.ArgumentTypeError(f"{text!r} is not a length of time")
+    return value
 
 
 async def render_page(application: Application, arguments: argparse.Namespace) -> int:
@@ -103,11 +126,21 @@ async def render_page(application: Application, arguments: argparse.Namespace) -
 
 async def run_service(application: Application, arguments: argparse.Namespace) -> int:
     """Answer calls until interrupted."""
+    #  Zero means hold the line indefinitely, which is what `asyncio.wait_for`
+    #  spells as no timeout at all. Zero seconds would otherwise mean releasing
+    #  a caller the instant they stopped typing.
+    idle_timeout = arguments.idle_timeout or None
     await application.startup()
     try:
-        server = await serve(application, host=arguments.host, port=arguments.port)
+        server = await serve(
+            application,
+            host=arguments.host,
+            port=arguments.port,
+            idle_timeout=idle_timeout,
+        )
         print(
-            f"Sextile answering on {arguments.host}:{arguments.port}.\n"
+            f"Sextile answering on {arguments.host}:{arguments.port}, "
+            f"{_releasing(idle_timeout)}.\n"
             f"Dial it with:  tcpser -v 25232 -s 9600 -l 4 -t sS "
             f"-n 1={arguments.host}:{arguments.port}\n"
             f"Or try it with:  nc {arguments.host} {arguments.port}",
@@ -119,6 +152,13 @@ async def run_service(application: Application, arguments: argparse.Namespace) -
     finally:
         await application.shutdown()
     return 0
+
+
+def _releasing(idle_timeout: float | None) -> str:
+    """What the service will do with a caller who says nothing."""
+    if idle_timeout is None:
+        return "holding idle callers indefinitely"
+    return f"releasing idle callers after {idle_timeout:.0f}s"
 
 
 def rendered(frame: Frame, form: str, *, colour: bool) -> str:

@@ -31,7 +31,10 @@ nc localhost 6850
 ```
 
 A caller arrives on page 1 unless the application says otherwise —
-`Sextile(home="8")`.
+`Sextile(home="8")` — and is released after fifteen minutes of silence, since a
+single-line board held open by someone who walked away locks everyone else out.
+`--idle-timeout` changes that, and `--idle-timeout 0` holds the line for as long
+as the caller keeps it.
 
 ## Numbering
 

@@ -231,6 +231,14 @@ and from `nc`. A line feed after a carriage return is swallowed as the other
 half of one terminator — it has to be told apart from a bare `0x0A`, which is
 the BBC's cursor-down key.
 
+**Idle callers are released.** A single-line board held open by someone who
+walked away locks everyone else out, so a caller who says nothing for
+`--idle-timeout` seconds (fifteen minutes by default) is sent a short notice and
+disconnected. `--idle-timeout 0` holds the line indefinitely, which is right for
+a dedicated terminal and wrong for a service anyone can dial. There is no
+session timeout distinct from this one: the session lives exactly as long as the
+socket, so releasing the line *is* ending the session.
+
 **Sequences.** When a reader steps into a page from a menu, the session
 remembers the menu's `destinations` and where in them they are, and passes the
 neighbours to the handler as `request.arrival`. Walking on with `D` keeps the

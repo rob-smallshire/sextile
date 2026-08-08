@@ -132,6 +132,38 @@ shear.
 graphics selected, whatever the row above ended in. So a frame composition is a
 row composition done twenty-four times and nothing reasons across rows.
 
+### Panels: a coloured box with things on it
+
+The Ceefax pages this was built for put a word of mosaic lettering in a
+coloured box — cyan on blue, red on yellow, blue on green, four boxes down the
+right of a frame with plain text beside them.
+
+```python
+layout = Composition()
+box = layout.panel(5, 19, width=21, colour=Colour.BLUE, rows=3)
+lettering.place(layout, 5, "NEWS", face, Colour.CYAN, within=box)
+```
+
+**A background belongs to the field, not to what is written on it.** It lasts
+to the end of the row unless something stops it, and it costs cells that
+whatever is written on it would otherwise have to account for. So it is
+declared once and a run drawn `within` it takes it without saying anything — a
+run that turned the background off in the middle of a box would put a black
+hole in it.
+
+What the composition works out, and a caller therefore need not:
+
+- **where the box begins.** The background is set *at* its attribute cell, so
+  that cell is already coloured and is the box's first; the cell before it,
+  where the colour is chosen, is not, and is unavoidably black. See
+  [viewdata-encoding.md](viewdata-encoding.md).
+- **where it ends** — `BLACK_BACKGROUND` on the cell after its last, unless it
+  reaches the end of the row, where the row ending does the job.
+- **what a run on it costs**: one cell for its own colour, rather than the
+  three a background would cost from black.
+- **where a run on it goes**: `Align.CENTRE` with `within=box` centres in the
+  box rather than on the frame, and refuses what will not fit in it.
+
 ### What a style costs
 
 `Style` carries every attribute the hardware has, because the transitions are

@@ -59,6 +59,27 @@ graphics, and `0x11`–`0x17` enter graphics in whichever charset is remembered
 goes out in that order, and it is the one thing here worth an eye on a real
 Beeb.
 
+## A background is set at its cell, not after it
+
+Read from Beebium's `Saa5050`, not measured: `process_control_code` runs before
+the cell's `fg` and `bg` are captured, so the cell carrying `NEW_BACKGROUND`
+(`0x1D`) or `BLACK_BACKGROUND` (`0x1C`) is **already the new background**. A
+foreground change on the same cell is invisible — the cell is blank — which is
+why colour reads as set-after and background as set-at.
+
+It decides where a coloured box appears to begin and end:
+
+```
+    column 17   18   19  ...  38   39
+           ▁▁   ██   ██       ██   ▁▁
+        choose  new background       black background
+        blue    -- the box's first cell
+```
+
+so a box's own first cell is spent on the attribute that colours it, and one
+black cell before that is unavoidable: a colour attribute cannot colour itself.
+`Composition.panel` does this arithmetic.
+
 ## Verified screen control
 
 Only these bare C0 codes have been measured, and they are all the frame

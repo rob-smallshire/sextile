@@ -7,7 +7,7 @@ from sextile.viewdata import lettering
 from sextile.viewdata.blocks import BLOCKS_ACROSS
 from sextile.viewdata.canvas import Canvas
 from sextile.viewdata.composition import Composition, DoesNotFit
-from sextile.viewdata.controls import Colour
+from sextile.viewdata.controls import Colour, Control
 from sextile.viewdata.drawing import rule
 from sextile.viewdata.font import font_names, load_font, read_font
 from sextile.viewdata.frame import COLUMNS, Frame
@@ -298,3 +298,39 @@ class TestCentringOnTheFrame:
         rule(canvas, 0)
         lettering.place(Composition(), 2, "STARDOT", load_font("boldbash")).draw(canvas)
         assert abs(middle_of_row(canvas, 0) - middle_of_row(canvas, 2)) <= 0.5
+
+
+class TestLetteringOnAPanel:
+    """A word of mosaic lettering in a coloured box, which is what Ceefax did.
+
+    Cyan on blue, red on yellow, blue on green: the box is declared once and
+    the lettering says nothing about it.
+    """
+
+    def test_the_box_keeps_its_colour_behind_the_letters(self) -> None:
+        canvas = Canvas(Frame())
+        layout = Composition()
+        box = layout.panel(0, 19, width=21, colour=Colour.BLUE, rows=3)
+        lettering.place(layout, 0, "NEWS", load_font("silkscreen"), Colour.CYAN, within=box)
+        layout.draw(canvas)
+        assert canvas.frame.cell(0, 19) == Control.NEW_BACKGROUND
+        assert not any(
+            canvas.frame.cell(row, column) == Control.BLACK_BACKGROUND
+            for row in (0, 1, 2)
+            for column in range(20, COLUMNS)
+        )
+
+    def test_and_the_letters_are_centred_in_the_box(self) -> None:
+        layout = Composition()
+        box = layout.panel(0, 19, width=21, colour=Colour.BLUE, rows=3)
+        lettering.place(layout, 0, "NEWS", load_font("silkscreen"), Colour.CYAN, within=box)
+        run = layout.runs[0][0]
+        assert box.column < run.column and run.end < box.end
+        #  Centred within the box, to the block, as it would be on the frame.
+        assert abs((run.column + run.end) / 2 - (box.column + box.end) / 2) <= 1
+
+    def test_a_word_too_wide_for_its_box_is_refused(self) -> None:
+        layout = Composition()
+        box = layout.panel(0, 19, width=21, colour=Colour.BLUE, rows=3)
+        with pytest.raises(DoesNotFit):
+            lettering.place(layout, 0, "WEATHERMEN", load_font("boldbash"), within=box)

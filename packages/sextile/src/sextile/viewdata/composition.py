@@ -66,6 +66,12 @@ class Align(Enum):
 #: A column, or a request to be put somewhere.
 Where = int | Align
 
+#: What a panel costs to the left of its own first cell: one, to choose the
+#: colour that the next cell then promotes to the background. That next cell is
+#: the panel's own, and is already coloured -- the hardware sets a background at
+#: the attribute cell rather than after it.
+_PANEL_ATTRIBUTES: Final = 1
+
 
 @dataclass(frozen=True)
 class Style:
@@ -118,11 +124,69 @@ class Run:
         return self.column + self.cells
 
 
+@dataclass(frozen=True)
+class Panel:
+    """A coloured rectangle, cell-aligned, with things drawn on top of it.
+
+    `column` is its first coloured cell, which is the one carrying
+    NEW_BACKGROUND: the hardware sets a background *at* the attribute cell
+    rather than after it, so that cell is already the colour it asks for. The
+    cell before it is not -- it is where the colour is chosen, and a colour
+    attribute cannot colour itself -- so a panel always costs one black cell
+    to its left, and content inside it starts at least one cell in from the
+    left-hand edge.
+    """
+
+    column: int
+    width: int
+    colour: Colour
+    rows: tuple[int, ...] = ()
+
+    @property
+    def end(self) -> int:
+        """One past the last coloured cell."""
+        return self.column + self.width
+
+    def covers(self, run: Run) -> bool:
+        return self.column <= run.column and run.end <= self.end
+
+
 @dataclass
 class Composition:
     """Things to place on a frame, and where."""
 
     runs: dict[int, list[Run]] = field(default_factory=dict)
+    panels: dict[int, list[Panel]] = field(default_factory=dict)
+
+    def panel(
+        self,
+        row: int,
+        where: Where,
+        *,
+        width: int,
+        colour: Colour,
+        rows: int = 1,
+    ) -> Panel:
+        """A coloured rectangle, `rows` deep, returned so things can go in it.
+
+        A background is not a property of what is written on it: it belongs to
+        the field, it lasts to the end of the row unless something stops it,
+        and it costs cells that the things written on it would otherwise have
+        to account for. So it is declared once, here, and a run drawn within it
+        takes it without saying anything.
+        """
+        column = self._aligned(width, _PANEL_ATTRIBUTES, where)
+        panel = Panel(
+            column=column,
+            width=width,
+            colour=colour,
+            rows=tuple(range(row, row + rows)),
+        )
+        for covered in panel.rows:
+            if not 0 <= covered < ROWS:
+                raise DoesNotFit(f"row {covered} is not on the frame")
+            self.panels.setdefault(covered, []).append(panel)
+        return panel
 
     def text(
         self,
@@ -131,6 +195,7 @@ class Composition:
         words: str,
         colour: Colour = Colour.WHITE,
         *,
+        within: Panel | None = None,
         style: Style | None = None,
     ) -> "Composition":
         """Place text at a column.
@@ -140,7 +205,7 @@ class Composition:
         well, because that is how the SAA5050 draws the bottom halves.
         """
         wanted = style if style is not None else Style(colour=colour)
-        run = self._positioned(Run(column=0, style=wanted, words=words), where)
+        run = self._positioned(Run(column=0, style=wanted, words=words), where, within)
         self._add(row, run)
         if wanted.double_height:
             self._add(row + 1, run)
@@ -153,12 +218,13 @@ class Composition:
         patterns: Sequence[int],
         colour: Colour = Colour.WHITE,
         *,
+        within: Panel | None = None,
         separated: bool = False,
         style: Style | None = None,
     ) -> "Composition":
         """Place a run of mosaic blocks, which is a picture one row tall."""
         return self.picture(
-            row, where, [patterns], colour, separated=separated, style=style
+            row, where, [patterns], colour, within=within, separated=separated, style=style
         )
 
     def picture(
@@ -168,6 +234,7 @@ class Composition:
         rows: Sequence[Sequence[int]],
         colour: Colour = Colour.WHITE,
         *,
+        within: Panel | None = None,
         separated: bool = False,
         style: Style | None = None,
     ) -> "Composition":
@@ -182,7 +249,7 @@ class Composition:
             style if style is not None else Style(colour=colour, separated=separated)
         )
         placed = [tuple(pattern for pattern in patterns) for patterns in rows]
-        column, half = self._placement(placed, wanted, where)
+        column, half = self._placement(placed, wanted, where, within)
         if half:
             placed = [tuple(shifted(patterns)) for patterns in placed]
         width = max((len(patterns) for patterns in placed), default=0)
@@ -198,7 +265,11 @@ class Composition:
         return self
 
     def _placement(
-        self, rows: Sequence[Sequence[int]], style: Style, where: Where
+        self,
+        rows: Sequence[Sequence[int]],
+        style: Style,
+        where: Where,
+        within: Panel | None = None,
     ) -> tuple[int, bool]:
         """The column a picture starts at, and whether to shift it half a cell.
 
@@ -210,34 +281,41 @@ class Composition:
         block and an attribute cell look the same on the screen.
         """
         width = max((len(patterns) for patterns in rows), default=0)
-        probe = Run(column=0, style=style, patterns=(0,) * width)
-        needed = len(_attributes_for(OPENING, False, probe))
+        probe = Run(column=0, style=_inherited(style, within), patterns=(0,) * width)
+        needed = len(_attributes_for(_opening(within), False, probe))
         if where is not Align.CENTRE:
-            return self._aligned(width, needed, where), False
+            return self._aligned(width, needed, where, within), False
         first, last = _ink(rows)
         if first is None or last is None:
-            return self._aligned(width, needed, where), False
-        origin = _centre((last - first + 1), room=COLUMNS * BLOCKS_ACROSS) - first
-        column, half = divmod(origin, BLOCKS_ACROSS)
-        return (column, bool(half)) if column >= needed else (needed, False)
+            return self._aligned(width, needed, where, within), False
+        room, origin = _region(within)
+        left = _centre(last - first + 1, room=room * BLOCKS_ACROSS) - first
+        column, half = divmod(left + origin * BLOCKS_ACROSS, BLOCKS_ACROSS)
+        least = _least(needed, within)
+        return (column, bool(half)) if column >= least else (least, False)
 
-    def _aligned(self, width: int, needed: int, where: Where) -> int:
+    def _aligned(
+        self, width: int, needed: int, where: Where, within: Panel | None = None
+    ) -> int:
         """The column for something `width` cells wide, in cells alone."""
         if isinstance(where, int):
             return where
+        room, origin = _region(within)
+        least = _least(needed, within)
         if where is Align.RIGHT:
-            return max(COLUMNS - width, needed)
+            return max(origin + room - width, least)
         if where is Align.LEFT:
-            return needed
-        return max(_centre(width), needed)
+            return least
+        return max(origin + _centre(width, room=room), least)
 
-    def _positioned(self, run: Run, where: Where) -> Run:
+    def _positioned(self, run: Run, where: Where, within: Panel | None = None) -> Run:
         """A run of text moved to where it was asked to go.
 
         Text has no half-cells to be positioned in, so this is cells alone.
         """
-        needed = len(_attributes_for(OPENING, False, run))
-        return replace(run, column=self._aligned(run.cells, needed, where))
+        probe = replace(run, style=_inherited(run.style, within))
+        needed = len(_attributes_for(_opening(within), False, probe))
+        return replace(run, column=self._aligned(run.cells, needed, where, within))
 
     def _add(self, row: int, run: Run) -> "Composition":
         if not 0 <= row < ROWS:
@@ -255,7 +333,7 @@ class Composition:
     def problems(self) -> list[str]:
         """Everything wrong with this composition, or nothing if it will draw."""
         found = []
-        for row in sorted(self.runs):
+        for row in self._occupied():
             try:
                 self._plan(row)
             except DoesNotFit as trouble:
@@ -267,7 +345,7 @@ class Composition:
 
     def draw(self, canvas: Canvas) -> None:
         """Draw it, or raise ``DoesNotFit`` having drawn nothing."""
-        planned = {row: self._plan(row) for row in sorted(self.runs)}
+        planned = {row: self._plan(row) for row in self._occupied()}
         for row, plan in planned.items():
             for column, attribute in plan.attributes:
                 canvas.frame.set_attribute(row, column, attribute)
@@ -281,9 +359,13 @@ class Composition:
         else:
             canvas.frame.write(row, run.column, run.words)
 
+    def _occupied(self) -> list[int]:
+        """Every row with anything on it, a panel with nothing on it included."""
+        return sorted(set(self.runs) | set(self.panels))
+
     def _plan(self, row: int) -> "_Plan":
         """Where the attributes go on one row, or why they cannot go anywhere."""
-        runs = sorted(self.runs[row], key=lambda run: run.column)
+        runs = sorted(self.runs.get(row, []), key=lambda run: run.column)
         for earlier, later in zip(runs, runs[1:], strict=False):
             if earlier.end > later.column:
                 raise DoesNotFit(
@@ -291,25 +373,84 @@ class Composition:
                     f"beginning at {later.column}"
                 )
 
+        panels = sorted(self.panels.get(row, []), key=lambda panel: panel.column)
         state, graphics = OPENING, False
         attributes: list[tuple[int, Control]] = []
         free = 0
-        for run in runs:
-            wanted = _attributes_for(state, graphics, run)
-            gap = run.column - free
+        for at, kind, what in _events(runs, panels):
+            marker = _marked(kind, what, state, panels)
+            wanted = _attributes_for(state, graphics, marker)
+            gap = at - free
             if len(wanted) > gap:
                 raise DoesNotFit(
-                    f"row {row}: the run at column {run.column} needs {len(wanted)} "
-                    f"attribute cell(s) before it and only {gap} are free"
+                    f"row {row}: the {kind if kind != 'run' else 'run'} at column "
+                    f"{at} needs {len(wanted)} attribute cell(s) before it and "
+                    f"only {gap} are free"
                 )
             #  As late as possible, which leaves the earlier cells of the gap in
             #  the previous style -- they are blank either way, and it keeps the
             #  attributes next to what they explain.
             for offset, attribute in enumerate(wanted):
-                attributes.append((run.column - len(wanted) + offset, attribute))
-            state, graphics = run.style, run.graphics
-            free = run.end
+                attributes.append((at - len(wanted) + offset, attribute))
+            state, graphics = marker.style, marker.graphics
+            free = marker.end if kind == "run" else at
         return _Plan(runs=runs, attributes=attributes)
+
+
+def _region(within: "Panel | None") -> tuple[int, int]:
+    """How much room something has, and where that room starts."""
+    return (COLUMNS, 0) if within is None else (within.width, within.column)
+
+
+def _least(needed: int, within: "Panel | None") -> int:
+    """The leftmost column a run may start at, its own attributes allowed for.
+
+    Inside a panel that is one cell in from the edge, because the panel's own
+    first cell is the attribute that colours it.
+    """
+    return (0 if within is None else within.column + 1) + needed
+
+
+def _inherited(style: Style, within: "Panel | None") -> Style:
+    """A style with the background of the panel it is going on, if it wants one.
+
+    A run that says nothing about a background takes the panel's. It has to be
+    known here as well as when the row is planned, because what a run costs in
+    attributes is what decides where it can start.
+    """
+    if within is None or style.background is not Colour.BLACK:
+        return style
+    return replace(style, background=within.colour)
+
+
+def _opening(within: "Panel | None") -> Style:
+    """The style in force where a run is going, before the run says anything.
+
+    Inside a panel, the colour is the panel's and so is the background -- which
+    is why a run drawn on a panel pays for its own colour and nothing else.
+    """
+    if within is None:
+        return OPENING
+    return Style(colour=within.colour, background=within.colour)
+
+
+def _events(
+    runs: Sequence[Run], panels: Sequence["Panel"]
+) -> list[tuple[int, str, "Run | Panel | None"]]:
+    """Everything that happens along a row, in the order it happens.
+
+    A panel opens one cell before the column its colour appears in, because the
+    attribute that promotes the colour is set *at* its cell and that cell is the
+    panel's first. It closes one cell after its last, for the same reason.
+    """
+    events: list[tuple[int, str, Run | Panel | None]] = []
+    for panel in panels:
+        events.append((panel.column + 1, "open", panel))
+        if panel.end < COLUMNS:
+            events.append((panel.end + 1, "close", None))
+    events += [(run.column, "run", run) for run in runs]
+    order = {"open": 0, "run": 1, "close": 2}
+    return sorted(events, key=lambda event: (event[0], order[event[1]]))
 
 
 def _centre(width: int, *, room: int = COLUMNS) -> int:
@@ -332,6 +473,27 @@ def _ink(rows: Sequence[Sequence[int]]) -> tuple[int | None, int | None]:
         if pattern & mask
     ]
     return (min(lit), max(lit)) if lit else (None, None)
+
+
+def _marked(
+    kind: str, what: "Run | Panel | None", state: Style, panels: Sequence["Panel"]
+) -> Run:
+    """The style the row is to be in after this event, as a run to ask about.
+
+    A run drawn on a panel and saying nothing about a background takes the
+    panel's, which is the point of declaring the panel: a run that turned the
+    background off in the middle of a box would put a black hole in it.
+    """
+    if kind == "close":
+        return Run(column=0, style=replace(state, background=Colour.BLACK))
+    if isinstance(what, Panel):
+        return Run(column=0, style=Style(colour=what.colour, background=what.colour))
+    run = what
+    assert isinstance(run, Run)
+    for panel in panels:
+        if panel.covers(run):
+            return replace(run, style=_inherited(run.style, panel))
+    return run
 
 
 def _attributes_for(state: Style, graphics: bool, run: Run) -> list[Control]:

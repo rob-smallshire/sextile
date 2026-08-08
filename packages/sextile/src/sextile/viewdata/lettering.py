@@ -39,7 +39,7 @@ from enum import Enum
 from typing import Final
 
 from sextile.viewdata.blocks import BLOCKS_DOWN, block_runs
-from sextile.viewdata.composition import Align, Composition
+from sextile.viewdata.composition import Align, Composition, Panel
 from sextile.viewdata.controls import Colour
 from sextile.viewdata.font import Font, Glyph
 
@@ -222,6 +222,7 @@ def place(
     colour: Colour = Colour.WHITE,
     *,
     column: int | None = None,
+    within: Panel | None = None,
     spacing: Spacing = Spacing.PROPORTIONAL,
     gap: int = _GAP,
     limit: int = _LIMIT,
@@ -232,9 +233,11 @@ def place(
 ) -> Composition:
     """Add `text`, set in `font`, to a composition with its top row at `row`.
 
-    Centred unless a column is given. Where that leaves it is the
-    composition's business: it knows what the colour attribute costs and how
-    far into a cell the ink may start, and this module knows about letters.
+    Centred unless a column is given -- within `within`, if it is going on a
+    panel, so that a word in a coloured box is centred in the box. Where that
+    leaves it is the composition's business: it knows what the colour
+    attribute costs and how far into a cell the ink may start, and this module
+    knows about letters.
     """
     return composition.picture(
         row,
@@ -250,6 +253,7 @@ def place(
             trim=trim,
         ),
         colour,
+        within=within,
         separated=separated,
     )
 

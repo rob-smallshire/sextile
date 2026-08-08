@@ -9,7 +9,7 @@ import pytest
 
 from sextile.viewdata.canvas import Canvas
 from sextile.viewdata.composition import Align, Composition, DoesNotFit, Style
-from sextile.viewdata.controls import Colour, Control
+from sextile.viewdata.controls import Colour, Control, alpha_colour
 from sextile.viewdata.frame import COLUMNS
 
 
@@ -304,3 +304,121 @@ class TestAPictureIsPlacedAsOneThing:
         layout = Composition().picture(0, 7, [[0b000001, 0b000000]])
         assert layout.runs[0][0].patterns == (0b000001, 0b000000)
         assert layout.runs[0][0].column == 7
+
+
+class TestPanels:
+    """A coloured rectangle, with things drawn on top of it.
+
+    The Ceefax pages this is for put a word of mosaic lettering in a coloured
+    box: cyan on blue, red on yellow, blue on green. The hardware has no "set
+    background" -- only "make the current foreground the background" -- so a
+    box costs two cells before anything can be drawn in it, and where those
+    cells go decides where the box appears to start. That is arithmetic about
+    attributes, so it belongs here rather than in whatever wants a box.
+    """
+
+    def test_a_panel_begins_where_it_was_asked_to(self) -> None:
+        #  Measured from Beebium: the background is set *at* the attribute
+        #  cell, not after it, so the cell carrying NEW_BACKGROUND is already
+        #  coloured and is the box's first cell.
+        canvas = Canvas()
+        layout = Composition()
+        layout.panel(0, 10, width=8, colour=Colour.BLUE)
+        layout.draw(canvas)
+        assert canvas.frame.cell(0, 10) == Control.NEW_BACKGROUND
+
+    def test_and_the_cell_before_it_is_what_chooses_the_colour(self) -> None:
+        #  Which is still black: a colour attribute cannot colour itself.
+        canvas = Canvas()
+        layout = Composition()
+        layout.panel(0, 10, width=8, colour=Colour.BLUE)
+        layout.draw(canvas)
+        assert canvas.frame.cell(0, 9) == alpha_colour(Colour.BLUE)
+
+    def test_a_panel_that_ends_before_the_row_does_is_closed(self) -> None:
+        #  Or the colour would run to the end of the row, which is what a
+        #  background does if nothing stops it.
+        canvas = Canvas()
+        layout = Composition()
+        layout.panel(0, 10, width=8, colour=Colour.BLUE)
+        layout.draw(canvas)
+        assert canvas.frame.cell(0, 18) == Control.BLACK_BACKGROUND
+
+    def test_and_one_that_reaches_the_end_of_the_row_is_not(self) -> None:
+        canvas = Canvas()
+        layout = Composition()
+        layout.panel(0, 10, width=COLUMNS - 10, colour=Colour.BLUE)
+        layout.draw(canvas)
+        assert not canvas.frame.is_attribute(0, COLUMNS - 1)
+
+    def test_a_panel_can_be_several_rows_deep(self) -> None:
+        canvas = Canvas()
+        layout = Composition()
+        layout.panel(2, 10, width=8, colour=Colour.BLUE, rows=3)
+        layout.draw(canvas)
+        for row in (2, 3, 4):
+            assert canvas.frame.cell(row, 10) == Control.NEW_BACKGROUND
+
+    def test_a_panel_with_no_room_for_its_attributes_is_refused(self) -> None:
+        layout = Composition()
+        layout.panel(0, 0, width=8, colour=Colour.BLUE)
+        with pytest.raises(DoesNotFit):
+            layout.draw(Canvas())
+
+    def test_it_can_be_asked_for_a_side_of_the_frame(self) -> None:
+        layout = Composition()
+        panel = layout.panel(0, Align.RIGHT, width=8, colour=Colour.BLUE)
+        assert panel.end == COLUMNS
+
+
+class TestWhatIsDrawnOnAPanel:
+    def test_a_run_inside_one_keeps_its_background(self) -> None:
+        #  The run says nothing about a background, so it takes the panel's:
+        #  otherwise it would turn the box off in the middle of itself.
+        canvas = Canvas()
+        layout = Composition()
+        panel = layout.panel(0, 10, width=12, colour=Colour.BLUE)
+        layout.text(0, 13, "NEWS", Colour.CYAN, within=panel).draw(canvas)
+        assert canvas.frame.cell(0, 22) == Control.BLACK_BACKGROUND
+        assert not any(
+            canvas.frame.cell(0, column) == Control.BLACK_BACKGROUND
+            for column in range(11, 22)
+        )
+
+    def test_and_pays_for_its_own_colour_and_nothing_else(self) -> None:
+        canvas = Canvas()
+        layout = Composition()
+        panel = layout.panel(0, 10, width=12, colour=Colour.BLUE)
+        layout.text(0, 13, "NEWS", Colour.CYAN, within=panel).draw(canvas)
+        assert canvas.frame.cell(0, 12) == alpha_colour(Colour.CYAN)
+
+    def test_a_run_outside_one_is_left_alone(self) -> None:
+        canvas = Canvas()
+        layout = Composition()
+        layout.panel(0, 20, width=20, colour=Colour.BLUE)
+        layout.text(0, 0, "plain", Colour.WHITE).draw(canvas)
+        assert canvas.frame.cell(0, 5) == 0x20
+
+    def test_something_centred_within_a_panel_is_centred_in_the_panel(self) -> None:
+        layout = Composition()
+        panel = layout.panel(0, 20, width=20, colour=Colour.BLUE)
+        layout.text(0, Align.CENTRE, "ABCD", Colour.CYAN, within=panel)
+        assert layout.runs[0][-1].column == 20 + (20 - 4) // 2
+
+    def test_and_a_picture_within_one_is_centred_on_its_ink(self) -> None:
+        layout = Composition()
+        panel = layout.panel(0, 20, width=20, colour=Colour.CYAN)
+        layout.picture(0, Align.CENTRE, [[0b111111] * 8], Colour.BLUE, within=panel)
+        assert layout.runs[0][-1].column == 20 + (20 - 8) // 2
+
+    def test_a_run_may_still_have_a_background_of_its_own(self) -> None:
+        #  A box within a box: the inner one says what it wants and gets it.
+        canvas = Canvas()
+        layout = Composition()
+        panel = layout.panel(0, 10, width=20, colour=Colour.BLUE)
+        layout.text(
+            0, 16, "X", within=panel, style=Style(colour=Colour.WHITE, background=Colour.RED)
+        ).draw(canvas)
+        #  Three cells: choose red, make it the background, choose white back.
+        assert canvas.frame.cell(0, 13) == alpha_colour(Colour.RED)
+        assert canvas.frame.cell(0, 14) == Control.NEW_BACKGROUND

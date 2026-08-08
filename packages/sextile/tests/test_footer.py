@@ -15,20 +15,22 @@ import pytest
 
 from sextile.viewdata.footer import FooterItem, Priority, movement, render_footer
 
-MENU = FooterItem("0", "menu", Priority.ESSENTIAL)
+#  The sort of items a page really offers, so the tests read as a page
+#  would be written rather than as the renderer's own vocabulary.
+MENU = FooterItem("0", "index", Priority.ESSENTIAL)
 SELECT = FooterItem("1-9", "select", Priority.PRIMARY)
-FRAME = FooterItem("←W―S→", "frame", Priority.SECONDARY)
-POST = FooterItem("←A―D→", "post", Priority.SECONDARY)
-NEXT = FooterItem("#", "next", Priority.REDUNDANT)
+FRAME = FooterItem("S", "page down", Priority.SECONDARY, brief="down")
+POST = FooterItem("D", "next post", Priority.SECONDARY, brief="next")
+NEXT = FooterItem("#", "next frame", Priority.REDUNDANT)
 
 
 class TestWhenItAllFits:
     def test_every_item_is_named_in_full(self) -> None:
-        assert render_footer([SELECT, FRAME, MENU], 40) == "1-9 select, ←W―S→ frame, 0 menu"
+        assert render_footer([SELECT, FRAME, MENU], 40) == "1-9 select, S page down, 0 index"
 
     def test_items_keep_the_order_they_were_given(self) -> None:
         #  Priority decides what is shed, never where things sit.
-        assert render_footer([MENU, SELECT], 40) == "0 menu, 1-9 select"
+        assert render_footer([MENU, SELECT], 40) == "0 index, 1-9 select"
 
     def test_nothing_at_all_renders_as_nothing(self) -> None:
         assert render_footer([], 40) == ""
@@ -40,7 +42,7 @@ class TestWhenItAllFits:
 class TestSheddingLabels:
     def test_the_least_important_label_goes_first(self) -> None:
         rendered = render_footer([SELECT, FRAME, NEXT, MENU], 38)
-        assert "# next" not in rendered
+        assert "# next frame" not in rendered
         assert "#" in rendered
         assert "1-9 select" in rendered
 
@@ -51,7 +53,7 @@ class TestSheddingLabels:
 
     def test_the_most_important_label_is_the_last_to_go(self) -> None:
         rendered = render_footer([SELECT, FRAME, NEXT, MENU], 26)
-        assert "0 menu" in rendered
+        assert "0 index" in rendered
 
     def test_a_key_is_never_dropped_to_keep_a_label(self) -> None:
         rendered = render_footer([SELECT, FRAME, NEXT, MENU], 24)
@@ -100,7 +102,7 @@ class TestNeverOverflowing:
     def test_the_text_is_left_untransliterated(self) -> None:
         #  The canvas transliterates when it writes; doing it here as well would
         #  be doing it twice.
-        assert render_footer([FooterItem("0", "menu…")], 40) == "0 menu…"
+        assert render_footer([FooterItem("0", "index…")], 40) == "0 index…"
 
 
 class TestPriorityOrder:
@@ -137,11 +139,11 @@ class TestSayingItMoreBriefly:
 
     def test_the_full_wording_is_used_when_it_fits(self) -> None:
         item = FooterItem("S", "page down", Priority.SECONDARY, brief="down")
-        assert render_footer([item, MENU], 40) == "S page down, 0 menu"
+        assert render_footer([item, MENU], 40) == "S page down, 0 index"
 
     def test_the_brief_one_when_it_does_not(self) -> None:
         item = FooterItem("S", "page down", Priority.SECONDARY, brief="down")
-        assert render_footer([item, MENU], 15) == "S down, 0 menu"
+        assert render_footer([item, MENU], 15) == "S down, 0 index"
 
     def test_the_way_out_gives_up_its_word_before_a_mover_gives_up_its_last(
         self,
@@ -156,7 +158,7 @@ class TestSayingItMoreBriefly:
 
     def test_an_item_with_no_brief_goes_straight_to_its_key(self) -> None:
         item = FooterItem("S", "page down", Priority.SECONDARY)
-        assert render_footer([item, MENU], 15) == "S, 0 menu"
+        assert render_footer([item, MENU], 15) == "S, 0 index"
 
 
 class TestWhatGoesBeforeWhat:
@@ -170,7 +172,7 @@ class TestWhatGoesBeforeWhat:
         ]
         rendered = render_footer(items, 16)
         assert "#" not in rendered
-        assert "0 menu" in rendered
+        assert "0 index" in rendered
 
 
 class TestTheWordsForTheMovementKeys:

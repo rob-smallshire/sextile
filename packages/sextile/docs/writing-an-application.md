@@ -20,7 +20,7 @@ app = Sextile()
 @app.page("1", name="main")
 async def main(request: PageRequest) -> Page:
     canvas = Canvas()
-    draw_chrome(canvas, title="MY SERVICE", page_number="1a", prompt="0 menu")
+    draw_chrome(canvas, title="MY SERVICE", page_number="1a", prompt="0 index")
     canvas.row(CONTENT_FIRST_ROW).text("Hello, 1981.")
     return Page(frames=(PageFrame(frame=canvas.frame),))
 ```
@@ -195,6 +195,40 @@ Two conventions worth keeping, because readers rely on them across services:
   nowhere is worse than no offer, and on a service that answers slowly a reader
   cannot tell a dead key from a slow one. Build the prompt and the choices from
   the same description of what is available, or they will disagree.
+
+### The prompt at the foot of a frame
+
+A template writes its own. A frame built by hand composes one from items, and
+does **not** write it as a string:
+
+```python
+from sextile.viewdata.footer import ROOM, FooterItem, Priority, movement, render_footer
+
+items = [FooterItem("1", "month", Priority.PRIMARY)]
+items += movement(choices, item="day")
+items.append(FooterItem(HOME_KEY, "index", Priority.ESSENTIAL))
+prompt = render_footer(items, ROOM)
+```
+
+`movement` gives the framework's words for `W`, `S`, `A` and `D` — *page up*,
+*page down*, *previous day*, *next day* — taking the noun from you, since only
+you know what your service is made of. Say it in full; the renderer decides how
+much of it a given row can hold, and a page with cells to spare gets the whole
+sentence.
+
+Anything else the frame offers is a `FooterItem` of its own:
+
+| | |
+|---|---|
+| `key` | what the reader presses |
+| `label` | what it does, in words |
+| `brief` | a shorter way of saying that, for a crowded row |
+| `priority` | `ESSENTIAL` the way out, `PRIMARY` what the page is for, `SECONDARY` moving about, `REDUNDANT` an alias for a key already shown |
+
+The order things are given up in is in
+[navigation.md](navigation.md), with worked examples. The one rule worth
+knowing here is that **priority decides what survives, not position** — so an
+item can go anywhere in the list that reads well.
 
 To end the call, say so on the page:
 

@@ -535,11 +535,14 @@ a typed character costs one byte and a rub-out three, the cursor being left
 exactly where the next character goes.
 
 **The footer sheds gracefully.** Forty cells is not many and the longest prompt
-fills the row exactly, so the next key added will not fit. Each item carries a
-priority; the renderer drops labels first, from the least important upward, then
-whole items — the key last, because the key is what the reader presses and the
-label only teaches it. `0 menu` outlasts everything: a reader who cannot read
-the screen still needs to leave it.
+fills the row exactly, so the next key added will not fit. A prompt is composed
+as items with priorities and each may offer a brief wording as well as a full
+one; the renderer takes the fullest that fits, giving up long wordings before
+aliases, aliases before the word beside the way out, and last words before the
+keys themselves — the key last, because the key is what the reader presses and
+the label only teaches it. `0` outlasts everything: a reader who cannot read
+the screen still needs to leave it. See
+[navigation.md](navigation.md#the-footer).
 
 ## Testing
 

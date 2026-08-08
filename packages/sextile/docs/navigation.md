@@ -27,6 +27,12 @@ and the 7E1 line takes the eighth bit, landing them on the viewdata
 cursor-control codes 0x08-0x0B. So arrows and WASD are two spellings of one
 compass, and `sextile/keys.py` is where it is spelled once.
 
+`sextile/compass.py` draws that compass, for a page that would rather show a
+reader which way is which than tell them. The arrows on it are mosaics because
+the G0 set has left, right and up and **no down arrow** — those three are there
+for BBC BASIC and the line editor rather than as a compass, so one of the four
+would have had to be drawn whatever happened.
+
 WASD is the project's one deliberate anachronism — it postdates viewdata by a
 decade, where everything else here is period-correct to the byte. `#` therefore
 keeps working alongside `S`, being the one key a viewdata reader will try
@@ -76,23 +82,59 @@ does. At its longest it fills the row exactly, so the next thing added will not
 fit — and what gives should be decided by what a reader can least afford to
 lose, not by what happens to sit at the end of the string.
 
-`viewdata/footer.py` therefore composes items with priorities and sheds in a
-fixed order: labels first from the least important upward, then whole items,
-then a cut.
+So a prompt is **composed as items, not written as a string**:
+
+```python
+from sextile.viewdata.footer import ROOM, FooterItem, Priority, movement, render_footer
+
+items = [FooterItem("1-9", "select", Priority.PRIMARY)]
+items += movement(moving, item="post")
+items.append(FooterItem(HOME_KEY, "index", Priority.ESSENTIAL))
+prompt = render_footer(items, ROOM)
+```
+
+`movement` gives the framework's own words for the framework's own keys, so a
+page built by a template and a page built by hand say the same thing about
+`S`. Only the noun differs, and it comes from the service: a post, a month, a
+day.
+
+| key | full | brief |
+|---|---|---|
+| `W` | page up | up |
+| `S` | page down | down |
+| `A` | previous *noun* | prev |
+| `D` | next *noun* | next |
+
+Everything else a page offers is a `FooterItem` of its own: the key, what it
+does in words, a priority, and optionally a **brief** way of saying the same
+thing for when the row is tight.
+
+### What gives, and in what order
+
+The renderer takes the fullest wording that fits, giving up in this order:
+
+1. **the long wording**, where there is a short one — a *band* of keys at a
+   time, since `W page up` beside a bare `S` reads as though the two were
+   different sorts of thing when they are a pair;
+2. **keys that are only another key said differently** — `#`, which `S`
+   already does;
+3. **the word beside the way out**, `0` being the one key every reader knows;
+4. **the last word off everything else**, then whole items, then a cut.
 
 ```
-1-9 select, ←W―S→ frame, ←A―D→ post, #, 0 menu      when there is room
-1-9, ←W―S→, ←A―D→, #, 0                              when there is less
-0                                                    when there is almost none
+S page down, # next frame, 0 index              a frame with room
+1-9 select, W up, S down, #, 0 index            a menu in the middle of a run
+W up, S down, A prev, D next, 0 index           everything a post can offer
+0                                               a row of one cell
 ```
 
-`# next` is the only `REDUNDANT` item — `S` already says it — so its label goes
-first. `0 menu` is the only `ESSENTIAL` one and survives to a width of a single
-cell: a reader who cannot read the screen still needs to leave it.
-
-The arrows are `←` and `→` on **both** axes, because the G0 set has left, right
-and up arrows but no down arrow. Those three are there for BBC BASIC and the
-line editor rather than as a compass.
+**Say it in full and let the renderer decide.** The prompt used to be written
+for the busiest page — `←W―S→ frame`, a pair of keys packed into one item and
+labelled with the noun they move through — and that wording was then used on
+every page, including ones with fifteen cells going spare. Nothing was
+contracting it: there was no middle setting between the sentence and the
+letter, so whoever wrote the page had to choose, and chose the one that fits
+everywhere.
 
 ## The command line
 
@@ -142,6 +184,7 @@ boundary specially, and it makes DELETE do the obvious thing everywhere.
 | | |
 |---|---|
 | `sextile/keys.py` | the compass, and the arrow codes that spell it |
+| `sextile/compass.py` | drawing it, for a page that shows rather than tells |
 | `sextile/session/commands.py` | bytes to commands; syntax only, no meanings |
 | `sextile/session/session.py` | where the reader is, where they have been, what to send |
 | `sextile/page.py` | `Page` and `PageFrame`: frames, choices, moves |

@@ -501,7 +501,16 @@ class TestHowToGetAbout:
         assert PageAddress("91") in (await page_at(app, "1")).destinations
 
     async def test_it_runs_to_more_than_one_frame(self, app: StardotApplication) -> None:
-        assert len((await page_at(app, "91")).frames) == 2
+        #  A compass, then the keys, then the requests.
+        assert len((await page_at(app, "91")).frames) == 3
+
+    async def test_the_first_of_them_is_the_compass(
+        self, app: StardotApplication
+    ) -> None:
+        #  Drawn rather than described, and by the framework: the four keys it
+        #  shows are the framework's, not this service's.
+        shown = text_of(await page_at(app, "91"))
+        assert "previous frame" in shown and "next frame" in shown
 
     @pytest.mark.parametrize(
         "keys", ["1-9", "0", "*nnn#", "W", "A", "*0#", "*00#", "*09#", "**", "*90#"]
@@ -509,9 +518,8 @@ class TestHowToGetAbout:
     async def test_it_names_the_keys_the_service_answers(
         self, keys: str, app: StardotApplication
     ) -> None:
-        shown = text_of(await page_at(app, "91")) + text_of(await page_at(app, "91"), 1)
         #  `#` travels as 0x5F, which this grid shows as the `#` the SAA5050 draws.
-        assert keys in shown
+        assert keys in all_text_of(await page_at(app, "91"))
 
     async def test_it_points_at_the_generated_lists_rather_than_repeating_them(
         self, app: StardotApplication
@@ -519,7 +527,7 @@ class TestHowToGetAbout:
         #  It used to name half a dozen keywords itself, which is a list that
         #  goes stale the first time one is added. The two pages it now points
         #  at are generated from the registrations and cannot.
-        shown = text_of(await page_at(app, "91"), 1)
+        shown = all_text_of(await page_at(app, "91"))
         assert "*93#" in shown
         assert "*94#" in shown
 

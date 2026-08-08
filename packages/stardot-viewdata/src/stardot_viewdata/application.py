@@ -30,6 +30,7 @@ from typing import Final
 from sextile import keys
 from sextile.addressing import PageAddress, keyed
 from sextile.application import Arrival, PageRequest, Parting, Sextile, page
+from sextile.compass import ROWS, compass
 from sextile.page import Page, PageFrame
 from sextile.templates import CHOICES_PER_FRAME, HOME_KEY, Menu, MenuItem, Prose
 from sextile.viewdata import lettering
@@ -547,53 +548,53 @@ class StardotApplication(Sextile):
         return self._guide(
             request.address,
             [
-                [
-                    (f"1-{CHOICES_PER_FRAME}", "choose from a menu"),
-                    (HOME_KEY, "back to the main index"),
-                    (keyed("nnn"), "go straight to a page"),
-                    ("", ""),
-                    (f"{keys.PREVIOUS_FRAME}  {keys.NEXT_FRAME}", "up and down the frames of"),
-                    ("", "  one item"),
-                    (keys.CONVENTIONAL_NEXT_FRAME, f"the same as {keys.NEXT_FRAME}"),
-                    (f"{keys.PREVIOUS_ITEM}  {keys.NEXT_ITEM}", "back and forward through"),
-                    ("", "  the items of a menu"),
-                ],
-                [
-                    (keyed(keys.BACK), "back, through where you"),
-                    ("", "  have been"),
-                    (keyed(keys.REDISPLAY), "show this frame again"),
-                    (keyed(keys.REFRESH), "fetch it afresh"),
-                    (keys.CANCEL, "cancel a request being keyed"),
-                    (keys.CANCEL * 2, "cancel and begin again"),
-                    ("DEL", "rub out a character"),
-                    (keyed(self.address_for("logoff")), "ring off"),
-                    ("", ""),
-                    (keyed(self.address_for("contents")), "every page and its number"),
-                    (keyed(self.address_for("names")), "every word you can key"),
-                ],
+                self._compass,
+                self._keys(
+                    [
+                        (f"1-{CHOICES_PER_FRAME}", "choose from a menu"),
+                        (HOME_KEY, "back to the main index"),
+                        (keyed("nnn"), "go straight to a page"),
+                        ("", ""),
+                        (
+                            keys.CONVENTIONAL_NEXT_FRAME,
+                            f"next frame, as {keys.NEXT_FRAME} does",
+                        ),
+                        (keys.CANCEL, "cancel a request being keyed"),
+                        (keys.CANCEL * 2, "cancel and begin again"),
+                        ("DEL", "rub out a character"),
+                    ]
+                ),
+                self._keys(
+                    [
+                        (keyed(keys.BACK), "back, through where you"),
+                        ("", "  have been"),
+                        (keyed(keys.REDISPLAY), "show this frame again"),
+                        (keyed(keys.REFRESH), "fetch it afresh"),
+                        ("", ""),
+                        (keyed(self.address_for("logoff")), "ring off"),
+                        ("", ""),
+                        (keyed(self.address_for("contents")), "every page and its number"),
+                        (keyed(self.address_for("names")), "every word you can key"),
+                    ]
+                ),
             ],
         )
 
-    def _guide(self, address: PageAddress, batches: list[list[tuple[str, str]]]) -> Page:
-        """A key on the left, what it does on the right."""
+    def _guide(
+        self, address: PageAddress, drawings: list[Callable[[Canvas], None]]
+    ) -> Page:
+        """The guide's frames, each drawn its own way under the same chrome."""
         frames = []
-        for index, batch in enumerate(batches):
+        for index, draw in enumerate(drawings):
             canvas = Canvas()
-            moving = _frame_moves(index, len(batches))
+            moving = _frame_moves(index, len(drawings))
             draw_chrome(
                 canvas,
                 title=self._headed(address),
                 page_number=address.frame_number(index),
                 prompt=_prompt(moving, selecting=False),
             )
-            for offset, (key, meaning) in enumerate(batch):
-                row = canvas.row(CONTENT_FIRST_ROW + offset)
-                if key:
-                    row.text(f"{key:<7}", Colour.YELLOW)
-                else:
-                    row.skip(7)
-                if meaning:
-                    row.text(fitted(meaning, COLUMNS - 8), Colour.WHITE)
+            draw(canvas)
             frames.append(
                 PageFrame(
                     frame=canvas.frame,
@@ -602,6 +603,31 @@ class StardotApplication(Sextile):
                 )
             )
         return Page(frames=tuple(frames))
+
+    def _compass(self, canvas: Canvas) -> None:
+        """Which way the four keys go, drawn rather than described.
+
+        The framework's picture of the framework's own keys: a service drawing
+        its own would be drawing the same thing, and would go on drawing it
+        after the keys had moved.
+        """
+        top = CONTENT_FIRST_ROW + (CONTENT_ROWS - ROWS) // 2
+        compass(Composition(), top).draw(canvas)
+
+    def _keys(self, rows: list[tuple[str, str]]) -> Callable[[Canvas], None]:
+        """A key on the left, what it does on the right."""
+
+        def draw(canvas: Canvas) -> None:
+            for offset, (key, meaning) in enumerate(rows):
+                row = canvas.row(CONTENT_FIRST_ROW + offset)
+                if key:
+                    row.text(f"{key:<7}", Colour.YELLOW)
+                else:
+                    row.skip(7)
+                if meaning:
+                    row.text(fitted(meaning, COLUMNS - 8), Colour.WHITE)
+
+        return draw
 
     @page(
         "92",

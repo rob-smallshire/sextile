@@ -1,0 +1,163 @@
+"""The mosaic font format, and reading it."""
+
+import pytest
+
+from sextile.viewdata.font import FontError, Glyph, read_font, write_font
+
+A_FONT = """\
+name: Example
+source: invented for the tests
+terms: MIT, with the rest of Sextile
+height: 5
+fixed: 6
+
+glyph u+0020 advance 3
+
+glyph u+0041 advance 5   A
+.##.
+#..#
+####
+#..#
+#..#
+
+glyph u+002E advance 2   .
+..
+..
+..
+..
+#.
+"""
+
+
+class TestTheHeader:
+    def test_it_carries_the_name(self) -> None:
+        assert read_font(A_FONT).name == "Example"
+
+    def test_and_where_the_face_came_from_and_on_what_terms(self) -> None:
+        font = read_font(A_FONT)
+        #  A font's licence has to travel with the font, or it is lost the
+        #  first time the file is copied.
+        assert font.source == "invented for the tests"
+        assert font.terms == "MIT, with the rest of Sextile"
+
+    def test_it_gives_the_height_in_blocks(self) -> None:
+        assert read_font(A_FONT).height == 5
+
+    def test_and_the_advance_a_fixed_width_face_uses(self) -> None:
+        assert read_font(A_FONT).fixed == 6
+
+    def test_a_missing_field_is_refused_by_name(self) -> None:
+        with pytest.raises(FontError, match="height"):
+            read_font("name: Nameless\nfixed: 6\n\nglyph u+0041 advance 1\n#\n")
+
+    def test_an_unknown_field_is_refused_rather_than_ignored(self) -> None:
+        #  Silently dropping it would lose provenance to a typo.
+        with pytest.raises(FontError, match="weight"):
+            read_font("name: X\nheight: 1\nfixed: 1\nweight: bold\n")
+
+    def test_a_field_that_should_be_a_number_and_is_not(self) -> None:
+        with pytest.raises(FontError, match="height"):
+            read_font("name: X\nheight: tall\nfixed: 1\n")
+
+
+class TestGlyphs:
+    def test_a_glyph_is_found_by_its_character(self) -> None:
+        assert read_font(A_FONT)["A"].advance == 5
+
+    def test_the_picture_is_read_as_the_picture_it_looks_like(self) -> None:
+        assert read_font(A_FONT)["A"].bitmap[0] == (False, True, True, False)
+
+    def test_a_glyph_is_as_wide_as_its_widest_row(self) -> None:
+        assert read_font(A_FONT)["A"].width == 4
+
+    def test_and_the_advance_is_its_own_business_not_its_width(self) -> None:
+        #  The gap after a letter belongs to the font; a renderer that trimmed
+        #  at draw time would re-decide it on every frame.
+        assert read_font(A_FONT)["A"].advance == 5
+
+    def test_a_glyph_with_no_picture_is_blank_but_still_advances(self) -> None:
+        space = read_font(A_FONT)[" "]
+        assert space.width == 0
+        assert space.advance == 3
+
+    def test_short_rows_are_taken_as_ending_in_blanks(self) -> None:
+        font = read_font("name: X\nheight: 2\nfixed: 2\n\nglyph u+0041 advance 3\n##\n#\n")
+        assert font["A"].bitmap[1] == (True, False)
+
+    def test_a_picture_of_the_wrong_height_is_refused(self) -> None:
+        with pytest.raises(FontError, match="u\\+0041"):
+            read_font("name: X\nheight: 3\nfixed: 3\n\nglyph u+0041 advance 3\n##\n")
+
+    def test_a_character_the_font_has_no_glyph_for(self) -> None:
+        assert "Z" not in read_font(A_FONT)
+
+    def test_and_asking_for_it_substitutes_rather_than_raising(self) -> None:
+        #  As transliteration does, and with the same question mark. A banner
+        #  with one wrong letter is a better answer than no page at all.
+        font = read_font(A_FONT + "\nglyph u+003f advance 4   ?\n#\n.\n#\n.\n#\n")
+        assert font.glyph("Z") == font["?"]
+
+    def test_and_a_font_without_even_a_question_mark_leaves_a_gap(self) -> None:
+        font = read_font("name: X\nheight: 1\nfixed: 4\n\nglyph u+0041 advance 2\n#\n")
+        blank = font.glyph("Z")
+        assert blank.width == 0
+        assert blank.advance == font.fixed
+
+
+class TestMalformedFiles:
+    def test_a_picture_before_any_glyph(self) -> None:
+        with pytest.raises(FontError, match="glyph"):
+            read_font("name: X\nheight: 1\nfixed: 1\n\n####\n")
+
+    def test_a_glyph_line_without_an_advance(self) -> None:
+        with pytest.raises(FontError, match="advance"):
+            read_font("name: X\nheight: 1\nfixed: 1\n\nglyph u+0041\n#\n")
+
+    def test_a_glyph_named_as_something_other_than_a_code_point(self) -> None:
+        with pytest.raises(FontError, match="u\\+"):
+            read_font("name: X\nheight: 1\nfixed: 1\n\nglyph A advance 2\n#\n")
+
+    def test_the_same_character_twice(self) -> None:
+        with pytest.raises(FontError, match="u\\+0041"):
+            read_font(
+                "name: X\nheight: 1\nfixed: 1\n"
+                "\nglyph u+0041 advance 2\n#\n"
+                "\nglyph u+0041 advance 2\n#\n"
+            )
+
+    def test_a_line_that_is_neither_a_field_nor_a_picture(self) -> None:
+        with pytest.raises(FontError, match="line 5"):
+            read_font("name: X\nheight: 1\nfixed: 1\n\nwhat is this\n")
+
+    def test_a_font_with_no_glyphs_at_all(self) -> None:
+        with pytest.raises(FontError, match="no glyphs"):
+            read_font("name: X\nheight: 1\nfixed: 1\n")
+
+
+class TestWritingItBackOut:
+    def test_what_is_written_reads_back_the_same(self) -> None:
+        #  The converters write this format; a round trip is what says they may
+        #  be trusted to.
+        assert read_font(write_font(read_font(A_FONT))) == read_font(A_FONT)
+
+    def test_and_it_is_written_as_the_picture_it_is(self) -> None:
+        assert "\n.##.\n#..#\n####\n" in write_font(read_font(A_FONT))
+
+    def test_glyphs_come_out_in_code_point_order(self) -> None:
+        written = write_font(read_font(A_FONT))
+        assert written.index("u+0020") < written.index("u+002e") < written.index("u+0041")
+
+    def test_the_note_beside_each_glyph_says_which_letter_it_is(self) -> None:
+        #  So that the file can be read, which is the point of the format.
+        assert "glyph u+0041 advance 5  A" in write_font(read_font(A_FONT))
+
+    def test_a_character_that_would_not_survive_being_written_has_no_note(self) -> None:
+        font = read_font("name: X\nheight: 1\nfixed: 1\n\nglyph u+000a advance 2\n#\n")
+        assert "glyph u+000a advance 2\n" in write_font(font)
+
+
+class TestAGlyphOnItsOwn:
+    def test_it_can_be_made_from_a_picture(self) -> None:
+        glyph = Glyph.of(["##", ".#"], advance=3)
+        assert glyph.bitmap == ((True, True), (False, True))
+        assert glyph.height == 2

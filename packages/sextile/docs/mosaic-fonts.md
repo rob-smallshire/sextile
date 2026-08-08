@@ -1,9 +1,9 @@
-# Mosaic fonts: requirements
+# Mosaic fonts
 
 Large lettering drawn out of teletext block graphics — banners, title frames,
-headings bigger than double height can give. **None of this is built.** What
-follows is what is known before starting, so that the research behind it does
-not have to be done twice.
+headings bigger than double height can give. **The format and its reader are
+built; nothing that draws with them is.** The rest is written down as
+requirements, so that the research behind them does not have to be done twice.
 
 The layer beneath is built and described in [graphics.md](graphics.md): the
 block grid, `blocks.block_runs`, and the `Composition` that works out where the
@@ -49,7 +49,25 @@ All of these are established; see [graphics.md](graphics.md) and
   `HOLD_GRAPHICS` makes that cell repeat the previous mosaic instead of
   blanking, so the gap becomes a duplicated column rather than a hole.
 
-### Proportional spacing is required, not optional
+### Three ways to space, and all three are wanted
+
+**Fixed** — every glyph advances by the same width. It is what the source fonts
+were drawn for, it is what a column of figures needs, and it is the only one
+whose arithmetic a page can do in its head.
+
+**Proportional** — each glyph advances by its own width plus tracking. Needed,
+not merely nicer, because of the measurement below.
+
+**Kerned** — glyphs allowed to *overlap*, so the arm of a `T` may sit over the
+tail of an `A`. At this resolution a block is a large fraction of a letter, and
+the row is only 78 blocks wide, so a block recovered on each pair is worth
+having.
+
+Kerning needs no table: each glyph's left and right profiles are in the bitmap
+already, so a pair can be closed up until the tightest scanline reaches the
+minimum gap. The profiles are cheap to compute and the fit is exact rather than
+estimated. A table would only be needed for pairs where the right answer is not
+the tightest one, and there is no evidence yet that any exist here.
 
 Measured with real ArcNormal glyphs:
 
@@ -63,7 +81,8 @@ Ten letters in 78 blocks is 7.8 blocks each. A fixed-width 8×8 face cannot draw
 the Ceefax banner and a proportional one draws it comfortably.
 
 **The advance belongs to the font, not the renderer.** Trimming at render time
-would re-decide it on every frame, and would give a space no width at all.
+would re-decide it on every frame, and would give a space no width at all. So a
+font carries both: a fixed advance for the face, and an advance for each glyph.
 
 ## The format
 
@@ -73,26 +92,41 @@ thing most needed — a per-glyph advance in blocks. Requirements:
 - **Human-readable and diffable.** A vendored font is reviewed like any other
   file; glyphs written as the picture they are, as `yaff` does.
 - **Per-glyph advance**, separate from the glyph's own width, so tracking and
-  spaces are the font's business.
+  spaces are the font's business — and a fixed advance for the face beside it,
+  because both ways of spacing are wanted.
 - **Arbitrary height and width**, not tied to 8×8.
 - **A name, and its provenance** — where it came from and on what terms — in the
   file, because a font's licence must travel with it.
 - **No dependency to parse.** A reader of a hundred lines, like `robots.py`.
 
-Sketch, not yet decided:
+`viewdata/font.py`, and this is the whole of it:
 
 ```
 name: Acorn
-from: MDFS ArcNormal, mdfs.net/Apps/Font/Fonts1.zip
-terms: public use, per its author J.G.Harston
+source: MDFS ArcNormal (mdfs.net/Apps/Font/Fonts1.zip)
+terms: Free for public use
 height: 8
+fixed: 8
 
-A  advance 7
-   ..####..
-   .##..##.
-   ...
+glyph u+0041 advance 7  A
+..####..
+.##..##.
+...
 ```
 
+`read_font` parses it and `write_font` writes it, which is how the converters
+produce one; a round trip is tested, because that is what says a converter may
+be trusted. Both need nothing but the standard library.
+
+Two things about it are deliberate. **Glyphs are named by code point**, not by
+the character, because a space, a `#` and a `.` would otherwise need quoting in
+a file whose other lines are pictures made of `#` and `.`; the note after the
+advance is for the reader and is ignored. And **a glyph with no picture is
+blank but still advances**, which is what a space is.
+
+An unknown field is an error rather than something ignored — provenance should
+not be lost to a typo — and a picture whose height disagrees with the face's is
+refused by code point.
 ## Source formats
 
 ### MDFS — `VDU 23` sequences
@@ -136,10 +170,11 @@ converts between it and some fifty others.
 
 Roughly in order, each committable on its own.
 
-1. **The format**, its reader, and one converted font. A reader and a golden
-   file are testable without any rendering.
+1. ~~**The format** and its reader.~~ Done. One converted font next: a golden
+   file is testable without any rendering.
 2. **`Font`** — glyphs by character, advance, height; `measure(text)` in blocks;
    a missing glyph substituted rather than raising, as transliteration does.
+   Then the three spacings: fixed, proportional, and kerned by profile fit.
 3. **Rendering** — text to a bitmap, then `block_runs`, then `Composition`. The
    inverted case needs the *field*, not the glyphs, so the renderer decides the
    band's extent.

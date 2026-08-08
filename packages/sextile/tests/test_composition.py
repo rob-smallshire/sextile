@@ -422,3 +422,39 @@ class TestWhatIsDrawnOnAPanel:
         #  Three cells: choose red, make it the background, choose white back.
         assert canvas.frame.cell(0, 13) == alpha_colour(Colour.RED)
         assert canvas.frame.cell(0, 14) == Control.NEW_BACKGROUND
+
+
+class TestUpAndDownAsWellAsAlongTheRow:
+    """A picture can be centred in a panel's rows as well as in its columns.
+
+    Finer than a row, too: a cell is three blocks deep, so a line of lettering
+    seven blocks tall sits in a box three rows deep with a block above it and a
+    block below rather than two blocks under it.
+    """
+
+    def test_a_picture_can_ask_for_the_middle_of_a_panel(self) -> None:
+        layout = Composition()
+        panel = layout.panel(4, 10, width=20, colour=Colour.BLUE, rows=5)
+        layout.picture(Align.CENTRE, 12, [[0b111111]] * 3, within=panel)
+        assert sorted(layout.runs) == [5, 6, 7]
+
+    def test_and_is_lowered_by_a_block_where_that_is_nearer(self) -> None:
+        #  Seven blocks of ink in a box nine deep: a block above and below.
+        layout = Composition()
+        panel = layout.panel(0, 10, width=20, colour=Colour.BLUE, rows=3)
+        #  Two full rows of blocks and one block row more: seven of nine.
+        layout.picture(
+            Align.CENTRE, 12, [[0b111111], [0b111111], [0b000011]], within=panel
+        )
+        assert sorted(layout.runs) == [0, 1, 2]
+        assert layout.runs[0][0].patterns[0] == 0b111100
+
+    def test_the_middle_of_the_frame_when_there_is_no_panel(self) -> None:
+        layout = Composition()
+        layout.picture(Align.CENTRE, 12, [[0b111111]] * 4)
+        assert sorted(layout.runs) == [10, 11, 12, 13]
+
+    def test_a_row_given_is_still_a_row(self) -> None:
+        layout = Composition()
+        layout.picture(9, 12, [[0b111111]])
+        assert sorted(layout.runs) == [9]

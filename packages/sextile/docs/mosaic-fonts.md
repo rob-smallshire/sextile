@@ -175,7 +175,9 @@ Every one of them sets `STARDOT` inside a row, from 25 blocks in `3x3-mono` to
 75 in `garland`. `acorn` remains the default: it is the face a BBC Micro's own
 ROM is drawn in.
 
-Lettering does not work out where the middle is; it hands the composition an
+`lettering.boxed` is the whole Ceefax effect in one call: a word in a field of
+colour, in a box fitted round it. Lettering does not work out where the middle
+is; it hands the composition an
 `Align.CENTRE` and lets it. See [graphics.md](graphics.md): a picture is
 centred on its ink to the nearest block, which is half a cell finer than
 centring by cells and the difference between a banner that is centred and one

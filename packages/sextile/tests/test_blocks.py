@@ -1,6 +1,6 @@
 """Turning a picture into the blocks a frame can draw."""
 
-from sextile.viewdata.blocks import block_runs, read_bitmap, shifted
+from sextile.viewdata.blocks import block_runs, lowered, read_bitmap, shifted
 from sextile.viewdata.charset import mosaic_code
 
 
@@ -77,3 +77,23 @@ class TestShiftingByHalfACell:
 
     def test_nothing_shifted_is_nothing(self) -> None:
         assert shifted([]) == []
+
+
+class TestLoweringByABlock:
+    def test_a_block_moves_down_within_its_cell(self) -> None:
+        assert lowered([[0b000001]], 1) == [[0b000100]]
+
+    def test_and_from_the_bottom_into_the_cell_below(self) -> None:
+        assert lowered([[0b010000], [0b000000]], 1) == [[0b000000], [0b000001]]
+
+    def test_the_picture_grows_a_row_if_something_falls_out_of_it(self) -> None:
+        assert lowered([[0b010000]], 1) == [[0b000000], [0b000001]]
+
+    def test_and_does_not_if_nothing_does(self) -> None:
+        assert len(lowered([[0b000001]], 2)) == 1
+
+    def test_two_blocks_is_two_blocks(self) -> None:
+        assert lowered([[0b000001]], 2) == [[0b010000]]
+
+    def test_nothing_lowered_is_unchanged(self) -> None:
+        assert lowered([[0b101010]], 0) == [[0b101010]]

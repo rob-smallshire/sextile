@@ -36,7 +36,14 @@ from dataclasses import dataclass, field, replace
 from enum import Enum
 from typing import Final
 
-from sextile.viewdata.blocks import BLOCKS_ACROSS, LEFT_BLOCKS, RIGHT_BLOCKS, shifted
+from sextile.viewdata.blocks import (
+    BLOCKS_ACROSS,
+    BLOCKS_DOWN,
+    LEFT_BLOCKS,
+    RIGHT_BLOCKS,
+    lowered,
+    shifted,
+)
 from sextile.viewdata.canvas import Canvas
 from sextile.viewdata.charset import mosaic_code
 from sextile.viewdata.controls import Colour, Control, alpha_colour, graphics_colour
@@ -160,7 +167,7 @@ class Composition:
 
     def panel(
         self,
-        row: int,
+        row: Where,
         where: Where,
         *,
         width: int,
@@ -176,11 +183,12 @@ class Composition:
         takes it without saying anything.
         """
         column = self._aligned(width, _PANEL_ATTRIBUTES, where)
+        first = row if isinstance(row, int) else _down(row, rows)
         panel = Panel(
             column=column,
             width=width,
             colour=colour,
-            rows=tuple(range(row, row + rows)),
+            rows=tuple(range(first, first + rows)),
         )
         for covered in panel.rows:
             if not 0 <= covered < ROWS:
@@ -229,7 +237,7 @@ class Composition:
 
     def picture(
         self,
-        row: int,
+        row: Where,
         where: Where,
         rows: Sequence[Sequence[int]],
         colour: Colour = Colour.WHITE,
@@ -252,10 +260,13 @@ class Composition:
         column, half = self._placement(placed, wanted, where, within)
         if half:
             placed = [tuple(shifted(patterns)) for patterns in placed]
+        first, third = self._descent(placed, row, within)
+        if third:
+            placed = [tuple(patterns) for patterns in lowered(placed, third)]
         width = max((len(patterns) for patterns in placed), default=0)
         for offset, patterns in enumerate(placed):
             self._add(
-                row + offset,
+                first + offset,
                 Run(
                     column=column,
                     style=wanted,
@@ -293,6 +304,29 @@ class Composition:
         column, half = divmod(left + origin * BLOCKS_ACROSS, BLOCKS_ACROSS)
         least = _least(needed, within)
         return (column, bool(half)) if column >= least else (least, False)
+
+    def _descent(
+        self, rows: Sequence[Sequence[int]], row: Where, within: Panel | None
+    ) -> tuple[int, int]:
+        """The row a picture starts on, and how many blocks it drops within it.
+
+        Down as well as along, and to the block rather than to the row: a cell
+        is three blocks deep, so a line of lettering that does not fill its
+        rows can be put in the middle of them rather than at the top.
+        """
+        if isinstance(row, int):
+            return row, 0
+        deep, top = (len(within.rows), within.rows[0]) if within else (ROWS, 0)
+        if row is Align.LEFT:
+            return top, 0
+        if row is Align.RIGHT:
+            return max(top + deep - len(rows), top), 0
+        first, last = _ink_rows(rows)
+        if first is None or last is None:
+            return top + _centre(len(rows), room=deep), 0
+        above = _centre(last - first + 1, room=deep * BLOCKS_DOWN) - first
+        within_rows, third = divmod(above + top * BLOCKS_DOWN, BLOCKS_DOWN)
+        return (within_rows, third) if within_rows >= top else (top, 0)
 
     def _aligned(
         self, width: int, needed: int, where: Where, within: Panel | None = None
@@ -382,10 +416,14 @@ class Composition:
             wanted = _attributes_for(state, graphics, marker)
             gap = at - free
             if len(wanted) > gap:
+                blamed = {
+                    "run": f"the run at column {at}",
+                    "open": f"the panel beginning at column {at - 1}",
+                    "close": f"the end of the panel at column {at - 1}",
+                }[kind]
                 raise DoesNotFit(
-                    f"row {row}: the {kind if kind != 'run' else 'run'} at column "
-                    f"{at} needs {len(wanted)} attribute cell(s) before it and "
-                    f"only {gap} are free"
+                    f"row {row}: {blamed} needs {len(wanted)} attribute cell(s) "
+                    f"before it and only {gap} are free"
                 )
             #  As late as possible, which leaves the earlier cells of the gap in
             #  the previous style -- they are blank either way, and it keeps the
@@ -395,6 +433,15 @@ class Composition:
             state, graphics = marker.style, marker.graphics
             free = marker.end if kind == "run" else at
         return _Plan(runs=runs, attributes=attributes)
+
+
+def _down(where: Align, deep: int) -> int:
+    """The row something `deep` rows tall starts on to sit down the frame."""
+    if where is Align.LEFT:
+        return 0
+    if where is Align.RIGHT:
+        return max(ROWS - deep, 0)
+    return _centre(deep, room=ROWS)
 
 
 def _region(within: "Panel | None") -> tuple[int, int]:
@@ -471,6 +518,17 @@ def _ink(rows: Sequence[Sequence[int]]) -> tuple[int | None, int | None]:
         for index, pattern in enumerate(patterns)
         for half, mask in ((0, LEFT_BLOCKS), (1, RIGHT_BLOCKS))
         if pattern & mask
+    ]
+    return (min(lit), max(lit)) if lit else (None, None)
+
+
+def _ink_rows(rows: Sequence[Sequence[int]]) -> tuple[int | None, int | None]:
+    """The same downwards: the first and last block row a picture lights."""
+    lit = [
+        index * BLOCKS_DOWN + third
+        for index, patterns in enumerate(rows)
+        for third, mask in enumerate((0b000011, 0b001100, 0b110000))
+        if any(pattern & mask for pattern in patterns)
     ]
     return (min(lit), max(lit)) if lit else (None, None)
 

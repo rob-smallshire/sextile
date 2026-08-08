@@ -39,7 +39,7 @@ from enum import Enum
 from typing import Final
 
 from sextile.viewdata.blocks import BLOCKS_DOWN, block_runs
-from sextile.viewdata.composition import Align, Composition, Panel
+from sextile.viewdata.composition import Align, Composition, Panel, Where
 from sextile.viewdata.controls import Colour
 from sextile.viewdata.font import Font, Glyph
 
@@ -49,6 +49,10 @@ _GAP: Final = 1
 
 #: The most a kerned pair may close up by.
 _LIMIT: Final = 1
+
+#: A panel's own first cell carries the attribute that colours it, so a box
+#: fitted round something is one cell wider than its padding asks for.
+_ATTRIBUTE: Final = 1
 
 
 class Spacing(Enum):
@@ -256,6 +260,59 @@ def place(
         within=within,
         separated=separated,
     )
+
+
+def boxed(
+    composition: Composition,
+    row: Where,
+    text: str,
+    font: Font,
+    colour: Colour = Colour.WHITE,
+    background: Colour = Colour.BLUE,
+    *,
+    where: Where = Align.CENTRE,
+    padding: int = 1,
+    rows: int | None = None,
+    spacing: Spacing = Spacing.PROPORTIONAL,
+    gap: int = _GAP,
+    limit: int = _LIMIT,
+    trim: bool = True,
+) -> Panel:
+    """Lettering in a coloured box fitted around it. Returns the box.
+
+    The Ceefax effect: a word in a field of colour, cyan on blue or red on
+    yellow. `padding` is the cells of colour either side of the letters, and
+    the box takes one more cell on its left for the attribute that colours it
+    -- which is why the box is fitted here, where the letters can be measured,
+    rather than by a caller counting them.
+
+    The letters are then centred in it both ways, to the block: a line that
+    does not fill its rows sits in the middle of them rather than at the top.
+    """
+    patterns = cells(text, font, spacing=spacing, gap=gap, limit=limit, trim=trim)
+    panel = composition.panel(
+        _first(row, len(patterns), rows),
+        where,
+        width=len(patterns[0]) + 2 * padding + _ATTRIBUTE,
+        colour=background,
+        rows=rows if rows is not None else len(patterns),
+    )
+    composition.picture(Align.CENTRE, Align.CENTRE, patterns, colour, within=panel)
+    return panel
+
+
+def _first(row: Where, deep: int, rows: int | None) -> Where:
+    """The row a fitted box starts on, if the caller named one for its letters.
+
+    A box taller than what goes in it grows upwards as well as downwards, so
+    that the letters stay near the row they were asked for -- except at the top
+    of the frame, where there is nowhere above to grow into.
+    """
+    if not isinstance(row, int):
+        return row
+    if rows is None:
+        return row
+    return max(row - (rows - deep) // 2, 0)
 
 
 def rows_for(font: Font, *, margin: int = 0) -> int:

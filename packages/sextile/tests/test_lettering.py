@@ -6,11 +6,11 @@ from test_drawing import middle_of as middle_of_row
 from sextile.viewdata import lettering
 from sextile.viewdata.blocks import BLOCKS_ACROSS
 from sextile.viewdata.canvas import Canvas
-from sextile.viewdata.composition import Composition, DoesNotFit
+from sextile.viewdata.composition import Align, Composition, DoesNotFit
 from sextile.viewdata.controls import Colour, Control
 from sextile.viewdata.drawing import rule
 from sextile.viewdata.font import font_names, load_font, read_font
-from sextile.viewdata.frame import COLUMNS, Frame
+from sextile.viewdata.frame import COLUMNS, ROWS, Frame
 from sextile.viewdata.lettering import Spacing
 
 #  A face with three letters of known width, so that the arithmetic of each
@@ -334,3 +334,68 @@ class TestLetteringOnAPanel:
         box = layout.panel(0, 19, width=21, colour=Colour.BLUE, rows=3)
         with pytest.raises(DoesNotFit):
             lettering.place(layout, 0, "WEATHERMEN", load_font("boldbash"), within=box)
+
+
+class TestABoxFittedRoundItsLetters:
+    """The Ceefax effect in one call: a word in a field of colour.
+
+    The box is fitted here rather than by a caller, because here is where the
+    letters can be measured -- and a caller who measured them would then have
+    to know that a panel's own first cell goes on the attribute that colours
+    it, which is the composition's business and not theirs.
+    """
+
+    def test_the_box_is_as_wide_as_the_letters_and_their_padding(self) -> None:
+        layout = Composition()
+        face = load_font("silkscreen")
+        box = lettering.boxed(layout, 0, "NEWS", face, Colour.CYAN, padding=2)
+        letters = len(lettering.cells("NEWS", face)[0])
+        #  Two cells of colour either side, and one more for the attribute
+        #  that colours the box at all.
+        assert box.width == letters + 4 + 1
+
+    def test_and_as_deep_as_they_are(self) -> None:
+        layout = Composition()
+        box = lettering.boxed(layout, 0, "NEWS", load_font("silkscreen"))
+        assert len(box.rows) == len(lettering.cells("NEWS", load_font("silkscreen")))
+
+    def test_the_letters_are_inside_it(self) -> None:
+        layout = Composition()
+        box = lettering.boxed(layout, 0, "NEWS", load_font("silkscreen"))
+        run = layout.runs[0][0]
+        assert box.column < run.column and run.end <= box.end
+
+    def test_and_centred_in_it_both_ways(self) -> None:
+        layout = Composition()
+        face = load_font("acorn")
+        box = lettering.boxed(layout, 0, "NEWS", face, rows=5)
+        rows = sorted(layout.runs)
+        assert len(box.rows) == 5
+        #  A three-row line in a five-row box: a row of colour above and below.
+        assert rows[0] == box.rows[0] + 1
+        assert rows[-1] == box.rows[-1] - 1
+
+    def test_a_taller_box_grows_around_the_letters_not_below_them(self) -> None:
+        #  So that asking for a box at row 8 puts the letters near row 8.
+        layout = Composition()
+        box = lettering.boxed(layout, 8, "NEWS", load_font("acorn"), rows=5)
+        assert box.rows[0] == 7
+        assert sorted(layout.runs)[0] == 8
+
+    def test_it_can_be_put_against_a_side_of_the_frame(self) -> None:
+        layout = Composition()
+        box = lettering.boxed(layout, 0, "NEWS", load_font("silkscreen"), where=Align.RIGHT)
+        assert box.end == COLUMNS
+
+    def test_and_the_box_it_made_can_have_more_put_in_it(self) -> None:
+        layout = Composition()
+        box = lettering.boxed(layout, 0, "NEWS", load_font("silkscreen"), rows=4)
+        layout.text(box.rows[-1], Align.CENTRE, "later", Colour.WHITE, within=box)
+        assert layout.fits()
+
+    def test_or_asked_for_the_middle_of_the_frame(self) -> None:
+        layout = Composition()
+        box = lettering.boxed(
+            layout, Align.CENTRE, "NEWS", load_font("acorn"), where=Align.CENTRE
+        )
+        assert box.rows[0] == (ROWS - len(box.rows)) // 2

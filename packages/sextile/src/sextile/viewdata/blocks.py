@@ -92,3 +92,39 @@ def shifted(patterns: Sequence[int]) -> list[int]:
     ]
     last = (patterns[-1] & RIGHT_BLOCKS) >> 1 if patterns else 0
     return [*shifted, last] if last else shifted
+
+
+#: The two block rows a cell can shift down into, and the one that falls out of
+#: the bottom of it into the cell below.
+_UPPER_BLOCKS: Final = 0b001111
+_LOWER_BLOCKS: Final = 0b110000
+
+
+def lowered(rows: Sequence[Sequence[int]], by: int) -> list[list[int]]:
+    """A picture moved down by `by` blocks, a third of a cell at a time.
+
+    The vertical counterpart of `shifted`, and finer: a cell is three blocks
+    deep, so a picture can be positioned to a third of a row. What falls out of
+    the bottom of a cell lands in the top of the one below, and the picture
+    grows a row if anything falls out of the last of them.
+    """
+    picture = [list(patterns) for patterns in rows]
+    for _ in range(by):
+        picture = _lowered(picture)
+    return picture
+
+
+def _lowered(rows: Sequence[Sequence[int]]) -> list[list[int]]:
+    width = max((len(patterns) for patterns in rows), default=0)
+    lowered: list[list[int]] = []
+    carried = [0] * width
+    for patterns in rows:
+        padded = list(patterns) + [0] * (width - len(patterns))
+        lowered.append(
+            [
+                ((pattern & _UPPER_BLOCKS) << 2) | carry
+                for pattern, carry in zip(padded, carried, strict=True)
+            ]
+        )
+        carried = [(pattern & _LOWER_BLOCKS) >> 4 for pattern in padded]
+    return [*lowered, carried] if any(carried) else lowered

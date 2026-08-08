@@ -164,6 +164,28 @@ What the composition works out, and a caller therefore need not:
 - **where a run on it goes**: `Align.CENTRE` with `within=box` centres in the
   box rather than on the frame, and refuses what will not fit in it.
 
+### Down as well as along
+
+`picture` takes an alignment for its row too, and centres to the **block** in
+that direction as well — a cell is three blocks deep, so a line of lettering
+seven blocks tall sits in a three-row box with a block above it and a block
+below rather than two blocks under it. `blocks.lowered` is the vertical
+counterpart of `blocks.shifted`.
+
+### A box that fits itself round its letters
+
+```python
+box = lettering.boxed(layout, 5, "NEWS", face, Colour.CYAN, Colour.BLUE, padding=2)
+```
+
+Fitted where the letters can be measured, rather than by a caller counting
+them — who would then also have to know that a panel's own first cell goes on
+the attribute that colours it. The letters are centred in the box both ways,
+and the box is returned, so more can go in it.
+
+A box taller than what goes in it grows upwards as well as down, so that asking
+for one at row 8 leaves the letters near row 8.
+
 ### What a style costs
 
 `Style` carries every attribute the hardware has, because the transitions are

@@ -49,6 +49,16 @@ cells into `charset=separated`; `ESC 0x59` returned them to `contiguous`. The
 separated/contiguous attribute is set-at — the control cell itself already
 reports the new character set — whereas colour is set-after.
 
+**Which of the two comes first is not measured.** The spike drove colour and
+then separated; the compositor emits separated and then colour, because the
+colour attribute is what enters graphics and it should enter the set already
+chosen. Beebium's `Saa5050` reaches separated graphics either way — `0x1A`
+remembers the graphics charset and switches the current one if it is already
+graphics, and `0x11`–`0x17` enter graphics in whichever charset is remembered
+— so this is corroborated rather than verified. Every rule on every frame now
+goes out in that order, and it is the one thing here worth an eye on a real
+Beeb.
+
 ## Verified screen control
 
 Only these bare C0 codes have been measured, and they are all the frame

@@ -1,6 +1,6 @@
 """Turning a picture into the blocks a frame can draw."""
 
-from sextile.viewdata.blocks import block_runs, read_bitmap
+from sextile.viewdata.blocks import block_runs, read_bitmap, shifted
 from sextile.viewdata.charset import mosaic_code
 
 
@@ -59,3 +59,21 @@ class TestInverted:
 
     def test_a_short_row_is_filled_rather_than_left_dark(self) -> None:
         assert block_runs(read_bitmap(["##", "#", ""]), inverted=True) == [[0b111000]]
+
+
+class TestShiftingByHalfACell:
+    def test_a_block_moves_to_the_other_half_of_its_cell(self) -> None:
+        assert shifted([0b000001]) == [0b000010]
+
+    def test_and_from_there_into_the_cell_after_it(self) -> None:
+        assert shifted([0b000010]) == [0b000000, 0b000001]
+
+    def test_a_row_of_three_blocks_stays_three_blocks(self) -> None:
+        assert shifted([0b010101]) == [0b101010]
+
+    def test_the_run_grows_only_when_something_falls_off_the_end(self) -> None:
+        assert len(shifted([0b000001, 0b000001])) == 2
+        assert len(shifted([0b000001, 0b000010])) == 3
+
+    def test_nothing_shifted_is_nothing(self) -> None:
+        assert shifted([]) == []

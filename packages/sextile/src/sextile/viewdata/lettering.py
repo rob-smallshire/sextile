@@ -38,12 +38,10 @@ from collections.abc import Sequence
 from enum import Enum
 from typing import Final
 
-from sextile.viewdata.blocks import BLOCKS_ACROSS, BLOCKS_DOWN, block_runs
-from sextile.viewdata.composition import Composition
+from sextile.viewdata.blocks import BLOCKS_DOWN, block_runs
+from sextile.viewdata.composition import Align, Composition
 from sextile.viewdata.controls import Colour
-from sextile.viewdata.drawing import centre
 from sextile.viewdata.font import Font, Glyph
-from sextile.viewdata.frame import COLUMNS
 
 #: Blocks that must stay clear between two letters when kerning. One is the
 #: least that keeps them legible: at this size a block is a stroke's width.
@@ -51,10 +49,6 @@ _GAP: Final = 1
 
 #: The most a kerned pair may close up by.
 _LIMIT: Final = 1
-
-#: The leftmost cell a run of blocks can start in: the one before it belongs to
-#: the colour attribute.
-_LEFTMOST: Final = 1
 
 
 class Spacing(Enum):
@@ -201,23 +195,15 @@ def cells(
     inverted: bool = False,
     margin: int = 0,
     trim: bool = True,
-    offset: int = 0,
 ) -> list[list[int]]:
     """`text` set in `font` as mosaic patterns, a list of them for each cell row.
 
     `margin` widens the field by that many blocks on every side, which is what
     an inverted banner wants: the letters are holes in a lit field, and without
     a margin the field ends where the ink does and the letters touch its edge.
-
-    `offset` puts blank blocks before it, which is how lettering is centred to
-    the block rather than to the cell it happens to land in.
     """
     picture = bitmap(text, font, spacing=spacing, gap=gap, limit=limit, trim=trim)
-    return block_runs(_shifted(_bordered(picture, margin), offset), inverted=inverted)
-
-
-def _shifted(picture: list[list[bool]], offset: int) -> list[list[bool]]:
-    return [[False] * offset + row for row in picture] if offset else picture
+    return block_runs(_bordered(picture, margin), inverted=inverted)
 
 
 def _bordered(picture: list[list[bool]], margin: int) -> list[list[bool]]:
@@ -246,43 +232,26 @@ def place(
 ) -> Composition:
     """Add `text`, set in `font`, to a composition with its top row at `row`.
 
-    Centred across the frame unless a column is given, and never at column
-    zero: the colour attribute has to go somewhere, and the left-hand cell of
-    the row is the only place it can go.
+    Centred unless a column is given. Where that leaves it is the
+    composition's business: it knows what the colour attribute costs and how
+    far into a cell the ink may start, and this module knows about letters.
     """
-    at, offset = 0, 0
-    if column is None:
-        #  Centred to the nearest block, not to the nearest cell. A cell is two
-        #  blocks, so cell-wise centring leaves a banner up to a block and a
-        #  half off -- three quarters of a cell, and plainly visible above a
-        #  line of text that centred itself properly.
-        blocks = (
-            width(text, font, spacing=spacing, gap=gap, limit=limit) + 2 * margin
-        )
-        at, offset = divmod(
-            centre(blocks, room=COLUMNS * BLOCKS_ACROSS), BLOCKS_ACROSS
-        )
-        if at < _LEFTMOST:
-            #  The colour attribute has to go somewhere, and the left-hand cell
-            #  of the row is the only place it can go.
-            at, offset = _LEFTMOST, 0
-    patterns = cells(
-        text,
-        font,
-        spacing=spacing,
-        gap=gap,
-        limit=limit,
-        inverted=inverted,
-        margin=margin,
-        trim=trim,
-        offset=offset,
+    return composition.picture(
+        row,
+        column if column is not None else Align.CENTRE,
+        cells(
+            text,
+            font,
+            spacing=spacing,
+            gap=gap,
+            limit=limit,
+            inverted=inverted,
+            margin=margin,
+            trim=trim,
+        ),
+        colour,
+        separated=separated,
     )
-    for index, run in enumerate(patterns):
-        composition.blocks(
-            row + index, column if column is not None else at, run, colour,
-            separated=separated,
-        )
-    return composition
 
 
 def rows_for(font: Font, *, margin: int = 0) -> int:

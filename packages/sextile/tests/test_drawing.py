@@ -56,11 +56,6 @@ class TestCentring:
         centred(canvas, 0, "X" * 80, Colour.YELLOW)
         assert len(rows_of(canvas)[0]) == COLUMNS
 
-    def test_it_can_be_centred_in_part_of_a_row(self) -> None:
-        canvas = Canvas()
-        centred(canvas, 0, "AB", width=10)
-        assert rows_of(canvas)[0].index("AB") == 4
-
 
 class TestCentringAtTwiceTheHeight:
     def test_both_rows_are_written(self) -> None:
@@ -84,9 +79,13 @@ class TestRules:
         assert rows_of(canvas)[1].count(SOLID) == COLUMNS - 4
 
     def test_it_is_separated_graphics(self) -> None:
+        #  The separated attribute comes before the colour, which is the order
+        #  the composition emits for every separated run: the colour attribute
+        #  is what enters graphics, and it enters the set already chosen.
         canvas = Canvas()
         rule(canvas, 1)
-        assert canvas.frame.cell(1, 1) == Control.SEPARATED_GRAPHICS
+        assert canvas.frame.cell(1, 0) == Control.SEPARATED_GRAPHICS
+        assert canvas.frame.is_attribute(1, 1)
 
     def test_and_takes_a_colour(self) -> None:
         canvas = Canvas()

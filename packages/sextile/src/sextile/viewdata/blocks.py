@@ -69,3 +69,26 @@ def block_runs(
         ]
         for row in range(cells_down)
     ]
+
+
+#: Within a cell's six bits, the three blocks down its left-hand side and the
+#: three down its right. See `_BLOCK_BITS`: the two alternate.
+LEFT_BLOCKS: Final = 0b010101
+RIGHT_BLOCKS: Final = 0b101010
+
+
+def shifted(patterns: Sequence[int]) -> list[int]:
+    """The same run of cells with its picture one block to the right.
+
+    Half a cell, in other words -- which is the finest a mosaic picture can be
+    positioned, and the difference between a banner that is centred and one
+    that is three quarters of a cell off. Each cell takes the right-hand
+    column of the cell before it and its own left-hand column moves right; the
+    run grows by a cell if anything falls off the end.
+    """
+    shifted = [
+        ((before & RIGHT_BLOCKS) >> 1) | ((pattern & LEFT_BLOCKS) << 1)
+        for before, pattern in zip([0, *patterns], patterns, strict=False)
+    ]
+    last = (patterns[-1] & RIGHT_BLOCKS) >> 1 if patterns else 0
+    return [*shifted, last] if last else shifted

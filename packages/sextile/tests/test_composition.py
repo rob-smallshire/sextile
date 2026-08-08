@@ -8,7 +8,7 @@ half way through drawing it.
 import pytest
 
 from sextile.viewdata.canvas import Canvas
-from sextile.viewdata.composition import Composition, DoesNotFit, Style
+from sextile.viewdata.composition import Align, Composition, DoesNotFit, Style
 from sextile.viewdata.controls import Colour, Control
 from sextile.viewdata.frame import COLUMNS
 
@@ -227,3 +227,80 @@ class TestTheWholeAttributeSet:
         canvas = drawn(Composition().text(0, 5, "AB", style=style))
         attributes = [c for c in range(5) if canvas.frame.is_attribute(0, c)]
         assert len(attributes) == 5
+
+
+class TestWhereAThingGoesIsTheCompositionsBusiness:
+    """Centring is accounting about attributes, so it belongs here.
+
+    A caller that centres by arithmetic of its own has to know what its style
+    will cost in cells before it can know where the middle is -- and that is
+    exactly what a composition works out. Three of them did, and came out a
+    cell and a half apart.
+    """
+
+    def test_text_can_ask_for_the_middle_rather_than_a_column(self) -> None:
+        layout = Composition().text(0, Align.CENTRE, "ABCD")
+        assert layout.runs[0][0].column == (COLUMNS - 4) // 2
+
+    def test_and_lands_in_the_same_cells_when_it_has_a_colour(self) -> None:
+        #  The attribute comes out of the room before it, not out of its own.
+        plain = Composition().text(0, Align.CENTRE, "ABCD")
+        coloured = Composition().text(0, Align.CENTRE, "ABCD", Colour.YELLOW)
+        assert plain.runs[0][0].column == coloured.runs[0][0].column
+
+    def test_something_too_wide_to_centre_gives_its_attributes_room(self) -> None:
+        #  Centring would put this at column zero, where the attribute has to
+        #  go. It is moved along rather than being refused.
+        layout = Composition().blocks(0, Align.CENTRE, [0x3F] * (COLUMNS - 1), Colour.RED)
+        assert layout.runs[0][0].column == 1
+
+    def test_left_is_as_far_left_as_the_attributes_allow(self) -> None:
+        layout = Composition().blocks(0, Align.LEFT, [0x3F] * 4, Colour.RED)
+        assert layout.runs[0][0].column == 1
+
+    def test_and_left_is_column_zero_when_nothing_is_needed(self) -> None:
+        layout = Composition().text(0, Align.LEFT, "ABCD")
+        assert layout.runs[0][0].column == 0
+
+    def test_right_is_flush_with_the_last_column(self) -> None:
+        layout = Composition().text(0, Align.RIGHT, "ABCD")
+        assert layout.runs[0][0].end == COLUMNS
+
+
+class TestAPictureIsPlacedAsOneThing:
+    """Several rows of blocks that belong together, and are centred together.
+
+    Row by row would let the rows disagree: each would measure its own ink and
+    some would take the half-cell shift and others not, and the picture would
+    shear.
+    """
+
+    def test_its_rows_go_on_consecutive_rows_of_the_frame(self) -> None:
+        layout = Composition().picture(3, 10, [[0x3F], [0x3F], [0x3F]])
+        assert sorted(layout.runs) == [3, 4, 5]
+
+    def test_and_all_of_them_in_the_same_column(self) -> None:
+        #  Rows of different ink, one of which would shift on its own.
+        layout = Composition().picture(0, Align.CENTRE, [[0b000001], [0b101010]])
+        assert {run.column for runs in layout.runs.values() for run in runs} == {19}
+
+    def test_it_is_centred_on_its_ink_and_not_on_its_cells(self) -> None:
+        #  Two cells, with the one block of ink in the second of them. Centring
+        #  the cells would put the run at column 19 and the ink off to the
+        #  right of the middle; centring the ink puts the run at 18.
+        layout = Composition().picture(0, Align.CENTRE, [[0b000000, 0b000001]])
+        assert layout.runs[0][0].column == 18
+
+    def test_and_takes_a_blank_block_before_it_where_that_is_nearer(self) -> None:
+        #  An odd number of blocks of margin: the ink starts half way into a
+        #  cell, which costs nothing, a blank block and an attribute cell
+        #  looking the same on the screen.
+        layout = Composition().picture(0, Align.CENTRE, [[0b111111] * 19])
+        run = layout.runs[0][0]
+        assert not run.patterns[0] & 0b010101
+        assert run.patterns[0] & 0b101010
+
+    def test_a_column_given_is_still_a_column(self) -> None:
+        layout = Composition().picture(0, 7, [[0b000001, 0b000000]])
+        assert layout.runs[0][0].patterns == (0b000001, 0b000000)
+        assert layout.runs[0][0].column == 7

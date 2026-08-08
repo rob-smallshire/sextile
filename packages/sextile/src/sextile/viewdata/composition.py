@@ -32,9 +32,11 @@ done twenty-four times, and nothing here has to think about the frame at all.
 """
 
 from collections.abc import Sequence
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
+from enum import Enum
 from typing import Final
 
+from sextile.viewdata.blocks import BLOCKS_ACROSS, LEFT_BLOCKS, RIGHT_BLOCKS, shifted
 from sextile.viewdata.canvas import Canvas
 from sextile.viewdata.charset import mosaic_code
 from sextile.viewdata.controls import Colour, Control, alpha_colour, graphics_colour
@@ -44,6 +46,25 @@ from sextile.viewdata.frame import COLUMNS, ROWS
 
 class DoesNotFit(ValueError):
     """A composition that cannot be drawn, and why."""
+
+
+class Align(Enum):
+    """Where to put something, for a caller that would rather not count.
+
+    Given instead of a column. Centring is accounting about attributes -- what
+    a style costs in cells decides whether the middle is reachable at all --
+    and that accounting is what a composition is for. A caller doing it has to
+    know the cost before it knows the column, which is knowing this module's
+    business, and three callers who did came out a cell and a half apart.
+    """
+
+    LEFT = "left"
+    CENTRE = "centre"
+    RIGHT = "right"
+
+
+#: A column, or a request to be put somewhere.
+Where = int | Align
 
 
 @dataclass(frozen=True)
@@ -106,7 +127,7 @@ class Composition:
     def text(
         self,
         row: int,
-        column: int,
+        where: Where,
         words: str,
         colour: Colour = Colour.WHITE,
         *,
@@ -119,30 +140,104 @@ class Composition:
         well, because that is how the SAA5050 draws the bottom halves.
         """
         wanted = style if style is not None else Style(colour=colour)
-        self._add(row, Run(column=column, style=wanted, words=words))
+        run = self._positioned(Run(column=0, style=wanted, words=words), where)
+        self._add(row, run)
         if wanted.double_height:
-            self._add(row + 1, Run(column=column, style=wanted, words=words))
+            self._add(row + 1, run)
         return self
 
     def blocks(
         self,
         row: int,
-        column: int,
+        where: Where,
         patterns: Sequence[int],
         colour: Colour = Colour.WHITE,
         *,
         separated: bool = False,
         style: Style | None = None,
     ) -> "Composition":
-        """Place a run of mosaic blocks at a column."""
+        """Place a run of mosaic blocks, which is a picture one row tall."""
+        return self.picture(
+            row, where, [patterns], colour, separated=separated, style=style
+        )
+
+    def picture(
+        self,
+        row: int,
+        where: Where,
+        rows: Sequence[Sequence[int]],
+        colour: Colour = Colour.WHITE,
+        *,
+        separated: bool = False,
+        style: Style | None = None,
+    ) -> "Composition":
+        """Place several rows of mosaic blocks that belong together.
+
+        As one thing, because they have to be positioned as one thing: a
+        picture centred a row at a time would have each row measure its own ink
+        and some would take the half-cell shift while others did not, and the
+        picture would shear.
+        """
         wanted = (
-            style
-            if style is not None
-            else Style(colour=colour, separated=separated)
+            style if style is not None else Style(colour=colour, separated=separated)
         )
-        return self._add(
-            row, Run(column=column, style=wanted, patterns=tuple(patterns))
-        )
+        placed = [tuple(pattern for pattern in patterns) for patterns in rows]
+        column, half = self._placement(placed, wanted, where)
+        if half:
+            placed = [tuple(shifted(patterns)) for patterns in placed]
+        width = max((len(patterns) for patterns in placed), default=0)
+        for offset, patterns in enumerate(placed):
+            self._add(
+                row + offset,
+                Run(
+                    column=column,
+                    style=wanted,
+                    patterns=patterns + (0,) * (width - len(patterns)),
+                ),
+            )
+        return self
+
+    def _placement(
+        self, rows: Sequence[Sequence[int]], style: Style, where: Where
+    ) -> tuple[int, bool]:
+        """The column a picture starts at, and whether to shift it half a cell.
+
+        Centred on the *ink* rather than on the cells it happens to occupy. A
+        cell is two blocks, so cells alone leave a picture up to a block and a
+        half out -- three quarters of a cell, and plainly visible above a line
+        of text. Where the nearer of the two is half way into a cell, the
+        picture takes a blank block before it, which costs nothing: a blank
+        block and an attribute cell look the same on the screen.
+        """
+        width = max((len(patterns) for patterns in rows), default=0)
+        probe = Run(column=0, style=style, patterns=(0,) * width)
+        needed = len(_attributes_for(OPENING, False, probe))
+        if where is not Align.CENTRE:
+            return self._aligned(width, needed, where), False
+        first, last = _ink(rows)
+        if first is None or last is None:
+            return self._aligned(width, needed, where), False
+        origin = _centre((last - first + 1), room=COLUMNS * BLOCKS_ACROSS) - first
+        column, half = divmod(origin, BLOCKS_ACROSS)
+        return (column, bool(half)) if column >= needed else (needed, False)
+
+    def _aligned(self, width: int, needed: int, where: Where) -> int:
+        """The column for something `width` cells wide, in cells alone."""
+        if isinstance(where, int):
+            return where
+        if where is Align.RIGHT:
+            return max(COLUMNS - width, needed)
+        if where is Align.LEFT:
+            return needed
+        return max(_centre(width), needed)
+
+    def _positioned(self, run: Run, where: Where) -> Run:
+        """A run of text moved to where it was asked to go.
+
+        Text has no half-cells to be positioned in, so this is cells alone.
+        """
+        needed = len(_attributes_for(OPENING, False, run))
+        return replace(run, column=self._aligned(run.cells, needed, where))
 
     def _add(self, row: int, run: Run) -> "Composition":
         if not 0 <= row < ROWS:
@@ -215,6 +310,28 @@ class Composition:
             state, graphics = run.style, run.graphics
             free = run.end
         return _Plan(runs=runs, attributes=attributes)
+
+
+def _centre(width: int, *, room: int = COLUMNS) -> int:
+    """Where something `width` wide starts to sit in the middle of `room`.
+
+    Left-biased where it cannot be exact -- an odd number of spare cells has to
+    go somewhere -- and always the same way, so two things centred on the same
+    frame are out by at most half of one and never in opposite directions.
+    """
+    return max((room - width) // 2, 0)
+
+
+def _ink(rows: Sequence[Sequence[int]]) -> tuple[int | None, int | None]:
+    """The first and last block of a picture that is lit, across all its rows."""
+    lit = [
+        index * BLOCKS_ACROSS + half
+        for patterns in rows
+        for index, pattern in enumerate(patterns)
+        for half, mask in ((0, LEFT_BLOCKS), (1, RIGHT_BLOCKS))
+        if pattern & mask
+    ]
+    return (min(lit), max(lit)) if lit else (None, None)
 
 
 def _attributes_for(state: Style, graphics: bool, run: Run) -> list[Control]:

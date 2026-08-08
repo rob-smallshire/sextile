@@ -19,6 +19,7 @@ points, and plotting into that is a matter of setting bits in the right cell.
 from typing import Final
 
 from sextile.viewdata.canvas import Canvas
+from sextile.viewdata.composition import Align, Composition, Style
 from sextile.viewdata.controls import Colour, Control, graphics_colour
 from sextile.viewdata.encoding import cell_count
 from sextile.viewdata.frame import COLUMNS
@@ -26,6 +27,9 @@ from sextile.viewdata.frame import COLUMNS
 #: The mosaic character with all six blocks lit. Every rule and bar is a run of
 #: these; in the G1 set it is 0x7F.
 SOLID: Final = "▮"
+
+#: The same as a block pattern, for a composition rather than a row writer.
+SOLID_BLOCKS: Final = 0b111111
 
 #: A run of mosaic needs a graphics colour, and a separated run needs the
 #: separated attribute as well. Both occupy cells.
@@ -49,64 +53,52 @@ def fitted(text: str, cells: int) -> str:
     return shortened
 
 
-def centre(width: int, *, room: int = COLUMNS) -> int:
-    """The column something `width` cells wide starts at to sit in the middle.
-
-    **One rule, used by everything on a frame that centres itself.** Text,
-    rules and lettering made of blocks each used to work this out for
-    themselves and came out as much as a cell and a half apart, which on a
-    title frame is plainly visible.
-
-    Left-biased where it cannot be exact -- an odd number of spare cells has to
-    go somewhere -- and always the same way, so two things centred on the same
-    frame are out by at most half a cell and never in opposite directions.
-    """
-    return max((room - width) // 2, 0)
-
-
 def centred(
-    canvas: Canvas,
-    row: int,
-    text: str,
-    colour: Colour | None = None,
-    *,
-    width: int = COLUMNS,
+    canvas: Canvas, row: int, text: str, colour: Colour | None = None
 ) -> None:
     """Write text across the middle of a row.
 
-    The colour attribute is paid for out of the room *before* the text, so the
-    text lands in the same cells whether there is one or not.
+    The middle is the composition's to work out, here and in `centred_double`
+    and `rule`: what a style costs in cells decides where the middle is, and
+    that is its accounting rather than this module's.
     """
-    attribute = 1 if colour is not None else 0
-    shortened = fitted(text, width - attribute)
-    start = centre(cell_count(shortened), room=width)
-    canvas.row(row).skip(max(start - attribute, 0)).text(shortened, colour)
+    _place(canvas, row, fitted(text, COLUMNS - 1), colour)
 
 
 def centred_double(
     canvas: Canvas, row: int, text: str, colour: Colour | None = None
 ) -> None:
-    """The same at twice the height, which costs the row below as well.
+    """The same at twice the height, which costs the row below as well."""
+    _place(canvas, row, fitted(text, COLUMNS - 2), colour, double_height=True)
 
-    Two cells go on attributes here -- the double height and the colour -- so
-    the room to centre within is two fewer than the row.
-    """
-    attributes = 1 + (1 if colour is not None else 0)
-    shortened = fitted(text, COLUMNS - attributes)
-    start = centre(cell_count(shortened))
-    canvas.double_height(row, shortened, colour, column=max(start - attributes, 0))
+
+def _place(
+    canvas: Canvas,
+    row: int,
+    text: str,
+    colour: Colour | None,
+    *,
+    double_height: bool = False,
+) -> None:
+    style = Style(
+        colour=colour if colour is not None else Colour.WHITE,
+        double_height=double_height,
+    )
+    Composition().text(row, Align.CENTRE, text, style=style).draw(canvas)
 
 
 def rule(canvas: Canvas, row: int, colour: Colour = Colour.BLUE) -> None:
-    """A rule in separated mosaic graphics, centred on the row.
+    """A rule in separated mosaic graphics, across the middle of a row.
 
     A run of blocks cannot begin before the attributes that colour it, so the
-    two cells they take on the left are left free on the right as well. A rule
-    inset at one end and flush at the other reads as a mistake, and sets a
-    different middle from everything else on the frame.
+    widest a rule can be *and be centred* is the row less those two cells at
+    each end. A rule inset at one end and flush at the other reads as a
+    mistake, and sets a different middle from everything else on the frame.
     """
-    margin = _SEPARATED_ATTRIBUTES
-    bar(canvas, row, colour=colour, separated=True, cells=COLUMNS - 2 * margin)
+    cells = COLUMNS - 2 * _SEPARATED_ATTRIBUTES
+    Composition().blocks(
+        row, Align.CENTRE, [SOLID_BLOCKS] * cells, colour, separated=True
+    ).draw(canvas)
 
 
 def bar(

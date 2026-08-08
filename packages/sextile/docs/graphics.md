@@ -111,12 +111,22 @@ each gap is whether the attributes fit in it. A left-to-right pass is therefore
 optimal and there is nothing to search. Placement becomes a search only if runs
 are free to *move*, which is a different feature and not this one.
 
-**Centring is by the block.** `drawing.centre` gives the column an item of a
-given width starts at, left-biased where it cannot be exact and always the same
-way, so text, rules and lettering agree where the middle of a frame is. Blocks
-go one better: `lettering.place` centres to the nearest block and takes a blank
-block before the run where that is nearer, since a blank block and an attribute
-cell look the same on the screen.
+**Where a thing goes is its business too.** Give `Align.CENTRE` instead of a
+column and the composition works out where the middle is — which it has to,
+because what a style costs in cells decides whether the middle is reachable at
+all. Text, rules and lettering each used to work that out for themselves and
+came out a cell and a half apart on the same frame.
+
+```python
+Composition().text(6, Align.CENTRE, "V I E W D A T A", Colour.CYAN)
+```
+
+`picture` places several rows of blocks as one thing, and centres them on their
+**ink** rather than on the cells they occupy — to the nearest block, taking a
+blank block before the run where that is nearer, since a blank block and an
+attribute cell look the same on the screen. As one thing because a picture
+centred a row at a time would have each row measure its own ink, and it would
+shear.
 
 **Rows are independent.** Every row begins white, in alpha, with contiguous
 graphics selected, whatever the row above ended in. So a frame composition is a

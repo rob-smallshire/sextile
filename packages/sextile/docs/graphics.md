@@ -193,19 +193,26 @@ A band through the middle of a word — a row of colour where the word is three
 rows tall — is a panel and some lettering, drawn separately:
 
 ```python
-layout.panel(7, Align.CENTRE, width=lettering.cells_for(word, face, padding=2),
-             colour=Colour.BLUE)
 lettering.place(layout, 6, word, face, Colour.YELLOW)
+layout.panel(7, colour=Colour.BLUE, around=range(6, 9), padding=3)
 ```
 
-Neither knows about the other. They line up because both are centred, and the
-row they share comes out coloured because the composition can see that it is:
-the run on that row is covered by the panel and takes its background, while the
-runs above and below are not and do not. Nothing had to be told that a stripe
-was wanted.
+Neither knows about the other. The stripe is **fitted to what is already on
+those rows**, so it needs no width and no column; the row they share comes out
+coloured because the composition can see that it is — the run on that row is
+covered by the panel and takes its background, while the runs above and below
+are not and do not. Nothing had to be told that a stripe was wanted.
 
-`lettering.cells_for` is what lets the panel be sized without the word being
-drawn first — the companion of `rows_for`.
+Fitted to the **ink** rather than to the cells the runs occupy: a picture
+centred to the block often begins with a blank half-cell, and a stripe measured
+from the run rather than from what is lit comes out a cell longer on one side
+than the other. It is still widened to cover the runs whatever the padding,
+because a panel stopping short of a run it is behind would leave that run
+turning the background off in the middle of the stripe.
+
+`lettering.cells_for` sizes a panel without the word being drawn first — the
+companion of `rows_for` — for the cases where the order has to be the other
+way about.
 
 ### What a style costs
 

@@ -168,10 +168,12 @@ class Composition:
     def panel(
         self,
         row: Where,
-        where: Where,
+        where: Where = Align.CENTRE,
         *,
-        width: int,
         colour: Colour,
+        width: int | None = None,
+        around: Sequence[int] | None = None,
+        padding: int = 0,
         rows: int = 1,
     ) -> Panel:
         """A coloured rectangle, `rows` deep, returned so things can go in it.
@@ -181,8 +183,21 @@ class Composition:
         and it costs cells that the things written on it would otherwise have
         to account for. So it is declared once, here, and a run drawn within it
         takes it without saying anything.
+
+        `around` fits it to what is already on those rows, with `padding` cells
+        of colour either side -- which is how a stripe is drawn behind
+        something without either of them being told where the other is. It is
+        fitted to the *ink*, because that is what a reader sees it around: a
+        run may begin with a blank half-cell, and measuring the run rather than
+        the ink puts the colour a cell further one way than the other.
         """
-        column = self._aligned(width, _PANEL_ATTRIBUTES, where)
+        if (width is None) == (around is None):
+            raise DoesNotFit("a panel is given either a width or something to go around")
+        if around is not None:
+            column, width = self._fitted(around, padding)
+        else:
+            assert width is not None
+            column = self._aligned(width, _PANEL_ATTRIBUTES, where)
         first = row if isinstance(row, int) else _down(row, rows)
         panel = Panel(
             column=column,
@@ -195,6 +210,24 @@ class Composition:
                 raise DoesNotFit(f"row {covered} is not on the frame")
             self.panels.setdefault(covered, []).append(panel)
         return panel
+
+    def _fitted(self, around: Sequence[int], padding: int) -> tuple[int, int]:
+        """A panel's column and width, taken from what is on some rows already.
+
+        Wide enough to cover those runs whatever the padding, so that a run it
+        covers takes its colour: a panel that stopped short of one would leave
+        it to turn the background off in the middle of the stripe.
+        """
+        runs = [run for row in around for run in self.runs.get(row, [])]
+        if not runs:
+            raise DoesNotFit(
+                f"nothing on row(s) {', '.join(str(row) for row in around)} for a "
+                f"panel to go around; what it goes around is placed first"
+            )
+        first, last = _seen(runs)
+        column = max(min(first - padding, min(run.column for run in runs)), _PANEL_ATTRIBUTES)
+        end = min(max(last + 1 + padding, max(run.end for run in runs)), COLUMNS)
+        return column, end - column
 
     def text(
         self,
@@ -413,7 +446,16 @@ class Composition:
         free = 0
         for at, kind, what in _events(runs, panels):
             marker = _marked(kind, what, state, panels)
-            wanted = _attributes_for(state, graphics, marker)
+            #  Closing a panel is one cell and changes nothing else. Asking
+            #  `_attributes_for` would have it leave graphics as well, because
+            #  a marker carries no blocks -- and that second cell would land
+            #  inside the panel and take a cell of colour off its right-hand
+            #  end, which is exactly where nobody looks for a missing cell.
+            wanted = (
+                [Control.BLACK_BACKGROUND]
+                if kind == "close"
+                else _attributes_for(state, graphics, marker)
+            )
             gap = at - free
             if len(wanted) > gap:
                 blamed = {
@@ -430,7 +472,8 @@ class Composition:
             #  attributes next to what they explain.
             for offset, attribute in enumerate(wanted):
                 attributes.append((at - len(wanted) + offset, attribute))
-            state, graphics = marker.style, marker.graphics
+            state = marker.style
+            graphics = marker.graphics if kind != "close" else graphics
             free = marker.end if kind == "run" else at
         return _Plan(runs=runs, attributes=attributes)
 
@@ -508,6 +551,27 @@ def _centre(width: int, *, room: int = COLUMNS) -> int:
     frame are out by at most half of one and never in opposite directions.
     """
     return max((room - width) // 2, 0)
+
+
+def _seen(runs: Sequence[Run]) -> tuple[int, int]:
+    """The first and last cell some runs actually show something in.
+
+    For graphics that is the ink and not the run: a picture centred to the
+    block may begin with a blank half-cell, and a stripe fitted to the run
+    rather than to what is lit sits a cell to one side of it.
+    """
+    cells = []
+    for run in runs:
+        if not run.graphics:
+            cells += [run.column, run.end - 1]
+            continue
+        first, last = _ink([run.patterns])
+        if first is not None and last is not None:
+            cells += [
+                run.column + first // BLOCKS_ACROSS,
+                run.column + last // BLOCKS_ACROSS,
+            ]
+    return (min(cells), max(cells)) if cells else (0, 0)
 
 
 def _ink(rows: Sequence[Sequence[int]]) -> tuple[int | None, int | None]:

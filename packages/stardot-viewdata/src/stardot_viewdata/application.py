@@ -72,9 +72,10 @@ SERVICE_KIND: Final = "VIEWDATA"
 SUBTITLE_FACE: Final = "acorn"
 SUBTITLE_ROW: Final = 6
 
-#: Cells of colour either side of that word. The stripe is drawn to this width
-#: and the word is drawn centred; neither is told where the other is.
-SUBTITLE_MARGIN: Final = 2
+#: Cells of colour either side of that word, and the rows it takes. The stripe
+#: is fitted to the word rather than either being told where the other is.
+SUBTITLE_MARGIN: Final = 3
+SUBTITLE_ROWS: Final = 3
 
 #: Named for the service rather than for the framework serving it, and
 #: relative to the working directory -- so `serve` and `ingest` must be run
@@ -447,8 +448,8 @@ class StardotApplication(Sextile):
         stripe = layout.panel(
             BANNER_ROW,
             Align.LEFT,
-            width=COLUMNS - 1,
             colour=BANNER_BACKGROUND,
+            width=COLUMNS - 1,
             rows=lettering.rows_for(face),
         )
         lettering.place(
@@ -466,22 +467,21 @@ class StardotApplication(Sextile):
         #  word three rows tall, both centred, so they line up without either
         #  being told where the other is. The composition sees that the middle
         #  row is coloured and colours the letters on it accordingly.
-        subtitle = load_font(SUBTITLE_FACE)
-        layout.panel(
-            SUBTITLE_ROW + 1,
-            Align.CENTRE,
-            width=lettering.cells_for(
-                SERVICE_KIND, subtitle, spacing=Spacing.KERNED, padding=SUBTITLE_MARGIN
-            ),
-            colour=BANNER_BACKGROUND,
-        )
         lettering.place(
             layout,
             SUBTITLE_ROW,
             SERVICE_KIND,
-            subtitle,
+            load_font(SUBTITLE_FACE),
             BANNER_COLOUR,
             spacing=Spacing.KERNED,
+        )
+        #  Fitted to the word after it is placed, so the colour reaches the
+        #  same distance past it at both ends however the word is set.
+        layout.panel(
+            SUBTITLE_ROW + 1,
+            colour=BANNER_BACKGROUND,
+            around=range(SUBTITLE_ROW, SUBTITLE_ROW + SUBTITLE_ROWS),
+            padding=SUBTITLE_MARGIN,
         )
         layout.draw(canvas)
         rule(canvas, 10)

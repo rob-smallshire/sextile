@@ -458,3 +458,80 @@ class TestUpAndDownAsWellAsAlongTheRow:
         layout = Composition()
         layout.picture(9, 12, [[0b111111]])
         assert sorted(layout.runs) == [9]
+
+
+class TestAPanelFittedRoundWhatIsThere:
+    """A stripe behind something, without either being told where the other is.
+
+    The thing is placed, then the stripe is fitted to it. Fitted to what it
+    lights rather than to the cells it occupies, or the colour comes out a cell
+    longer on one side than the other -- which is what it did.
+    """
+
+    def test_it_takes_the_cells_the_lettering_lights(self) -> None:
+        layout = Composition()
+        layout.picture(0, 10, [[0b000000, 0b111111, 0b111111, 0b000000]])
+        panel = layout.panel(0, colour=Colour.BLUE, around=[0], padding=3)
+        #  The lit cells are 11 and 12; three cells of colour either side.
+        assert (panel.column, panel.end) == (8, 16)
+
+    def test_the_same_either_side_even_of_a_half_lit_cell(self) -> None:
+        #  The picture begins in the right-hand half of its first cell, as a
+        #  centred one often does. What is seen is the cell, so the stripe
+        #  reaches the same distance past it at both ends.
+        layout = Composition()
+        layout.picture(0, 10, [[0b101010, 0b111111]])
+        panel = layout.panel(0, colour=Colour.BLUE, around=[0], padding=2)
+        assert (panel.column, panel.end) == (8, 14)
+
+    def test_it_still_covers_the_runs_it_is_behind(self) -> None:
+        #  Even with no padding at all: a panel stopping short of a run it is
+        #  behind would leave that run turning the background off mid-stripe.
+        layout = Composition()
+        layout.picture(0, 10, [[0b000000, 0b111111, 0b000000]])
+        panel = layout.panel(0, colour=Colour.BLUE, around=[0], padding=0)
+        assert panel.column <= 10 and panel.end >= 13
+
+    def test_it_can_be_fitted_to_rows_it_does_not_cover(self) -> None:
+        #  Which is the point: three rows of lettering, one row of stripe.
+        layout = Composition()
+        layout.picture(4, 10, [[0b111111]] * 3)
+        panel = layout.panel(5, colour=Colour.BLUE, around=[4, 5, 6], padding=1)
+        assert panel.rows == (5,)
+        assert panel.width == len([0b111111]) + 2
+
+    def test_with_nothing_there_it_says_so(self) -> None:
+        with pytest.raises(DoesNotFit, match="nothing on row"):
+            Composition().panel(5, colour=Colour.BLUE, around=[4, 5, 6])
+
+    def test_a_panel_is_given_one_thing_or_the_other(self) -> None:
+        with pytest.raises(DoesNotFit, match="either"):
+            Composition().panel(0, colour=Colour.BLUE)
+        with pytest.raises(DoesNotFit, match="either"):
+            Composition().panel(0, colour=Colour.BLUE, width=4, around=[0])
+
+
+class TestClosingAPanel:
+    def test_costs_one_cell_and_it_is_outside_the_panel(self) -> None:
+        #  A second cell would land inside, and take a cell of colour off the
+        #  right-hand end -- which is where nobody looks for a missing cell.
+        canvas = Canvas()
+        layout = Composition()
+        panel = layout.panel(0, 10, width=8, colour=Colour.BLUE)
+        layout.blocks(0, 12, [0b111111] * 4, Colour.YELLOW, within=panel)
+        layout.draw(canvas)
+        assert canvas.frame.cell(0, panel.end) == Control.BLACK_BACKGROUND
+        assert not canvas.frame.is_attribute(0, panel.end - 1)
+
+    def test_and_leaves_the_row_in_the_charset_it_was_in(self) -> None:
+        #  Blocks after a panel, in the same colour, cost nothing: the panel
+        #  ending is not a reason to leave graphics and come back.
+        canvas = Canvas()
+        layout = Composition()
+        panel = layout.panel(0, 4, width=6, colour=Colour.BLUE)
+        layout.blocks(0, 6, [0b111111] * 3, Colour.YELLOW, within=panel)
+        layout.blocks(0, 12, [0b111111] * 3, Colour.YELLOW)
+        layout.draw(canvas)
+        assert [
+            column for column in range(COLUMNS) if canvas.frame.is_attribute(0, column)
+        ] == [3, 4, 5, 10]

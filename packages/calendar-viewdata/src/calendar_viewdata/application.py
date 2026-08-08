@@ -51,7 +51,7 @@ class CalendarApplication(Sextile):
         cannot otherwise be tested. It is the only thing this application
         depends on that is not a pure function.
         """
-        super().__init__()
+        super().__init__(name=SERVICE_NAME.title())
         self._now = now or (lambda: datetime.now(UTC))
         self._register()
 
@@ -192,11 +192,6 @@ class CalendarApplication(Sextile):
 
     async def goodbye(self, request: PageRequest) -> Page:
         return self._farewell("GOODBYE", ["Thank you for calling.", "", "Ring off."])
-
-    async def timed_out(self) -> Page:
-        return self._farewell(
-            "RINGING OFF", ["No reply for some time.", "", "The line has been released."]
-        )
 
     def _farewell(self, title: str, lines: list[str]) -> Page:
         """The last thing a caller sees: no chrome, and room beneath to type.

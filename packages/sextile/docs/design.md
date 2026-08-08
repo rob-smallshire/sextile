@@ -231,10 +231,23 @@ and from `nc`. A line feed after a carriage return is swallowed as the other
 half of one terminator — it has to be told apart from a bare `0x0A`, which is
 the BBC's cursor-down key.
 
+**A service has a name, and the framework has none to lend it.** `Sextile(name=
+"Stardot")`, read back as `Application.name`, used in the few things the
+framework says on a service's behalf. It defaults to empty and no default is
+invented: a page thanking a reader for calling *Sextile* names the machinery
+rather than the thing they called, which is nobody's idea of a farewell. For the
+same reason `draw_chrome` has no fallback title — a framework writing its own
+name across the top of somebody else's service would be doing it again.
+
 **Ringing off is a page, both ways round.** A service that says goodbye does so
 on a page like any other, with `hang_up` set. The involuntary parting has one
-too — `Application.timed_out()`, overridable with `@app.on_timed_out` — because
-no page number reaches it and something has to ask. Both are whole frames: a
+too — `Application.timed_out(parting)`, overridable with `@app.on_timed_out` —
+because no page number reaches it and something has to ask.
+
+That handler is given a `Parting`: the page the caller was on, the frame of it,
+where they had been, and what they had accumulated. The terminal keeps none of
+it, so the one useful thing to hand over is where they had got to — "You were
+reading *82489493#" is what lets somebody dial back in and pick up. Both are whole frames: a
 line of text written over whatever was showing is hard to pick out from the
 frame it lands on, which is what the first version of this did.
 

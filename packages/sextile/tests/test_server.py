@@ -17,6 +17,7 @@ import pytest
 from exemplar import Board
 
 from sextile.addressing import PageAddress
+from sextile.application import Parting
 from sextile.page import Page
 from sextile.server import DEFAULT_PORT, serve
 from sextile.viewdata.encoding import ScreenControl
@@ -391,15 +392,19 @@ class TestHandingTheTerminalBack:
         board = Board()
 
         @board.on_timed_out
-        async def gone() -> Page:
-            return board.menu(PageAddress("1"), "COME BACK SOON", [])
+        async def gone(parting: Parting) -> Page:
+            return board.menu(
+                PageAddress("1"), f"COME BACK TO *{parting.address}#", []
+            )
 
         running = await serve(
             board, host="127.0.0.1", port=0, idle_timeout=0.3, warn_after=0
         )
         reader, writer = await connect_to(running)
         await read_frame(reader)
-        assert "COME BACK SOON" in text_of(await _everything_left(reader))
+        #  Without the terminator: `#` travels as 0x5F, which the SAA5050 draws
+        #  as `#` and this helper, decoding as ASCII, shows as `_`.
+        assert "COME BACK TO *1" in text_of(await _everything_left(reader))
         await close(writer, running)
 
 

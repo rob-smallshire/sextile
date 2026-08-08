@@ -17,7 +17,6 @@ from sextile.viewdata.chrome import (
     CONTENT_ROWS,
     FOOTER_ROW,
     HEADER_ROW,
-    SERVICE_NAME,
     draw_chrome,
 )
 from sextile.viewdata.frame import COLUMNS, ROWS
@@ -82,10 +81,12 @@ class TestHeader:
         header = rows_of(canvas)[HEADER_ROW]
         assert "X123456789012" not in header
 
-    def test_the_service_is_named_when_a_page_has_no_title_of_its_own(self) -> None:
+    def test_a_page_with_no_title_of_its_own_gets_none(self) -> None:
+        #  The framework does not name the service. A title across the top of
+        #  somebody else's service would be naming the machinery.
         canvas = Canvas()
-        draw_chrome(canvas, title="", page_number="1", prompt="")
-        assert SERVICE_NAME in rows_of(canvas)[HEADER_ROW]
+        draw_chrome(canvas, title="", page_number="4254", prompt="")
+        assert rows_of(canvas)[HEADER_ROW].strip() == "4254"
 
 
 class TestRules:

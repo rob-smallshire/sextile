@@ -24,7 +24,7 @@ a device. The one caller kept waiting should not be all of them.
 """
 
 from abc import ABC, abstractmethod
-from collections.abc import Awaitable, Callable, MutableMapping
+from collections.abc import Awaitable, Callable, Mapping, MutableMapping
 from dataclasses import dataclass, field
 from typing import Final
 
@@ -70,9 +70,31 @@ class PageRequest:
     is where anything outlasting a single page belongs."""
 
 
+@dataclass(frozen=True)
+class Parting:
+    """Where a caller had got to when the line was taken from them.
+
+    Everything the session knew, handed over because the terminal keeps none of
+    it. A service can say "you were reading *82489493#", which is the one thing
+    worth telling somebody who is about to dial back in.
+    """
+
+    address: PageAddress
+    """The page they were on."""
+
+    frame_index: int = 0
+    """Which frame of it, for a page that ran to several."""
+
+    history: tuple[PageAddress, ...] = ()
+    """Where they had been, oldest first, as far back as the session kept."""
+
+    session: Mapping[str, object] = field(default_factory=dict)
+    """What they had accumulated over the call."""
+
+
 type Handler = Callable[..., Awaitable[Page]]
 type NotFoundHandler = Callable[[str], Awaitable[Page]]
-type PartingHandler = Callable[[], Awaitable[Page]]
+type PartingHandler = Callable[[Parting], Awaitable[Page]]
 
 
 class Application(ABC):
@@ -117,7 +139,17 @@ class Application(ABC):
         """
         return _plain_notice("UNKNOWN PAGE", f"*{target[:_QUOTED]}# is NOT a page here.")
 
-    async def timed_out(self) -> Page:
+    @property
+    def name(self) -> str:
+        """What this service is called, for the few things the framework says.
+
+        Empty unless a service says otherwise, and the framework will not invent
+        one: a page thanking a reader for calling *Sextile* names the machinery
+        rather than the service, which is nobody's idea of a farewell.
+        """
+        return ""
+
+    async def timed_out(self, parting: Parting) -> Page:
         """Say that the line is being released for want of a reply.
 
         A page rather than a line of text over whatever was showing, for the
@@ -126,12 +158,17 @@ class Application(ABC):
 
         A service ringing off deliberately says goodbye on a page of its own,
         being a page like any other with `hang_up` set. This is the involuntary
-        one, which no page number reaches, so the framework has to ask for it.
+        one, which no page number reaches, so the framework has to ask for it --
+        and hand over where the caller had got to, since the terminal keeps
+        nothing and they may want to key it again.
         """
         return _plain_notice(
             "RINGING OFF",
-            "No reply for some time.",
-            "The line has been released.",
+            "No reply for some time, so the line",
+            "has been released.",
+            "",
+            f"You were reading *{parting.address}#.",
+            *(["", f"Thank you for calling {self.name}."] if self.name else []),
             hang_up=True,
         )
 
@@ -147,12 +184,17 @@ class Application(ABC):
 class Sextile(Application):
     """An application that answers by routing page numbers to handlers."""
 
-    def __init__(self, *, home: str | PageAddress = "1") -> None:
+    def __init__(self, *, name: str = "", home: str | PageAddress = "1") -> None:
+        self._name = name
         self._router: Router[Handler] = Router()
         self._mounted: list[tuple[str, Application]] = []
         self._not_found: NotFoundHandler | None = None
         self._timed_out: PartingHandler | None = None
         self._home = home if isinstance(home, PageAddress) else PageAddress(home)
+
+    @property
+    def name(self) -> str:
+        return self._name
 
     @property
     def home(self) -> PageAddress:
@@ -243,10 +285,10 @@ class Sextile(Application):
             return await super().not_found(target)
         return await self._not_found(target)
 
-    async def timed_out(self) -> Page:
+    async def timed_out(self, parting: Parting) -> Page:
         if self._timed_out is None:
-            return await super().timed_out()
-        return await self._timed_out()
+            return await super().timed_out(parting)
+        return await self._timed_out(parting)
 
     def address_for(self, name: str, **params: object) -> PageAddress:
         """The address a named route answers, built from its own pattern."""

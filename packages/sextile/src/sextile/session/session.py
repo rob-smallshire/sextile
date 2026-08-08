@@ -21,7 +21,7 @@ from dataclasses import dataclass
 from typing import Final
 
 from sextile.addressing import PageAddress, UnknownPageError
-from sextile.application import Application, Arrival, PageRequest
+from sextile.application import Application, Arrival, PageRequest, Parting
 from sextile.keys import (
     CONVENTIONAL_NEXT_FRAME,
     NEXT_FRAME,
@@ -155,7 +155,14 @@ class Session:
         being cut off is worth a screen of its own, and a message overprinting
         a frame is hard to pick out from the frame.
         """
-        self._page = await self._application.timed_out()
+        self._page = await self._application.timed_out(
+            Parting(
+                address=self._address,
+                frame_index=self._frame_index,
+                history=tuple(place.address for place in self._history),
+                session=dict(self._state),
+            )
+        )
         self._frame_index = 0
         self._finished = True
         return self._send()

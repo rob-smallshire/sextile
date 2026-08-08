@@ -30,15 +30,10 @@ from typing import Final
 
 from sextile import keys
 from sextile.addressing import PageAddress
-from sextile.application import Arrival, PageRequest, Sextile
+from sextile.application import Arrival, PageRequest, Parting, Sextile
 from sextile.page import Page, PageFrame
 from sextile.viewdata.canvas import Canvas
-from sextile.viewdata.chrome import (
-    CONTENT_FIRST_ROW,
-    CONTENT_ROWS,
-    SERVICE_NAME,
-    draw_chrome,
-)
+from sextile.viewdata.chrome import CONTENT_FIRST_ROW, CONTENT_ROWS, draw_chrome
 from sextile.viewdata.controls import Colour
 from sextile.viewdata.encoding import cell_count
 from sextile.viewdata.footer import FooterItem, Priority, render_footer
@@ -47,6 +42,9 @@ from sextile.viewdata.layout import draw_rows, paginate
 from stardot_viewdata.html import parse_post_body
 from stardot_viewdata.model import Post
 from stardot_viewdata.store.repository import BOARD_TIMEZONE, Repository
+
+#: What this service is called, which is not what the framework is called.
+SERVICE_NAME: Final = "STARDOT"
 
 DEFAULT_DATABASE_FILEPATH: Final = Path("sextile.sqlite")
 
@@ -104,7 +102,7 @@ class StardotApplication(Sextile):
         the application stops. That is what a test wants, and what a caller
         holding the archive for some other purpose wants too.
         """
-        super().__init__()
+        super().__init__(name=SERVICE_NAME.title())
         self._database_filepath = database_filepath
         self._repository = repository
         self._ours = repository is None
@@ -454,18 +452,25 @@ class StardotApplication(Sextile):
     async def _logoff(self, request: PageRequest) -> Page:
         return self._farewell(
             "GOODBYE",
-            ["Thank you for calling Sextile.", "", "Ring off."],
+            [f"Thank you for calling {self.name}.", "", "Ring off."],
         )
 
-    async def timed_out(self) -> Page:
-        """Said in the service's own voice as an idle caller is released."""
+    async def timed_out(self, parting: Parting) -> Page:
+        """Said in the service's own voice as an idle caller is released.
+
+        Naming the page they were on, because the terminal keeps nothing and a
+        reader who dials back in has no other way to pick up where they were.
+        """
         return self._farewell(
             "RINGING OFF",
             [
                 "No reply for some time, so the line",
                 "has been released for somebody else.",
                 "",
-                "Do call again.",
+                f"You were reading *{parting.address}#.",
+                "",
+                f"Thank you for calling {self.name}. Do call",
+                "again.",
             ],
         )
 

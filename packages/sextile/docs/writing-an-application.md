@@ -140,13 +140,23 @@ return Page(frames=(...), hang_up=True)
 ```
 
 There is a second parting the service does not choose — the idle caller who is
-released — and it has a page of its own:
+released — and it has a page of its own, told where they had got to:
 
 ```python
 @app.on_timed_out
-async def gone() -> Page:
-    ...
+async def gone(parting: Parting) -> Page:
+    ...   # parting.address, .frame_index, .history, .session
 ```
+
+The terminal keeps nothing, so `parting.address` is worth showing: "You were
+reading *82489493#" is what lets somebody dial back in and pick up. The default
+page does this already, and names the service if it has a name:
+
+```python
+app = Sextile(name="Stardot")     # "Thank you for calling Stardot."
+```
+
+`name` is empty unless you say otherwise, and the framework will not invent one.
 
 Both are the last thing a reader sees, so **draw them without a footer and leave
 the lower rows blank**. A key offering the index would be a key that does

@@ -9,6 +9,10 @@ The header is where a reader looks to know where they are and what to quote to
 come back, so the page number is placed first and the title is given whatever
 room is left. Titles reach forty characters unaided, so one that would crowd
 the number is truncated rather than allowed to push it away.
+
+The title is whatever the service says it is, including nothing. There is no
+default: a framework that wrote its own name across the top of somebody else's
+service would be naming the machinery rather than the thing being read.
 """
 
 from typing import Final
@@ -17,8 +21,6 @@ from sextile.viewdata.canvas import Canvas
 from sextile.viewdata.controls import Colour, Control, graphics_colour
 from sextile.viewdata.encoding import cell_count
 from sextile.viewdata.frame import COLUMNS, ROWS
-
-SERVICE_NAME: Final = "SEXTILE"
 
 HEADER_ROW: Final = 0
 _TOP_RULE_ROW: Final = 1
@@ -37,7 +39,7 @@ _GAP: Final = 1
 
 def draw_chrome(canvas: Canvas, *, title: str, page_number: str, prompt: str) -> None:
     """Draw the header, the rules and the footer, leaving the content rows alone."""
-    _draw_header(canvas, title or SERVICE_NAME, page_number)
+    _draw_header(canvas, title, page_number)
     _draw_rule(canvas, _TOP_RULE_ROW, Colour.BLUE)
     _draw_rule(canvas, _BOTTOM_RULE_ROW, Colour.BLUE)
     _draw_footer(canvas, prompt)

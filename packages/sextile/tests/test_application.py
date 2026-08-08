@@ -12,7 +12,7 @@ thing as being logged in.
 import pytest
 
 from sextile.addressing import PageAddress, UnknownPageError
-from sextile.application import Application, Arrival, PageRequest, Sextile
+from sextile.application import Application, Arrival, PageRequest, Parting, Sextile
 from sextile.page import Page, PageFrame
 from sextile.routing import NoSuchRouteError
 from sextile.viewdata.canvas import Canvas
@@ -367,6 +367,33 @@ class TestRegistrationMistakes:
             app.address_for("post", post_id=1)
 
 
+class TestWhatAServiceIsCalled:
+    #  The framework names nothing. A service that wants to be named in what
+    #  the framework says for it has to say what it is called.
+
+    def test_a_service_may_be_nameless(self) -> None:
+        assert Sextile().name == ""
+
+    def test_a_service_can_be_named(self) -> None:
+        assert Sextile(name="Stardot").name == "Stardot"
+
+    async def test_the_name_is_used_where_the_framework_speaks(self) -> None:
+        page = await Sextile(name="Stardot").timed_out(nowhere())
+        assert "Thank you for calling Stardot." in text_of(page, row=7)
+
+    async def test_a_nameless_service_is_not_thanked_on_its_behalf(self) -> None:
+        #  Better to say nothing than to say "Thank you for calling ." or, worse,
+        #  to thank the reader for calling the framework.
+        page = await Sextile().timed_out(nowhere())
+        assert "calling" not in "".join(
+            page.frames[0].frame.to_grid()[0]
+        )
+
+
+def nowhere(digits: str = "1") -> Parting:
+    return Parting(address=PageAddress(digits))
+
+
 class TestRingingOffForWantOfAReply:
     #  A page rather than a line of text written over whatever was showing.
     #  Being cut off is worth a screen of its own, and a message overprinting a
@@ -374,29 +401,60 @@ class TestRingingOffForWantOfAReply:
 
     async def test_there_is_something_to_show(self) -> None:
         app = Sextile()
-        page = await app.timed_out()
+        page = await app.timed_out(nowhere())
         assert "no reply" in text_of(page, row=2).lower()
 
     async def test_it_says_the_line_has_gone(self) -> None:
         app = Sextile()
-        assert "OFF" in text_of(await app.timed_out()).upper()
+        assert "OFF" in text_of(await app.timed_out(nowhere())).upper()
+
+    async def test_it_says_where_the_reader_had_got_to(self) -> None:
+        #  So they can key it again on calling back, which is the one piece of
+        #  their session worth handing over: the terminal keeps nothing.
+        page = await Sextile().timed_out(nowhere("82489493"))
+        assert "*82489493#" in text_of(page, row=5)
 
     async def test_a_service_can_say_it_its_own_way(self) -> None:
         app = Sextile()
 
         @app.on_timed_out
-        async def gone() -> Page:
-            return saying("STILL THERE? NO.")
+        async def gone(parting: Parting) -> Page:
+            return saying(f"YOU WERE ON *{parting.address}#")
 
-        assert text_of(await app.timed_out()) == "STILL THERE? NO."
+        assert text_of(await app.timed_out(nowhere("8"))) == "YOU WERE ON *8#"
 
     async def test_it_leaves_room_to_type_beneath(self) -> None:
         #  The reader is about to talk to their modem, and the cursor is put
         #  below the last thing said.
-        app = Sextile()
-        page = await app.timed_out()
+        app = Sextile(name="Stardot")
+        page = await app.timed_out(nowhere())
         assert page.frames[0].frame.last_written_row() < 20
 
     async def test_an_application_that_is_not_a_router_has_one_too(self) -> None:
         app = Recording()
-        assert "no reply" in text_of(await app.timed_out(), row=2).lower()
+        assert "no reply" in text_of(await app.timed_out(nowhere()), row=2).lower()
+
+
+class TestWhereTheCallerHadGot:
+    """What a parting handler is told, which is everything the session knew."""
+
+    def test_the_page_they_were_on(self) -> None:
+        assert Parting(address=PageAddress("8")).address == PageAddress("8")
+
+    def test_the_frame_of_it(self) -> None:
+        assert Parting(address=PageAddress("8"), frame_index=2).frame_index == 2
+
+    def test_where_they_had_been(self) -> None:
+        parting = Parting(
+            address=PageAddress("82489493"),
+            history=(PageAddress("1"), PageAddress("8")),
+        )
+        assert parting.history == (PageAddress("1"), PageAddress("8"))
+
+    def test_what_they_had_accumulated(self) -> None:
+        assert Parting(address=PageAddress("1"), session={"user": "komadori"}).session == {
+            "user": "komadori"
+        }
+
+    def test_a_caller_who_went_nowhere_has_no_history(self) -> None:
+        assert Parting(address=PageAddress("1")).history == ()

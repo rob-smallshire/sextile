@@ -263,8 +263,24 @@ read for how these layers go together: four bitmaps written out as strings,
 place them among the letters that label them.
 
 It is also why the block grid earns its place. The G0 character set has `←`,
-`→` and `↑` and no down arrow, so a compass drawn in letters is impossible; on
-the block grid, six blocks by six is enough for a head that tapers.
+`→` and `↑` and no down arrow, so a compass drawn in letters is impossible.
+
+Each arrow is a quarter turn of the last, which is what keeps the four looking
+like one set, and **the head is filled rather than drawn as a thin diagonal**:
+
+```
+   #        ...#..          ..#..
+    #       ...##.          .###.
+######      ######          #####
+    #       ...##.          ..#..
+   #        ...#..          ..#..
+                            ..#..
+ sketched    filled       turned upright
+```
+
+A one-block diagonal is a fine arrowhead lying down and falls apart standing
+up — `█ █ █` with gaps — because a block grid has no diagonal to speak of. The
+filled head survives the turn, so all four are the same arrow.
 
 ## Large lettering
 

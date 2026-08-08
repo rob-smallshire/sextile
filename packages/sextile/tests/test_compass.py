@@ -31,12 +31,12 @@ class TestWhatItSays:
         rows = drawn()
         assert keys.PREVIOUS_FRAME in rows[1]
         assert keys.PREVIOUS_ITEM in rows[4] and keys.NEXT_ITEM in rows[4]
-        assert keys.NEXT_FRAME in rows[8]
+        assert keys.NEXT_FRAME in rows[9]
 
     def test_and_each_key_is_beside_its_own_word(self) -> None:
         rows = drawn()
         assert rows[0].strip() == "previous frame"
-        assert rows[9].strip() == "next frame"
+        assert rows[10].strip() == "next frame"
         assert rows[4].index(keys.PREVIOUS_ITEM) > rows[4].index("previous")
         assert rows[4].index(keys.NEXT_ITEM) < rows[4].index("next")
 
@@ -52,7 +52,9 @@ class TestWhatItDraws:
             for row in range(ROWS)
             if any(canvas.frame.is_attribute(row, column) for column in range(COLUMNS))
         ]
-        assert {2, 3, 4, 6, 7} <= set(graphics)
+        #  Two rows of arrow above the middle row, two below, and the middle
+        #  row's pair reaching into the row under it.
+        assert {2, 3, 4, 5, 7, 8} <= set(graphics)
 
     def test_it_takes_the_rows_it_says_it_does(self) -> None:
         canvas = Canvas(Frame())
@@ -64,3 +66,27 @@ class TestWhatItDraws:
 
     def test_and_can_be_put_lower_down_one(self) -> None:
         assert drawn(6)[6].strip() == "previous frame"
+
+
+class TestTheArrowsThemselves:
+    def test_each_is_a_quarter_turn_of_the_last(self) -> None:
+        #  Which is what keeps the four looking like one set. The turn is done
+        #  here rather than at draw time so the shapes can be read in the file.
+        from sextile.compass import _DOWN, _LEFT, _RIGHT, _UP
+
+        assert _turned(_RIGHT) == list(_UP)
+        assert _turned(_UP) == list(_LEFT)
+        assert _turned(_LEFT) == list(_DOWN)
+        assert _turned(_DOWN) == list(_RIGHT)
+
+    def test_and_each_fits_three_cells_by_two_rows(self) -> None:
+        from sextile.compass import _DOWN, _LEFT, _RIGHT, _UP
+
+        for arrow in (_UP, _DOWN, _LEFT, _RIGHT):
+            assert len(arrow) <= 6 and len(arrow[0]) <= 6
+
+
+def _turned(arrow: tuple[str, ...]) -> list[str]:
+    """A quarter turn anticlockwise."""
+    width = len(arrow[0])
+    return ["".join(row[width - 1 - column] for row in arrow) for column in range(width)]

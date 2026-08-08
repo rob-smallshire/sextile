@@ -30,18 +30,20 @@ from sextile.viewdata.blocks import block_runs, read_bitmap
 from sextile.viewdata.composition import Align, Composition
 from sextile.viewdata.controls import Colour
 
-#: Six blocks each way for the vertical arrows -- three cells across and two
-#: rows down -- which is the least that gives a head something to taper to.
-_UP: Final = ("..##..", ".####.", "######", "..##..", "..##..", "..##..")
-_DOWN: Final = ("..##..", "..##..", "..##..", "######", ".####.", "..##..")
-
-#: The horizontal pair are a row deep, the barbs a block in from the tip.
-_LEFT: Final = (".#....", "######", ".#....")
-_RIGHT: Final = ("....#.", "######", "....#.")
+#: A long shaft and a head three blocks deep, which is the least that reads as
+#: an arrow rather than as a cross. Each is a quarter turn of the last, and the
+#: head is filled rather than drawn as a thin diagonal: a one-block diagonal
+#: survives the turn from horizontal to vertical as detached blocks, because a
+#: block grid has no diagonal to speak of.
+_RIGHT: Final = ("...#..", "...##.", "######", "...##.", "...#..")
+_UP: Final = ("..#..", ".###.", "#####", "..#..", "..#..", "..#..")
+_LEFT: Final = ("..#...", ".##...", "######", ".##...", "..#...")
+_DOWN: Final = ("..#..", "..#..", "..#..", "#####", ".###.", "..#..")
 
 #: Rows the whole thing takes: a word, a key, two of arrow, the middle row and
-#: its labels, two more of arrow, a key and a word.
-ROWS: Final = 10
+#: its labels, two more of arrow, a key and a word. Every arrow is three cells
+#: across and two rows down, whichever way it points.
+ROWS: Final = 11
 
 #: Where the pieces of the middle row sit, mirrored about the frame so that
 #: each key stays beside its own word. Everything else is centred.
@@ -74,11 +76,11 @@ def compass(
     composition.picture(row + 4, _RIGHT_ARROW, _blocks(_RIGHT), colour)
     composition.text(row + 4, _RIGHT_KEY, keys.NEXT_ITEM, key)
     composition.text(row + 4, _RIGHT_WORD, "next", word)
-    composition.text(row + 5, _LEFT_WORD + _UNDER, "item", word)
-    composition.text(row + 5, _RIGHT_WORD, "item", word)
-    composition.picture(row + 6, Align.CENTRE, _blocks(_DOWN), colour)
-    composition.text(row + 8, Align.CENTRE, keys.NEXT_FRAME, key)
-    return composition.text(row + 9, Align.CENTRE, "next frame", word)
+    composition.text(row + 6, _LEFT_WORD + _UNDER, "item", word)
+    composition.text(row + 6, _RIGHT_WORD, "item", word)
+    composition.picture(row + 7, Align.CENTRE, _blocks(_DOWN), colour)
+    composition.text(row + 9, Align.CENTRE, keys.NEXT_FRAME, key)
+    return composition.text(row + 10, Align.CENTRE, "next frame", word)
 
 
 def _blocks(arrow: tuple[str, ...]) -> list[list[int]]:

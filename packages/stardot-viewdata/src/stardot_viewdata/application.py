@@ -32,19 +32,28 @@ from sextile.addressing import PageAddress
 from sextile.application import Arrival, PageRequest, Parting, Sextile, page
 from sextile.page import Page, PageFrame
 from sextile.templates import Menu, MenuItem, Prose
+from sextile.viewdata import lettering
 from sextile.viewdata.canvas import Canvas
 from sextile.viewdata.chrome import CONTENT_FIRST_ROW, CONTENT_ROWS, draw_chrome
+from sextile.viewdata.composition import Composition
 from sextile.viewdata.controls import Colour
-from sextile.viewdata.drawing import centred, centred_double, fitted, rule
+from sextile.viewdata.drawing import centred, fitted, rule
+from sextile.viewdata.font import load_font
 from sextile.viewdata.footer import FooterItem, Priority, render_footer
 from sextile.viewdata.frame import COLUMNS
 from sextile.viewdata.layout import draw_rows, paginate
+from sextile.viewdata.lettering import Spacing
 from stardot_viewdata.html import parse_post_body
 from stardot_viewdata.model import Post
 from stardot_viewdata.store.repository import BOARD_TIMEZONE, Repository
 
 #: What this service is called, which is not what the framework is called.
 SERVICE_NAME: Final = "STARDOT"
+
+#: The face the title frame's name is set in, and the row it starts on. Three
+#: rows of the frame, which is what an eight-block face comes to.
+BANNER_FACE: Final = "acorn"
+BANNER_ROW: Final = 2
 
 #: Named for the service rather than for the framework serving it, and
 #: relative to the working directory -- so `serve` and `ingest` must be run
@@ -403,9 +412,21 @@ class StardotApplication(Sextile):
         """
         held = await self._read(lambda repository: repository.count_posts())
         canvas = Canvas()
-        rule(canvas, 1)
-        #  Twice the height, which takes the row below it as well.
-        centred_double(canvas, 3, SERVICE_NAME, Colour.YELLOW)
+        #  The rule sits on the top row rather than the second, so that the
+        #  banner has a blank row above it and below it and reads as a block.
+        rule(canvas, 0)
+        #  Set in a mosaic face rather than written: double height gives two
+        #  rows and one size, and this is three rows and the size we chose.
+        #  Kerned, because the row is only 78 blocks wide and the letters can
+        #  afford to lean on each other.
+        lettering.place(
+            Composition(),
+            BANNER_ROW,
+            SERVICE_NAME,
+            load_font(BANNER_FACE),
+            Colour.YELLOW,
+            spacing=Spacing.KERNED,
+        ).draw(canvas)
         centred(canvas, 6, "V I E W D A T A", Colour.CYAN)
         rule(canvas, 8)
         canvas.row(10).text("The Stardot forum for users of Acorn", Colour.WHITE)

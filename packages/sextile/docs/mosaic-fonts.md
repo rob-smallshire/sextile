@@ -1,9 +1,10 @@
 # Mosaic fonts
 
 Large lettering drawn out of teletext block graphics — banners, title frames,
-headings bigger than double height can give. **Built: the format, one converted face,
-the importer that converted it, the setting of a line of text and its placement
-on a frame. Not built: wrapping, a template, and Stardot's title frame in it.** The rest is written down as
+headings bigger than double height can give. **Built, and on the air: the format, one
+converted face, the importer that converted it, the setting of a line and its
+placement on a frame — and Stardot's title frame set in it. Not built: wrapping
+in blocks, and a template for a page that is mostly banner.** The rest is written down as
 requirements, so that the research behind them does not have to be done twice.
 
 The layer beneath is built and described in [graphics.md](graphics.md): the
@@ -12,8 +13,8 @@ attributes go.
 
 ## What it is for
 
-The immediate use is Stardot's title frame, which today draws its name in
-double-height text:
+The first use is Stardot's title frame. It used to draw its name in
+double-height text, which is two rows and one size:
 
 ```
  0 |
@@ -27,11 +28,22 @@ double-height text:
  8 |  ▮▮▮▮▮▮▮▮▮▮▮▮▮▮▮▮▮▮▮▮▮▮▮▮▮▮▮▮▮▮▮▮▮▮▮▮▮▮
 ```
 
-Double height is two rows and one size. A mosaic font gives any height, any
-face, and the inverted treatment Ceefax used — which is the look worth having.
+and now sets it in `acorn`, three rows of blocks:
 
-Rows 2–7 are free on that frame if the rules move, so a banner of three or four
-cell-rows fits without redesigning the page.
+```
+ 0 |  ▮▮▮▮▮▮▮▮▮▮▮▮▮▮▮▮▮▮▮▮▮▮▮▮▮▮▮▮▮▮▮▮▮▮▮▮▮▮
+ 1 |
+ 2 |         ▄▀▀ ▀█▀ ▄▀▀▄ █▀▄ █▀▄  ▄▀▀▄ ▀█▀
+ 3 |         ▀▀▄  █  █▀▀█ █▀▄ █ █  █  █  █
+ 4 |         ▀▀   ▀  ▀  ▀ ▀ ▀ ▀▀   ▀▀▀   ▀
+ 5 |
+ 6 |             V I E W D A T A
+ 7 |
+ 8 |  ▮▮▮▮▮▮▮▮▮▮▮▮▮▮▮▮▮▮▮▮▮▮▮▮▮▮▮▮▮▮▮▮▮▮▮▮▮▮
+```
+
+A mosaic font gives any height, any face, and the inverted treatment Ceefax
+used — which is the look still to come.
 
 ## Constraints, measured
 
@@ -205,7 +217,9 @@ Roughly in order, each committable on its own.
 6. **The ZX Origins importer**, beside `tools/mdfs_font.py`. A font is
    converted once and the result vendored, so the framework carries no parser
    for a format read once in the life of a face.
-7. **Stardot's title frame** in it, which is the point of the exercise.
+7. ~~**Stardot's title frame** in it.~~ Done: `STARDOT` kerned in `acorn`,
+   yellow, on rows 2 to 4, with the rule moved to the top row so the banner has
+   a blank row above and below it.
 
 ## Decisions still open
 

@@ -19,7 +19,13 @@ from sextile.addressing import PageAddress, UnknownPageError
 from sextile.application import Arrival, PageRequest
 from sextile.page import Page
 from sextile.templates import MenuItem
+from sextile.viewdata import lettering
+from sextile.viewdata.charset import mosaic_pattern
+from sextile.viewdata.font import load_font
+from sextile.viewdata.frame import COLUMNS
+from sextile.viewdata.lettering import Spacing
 from stardot_viewdata import StardotApplication
+from stardot_viewdata.application import BANNER_ROW, SERVICE_NAME
 from stardot_viewdata.model import Post
 from stardot_viewdata.store.repository import Repository
 
@@ -339,8 +345,31 @@ class TestTheTitleFrame:
     def test_the_line_opens_on_it(self, app: StardotApplication) -> None:
         assert app.home == PageAddress("0")
 
-    async def test_it_names_the_service(self, app: StardotApplication) -> None:
-        assert "STARDOT" in text_of(await page_at(app, "0"))
+    async def test_it_names_the_service_in_letters_made_of_blocks(
+        self, app: StardotApplication
+    ) -> None:
+        #  Double height gave two rows and one size. The name is now set in a
+        #  mosaic face, so what the frame carries is the same patterns the
+        #  font produces -- checked against the font rather than against a
+        #  transcription of it, so a change to either is a failure here.
+        frame = (await page_at(app, "0")).frames[0].frame
+        wanted = lettering.cells(SERVICE_NAME, load_font("acorn"), spacing=Spacing.KERNED)
+        #  Centred, with the colour attribute in the cell before it.
+        at = (COLUMNS - len(wanted[0])) // 2
+        drawn = [
+            [
+                mosaic_pattern(frame.cell(BANNER_ROW + offset, at + column))
+                for column in range(len(wanted[0]))
+            ]
+            for offset in range(len(wanted))
+        ]
+        assert drawn == wanted
+        assert frame.is_attribute(BANNER_ROW, at - 1)
+
+    async def test_and_still_says_what_it_is_underneath(
+        self, app: StardotApplication
+    ) -> None:
+        assert "V I E W D A T A" in text_of(await page_at(app, "0"))
 
     async def test_it_shows_no_page_number(self, app: StardotApplication) -> None:
         #  A number a reader cannot key is an instruction that misleads them.

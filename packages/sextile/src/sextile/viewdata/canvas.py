@@ -132,11 +132,12 @@ class Canvas:
     ) -> None:
         """Write text at twice the height, which costs the row below as well.
 
-        The mechanism is not what a reasonable guess would say, and is read from
-        Beebium's SAA5050 rather than inferred. A row carrying the double-height
-        attribute is drawn as the *top* halves of its characters, and the row
-        below as the bottom halves -- but only if that row carries the attribute
-        too, `double_height_bottom` requiring the shift to be set there as well.
+        The mechanism is not what a reasonable guess would say. Read from
+        Beebium's SAA5050 and confirmed on screen under Commstar: a row carrying
+        the double-height attribute is drawn as the *top* halves of its
+        characters, and the row below as the bottom halves -- but only if that
+        row carries the attribute too, `double_height_bottom` requiring the
+        shift to be set there as well.
 
         So both rows hold the same text, which is exactly the BBC BASIC idiom of
         printing a double-height line twice. Nothing else can be put on the row

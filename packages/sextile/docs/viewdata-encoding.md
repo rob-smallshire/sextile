@@ -107,8 +107,10 @@ attribute at all, and `Canvas` writes each row independently.
 
 ## Double height takes the row below, and needs the text on it too
 
-Read from the emulation rather than measured, and **not what a reasonable guess
-would say**. A guess would have left the row beneath blank.
+Read from the emulation and then **confirmed on screen**: the title frame draws
+its service name this way, and it renders correctly under Commstar. Worth
+recording as more than an inference, because it is **not what a reasonable guess
+would say** — a guess would have left the row beneath blank.
 
 `0x0D` selects double height and `0x0C` returns to normal, both spacing
 attributes occupying a cell. In `Saa5050.hpp`:
@@ -134,9 +136,10 @@ Nothing else can go on the lower row: whatever were there would be drawn as the
 bottom of something. `Canvas.double_height` writes both rows and refuses the
 last row of the frame, there being no row beneath it.
 
-Worth measuring against Commstar when someone is in front of a real screen — the
-inference chain is short but it is still an inference about a *display*, and this
-document's whole point is keeping that distinction.
+Confirmed by eye rather than by a spike script, so what is pinned is the bytes
+Sextile emits — `ESC M` then the colour, twice, with the same text — and not the
+pixels. That is the right division: the emulation and the hardware agree about
+those pixels, and the suite cannot see a screen.
 
 ## The character set is corroborated
 

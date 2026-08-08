@@ -246,8 +246,9 @@ class TestWritingAfterSomethingElse:
 class TestDoubleHeight:
     """Twice the height, which costs the row below.
 
-    Settled from Beebium's SAA5050 rather than by inference, and the mechanism
-    is not what a reasonable guess would say. A row carrying the attribute is
+    Settled from Beebium's SAA5050 and then seen on a real screen, and the
+    mechanism is not what a reasonable guess would say. A row carrying the
+    attribute is
     drawn as the *top* halves of its characters; the row below is drawn as the
     bottom halves -- but only if it carries the attribute too, since
     `double_height_bottom` requires the shift to be set on that row as well.

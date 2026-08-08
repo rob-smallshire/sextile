@@ -11,14 +11,9 @@ variants, and the difference is decorative rather than structural.
 
 from typing import Final
 
-from sextile.viewdata.charset import decode_g0
+from sextile.viewdata.charset import decode_g0, mosaic_pattern
 from sextile.viewdata.controls import Colour, Control
 from sextile.viewdata.frame import COLUMNS, ROWS, Frame
-
-#  Bit 5 of a character code selects the graphics range rather than a block, so
-#  the sixth block is carried by bit 6.
-_GRAPHICS_RANGE_BIT: Final = 0x20
-_SIXTH_BLOCK_BIT: Final = 0x40
 
 #  Patterns Unicode already had before the sextant block was added, which the
 #  sextant block therefore skips.
@@ -62,8 +57,7 @@ def mosaic_character(code: int) -> str:
         raise ValueError(f"0x{code:02X} is not a displayable character code")
     if 0x40 <= code <= 0x5F:
         return decode_g0(code)
-    pattern = (code & 0x1F) | ((code & _SIXTH_BLOCK_BIT) >> 1)
-    return sextant(pattern)
+    return sextant(mosaic_pattern(code))
 
 
 def render_ansi(frame: Frame, *, colour: bool = True) -> str:

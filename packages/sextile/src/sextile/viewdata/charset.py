@@ -54,6 +54,32 @@ def decode_g0(position: int) -> str:
         ) from None
 
 
+#  A mosaic character carries five of its six blocks in bits 0-4 and the sixth
+#  in bit 6, because bit 5 is spent saying "this is a mosaic and not a control".
+#  Read from Beebium's `TeletextFontInit::get_graphics_row`, which masks
+#  0x01/0x02 for the top pair, 0x04/0x08 for the middle and 0x10/0x40 for the
+#  bottom -- so the codes land in 0x20-0x3F and 0x60-0x7F.
+_MOSAIC_RANGE: Final = 0x20
+_SIXTH_BLOCK: Final = 0x40
+
+
+def mosaic_code(pattern: int) -> int:
+    """The character code drawing a 2x3 block pattern.
+
+    Bits from least to most significant are top-left, top-right, middle-left,
+    middle-right, bottom-left, bottom-right -- the order `sextant` uses, so the
+    two agree about which block is which.
+    """
+    if not 0 <= pattern < 64:
+        raise ValueError(f"a mosaic pattern is six bits, got {pattern}")
+    return _MOSAIC_RANGE | (pattern & 0x1F) | ((pattern & 0x20) << 1)
+
+
+def mosaic_pattern(code: int) -> int:
+    """The 2x3 block pattern a character code draws, while graphics are on."""
+    return (code & 0x1F) | ((code & _SIXTH_BLOCK) >> 1)
+
+
 def encode_g0(character: str) -> int | None:
     """The G0 code position displaying a character, or None if G0 cannot show it."""
     if len(character) != 1:

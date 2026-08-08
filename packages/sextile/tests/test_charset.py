@@ -8,12 +8,15 @@ key, so a mistake here is visible on the very first frame -- lives at 0x5F.
 
 import pytest
 
+from sextile.viewdata.ansi import mosaic_character, sextant
 from sextile.viewdata.charset import (
     G0_TO_UNICODE,
     UNICODE_TO_G0,
     decode_g0,
     encode_g0,
     is_representable,
+    mosaic_code,
+    mosaic_pattern,
 )
 
 PRINTABLE_POSITIONS = range(0x20, 0x80)
@@ -106,3 +109,40 @@ def test_positions_outside_the_printable_range_are_rejected(position: int) -> No
 def test_encoding_requires_a_single_character() -> None:
     with pytest.raises(ValueError):
         encode_g0("ab")
+
+
+class TestMosaicCodes:
+    """The 2x3 blocks a mosaic character draws, and the byte that draws them.
+
+    The layout is read from Beebium's `get_graphics_row`: five blocks in bits
+    0-4 and the sixth in bit 6, because bit 5 is spent saying "this is a mosaic
+    and not a control".
+    """
+
+    def test_no_blocks_is_the_space_of_the_mosaic_range(self) -> None:
+        assert mosaic_code(0b000000) == 0x20
+
+    def test_all_six_blocks_is_the_character_the_rules_use(self) -> None:
+        assert mosaic_code(0b111111) == 0x7F
+
+    def test_the_sixth_block_skips_the_range_bit(self) -> None:
+        #  Bottom-right is bit 6 on the wire, not bit 5.
+        assert mosaic_code(0b100000) == 0x60
+
+    @pytest.mark.parametrize("pattern", range(64))
+    def test_every_pattern_survives_the_round_trip(self, pattern: int) -> None:
+        assert mosaic_pattern(mosaic_code(pattern)) == pattern
+
+    @pytest.mark.parametrize("pattern", range(64))
+    def test_every_code_lands_where_mosaics_live(self, pattern: int) -> None:
+        code = mosaic_code(pattern)
+        assert 0x20 <= code <= 0x3F or 0x60 <= code <= 0x7F
+
+    def test_a_pattern_of_more_than_six_bits_is_refused(self) -> None:
+        with pytest.raises(ValueError):
+            mosaic_code(64)
+
+    def test_it_agrees_with_the_preview(self) -> None:
+        #  Both name the blocks in the same order, so a frame drawn by one is
+        #  read correctly by the other.
+        assert sextant(0b000001) == mosaic_character(mosaic_code(0b000001))

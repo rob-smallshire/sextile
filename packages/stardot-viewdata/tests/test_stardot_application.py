@@ -9,14 +9,15 @@ framework, and the framework is tested against a service that is about nothing
 in particular, so that neither can quietly come to depend on the other.
 """
 
-from collections.abc import Iterator
+from collections.abc import AsyncIterator, Iterator
 from datetime import UTC, datetime, timedelta, timezone
+from pathlib import Path
 
 import pytest
 
 from sextile import keys
 from sextile.addressing import PageAddress, UnknownPageError, keyed
-from sextile.application import Arrival, PageRequest, page
+from sextile.application import Arrival, PageRoute, Sextile
 from sextile.page import Page
 from sextile.templates import MenuItem
 from sextile.viewdata import lettering
@@ -27,8 +28,9 @@ from sextile.viewdata.controls import Control
 from sextile.viewdata.font import load_font
 from sextile.viewdata.frame import COLUMNS, Frame
 from sextile.viewdata.lettering import Spacing
-from stardot_viewdata import StardotApplication
+from stardot_viewdata import PAGES, build_application
 from stardot_viewdata.application import (
+    ARCHIVE,
     BANNER_FACE,
     BANNER_ROW,
     CONVENTIONAL_NEXT_FRAME_KEY,
@@ -112,24 +114,39 @@ def repository() -> Iterator[Repository]:
 
 
 @pytest.fixture
-def app(repository: Repository) -> StardotApplication:
-    return StardotApplication(repository=repository)
+async def app(repository: Repository) -> AsyncIterator[Sextile]:
+    service = build_application(repository=repository)
+    await service.startup()
+    yield service
+    await service.shutdown()
+
+
+def _moved(name: str, **changed: object) -> tuple[PageRoute, ...]:
+    """The service's pages, with one of them declared differently.
+
+    What the old tests did by subclassing and overriding a method. A service is
+    a list, so a variant of one is a variant of the list.
+    """
+    return tuple(
+        PageRoute(**{**vars(route), **changed}) if route.name == name else route
+        for route in PAGES
+    )
 
 
 #: How a reader who keyed a number arrived: from nowhere in particular.
 BY_NUMBER = Arrival()
 
 
-async def page_at(app: StardotApplication, digits: str, arrival: Arrival = BY_NUMBER) -> Page:
+async def page_at(app: Sextile, digits: str, arrival: Arrival = BY_NUMBER) -> Page:
     """The page at a number, which for a number the service has is always one."""
-    page = await app.respond(PageRequest(address=PageAddress(digits), arrival=arrival))
+    page = await app.ask(digits, arrival=arrival)
     assert page is not None, f"*{digits}# is not a page here"
     return page
 
 
-async def what_a_reader_sees(app: StardotApplication, digits: str) -> Page:
+async def what_a_reader_sees(app: Sextile, digits: str) -> Page:
     """The page, or the notice shown in its place -- as the session would."""
-    page = await app.respond(PageRequest(address=PageAddress(digits)))
+    page = await app.ask(digits)
     return page if page is not None else await app.not_found(digits)
 
 
@@ -179,12 +196,12 @@ class TestTheNumbering:
 
     @pytest.mark.parametrize("digits", EVERY_PAGE)
     async def test_every_page_number_is_answered(
-        self, digits: str, app: StardotApplication
+        self, digits: str, app: Sextile
     ) -> None:
-        assert await app.respond(PageRequest(address=PageAddress(digits))) is not None
+        assert await app.ask(digits) is not None
 
     def test_a_page_number_is_built_from_the_board_s_own_identifier(
-        self, app: StardotApplication
+        self, app: Sextile
     ) -> None:
         assert app.address_for("post", post_id=489493) == PageAddress("82489493")
         assert app.address_for("forum", forum_id=53) == PageAddress("4253")
@@ -194,18 +211,18 @@ class TestTheNumbering:
 
     @pytest.mark.parametrize("digits", ["2", "6", "11", "40", "9999"])
     async def test_a_reserved_or_unallocated_number_says_so(
-        self, digits: str, app: StardotApplication
+        self, digits: str, app: Sextile
     ) -> None:
         assert "NOT a page here" in text_of(await what_a_reader_sees(app, digits))
 
     @pytest.mark.parametrize("digits", ["8201", "42053"])
     async def test_a_leading_zero_names_no_page(
-        self, digits: str, app: StardotApplication
+        self, digits: str, app: Sextile
     ) -> None:
         #  Accepting one would give a single page two different numbers.
         assert "NOT a page here" in text_of(await what_a_reader_sees(app, digits))
 
-    def test_the_index_has_one_number_and_not_two(self, app: StardotApplication) -> None:
+    def test_the_index_has_one_number_and_not_two(self, app: Sextile) -> None:
         #  The bare root names it; <root>0 is not accepted as well.
         assert app.resolve("8") == PageAddress("8")
 
@@ -228,62 +245,75 @@ class TestNamedJumps:
         ],
     )
     def test_a_keyword_names_the_page_it_always_did(
-        self, keyword: str, digits: str, app: StardotApplication
+        self, keyword: str, digits: str, app: Sextile
     ) -> None:
         assert app.resolve(keyword) == PageAddress(digits)
 
-    def test_a_word_that_is_no_keyword_names_nothing(self, app: StardotApplication) -> None:
+    def test_a_word_that_is_no_keyword_names_nothing(self, app: Sextile) -> None:
         with pytest.raises(UnknownPageError):
             app.resolve("BANANA")
 
 
 class TestRingingOff:
-    async def test_the_logoff_page_drops_the_line(self, app: StardotApplication) -> None:
+    async def test_the_logoff_page_drops_the_line(self, app: Sextile) -> None:
         assert (await page_at(app, "90")).hang_up
 
-    async def test_every_other_page_does_not(self, app: StardotApplication) -> None:
+    async def test_every_other_page_does_not(self, app: Sextile) -> None:
         assert not (await page_at(app, "1")).hang_up
 
 
 class TestTheArchiveIsOpenedWhenTheServiceStarts:
+    """Whose archive it is, said once in the lifespan rather than by a flag.
+
+    It used to be two booleans on the application. Now the lifespan either
+    opens one and closes it, or is handed one and leaves it alone, and the
+    difference is a branch you can read.
+    """
+
     async def test_an_archive_passed_in_is_not_closed(self, repository: Repository) -> None:
-        app = StardotApplication(repository=repository)
-        await app.startup()
-        await app.shutdown()
+        service = build_application(repository=repository)
+        await service.startup()
+        await service.shutdown()
         assert repository.count_posts() == 25
 
-    async def test_an_archive_of_its_own_is_opened_and_closed(self, tmp_path: object) -> None:
-        from pathlib import Path
+    async def test_an_archive_of_its_own_is_opened_and_closed(
+        self, tmp_path: Path
+    ) -> None:
+        service = build_application(tmp_path / "archive.sqlite")
+        await service.startup()
+        held = service.service[ARCHIVE]
+        assert isinstance(held, Repository)
+        assert held.count_posts() == 0
+        await service.shutdown()
+        assert service.service == {}
 
-        assert isinstance(tmp_path, Path)
-        app = StardotApplication(tmp_path / "archive.sqlite")
-        await app.startup()
-        assert app.repository.count_posts() == 0
-        await app.shutdown()
-        with pytest.raises(RuntimeError):
-            _ = app.repository
-
-    def test_asking_before_starting_says_so_rather_than_failing_obscurely(self) -> None:
-        with pytest.raises(RuntimeError):
-            _ = StardotApplication().repository
+    async def test_asking_before_starting_says_so_rather_than_failing_obscurely(
+        self,
+    ) -> None:
+        #  A page reached before the lifespan has run says which thing is
+        #  missing, rather than failing somewhere inside SQLite.
+        service = build_application()
+        with pytest.raises(RuntimeError, match="archive"):
+            await service.ask("1")
 
 
 class TestSayingWhatIsMissing:
-    async def test_a_post_not_held_says_so(self, app: StardotApplication) -> None:
+    async def test_a_post_not_held_says_so(self, app: Sextile) -> None:
         assert "NOT in the archive" in text_of(await page_at(app, "82999999"))
 
-    async def test_a_day_with_no_posts_says_so(self, app: StardotApplication) -> None:
+    async def test_a_day_with_no_posts_says_so(self, app: Sextile) -> None:
         assert "NO POSTS" in text_of(await page_at(app, "3219811201")).upper()
 
     async def test_an_empty_archive_says_so_rather_than_showing_an_empty_menu(self) -> None:
         with Repository.in_memory() as empty:
-            app = StardotApplication(repository=empty)
-            assert "NO POSTS" in text_of(await page_at(app, "4")).upper()
+            service = build_application(repository=empty)
+            await service.startup()
+            assert "NO POSTS" in text_of(await page_at(service, "4")).upper()
 
 
 class TestWhereTheKeysLead:
     async def test_zero_returns_to_the_index_from_everywhere(
-        self, app: StardotApplication
+        self, app: Sextile
     ) -> None:
         #  From everywhere a reader can get lost, which is everywhere except
         #  the two ends: the title frame, which is where they start and which
@@ -297,7 +327,7 @@ class TestWhereTheKeysLead:
                 assert page_frame.destination("0") == PageAddress("1")
 
     async def test_the_page_that_rings_off_offers_nothing(
-        self, app: StardotApplication
+        self, app: Sextile
     ) -> None:
         #  The one exception, and the reason for it: a key offering the index
         #  on a page there is no coming back from is a key that does nothing,
@@ -306,7 +336,7 @@ class TestWhereTheKeysLead:
         assert page.frames[0].choices == {}
 
     async def test_a_post_offers_its_forum_its_author_its_day_and_its_topic(
-        self, app: StardotApplication
+        self, app: Sextile
     ) -> None:
         page = await page_at(app, "82489000")
         first = page.frames[0]
@@ -315,18 +345,18 @@ class TestWhereTheKeysLead:
         assert first.destination("3") == PageAddress("3220260802")
         assert first.destination("4") == PageAddress("7233387")
 
-    async def test_a_menu_offers_the_pages_it_lists(self, app: StardotApplication) -> None:
+    async def test_a_menu_offers_the_pages_it_lists(self, app: Sextile) -> None:
         page = await page_at(app, "8")
         assert page.destinations[0] == PageAddress("82489024")
 
     async def test_a_post_reached_by_number_offers_no_neighbours(
-        self, app: StardotApplication
+        self, app: Sextile
     ) -> None:
         page = await page_at(app, "82489001")
         assert page.frames[0].destination(keys.NEXT_ITEM) is None
 
     async def test_a_post_reached_through_a_menu_offers_them(
-        self, app: StardotApplication
+        self, app: Sextile
     ) -> None:
         page = await page_at(
             app,
@@ -345,8 +375,9 @@ class TestUtc:
         repository.add_post(
             make_post(500000, published=datetime(2026, 8, 2, 23, 30, tzinfo=UTC))
         )
-        app = StardotApplication(repository=repository)
-        page = await page_at(app, "82500000")
+        service = build_application(repository=repository)
+        await service.startup()
+        page = await page_at(service, "82500000")
         assert page.frames[0].destination("3") == PageAddress("3220260803")
 
 
@@ -358,23 +389,23 @@ class TestTheServiceNamesItself:
     wrong one.
     """
 
-    def test_the_service_knows_what_it_is_called(self, app: StardotApplication) -> None:
+    def test_the_service_knows_what_it_is_called(self, app: Sextile) -> None:
         assert app.name == "Stardot"
 
-    async def test_the_index_is_headed_with_it(self, app: StardotApplication) -> None:
+    async def test_the_index_is_headed_with_it(self, app: Sextile) -> None:
         assert "STARDOT" in text_of(await page_at(app, "1"))
 
-    async def test_so_is_the_about_page(self, app: StardotApplication) -> None:
+    async def test_so_is_the_about_page(self, app: Sextile) -> None:
         assert "ABOUT STARDOT" in text_of(await page_at(app, "9"))
 
     async def test_the_goodbye_thanks_the_reader_for_calling_it(
-        self, app: StardotApplication
+        self, app: Sextile
     ) -> None:
         assert "calling Stardot" in text_of(await page_at(app, "90"))
 
     @pytest.mark.parametrize("digits", ["1", "9", "90", "82999999"])
     async def test_no_page_a_reader_sees_names_the_framework(
-        self, digits: str, app: StardotApplication
+        self, digits: str, app: Sextile
     ) -> None:
         #  Except where it is genuinely the subject: the about page credits
         #  what serves it, which is a different thing from being called it.
@@ -389,11 +420,11 @@ class TestTheTitleFrame:
     arrives on it because the line opened and leaves it by pressing on.
     """
 
-    def test_the_line_opens_on_it(self, app: StardotApplication) -> None:
+    def test_the_line_opens_on_it(self, app: Sextile) -> None:
         assert app.home == PageAddress("0")
 
     async def test_it_names_the_service_in_letters_made_of_blocks(
-        self, app: StardotApplication
+        self, app: Sextile
     ) -> None:
         #  Double height gave two rows and one size. The name is now set in a
         #  mosaic face, so what the frame carries is the same blocks the font
@@ -407,7 +438,7 @@ class TestTheTitleFrame:
         assert _ink_of(drawn) == _ink_of(wanted)
 
     async def test_on_a_stripe_of_colour_across_the_frame(
-        self, app: StardotApplication
+        self, app: Sextile
     ) -> None:
         #  Which the letters do not know about: the stripe is declared once and
         #  the lettering is drawn on it.
@@ -425,7 +456,7 @@ class TestTheTitleFrame:
         )
 
     async def test_and_says_what_it_is_underneath_in_the_same_way(
-        self, app: StardotApplication
+        self, app: Sextile
     ) -> None:
         frame = (await page_at(app, "0")).frames[0].frame
         face = load_font(SUBTITLE_FACE)
@@ -434,7 +465,7 @@ class TestTheTitleFrame:
         assert _ink_of(drawn) == _ink_of(wanted)
 
     async def test_with_a_stripe_a_third_of_its_height_behind_it(
-        self, app: StardotApplication
+        self, app: Sextile
     ) -> None:
         #  A row of colour behind a word three rows tall, so the band runs
         #  through its waist and the rest of it is on the frame's own black.
@@ -450,7 +481,7 @@ class TestTheTitleFrame:
         assert striped == [SUBTITLE_ROW + 1]
 
     async def test_and_the_stripe_is_no_wider_than_the_word(
-        self, app: StardotApplication
+        self, app: Sextile
     ) -> None:
         #  Unlike the name above it, which has a stripe across the frame: this
         #  one is fitted, which is what makes it read as a second line.
@@ -461,24 +492,24 @@ class TestTheTitleFrame:
             for column in range(COLUMNS)
         )
 
-    async def test_it_shows_no_page_number(self, app: StardotApplication) -> None:
+    async def test_it_shows_no_page_number(self, app: Sextile) -> None:
         #  A number a reader cannot key is an instruction that misleads them.
         assert "0a" not in text_of(await page_at(app, "0"))
 
-    async def test_hash_carries_on_to_the_index(self, app: StardotApplication) -> None:
+    async def test_hash_carries_on_to_the_index(self, app: Sextile) -> None:
         #  The one key a viewdata reader tries without being told.
         assert (await page_at(app, "0")).follows == PageAddress("1")
 
-    async def test_so_does_the_first_digit(self, app: StardotApplication) -> None:
+    async def test_so_does_the_first_digit(self, app: Sextile) -> None:
         page = await page_at(app, "0")
         assert page.frames[0].destination("1") == PageAddress("1")
 
-    async def test_and_nothing_else_does(self, app: StardotApplication) -> None:
+    async def test_and_nothing_else_does(self, app: Sextile) -> None:
         #  There is one way on from here, which is the point of a title frame.
         page = await page_at(app, "0")
         assert set(page.frames[0].choices) == {"1"}
 
-    async def test_it_leaves_the_bottom_rows_clear(self, app: StardotApplication) -> None:
+    async def test_it_leaves_the_bottom_rows_clear(self, app: Sextile) -> None:
         #  Room for the countdown bar, which has the footer row.
         page = await page_at(app, "0")
         assert page.frames[0].frame.last_written_row() < 22
@@ -486,27 +517,27 @@ class TestTheTitleFrame:
 
 class TestHowToGetAbout:
     async def test_it_has_a_number_in_the_system_namespace(
-        self, app: StardotApplication
+        self, app: Sextile
     ) -> None:
         assert app.address_for("help") == PageAddress("91")
 
     @pytest.mark.parametrize("keyword", ["HELP", "GUIDE", "KEYS"])
-    def test_a_keyword_reaches_it(self, keyword: str, app: StardotApplication) -> None:
+    def test_a_keyword_reaches_it(self, keyword: str, app: Sextile) -> None:
         assert app.resolve(keyword) == PageAddress("91")
 
-    def test_about_is_still_its_own_page(self, app: StardotApplication) -> None:
+    def test_about_is_still_its_own_page(self, app: Sextile) -> None:
         #  What the service is, as against how to work it.
         assert app.resolve("ABOUT") == PageAddress("9")
 
-    async def test_the_main_index_offers_it(self, app: StardotApplication) -> None:
+    async def test_the_main_index_offers_it(self, app: Sextile) -> None:
         assert PageAddress("91") in (await page_at(app, "1")).destinations
 
-    async def test_it_runs_to_more_than_one_frame(self, app: StardotApplication) -> None:
+    async def test_it_runs_to_more_than_one_frame(self, app: Sextile) -> None:
         #  The keys with the compass under them, then the star requests.
         assert len((await page_at(app, "91")).frames) == 2
 
     async def test_the_first_frame_carries_the_compass_under_its_words(
-        self, app: StardotApplication
+        self, app: Sextile
     ) -> None:
         #  Drawn rather than described, and by the framework: the four keys it
         #  shows are the framework's, not this service's. Under the keys the
@@ -527,13 +558,13 @@ class TestHowToGetAbout:
         ["1-9", "0", "*<number>#", "*<keyword>#", "W", "A", "*0#", "*00#", "*09#", "*90#"],
     )
     async def test_it_names_the_keys_the_service_answers(
-        self, keys: str, app: StardotApplication
+        self, keys: str, app: Sextile
     ) -> None:
         #  `#` travels as 0x5F, which this grid shows as the `#` the SAA5050 draws.
         assert keys in all_text_of(await page_at(app, "91"))
 
     async def test_it_points_at_the_generated_lists_rather_than_repeating_them(
-        self, app: StardotApplication
+        self, app: Sextile
     ) -> None:
         #  It used to name half a dozen keywords itself, which is a list that
         #  goes stale the first time one is added. The two pages it now points
@@ -551,7 +582,7 @@ class TestThePagesSayWhatTheyAre:
     """
 
     def test_a_menu_item_is_taken_from_the_page_it_offers(
-        self, app: StardotApplication
+        self, app: Sextile
     ) -> None:
         item = MenuItem.for_page(app, "contributors")
         assert item.text == "By contributor"
@@ -559,14 +590,14 @@ class TestThePagesSayWhatTheyAre:
         assert item.destination == PageAddress("5")
 
     def test_asking_for_a_page_that_says_nothing_about_itself(
-        self, app: StardotApplication
+        self, app: Sextile
     ) -> None:
         #  The title frame has no title, deliberately: it cannot be keyed.
         with pytest.raises(ValueError):
             MenuItem.for_page(app, "title")
 
     async def test_the_main_index_offers_what_the_pages_call_themselves(
-        self, app: StardotApplication
+        self, app: Sextile
     ) -> None:
         page = await page_at(app, "1")
         shown = "\n".join(text_of(page, index) for index in range(len(page.frames)))
@@ -574,36 +605,36 @@ class TestThePagesSayWhatTheyAre:
             assert title in shown
 
     def test_a_page_with_no_field_is_described_by_its_title(
-        self, app: StardotApplication
+        self, app: Sextile
     ) -> None:
         assert app.describe(PageAddress("5")) == "By contributor"
 
-    def test_one_with_a_field_says_which(self, app: StardotApplication) -> None:
+    def test_one_with_a_field_says_which(self, app: Sextile) -> None:
         #  "One contributor" is the right title in a list of kinds of page and
         #  the wrong one in a list of pages a reader has been to.
         assert app.describe(PageAddress("5210058")) == "Contributor 10058"
 
     def test_a_day_is_described_as_a_reader_would_say_it(
-        self, app: StardotApplication
+        self, app: Sextile
     ) -> None:
         assert app.describe(PageAddress("3220260802")) == "SUN 02 AUG 2026"
 
 
 class TestEveryPage:
     async def test_it_lists_the_pages_with_their_numbers(
-        self, app: StardotApplication
+        self, app: Sextile
     ) -> None:
         shown = text_of(await page_at(app, "93"))
         assert "*5#" in shown
         assert "By contributor" in shown
 
     async def test_a_number_with_a_field_is_shown_as_one(
-        self, app: StardotApplication
+        self, app: Sextile
     ) -> None:
         assert "*52<user-id>#" in text_of(await page_at(app, "93"))
 
     async def test_a_page_that_cannot_be_keyed_is_left_off(
-        self, app: StardotApplication
+        self, app: Sextile
     ) -> None:
         #  Only the title frame: `*0#` is the back command, so the number would
         #  be an instruction that misleads. Everything else shown here is
@@ -612,15 +643,15 @@ class TestEveryPage:
         assert "*0#" not in text_of(await page_at(app, "93"))
 
     async def test_ringing_off_is_listed_because_it_can_be_keyed(
-        self, app: StardotApplication
+        self, app: Sextile
     ) -> None:
         assert "*90#" in text_of(await page_at(app, "93"))
 
     @pytest.mark.parametrize("keyword", ["PAGES", "CONTENTS"])
-    def test_a_keyword_reaches_it(self, keyword: str, app: StardotApplication) -> None:
+    def test_a_keyword_reaches_it(self, keyword: str, app: Sextile) -> None:
         assert app.resolve(keyword) == PageAddress("93")
 
-    def test_every_page_listed_can_be_reached(self, app: StardotApplication) -> None:
+    def test_every_page_listed_can_be_reached(self, app: Sextile) -> None:
         #  A directory that has drifted from the thing it describes is worse
         #  than none, and this one is built from the registrations so it cannot.
         #  Parameterised numbers are shown as patterns, so only the plain ones
@@ -641,12 +672,12 @@ class TestTheTitleFrameSaysWhatTheServiceDoes:
     """
 
     async def test_the_number_it_names_is_the_one_the_router_builds(
-        self, app: StardotApplication
+        self, app: Sextile
     ) -> None:
         assert keyed(app.address_for("help")) in text_of(await page_at(app, "0"))
 
     async def test_the_words_are_the_ones_the_pages_were_registered_with(
-        self, app: StardotApplication
+        self, app: Sextile
     ) -> None:
         shown = text_of(await page_at(app, "0"))
         for name in ("main", "help"):
@@ -655,7 +686,7 @@ class TestTheTitleFrameSaysWhatTheServiceDoes:
             assert about.title.lower() in shown
 
     async def test_and_the_key_it_says_to_press_is_one_the_frame_answers(
-        self, app: StardotApplication
+        self, app: Sextile
     ) -> None:
         page = await page_at(app, "0")
         assert CONVENTIONAL_NEXT_FRAME_KEY in page.frames[0].moves
@@ -667,12 +698,10 @@ class TestTheTitleFrameSaysWhatTheServiceDoes:
         #  The test that would have caught the drift. A service whose guide is
         #  somewhere else says so on its title frame, without that frame being
         #  edited: nothing in it knows the number 91.
-        class Moved(StardotApplication):
-            @page("95", name="help", title="How to get about")
-            async def _help(self, request: PageRequest) -> Page:
-                return await super()._help(request)
-
-        moved = Moved(repository=repository)
+        moved = build_application(
+            repository=repository, pages=_moved("help", pattern="95")
+        )
+        await moved.startup()
         shown = text_of(await page_at(moved, "0"))
         assert keyed(PageAddress("95")) in shown
         assert keyed(PageAddress("91")) not in shown
@@ -689,7 +718,7 @@ class TestAPageIsHeadedWithWhatItWasRegisteredAs:
 
     @pytest.mark.parametrize("digits", ["3", "4", "5", "7", "8", "91"])
     async def test_the_heading_is_the_registered_title(
-        self, digits: str, app: StardotApplication
+        self, digits: str, app: Sextile
     ) -> None:
         page = await page_at(app, digits)
         found = app.route(PageAddress(digits))
@@ -701,16 +730,14 @@ class TestAPageIsHeadedWithWhatItWasRegisteredAs:
     async def test_and_renaming_a_page_renames_its_heading(
         self, repository: Repository
     ) -> None:
-        class Renamed(StardotApplication):
-            @page("3", name="days", title="Day by day", keywords=("DAYS",))
-            async def _days_index(self, request: PageRequest) -> Page:
-                return await super()._days_index(request)
-
-        renamed = Renamed(repository=repository)
+        renamed = build_application(
+            repository=repository, pages=_moved("days", title="Day by day")
+        )
+        await renamed.startup()
         assert "DAY BY DAY" in text_of(await page_at(renamed, "3"))
 
     async def test_a_page_whose_heading_is_not_its_name_still_says_so(
-        self, app: StardotApplication
+        self, app: Sextile
     ) -> None:
         #  A day's frames are headed with the date, not with "One day".
         shown = text_of(await page_at(app, "3220260802"))
@@ -727,7 +754,7 @@ class TestTheGuideDescribesTheServiceItIsPartOf:
 
     @pytest.mark.parametrize("name", ["logoff", "contents", "names"])
     async def test_the_numbers_it_gives_are_the_ones_the_router_builds(
-        self, name: str, app: StardotApplication
+        self, name: str, app: Sextile
     ) -> None:
         assert keyed(app.address_for(name)) in all_text_of(await page_at(app, "91"))
 
@@ -735,12 +762,12 @@ class TestTheGuideDescribesTheServiceItIsPartOf:
         "key", [keys.PREVIOUS_FRAME, keys.NEXT_FRAME, keys.PREVIOUS_ITEM, keys.NEXT_ITEM]
     )
     async def test_and_the_keys_are_the_ones_the_framework_sends(
-        self, key: str, app: StardotApplication
+        self, key: str, app: Sextile
     ) -> None:
         assert key in all_text_of(await page_at(app, "91"))
 
     async def test_including_the_requests_the_session_answers_itself(
-        self, app: StardotApplication
+        self, app: Sextile
     ) -> None:
         shown = all_text_of(await page_at(app, "91"))
         for request in (keys.BACK, keys.REDISPLAY, keys.REFRESH):
@@ -749,19 +776,18 @@ class TestTheGuideDescribesTheServiceItIsPartOf:
     async def test_moving_a_page_moves_what_the_guide_says_about_it(
         self, repository: Repository
     ) -> None:
-        class Moved(StardotApplication):
-            @page("96", name="logoff", title="Ring off", keywords=("BYE",))
-            async def _logoff(self, request: PageRequest) -> Page:
-                return await super()._logoff(request)
-
-        shown = all_text_of(await page_at(Moved(repository=repository), "91"))
+        moved = build_application(
+            repository=repository, pages=_moved("logoff", pattern="96")
+        )
+        await moved.startup()
+        shown = all_text_of(await page_at(moved, "91"))
         assert keyed(PageAddress("96")) in shown
         assert keyed(PageAddress("90")) not in shown
 
 
 class TestTheGuideSKeyColumn:
     async def test_the_two_frames_line_up_with_each_other(
-        self, app: StardotApplication
+        self, app: Sextile
     ) -> None:
         #  One column width for the whole guide, from the widest key in it, so
         #  neither frame is set by hand and a longer key widens both.
@@ -776,7 +802,7 @@ class TestTheGuideSKeyColumn:
         assert len(starts) == 1
 
     async def test_and_nothing_runs_off_the_end_of_a_row(
-        self, app: StardotApplication
+        self, app: Sextile
     ) -> None:
         for row in all_text_of(await page_at(app, "91")).splitlines():
             assert len(row) <= COLUMNS
@@ -784,7 +810,7 @@ class TestTheGuideSKeyColumn:
 
 class TestHowThePlaceholdersAreWritten:
     async def test_a_field_a_reader_fills_in_is_written_the_same_way(
-        self, app: StardotApplication
+        self, app: Sextile
     ) -> None:
         #  As the contents page writes the ones inside a page number, so a
         #  reader meets one shape of placeholder and not two. The underscore

@@ -73,12 +73,12 @@ There is no conventional number for a help page; viewdata's conventions are abou
 commands rather than about where a service files its own pages. `91` is this
 scheme's choice. The keyword is the conventional part, and `*HELP#` reaches it.
 
-Registered as framework routes, with the handler names that `address_for` uses,
-so no page spells another's number:
+Declared as data, with the handler names that `address_for` uses, so no page
+spells another's number:
 
 ```python
-self.page("82{post_id:int}", name="post")(self._post)
-self.address_for("post", post_id=post.post_id)
+PageRoute("82{post_id:int}", _post, name="post", title="One post")
+app.address_for("post", post_id=post.post_id)
 ```
 
 Seventeen keywords — `*MAIN#`, `*LATEST#`, `*HELP#`, `*BYE#` and the rest — are
@@ -115,6 +115,28 @@ not held explains that the archive reaches back only a little way.
 That is distinct from a page that does not exist, which returns `None` and lets
 the session say so without moving the reader.
 
+## How it is written
+
+Pages are module-level functions and the service is a list of `PageRoute`s
+returned by `build_application`. It was a `Sextile` subclass until August 2026;
+what moving it settled is worth recording, because a service of eighteen pages
+is where the shape either pays or does not.
+
+**Three overrides became handlers.** `describe`, `not_found` and `timed_out`
+were methods, which is why this had to be a class at all. `on_describe`,
+`on_not_found` and `on_timed_out` say the same things without one.
+
+**Whose archive it is now reads as a branch.** It was two booleans on the
+object — `_repository` and `_ours` — and a `startup` that consulted both. The
+lifespan either opens an archive and closes it, or is handed one and leaves it
+alone, and that is the whole of it.
+
+**And the tests that subclassed to move a page stopped subclassing.** Two of
+them checked that the title frame and the guide follow a page that has moved,
+by declaring a subclass overriding one method. A service is a list, so a
+variant of a service is a variant of the list — which is what those tests
+meant, and now what they say.
+
 ## The archive
 
 SQLite, one `posts` table, five indexes. It exists because **the board-wide feed
@@ -135,7 +157,7 @@ post in any ordering that matters.
 
 The repository is **deliberately synchronous**. The queries are small and
 indexed, and wrapping SQLite in an async facade would buy nothing but
-indirection. `StardotApplication` reaches it through `asyncio.to_thread`, which
+indirection. A page reaches it through `asyncio.to_thread`, which
 keeps the blocking explicit and in one place — and means the connection is used
 from whichever worker thread is picked, hence `check_same_thread=False` and a
 lock around every statement.

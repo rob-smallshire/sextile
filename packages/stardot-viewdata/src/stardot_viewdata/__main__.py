@@ -24,7 +24,7 @@ from sextile.cli import (
     run_service,
 )
 from stardot_viewdata import __version__
-from stardot_viewdata.application import DEFAULT_DATABASE_FILEPATH, StardotApplication
+from stardot_viewdata.application import DEFAULT_DATABASE_FILEPATH, build_application
 from stardot_viewdata.feed.client import FeedClient
 from stardot_viewdata.feed.ingest import (
     DEFAULT_POLL_INTERVAL,
@@ -105,13 +105,13 @@ def _render(arguments: argparse.Namespace) -> int:
     if arguments.page is None:
         print("Nothing to render: pass --page <number>.", file=sys.stderr)
         return 2
-    application = StardotApplication(arguments.database_filepath)
+    application = build_application(arguments.database_filepath)
     return asyncio.run(render_page(application, arguments))
 
 
 def _serve(arguments: argparse.Namespace) -> int:
     logging.basicConfig(level=logging.INFO, format="%(asctime)s  %(message)s")
-    application = StardotApplication(arguments.database_filepath)
+    application = build_application(arguments.database_filepath)
     return asyncio.run(run_service(application, arguments))
 
 

@@ -9,13 +9,15 @@ import pytest
 
 from sextile.viewdata.encoding import ScreenControl
 from sextile.viewdata.frame import COLUMNS, Frame
-from sextile.viewdata.repaint import changed_rows, rows_bytes
+from sextile.viewdata.repaint import changed_rows, rows_bytes, typed_bytes
 
 HOME = bytes([ScreenControl.CURSOR_HOME])
 DOWN = bytes([ScreenControl.LINE_FEED])
 RETURN = bytes([ScreenControl.CARRIAGE_RETURN])
 RIGHT = bytes([ScreenControl.CURSOR_RIGHT])
 ON = bytes([ScreenControl.CURSOR_ON])
+OFF = bytes([ScreenControl.CURSOR_OFF])
+LEFT = bytes([ScreenControl.CURSOR_LEFT])
 
 
 def frame_saying(**rows: str) -> Frame:
@@ -28,17 +30,17 @@ def frame_saying(**rows: str) -> Frame:
 class TestReachingARow:
     def test_the_first_row_is_reached_from_home(self) -> None:
         frame = frame_saying(row4="HELLO")
-        assert rows_bytes(frame, [4]) == HOME + DOWN * 4 + b"HELLO"
+        assert rows_bytes(frame, [4]) == OFF + HOME + DOWN * 4 + b"HELLO"
 
     def test_the_next_is_a_return_and_a_step(self) -> None:
         frame = frame_saying(row4="ONE", row5="TWO")
         sent = rows_bytes(frame, [4, 5])
-        assert sent == HOME + DOWN * 4 + b"ONE" + RETURN + DOWN + b"TWO"
+        assert sent == OFF + HOME + DOWN * 4 + b"ONE" + RETURN + DOWN + b"TWO"
 
     def test_and_a_row_stepped_over_costs_one_step_more(self) -> None:
         frame = frame_saying(row4="ONE", row6="THREE")
         sent = rows_bytes(frame, [4, 6])
-        assert sent == HOME + DOWN * 4 + b"ONE" + RETURN + DOWN * 2 + b"THREE"
+        assert sent == OFF + HOME + DOWN * 4 + b"ONE" + RETURN + DOWN * 2 + b"THREE"
 
     def test_no_rows_is_no_bytes(self) -> None:
         assert rows_bytes(Frame(), []) == b""
@@ -63,16 +65,16 @@ class TestNotFillingARow:
         frame = Frame()
         frame.write(4, 0, "A" * COLUMNS)
         frame.write(5, 0, "B")
-        assert rows_bytes(frame, [4, 5]) == HOME + DOWN * 4 + b"A" * COLUMNS + b"B"
+        assert rows_bytes(frame, [4, 5]) == OFF + HOME + DOWN * 4 + b"A" * COLUMNS + b"B"
 
     def test_and_a_row_stepped_over_after_one_costs_one_step_fewer(self) -> None:
         frame = Frame()
         frame.write(4, 0, "A" * COLUMNS)
         frame.write(6, 0, "C")
-        assert rows_bytes(frame, [4, 6]) == HOME + DOWN * 4 + b"A" * COLUMNS + DOWN + b"C"
+        assert rows_bytes(frame, [4, 6]) == OFF + HOME + DOWN * 4 + b"A" * COLUMNS + DOWN + b"C"
 
     def test_a_blank_row_costs_only_the_move(self) -> None:
-        assert rows_bytes(Frame(), [4]) == HOME + DOWN * 4
+        assert rows_bytes(Frame(), [4]) == OFF + HOME + DOWN * 4
 
 
 class TestBlankingWhatAShorterRowVacates:
@@ -86,7 +88,7 @@ class TestBlankingWhatAShorterRowVacates:
         was = frame_saying(row4="TRONDHEIMSFJORDEN")
         now = frame_saying(row4="TRONDHEIM")
         sent = rows_bytes(now, [4], was=was)
-        assert sent == HOME + DOWN * 4 + b"TRONDHEIM" + b" " * len("SFJORDEN")
+        assert sent == OFF + HOME + DOWN * 4 + b"TRONDHEIM" + b" " * len("SFJORDEN")
 
     def test_a_row_that_has_grown_is_sent_whole(self) -> None:
         was = frame_saying(row4="TRO")
@@ -137,3 +139,62 @@ class TestOnlyWhatChanged:
     def test_nothing_changed_is_nothing_to_send(self) -> None:
         same = frame_saying(row4="ONE")
         assert rows_bytes(same, changed_rows(same, same, range(4, 6))) == b""
+
+
+class TestHidingTheCursorWhileRowsPaint:
+    """A cursor left on while several rows redraw trails across them.
+
+    Every whole frame begins by hiding it, for the same reason. A block repaint
+    is smaller but no less visible: it is the part of the screen the reader is
+    looking at.
+    """
+
+    def test_a_repaint_hides_it_first(self) -> None:
+        sent = rows_bytes(frame_saying(row4="HELLO"), [4])
+        assert sent.startswith(OFF)
+
+    def test_and_the_caret_turns_it_back_on(self) -> None:
+        sent = rows_bytes(frame_saying(row4="HELLO"), [4], caret=(2, 3))
+        assert sent.startswith(OFF)
+        assert sent.endswith(ON)
+
+    def test_painting_nothing_touches_nothing(self) -> None:
+        assert rows_bytes(Frame(), []) == b""
+
+
+class TestOneCharacterTyped:
+    """What the command line has done since it was written.
+
+    A reader typing into a field changes one cell. Repainting the row costs
+    thirty-odd bytes and a visible flicker; sending the character costs one,
+    because the cursor is already where it goes.
+    """
+
+    def test_a_character_appended_costs_one_byte(self) -> None:
+        was = frame_saying(row4="TRO")
+        now = frame_saying(row4="TROM")
+        assert typed_bytes(was, now, 4, at=3) == b"M"
+
+    def test_a_character_rubbed_out_costs_three(self) -> None:
+        #  Cursor left, a space over what was there, cursor left again. The
+        #  space takes the row's background, the attribute that set it sitting
+        #  earlier in the row and going untouched.
+        was = frame_saying(row4="TROM")
+        now = frame_saying(row4="TRO")
+        assert typed_bytes(was, now, 4, at=4) == LEFT + b" " + LEFT
+
+    def test_a_row_that_changed_some_other_way_is_not_a_keystroke(self) -> None:
+        was = frame_saying(row4="TROM")
+        now = frame_saying(row4="OSLO")
+        assert typed_bytes(was, now, 4, at=4) is None
+
+    def test_nor_is_a_change_away_from_the_cursor(self) -> None:
+        #  The trick works only because the cursor is already there. Anywhere
+        #  else and the character would land in the wrong place.
+        was = frame_saying(row4="TRO")
+        now = frame_saying(row4="TROM")
+        assert typed_bytes(was, now, 4, at=9) is None
+
+    def test_an_unchanged_row_is_nothing_to_send(self) -> None:
+        same = frame_saying(row4="TRO")
+        assert typed_bytes(same, same, 4, at=3) == b""

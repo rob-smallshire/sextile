@@ -27,11 +27,14 @@ needs no carriage return.
 from collections.abc import Iterable, Sequence
 from typing import Final
 
-from sextile.viewdata.encoding import ScreenControl
+from sextile.viewdata.encoding import ScreenControl, encode_text
 from sextile.viewdata.frame import COLUMNS, Frame
 
 #: What a repaint of no rows costs.
 NOTHING: Final = b""
+
+#: An empty cell, which is also the space that covers a rubbed-out character.
+_BLANK: Final = 0x20
 
 
 def changed_rows(before: Frame, after: Frame, within: Iterable[int]) -> list[int]:
@@ -65,11 +68,18 @@ def rows_bytes(
     """
     if not rows:
         return NOTHING
-    out = bytearray()
+    #  Hidden while the rows paint, for the reason every whole frame hides it:
+    #  a cursor left on trails across what is being drawn. A block is smaller
+    #  than a frame and no less visible, being the part of the screen the
+    #  reader is watching. The caret turns it back on at the end.
+    out = bytearray([ScreenControl.CURSOR_OFF])
     at = 0
     wrapped = False
+    #  Explicitly, rather than by asking whether anything has been written:
+    #  something has, the cursor having just been hidden.
+    started = False
     for row in rows:
-        if not out:
+        if not started:
             out += _to_row(row)
         elif wrapped:
             #  The row before filled all forty columns and wrapped, so the
@@ -87,10 +97,57 @@ def rows_bytes(
             width = max(width, was.used_columns(row))
         out += frame.row_bytes(row, upto=width)
         wrapped = width == COLUMNS
+        started = True
         at = row
     if caret is not None:
         out += caret_bytes(*caret)
     return bytes(out)
+
+
+def typed_bytes(before: Frame, after: Frame, row: int, *, at: int) -> bytes | None:
+    """The smallest change turning one row into the other, or None.
+
+    Two cases are worth the trouble, and both work only because the cursor is
+    already sitting at ``at`` -- which it is, the last repaint having left it
+    where the next character goes. A character typed costs that character
+    alone, since the cursor advances itself; one rubbed out costs three, the
+    space taking the row's background because the attribute that set it sits
+    earlier in the row and goes untouched.
+
+    None where the row changed some other way, or changed anywhere but under
+    the cursor. The caller then repaints it, which is always correct and merely
+    dearer.
+
+    The command line has done this since it was written. A field is the same
+    problem: a reader changes one cell, and repainting the row costs thirty-odd
+    bytes and a visible flicker.
+    """
+    was, now = _row_of(before, row), _row_of(after, row)
+    if was == now:
+        return NOTHING
+    if not 0 <= at <= COLUMNS:
+        return None
+    grew = _cells(after, row)[at] != _BLANK and _cells(before, row)[at] == _BLANK
+    shrank = _cells(before, row)[at - 1] != _BLANK and _cells(after, row)[at - 1] == _BLANK
+    if grew and _same_but_for(before, after, row, at):
+        return encode_text(after.text_at(row, at, 1))
+    if at > 0 and shrank and _same_but_for(before, after, row, at - 1):
+        return bytes(
+            [ScreenControl.CURSOR_LEFT, _BLANK, ScreenControl.CURSOR_LEFT]
+        )
+    return None
+
+
+def _same_but_for(before: Frame, after: Frame, row: int, column: int) -> bool:
+    """Whether two rows differ in exactly one cell, and that one."""
+    was, now = _cells(before, row), _cells(after, row)
+    return all(
+        was[other] == now[other] for other in range(COLUMNS) if other != column
+    )
+
+
+def _cells(frame: Frame, row: int) -> list[int]:
+    return [frame.cell(row, column) for column in range(COLUMNS)]
 
 
 def _row_of(frame: Frame, row: int) -> bytes:

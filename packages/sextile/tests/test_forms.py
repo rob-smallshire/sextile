@@ -15,6 +15,7 @@ from sextile.forms import SUBMIT_MARK, SUGGESTIONS, Suggest, draw_form
 from sextile.session.session import Session
 from sextile.templates import Entry, MenuItem
 from sextile.viewdata.canvas import Canvas
+from sextile.viewdata.encoding import ScreenControl
 from sextile.viewdata.frame import Frame
 
 FIELD_ROW = 2
@@ -448,3 +449,56 @@ class TestTypingANameAsItIsWritten:
         session = Session(app)
         await session.greeting()
         return session, form
+
+
+class TestWhatAKeystrokeCosts:
+    """The wire is the whole constraint, so this is a test and not a note.
+
+    At 1200 baud a whole frame is eight seconds. A reader typing into a field
+    changes one cell, and the difference between sending that cell and sending
+    the rows around it is the difference between a search that keeps up and one
+    that does not.
+    """
+
+    async def _session(self) -> tuple[Session, Suggest]:
+        form = a_field()
+
+        async def search(request: PageRequest) -> Page:
+            canvas = Canvas()
+            draw_form(canvas.frame, form)
+            return Page(frames=(PageFrame(frame=canvas.frame, form=form),))
+
+        app = Sextile(pages=[PageRoute("1", search, name="search")])
+        session = Session(app)
+        await session.greeting()
+        return session, form
+
+    async def test_a_letter_that_changes_nothing_else_costs_one_byte(self) -> None:
+        #  TROM and TROMS offer the same one place, so only the field moves --
+        #  and the cursor is already sitting where the S goes.
+        session, _ = await self._session()
+        await session.receive(b"TROM")
+        assert b"".join(await session.receive(b"S")) == b"S"
+
+    async def test_rubbing_one_out_costs_three(self) -> None:
+        session, _ = await self._session()
+        await session.receive(b"TROMS")
+        assert len(b"".join(await session.receive(b"\x7f"))) == 3
+
+    async def test_a_letter_that_changes_the_list_costs_the_rows_it_changed(
+        self,
+    ) -> None:
+        #  Unavoidable, and the design working: the reader is being shown
+        #  something new.
+        session, _ = await self._session()
+        await session.receive(b"TRO")
+        churning = b"".join(await session.receive(b"M"))
+        assert len(churning) > 3
+        assert len(churning) < 200
+
+    async def test_the_cursor_is_hidden_while_the_list_repaints(self) -> None:
+        session, _ = await self._session()
+        await session.receive(b"TRO")
+        churning = b"".join(await session.receive(b"M"))
+        assert churning.startswith(bytes([ScreenControl.CURSOR_OFF]))
+        assert churning.endswith(bytes([ScreenControl.CURSOR_ON]))

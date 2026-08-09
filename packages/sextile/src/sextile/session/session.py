@@ -50,7 +50,12 @@ from sextile.viewdata.command_line import (
 from sextile.viewdata.countdown import countdown_bytes, lit_cells
 from sextile.viewdata.frame import Frame
 from sextile.viewdata.parting import parting_bytes
-from sextile.viewdata.repaint import caret_bytes, changed_rows, rows_bytes
+from sextile.viewdata.repaint import (
+    caret_bytes,
+    changed_rows,
+    rows_bytes,
+    typed_bytes,
+)
 
 _logger = logging.getLogger(__name__)
 
@@ -394,9 +399,20 @@ class Session:
         form = showing.form
         assert form is not None, "only asked of a frame that has one"
         was = copy.deepcopy(showing.frame)
+        caret = form.caret
         await form.typed(key)
         draw_form(showing.frame, form)
         moved = changed_rows(was, showing.frame, form.rows)
+        #  The cursor is still where the last repaint left it, which is where
+        #  the next character goes. So if the only thing that changed is the
+        #  cell under it -- which is every keystroke that does not change what
+        #  is on offer, and most of them do not -- the whole repaint is that
+        #  one character, and the cursor need not even be moved back.
+        field = caret[0]
+        if moved == [field]:
+            typed = typed_bytes(was, showing.frame, field, at=caret[1])
+            if typed is not None:
+                return typed
         return rows_bytes(showing.frame, moved, was=was, caret=form.caret)
 
     def _sequence_towards(self, destination: PageAddress) -> "_Sequence | None":

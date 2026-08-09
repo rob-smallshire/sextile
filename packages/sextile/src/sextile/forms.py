@@ -351,6 +351,11 @@ class Field:
 
 #: Given what has been keyed into each field, where the reader should be sent
 #: -- or None while there is nowhere to send them.
+#:
+#: Asked whenever the form is drawn, not only when RETURN is pressed, because
+#: what RETURN would do is marked on the screen and a mark that promised a page
+#: which then did not arrive would be worse than no mark. So it is asked of
+#: half-keyed forms and empty ones, and must answer rather than raise.
 type Complete = Callable[[Mapping[str, str]], PageAddress | None]
 
 #: Something to say about what has been keyed so far, drawn beneath the fields.
@@ -388,6 +393,7 @@ class Fields(Form):
         complete: Complete,
         note: Note | None = None,
         note_row: int | None = None,
+        sends: str = "",
         field: Colour = FIELD_BACKGROUND,
         typing: Colour = FIELD_COLOUR,
     ) -> None:
@@ -397,6 +403,9 @@ class Fields(Form):
         self._complete = complete
         self._note = note
         self._note_row = note_row
+        #: What finishing the form does, in a word, shown against the key that
+        #: does it. Empty for a form whose last field is self-explanatory.
+        self._sends = sends
         self._field = field
         self._typing = typing
         self._live = 0
@@ -486,6 +495,7 @@ class Fields(Form):
                 #  three cells a background costs, so a field does not shift
                 #  sideways when the caret arrives in it.
                 row.text(f"  {fitted(field.value, field.width)}", Colour.WHITE)
+            self._mark_sending(row, offset)
             if field.hint_row is not None and field.hint:
                 canvas.row(field.hint_row).text(
                     fitted(field.hint, COLUMNS - 1), Colour.GREEN
@@ -494,6 +504,27 @@ class Fields(Form):
             canvas.row(self._note_row).text(
                 fitted(self._said, COLUMNS - 1), Colour.GREEN
             )
+
+    def _mark_sending(self, row: RowWriter, offset: int) -> None:
+        """Say what RETURN does, beside the field where it does it.
+
+        Only the last one. On any other, RETURN moves to the next field --
+        which is what TAB does, and what the footer already says -- so marking
+        it there would be naming a key twice for one job. On the last there is
+        nothing left to finish, so it finishes the form, and that is worth
+        saying where the reader is looking rather than at the foot of the
+        frame.
+
+        And only while there is somewhere to send them. A page that offered to
+        go somewhere and then did nothing would be worse than one that offered
+        nothing: on a slow line a reader cannot tell a dead key from a slow
+        one.
+        """
+        if offset + 1 != len(self._fields) or self._complete(self.values) is None:
+            return
+        said = f" {SUBMIT_MARK} {self._sends}".rstrip()
+        if row.remaining > len(said):
+            row.text(said, Colour.YELLOW)
 
     @property
     def _widest(self) -> int:

@@ -29,7 +29,9 @@ def _takes(hemispheres: str) -> Callable[[str], bool]:
 
 
 def where(values: Mapping[str, str]) -> PageAddress | None:
-    if not (values["latitude"] and values["longitude"]):
+    #  Asked at any time, including while the form is half keyed, so it reads
+    #  what is there rather than what it hopes for.
+    if not all(values.get(name) for name in ("latitude", "longitude")):
         return None
     return PageAddress("42" + "".join(c for c in "".join(values.values()) if c.isdigit()))
 
@@ -309,3 +311,59 @@ class TestTheBarIsTheFieldsWidth:
     async def test_and_nothing_longer_goes_in(self) -> None:
         form = await typing(self._bounded(), "179.9WEST")
         assert form.values["latitude"] == "179.9W"
+
+
+class TestSayingWhatReturnWillDo:
+    """Beside the field where it does it, and only where it does something.
+
+    On any field but the last, RETURN moves on -- which is what TAB does, and
+    what the footer says. Marking it there would name a key twice for one job.
+    On the last there is nothing left to finish, so it finishes the form.
+    """
+
+    def _sending(self) -> Fields:
+        return Fields(
+            fields=[
+                Field("latitude", "LAT", FIRST_ROW, _takes("NS"), width=6),
+                Field("longitude", "LON", FIRST_ROW + 1, _takes("EW"), width=6),
+            ],
+            complete=where,
+            sends="forecast",
+        )
+
+    async def test_the_last_field_says_what_return_does(self) -> None:
+        form = await typing(self._sending(), "54.0N")
+        form.submit()
+        await typing(form, "1.1W")
+        frame = Frame()
+        draw_form(frame, form)
+        assert f"{keys.CONVENTIONAL_NEXT_FRAME} forecast" in (
+            text_of(frame).splitlines()[FIRST_ROW + 1]
+        )
+
+    async def test_and_the_others_do_not(self) -> None:
+        form = await typing(self._sending(), "54.0N")
+        form.submit()
+        await typing(form, "1.1W")
+        frame = Frame()
+        draw_form(frame, form)
+        assert "forecast" not in text_of(frame).splitlines()[FIRST_ROW]
+
+    async def test_nothing_to_send_is_nothing_said(self) -> None:
+        #  A page that offered to go somewhere and then did nothing would be
+        #  worse than one that offered nothing: on a slow line a reader cannot
+        #  tell a dead key from a slow one.
+        frame = Frame()
+        draw_form(frame, await typing(self._sending(), "54.0N"))
+        assert "forecast" not in text_of(frame)
+
+    async def test_and_it_says_it_only_once_the_form_is_whole(self) -> None:
+        form = await typing(self._sending(), "54.0N")
+        form.submit()
+        frame = Frame()
+        draw_form(frame, form)
+        assert "forecast" not in text_of(frame), "the longitude is still empty"
+        await typing(form, "1.1W")
+        frame = Frame()
+        draw_form(frame, form)
+        assert "forecast" in text_of(frame)

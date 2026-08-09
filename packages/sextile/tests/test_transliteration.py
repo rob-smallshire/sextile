@@ -45,9 +45,9 @@ class TestPunctuation:
             ("wait\u2026", "wait..."),  # ellipsis
             ("\u2022 item", "* item"),  # bullet
             ("6502\u00a0CPU", "6502 CPU"),  # non-breaking space
-            ("\u00d7", "x"),  # multiplication sign
+            ("\u00d7", "*"),  # multiplication sign
             ("\u20ac20", "EUR20"),  # euro
-            ("\u00a9 1981", "(c) 1981"),  # copyright
+            ("\u00a9 1981", "(C) 1981"),  # copyright
         ],
     )
     def test_punctuation_is_transliterated(self, source: str, expected: str) -> None:
@@ -120,7 +120,13 @@ class TestFallback:
         assert_displayable(transliterate(source))
 
     def test_emoji_becomes_a_question_mark(self) -> None:
+        #  `anyascii` would name it -- `:grinning:` -- which is a good answer
+        #  somewhere with room for it. Here a row is forty cells, and a post
+        #  with three emoji would spend twenty of them on their names.
         assert transliterate("nice \U0001f600") == "nice ?"
+
+    def test_and_so_does_a_pictogram_with_a_longer_name(self) -> None:
+        assert transliterate("\U0001f389") == "?"  # party popper, ":tada:"
 
 
 class TestTotality:
@@ -135,3 +141,51 @@ class TestTotality:
     )
     def test_output_is_always_displayable(self, text: str) -> None:
         assert_displayable(transliterate(text))
+
+
+class TestLettersOfOtherAlphabets:
+    """Not letters with marks on them, and not to be described as such.
+
+    O-slash, a-e, thorn, eth, d-stroke and the rest are letters of their own
+    alphabets with their own places in them -- Norwegian sorts ae, o-slash and
+    a-ring after z -- so Unicode is right not to take them apart, and something
+    has to be said about each by hand.
+    """
+
+    @pytest.mark.parametrize(
+        ("letter", "shown"),
+        [
+            ("Đ", "D"),  # latin capital letter d with stroke
+            ("đ", "d"),
+            ("Ħ", "H"),  # latin capital letter h with stroke
+            ("ħ", "h"),
+            ("Ŋ", "Ng"),  # latin capital letter eng
+            ("ŋ", "ng"),
+            ("Ĳ", "IJ"),  # latin capital ligature ij -- both letters are capitals
+            ("ĳ", "ij"),
+        ],
+    )
+    def test_one_that_decomposition_leaves_alone(self, letter: str, shown: str) -> None:
+        #  Each of these used to come out as a question mark, which is what a
+        #  reader saw where a place name should have been.
+        assert transliterate(letter) == shown
+
+    @pytest.mark.parametrize(
+        ("name", "shown"),
+        [
+            ("Đakovo", "Dakovo"),
+            ("Ħamrun", "Hamrun"),
+            ("Tromsø", "Tromso"),
+            ("Værøy", "Vaeroy"),
+            ("Þórshöfn", "Thorshofn"),
+        ],
+    )
+    def test_a_real_place_name_survives_whole(self, name: str, shown: str) -> None:
+        assert transliterate(name) == shown
+
+    def test_nothing_a_name_holds_becomes_a_question_mark(self) -> None:
+        #  A question mark is the last resort and should not be reached by an
+        #  ordinary European place name. Where it is, a reader sees `?akovo`
+        #  and has no way to guess what to key.
+        for name in ("Đakovo", "Ħamrun", "Łódź", "Aßlar", "Œufs", "Køge"):
+            assert "?" not in transliterate(name), name

@@ -33,6 +33,7 @@ from sextile.application import (
     Sextile,
     page,
 )
+from sextile.content.transliterate import transliterate
 from sextile.forms import Form, Suggest, draw_form
 from sextile.page import Page, PageFrame
 from sextile.routing import Converter
@@ -58,5 +59,6 @@ __all__ = [
     "Sextile",
     "UnknownPageError",
     "__version__",
+    "transliterate",
     "page",
 ]

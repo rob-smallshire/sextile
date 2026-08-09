@@ -37,9 +37,22 @@ might be about.
                                                         cli, __main__ drive it
 ```
 
-Dependencies point downward, and there is no third-party dependency at all: a
-framework for talking to terminals over a socket needs nothing the standard
-library does not have.
+Dependencies point downward, and there is one third-party dependency:
+**`anyascii`**, for reducing arbitrary Unicode to letters the G0 set can draw.
+
+That is not a job to do by hand. Romanising the world's writing systems is a
+large and specialised subject, and a table written out here is a table that is
+wrong about somebody's alphabet -- ours did not know Đ or Ħ, so Đakovo went out
+as `?akovo`. Nor were the letters in it accented Latin ones: ø, æ, å, þ and ð
+are letters of their own alphabets with their own places in them, which is
+exactly why Unicode declines to decompose them and why each had to be listed by
+hand.
+
+What is *not* delegated is the part no library can know: which ASCII characters
+the G0 set has not got. Ten of them, and `anyascii`'s own output goes through
+that table too. One deviation is deliberate -- it renders an emoji as
+`:tada:`, which is a good answer somewhere with room for it and twenty cells of
+a forty-cell row here.
 
 ## The lifecycle, which is the whole design
 

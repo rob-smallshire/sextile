@@ -9,9 +9,14 @@ authors = [
     { name = "Robert Smallshire", email = "robert@smallshire.org.uk" }
 ]
 requires-python = ">=3.12"
-#  None. A framework for talking to terminals over a socket needs nothing but
-#  the standard library, and an application is free to bring whatever it needs.
-dependencies = []
+#  One. Everything a framework for talking to terminals over a socket needs is
+#  in the standard library, except this: reducing arbitrary Unicode to what a
+#  1974 character set can draw is a large and specialised subject, and a table
+#  written out by hand is a table that is wrong about somebody's alphabet.
+#  ISC licensed, no dependencies of its own. See docs/design.md.
+dependencies = [
+    "anyascii>=0.3",
+]
 
 [project.scripts]
 sextile = "sextile.__main__:main"

@@ -1,31 +1,46 @@
 """Reducing arbitrary Unicode to characters the G0 set can display.
 
-Transliteration is total: every input produces output that is displayable, with an
-explicit question mark standing for anything genuinely beyond reach. The
-alternative -- letting unrepresentable characters travel further down the pipeline
--- defers the failure to the moment bytes reach the wire, where it surfaces as a
-corrupted frame rather than a legible substitution.
+Transliteration is total: every input produces output that is displayable, with
+an explicit question mark standing for anything genuinely beyond reach. The
+alternative -- letting unrepresentable characters travel further down the
+pipeline -- defers the failure to the moment bytes reach the wire, where it
+surfaces as a corrupted frame rather than a legible substitution.
+
+**The romanisation is `anyascii`'s and not ours.** Reducing the world's writing
+systems to Latin letters is a large and specialised subject, and a table written
+out by hand is a table that is wrong about somebody's alphabet: this module had
+one, it did not know Đ or Ħ, and Đakovo went out as `?akovo`. Nor were the
+letters in it accented Latin ones -- ø, æ, å, þ and ð are letters of their own
+alphabets with their own places in them, which is exactly why Unicode does not
+decompose them and why each had to be listed by hand in the first place.
+
+What is left here is the part no library can know: **which ASCII characters the
+G0 set has not got.** Ten of them, their code points occupied by arrows,
+fractions and rules, so `[` and `\\` and `~` need spelling some other way
+whatever produced them -- including `anyascii` itself, whose output is therefore
+put through the same table.
 
 Three cases, in order of preference:
 
-1. A deliberate substitution, listed below.
-2. Compatibility decomposition with combining marks discarded, which handles most
-   accented European names for free.
-3. A question mark.
+1. It is already displayable.
+2. A deliberate substitution, listed below.
+3. `anyascii`, itself reduced to what G0 can draw.
 """
 
-import unicodedata
 from typing import Final
+
+from anyascii import anyascii
 
 from sextile.viewdata.charset import is_representable
 
 _FALLBACK: Final = "?"
 
-#  Characters whose obvious substitution is not simply an unaccented letter. The
-#  ten ASCII characters G0 lacks are here too: their positions are occupied by
-#  arrows, fractions and rules, so quoted source code needs deliberate handling.
+#  Characters that need saying something about here rather than in a library.
 _SUBSTITUTIONS: Final[dict[str, str]] = {
-    #  ASCII characters absent from G0.
+    #  The ten ASCII characters G0 has not got. Their code points hold arrows,
+    #  fractions and rules instead, so quoted source code and file paths need
+    #  deliberate handling -- and no romaniser can help, because to one of
+    #  those these are ASCII already and need no work doing to them.
     "[": "(",
     "]": ")",
     "{": "(",
@@ -36,56 +51,29 @@ _SUBSTITUTIONS: Final[dict[str, str]] = {
     "`": "'",
     "|": "‖",
     "~": "-",
-    #  Typographic punctuation, which web software and its writers produce
-    #  freely.
-    "‘": "'",  # left single quotation mark
-    "’": "'",  # right single quotation mark
-    "‚": ",",  # single low-9 quotation mark
-    "“": '"',  # left double quotation mark
-    "”": '"',  # right double quotation mark
-    "„": '"',  # double low-9 quotation mark
-    "–": "-",  # en dash
-    "—": "-",  # em dash
-    "−": "-",  # minus sign
-    "…": "...",  # horizontal ellipsis
-    "•": "*",  # bullet
-    "·": "*",  # middle dot
-    " ": " ",  # no-break space
-    "​": "",  # zero width space
-    "­": "",  # soft hyphen
-    #  Symbols with conventional ASCII renderings.
-    "×": "x",  # multiplication sign
-    "°": "deg",  # degree sign
-    "€": "EUR",  # euro sign
-    "©": "(c)",  # copyright sign
-    "®": "(R)",  # registered sign
-    "™": "(tm)",  # trade mark sign
-    "≤": "<=",  # less-than or equal to
-    "≥": ">=",  # greater-than or equal to
-    "≠": "<>",  # not equal to
-    #  Ligatures and letters that decomposition leaves alone.
-    "ß": "ss",  # latin small letter sharp s
-    "æ": "ae",  # latin small letter ae
-    "Æ": "Ae",  # latin capital letter ae
-    "œ": "oe",  # latin small ligature oe
-    "Œ": "Oe",  # latin capital ligature oe
-    "ø": "o",  # latin small letter o with stroke
-    "Ø": "O",  # latin capital letter o with stroke
-    "ł": "l",  # latin small letter l with stroke
-    "Ł": "L",  # latin capital letter l with stroke
-    "ð": "d",  # latin small letter eth
-    "Ð": "D",  # latin capital letter eth
-    "þ": "th",  # latin small letter thorn
-    "Þ": "Th",  # latin capital letter thorn
+    #  Where a romaniser is not lossy so much as wrong. `anyascii` renders this
+    #  as `=`, which does not merely drop the negation but states its opposite.
+    "≠": "<>",
 }
+
+
+def _is_shortcode(romanised: str) -> bool:
+    """Whether this is `anyascii` naming an emoji rather than romanising a letter.
+
+    It answers `:tada:` for a party popper, which is a good answer somewhere
+    with room for it. Here a row is forty cells and a post with three emoji in
+    it would spend twenty of them on their names. A question mark costs one and
+    says the same thing: there was something here you cannot see.
+    """
+    return len(romanised) > 2 and romanised.startswith(":") and romanised.endswith(":")
 
 
 def transliterate(text: str) -> str:
     """Reduce text to characters the G0 set can display.
 
-    Whitespace other than a plain space becomes a space: line structure belongs to
-    the block model, and by the time a run of text arrives here it should already
-    be a single line.
+    Whitespace other than a plain space becomes a space: line structure belongs
+    to the block model, and by the time a run of text arrives here it should
+    already be a single line.
     """
     return "".join(_transliterate_character(character) for character in text)
 
@@ -97,16 +85,21 @@ def _transliterate_character(character: str) -> str:
         return _SUBSTITUTIONS[character]
     if character.isspace():
         return " "
-    return _decompose(character)
+    return _romanised(character)
 
 
-def _decompose(character: str) -> str:
-    decomposed = unicodedata.normalize("NFKD", character)
-    without_marks = "".join(
-        component for component in decomposed if not unicodedata.combining(component)
-    )
-    if without_marks == character:
-        #  Decomposition achieved nothing, so there is no base letter to fall back on.
+def _romanised(character: str) -> str:
+    """What `anyascii` makes of it, itself reduced to what G0 can draw.
+
+    The second half is not belt and braces. A romaniser answers in ASCII, and
+    ASCII holds ten characters this display has not got -- so its answer goes
+    through the same table as anything else, or a name romanised into a
+    backslash would reach the wire as a character the hardware cannot draw.
+    """
+    romanised = anyascii(character)
+    if not romanised or _is_shortcode(romanised):
         return _FALLBACK
-    reduced = transliterate(without_marks)
-    return reduced if reduced else _FALLBACK
+    return "".join(
+        found if is_representable(found) else _SUBSTITUTIONS.get(found, _FALLBACK)
+        for found in romanised
+    )

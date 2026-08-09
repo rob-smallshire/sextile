@@ -214,11 +214,20 @@ class Suggest(Form):
         return (len(self._label) + 1 if self._label else 0) + _BACKGROUND_CELLS
 
     def accepts(self, key: str) -> bool:
-        #  Letters and the rub-out. Digits are spoken for by the suggestions,
-        #  and are never asked about here: the session consults `choices`
-        #  first, and a digit that leads nowhere does nothing rather than
-        #  becoming a character the reader cannot see the effect of.
-        return key == keys.RUB_OUT or (len(key) == 1 and key.isalpha())
+        #  Anything printable except a digit, and the rub-out. Digits are
+        #  spoken for by the suggestions, and are never asked about here: the
+        #  session consults `choices` first, and one that leads nowhere does
+        #  nothing rather than becoming a character whose effect the reader
+        #  cannot see.
+        #
+        #  Spaces and hyphens are taken because place names hold them --
+        #  NEW YORK, STRATFORD-UPON-AVON -- and a reader should be able to
+        #  type the name as it is written. What they are matched against
+        #  folds both out, so accepting them costs nothing and saves somebody
+        #  wondering why their space bar is dead.
+        return key == keys.RUB_OUT or (
+            len(key) == 1 and key.isprintable() and not key.isdigit()
+        )
 
     async def typed(self, key: str) -> None:
         if key == keys.RUB_OUT:

@@ -26,7 +26,15 @@ PLACES = [
     ("TRONDHEIMSFJORDEN", "NO"),
     ("TRONDENES", "NO"),
     ("YORK", "GB"),
+    #  Appended rather than inserted: the addresses below are built from these
+    #  positions, so a place added in the middle renumbers the lot.
+    ("NEW YORK", "US"),
 ]
+
+
+def _folded(text: str) -> str:
+    """What the index matches against: letters only, as the real one folds."""
+    return "".join(letter for letter in text.upper() if letter.isalpha())
 
 
 async def look_up(typed: str) -> Sequence[Entry]:
@@ -34,7 +42,7 @@ async def look_up(typed: str) -> Sequence[Entry]:
     return [
         MenuItem(name.title(), country, PageAddress(f"32{1000 + n}"))
         for n, (name, country) in enumerate(PLACES)
-        if name.startswith(typed)
+        if _folded(name).startswith(_folded(typed))
     ]
 
 
@@ -395,3 +403,48 @@ class TestMarkingWhatReturnWouldTake:
         frame = Frame()
         draw_form(frame, await typing(a_field(empty="No such place."), "ZZZ"))
         assert SUBMIT_MARK not in text_of(frame)
+
+
+class TestTypingANameAsItIsWritten:
+    """Place names hold spaces and hyphens, so a reader should be able to.
+
+    The search page used to tell them there was no space bar. There is; it
+    transmits 0x20 like anything else, measured in `spike_editing_keys.py`.
+    What was dropping it was this framework's own command parser.
+    """
+
+    async def test_a_space_goes_into_the_field(self) -> None:
+        assert (await typing(a_field(), "NEW YORK")).value == "NEW YORK"
+
+    async def test_and_finds_the_place_all_the_same(self) -> None:
+        #  What the field is matched against folds spaces out, so the reader
+        #  may type it either way.
+        spaced = await typing(a_field(), "NEW YORK")
+        joined = await typing(a_field(), "NEWYORK")
+        assert [entry.text for entry in spaced.found] == [
+            entry.text for entry in joined.found
+        ]
+
+    async def test_a_hyphen_too(self) -> None:
+        assert (await typing(a_field(), "STRATFORD-UPON")).value == "STRATFORD-UPON"
+
+    async def test_but_a_digit_is_still_a_choice(self) -> None:
+        assert not a_field().accepts("1")
+
+    async def test_a_space_reaches_the_field_through_a_session(self) -> None:
+        session, form = await self._session()
+        await session.receive(b"NEW YORK")
+        assert form.value == "NEW YORK"
+
+    async def _session(self) -> tuple[Session, Suggest]:
+        form = a_field()
+
+        async def search(request: PageRequest) -> Page:
+            canvas = Canvas()
+            draw_form(canvas.frame, form)
+            return Page(frames=(PageFrame(frame=canvas.frame, form=form),))
+
+        app = Sextile(pages=[PageRoute("1", search, name="search")])
+        session = Session(app)
+        await session.greeting()
+        return session, form

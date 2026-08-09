@@ -143,11 +143,19 @@ class TestArrivingInPieces:
 
 
 class TestNoise:
-    @pytest.mark.parametrize("noise", [b"\x00", b"\x1b", b" "])
-    def test_bytes_that_are_not_keys_are_ignored(self, noise: bytes) -> None:
+    @pytest.mark.parametrize("noise", [b"\x00", b"\x1b"])
+    def test_control_bytes_that_are_not_keys_are_ignored(self, noise: bytes) -> None:
         #  A terminal sends line feeds and stray control bytes; none of them
         #  mean anything here.
         assert parse(noise) == []
+
+    def test_but_a_space_is_a_key_like_any_other(self) -> None:
+        #  It was noise here once, which is why the search page told readers
+        #  there was no space bar. There is, and it transmits 0x20 like
+        #  anything else -- measured in `docs/spikes/spike_editing_keys.py`.
+        #  A frame that offers no such key ignores it; a field takes it,
+        #  because place names have spaces in them.
+        assert parse(b" ") == [Select(" ")]
 
     def test_noise_does_not_disturb_a_request_in_progress(self) -> None:
         assert parse(b"*84\x1b89\x00493#") == [GoTo("8489493")]

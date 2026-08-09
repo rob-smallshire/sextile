@@ -50,6 +50,11 @@ _DELETE: Final = keys.RUB_OUT
 _LINE_FEED: Final = "\n"
 _TERMINATORS: Final = frozenset({"\x5f", "#", _CARRIAGE_RETURN})
 
+#: The printable range. Everything in it reaches the showing frame as a
+#: keypress; the star and the terminators are taken out above.
+_PRINTABLE_FIRST: Final = " "
+_PRINTABLE_LAST: Final = "~"
+
 _BACK: Final = keys.BACK
 _REDISPLAY: Final = keys.REDISPLAY
 _REFRESH: Final = keys.REFRESH
@@ -142,14 +147,24 @@ class CommandParser:
             if character == _DELETE:
                 return self._delete()
             return self._accumulate(character)
-        if character.isalnum():
-            return Select(character.upper())
         if character == _DELETE:
             #  Off a request, DELETE is a keypress like any other and the
             #  showing frame decides what it means. A field being typed into
             #  rubs out a letter; every other page ignores it, as it ignores
             #  any key it does not offer.
             return Select(_DELETE)
+        if _PRINTABLE_FIRST <= character <= _PRINTABLE_LAST:
+            #  Every printable character, not merely the alphanumeric ones.
+            #  A space used to be dropped here, which is why the search page
+            #  told readers there was no space bar -- there is, and it
+            #  transmits 0x20 like anything else; `spike_editing_keys.py`
+            #  measured it. Place names hold spaces, hyphens and apostrophes,
+            #  and a reader typing one should not have to discover which of
+            #  them their keyboard is pretending not to have.
+            #
+            #  A frame that offers no such key ignores it, exactly as it
+            #  ignores every other key it does not offer.
+            return Select(character.upper())
         arrow = ARROWS.get(ord(character))
         if arrow is not None:
             #  The BBC's own cursor keys, which mean what WASD means.

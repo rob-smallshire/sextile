@@ -146,3 +146,21 @@ def test_delete_and_return_are_distinguishable(commstar: Beebium) -> None:
     print(f"\n  DELETE -> {describe(delete)}")
     print(f"  RETURN -> {describe(ret)}")
     print(f"  -> distinguishable: {delete != ret}")
+
+
+def test_what_the_space_bar_transmits(commstar: Beebium) -> None:
+    """Asked because a page said "no space bar" and nobody had checked.
+
+    The search field's help told readers there was none, which would be a
+    strange thing for a keyboard to lack. If it transmits 0x20 like anything
+    else, then the only thing stopping NEW YORK being keyed as two words is
+    Sextile's own command parser dropping it -- and the place index folds
+    spaces out of what it matches against anyway, so accepting one costs
+    nothing and saves a reader wondering why their space bar is dead.
+    """
+    transmitted(commstar)
+    #  Row 6, column 2 on the BBC matrix.
+    tap(commstar, 6, 2)
+    sent = transmitted(commstar)
+    print(f"\n  SPACE  -> {describe(sent)}")
+    print(f"  -> the space bar transmits: {sent == b' '}")

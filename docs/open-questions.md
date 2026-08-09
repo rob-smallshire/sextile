@@ -71,6 +71,23 @@ Beeb for half an hour.
   application needs most of them. Whether some of it should be a smaller,
   friendlier facade is a question for when there are more services.
 
+## Raised by the weather service
+
+- **GeoNames' alternate names carry no tag saying what they are.** The main
+  dump's `alternatenames` column mixes genuine names with IATA airport codes
+  and with romanised transliterations, and `weather-viewdata` tells them apart
+  by capitalisation — measured against the real `cities500`, not documented
+  anywhere. It works: `TRO` gives Tromsø rather than Taree, whose airport code
+  it is. But it is a rule of thumb, and `alternateNamesV2` carries a proper
+  language tag at a further 193M if it ever misleads.
+- **A few nicknames still surface.** `PARIS` offers Warsaw second and `NEWYORK`
+  offers Jakarta, both through multi-word alternates the places genuinely go
+  by. Harmless in the second and third rows; it would matter if it reached the
+  first.
+- **Whose weather the service is about is a setting, not a fact.** `--prefer NO`
+  weights Norwegian places, without which `BER` gives Berlin before Bergen.
+  Which is right depends on who is dialling, and nobody has yet dialled.
+
 ## Next, and specified
 
 - **Mosaic fonts** — large lettering drawn out of block graphics, for banners

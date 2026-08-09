@@ -489,6 +489,56 @@ page that exists but has nothing to show. The second should be a real page that
 says why — an empty menu with no explanation looks like a fault, and on a
 service that answers slowly a reader cannot tell the difference.
 
+## A page a reader types into
+
+```python
+from sextile import Suggest, draw_form
+
+form = Suggest(look_up=..., field_row=4, first_row=6, label="PLACE:")
+draw_form(canvas.frame, form)
+return Page(frames=(PageFrame(frame=canvas.frame, form=form),))
+```
+
+A form answers a keypress by changing part of the frame rather than by going
+anywhere. `Suggest` is a field with the best few matches beneath it, each on a
+digit; `Fields` is several fields moved between with TAB and the arrows. Both
+are `Form`s, and a service wanting a fourth shape subclasses that.
+
+**Put the form in the session**, not in the handler: it is one caller's typing
+and lasts exactly as long as their line.
+
+```python
+form = request.session.get(SEARCH)
+if not isinstance(form, Suggest):
+    form = Suggest(...)
+    request.session[SEARCH] = form
+```
+
+Three things the wire decided, so that a service does not have to rediscover
+them:
+
+- **Offer three suggestions, not nine.** Nine rows repainted per keystroke is
+  three seconds at 1200 baud; three is one, and a keystroke that changes nothing
+  but the field is a single byte.
+- **Digits are data or they are choices.** A form whose fields hold numbers
+  cannot offer `0` for the index — say `*1#` in the footer instead, rather than
+  offering a key that would eat a digit.
+- **Say what RETURN will do where it does it**, and only while it would do
+  something. `Suggest` marks the suggestion it would take; `Fields` marks the
+  last field once the form is whole.
+
+If a page's keys should also answer the cursor keys, say so — the framework
+knows which byte is which arrow and deliberately does not decide what one means:
+
+```python
+moves=with_arrows({PREVIOUS_FRAME, NEXT_FRAME})
+choices=arrows_lead_where({"A": before, "D": after})
+```
+
+`Template` already does this for every page it builds. A form receives the
+arrows as themselves, which is what lets TAB move between fields without
+typing a `D`.
+
 ## What is true of every page
 
 A handler answers what one page says. **Middleware answers what is true of every

@@ -125,6 +125,8 @@ uv run stardot-viewdata ingest                      # then poll every 5 minutes
 uv run stardot-viewdata serve                       # answer calls on port 6850
 uv run weather-viewdata import-places               # fill the gazetteer (11 seconds)
 uv run weather-viewdata render --page 323133880     # Trondheim's forecast
+                                                    # *3# and *4# are typed into,
+                                                    # so they want a real session
 uv run weather-viewdata serve                       # or answer calls
 nc localhost 6850                                   # and call it
 ```

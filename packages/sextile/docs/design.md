@@ -14,6 +14,7 @@ might be about.
    viewdata/   charset, controls, encoding, frame       a screen
             |  canvas, wrapping, layout                 putting things on one
             |  chrome, footer, command_line             its furniture
+            |  repaint                                  redrawing part of one
             |  ansi                                     seeing it without a Beeb
             v
    content/    blocks, transliterate                    what is to be shown
@@ -23,6 +24,8 @@ might be about.
    routing     Router, Converter, Route                 which page is which
             |
    page        Page, PageFrame                          what an application returns
+            |
+   forms       Form, Suggest, Fields                    a page typed into
             |
    application Application, Sextile, PageRequest        the seam
             |  PageRoute, Middleware, Lifespan           what a service is made of
@@ -539,6 +542,82 @@ Two things the extraction settled that five copies could not. **The preamble
 costs only the frame it is on**, where the hand-written versions spent its rows
 on every frame. And **the prompt is built from the same description as the
 choices**, so a frame cannot name a key it does not answer.
+
+## Forms
+
+A page that answers a keypress by **changing what is on the screen without
+going anywhere** — the one thing a viewdata page could not previously do, and
+the reason Prestel's response frames were a mechanism bolted on beside the
+numbering.
+
+Here it needed very little, because **type-ahead is a menu whose choices change
+as you type** and `PageFrame.choices` already meant "what the digits do on this
+frame". A form only makes that answer differently between keystrokes. It owns
+some rows, says which keys are typing rather than navigating, redraws its rows
+when its value changes, and says where its digits lead. The session consults the
+choices *first*, so a digit is always a selection and never a character, and
+then treats what it finds exactly as a digit on a menu — history, sequences and
+the back key keep working with nothing added. `*` is untouched, so a reader is
+never trapped in a field.
+
+Two shapes come with the framework:
+
+| | |
+|---|---|
+| `Suggest` | a field, and the best few matches beneath it, each on a digit |
+| `Fields` | several fields, one live, moved between with TAB and the arrows |
+
+**The frame is redrawn in place**, so what the terminal shows and what the
+session holds stay the same thing and `*00#` sends the frame with the reader's
+typing on it. Only the form's own rows are compared, so a form cannot disturb
+the page around it however wrong it is about itself.
+
+### What the wire allows, which decided the design
+
+Measured on real Commstar rather than reasoned out; the record is
+`docs/spikes/spike_suggestion_block.py` and `spike_search_page.py`.
+
+**A row written to all forty columns must not be followed by a cursor down.** It
+wraps of its own accord, so the walk to the next row of a block moves down a
+second one and a three-row block lands on rows 4, 6 and 8. Every row of a
+multi-row repaint is therefore sent trimmed to its last non-blank cell, which
+fixes the walk and costs a third fewer bytes; a row that genuinely fills the
+line is accounted for rather than refused. `viewdata/repaint.py` carries this.
+
+**Three suggestions, not nine.** Nine rows of name, country and population is
+2.9 seconds a keystroke at 1200 baud, where a reader types two characters a
+second. Three is one second, and the common keystroke — typing on into a list
+that has settled — is **one byte**, because a keypress that changes nothing but
+the cell under the cursor sends that character and moves nothing: the cursor is
+already where it goes. The command line has done that since it was written; a
+field is the same problem.
+
+### What the keypad allows
+
+Narrower than it looks, and it settled the interaction rather than taste doing
+it.
+
+**Digits are data or they are choices, never both.** On a suggestion list they
+choose, so a place whose name holds a digit is found by the letters around it.
+On a coordinate form they are data, so `0` cannot be the way out — the one page
+in this workspace that cannot honour "0 returns to the index", and its footer
+says `*1#` rather than offering a key that would eat a coordinate.
+
+**DELETE reaches the frame.** It was dropped, and rightly: there was nothing a
+page could do with it. A field can rub out a letter, and everything else ignores
+it as it ignores any key it does not offer.
+
+**TAB shares a byte with cursor right**, which is a gift: tabbing between fields
+is the first thing a reader tries, and it arrives as `keys.RIGHT`.
+
+**And the framework stopped translating arrows.** It turned the cursor keys into
+WASD in the parser, before any page could see them — a fact about the hardware
+made into an opinion about what pressing them should do, imposed on every
+service at once. On a coordinate form it is wrong twice over: `W` is West and
+`S` is South, so a reader reaching for the up arrow would silently type a letter
+into a number. `keys.ARROW_FOR`, `with_arrows` and `arrows_lead_where` offer the
+knowledge; a page decides what to do with it, and `Template` does it for every
+page it builds.
 
 ## Middleware
 

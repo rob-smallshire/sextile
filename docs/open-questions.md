@@ -103,6 +103,21 @@ Beeb for half an hour.
   weights Norwegian places, without which `BER` gives Berlin before Bergen.
   Which is right depends on who is dialling, and nobody has yet dialled.
 
+## Raised by the forms
+
+- **Repainting is row-granular.** `changed_rows` finds which rows differ and
+  each is sent whole, so flipping one attribute cell in a thirty-seven-cell row
+  costs thirty-seven bytes. The one exception is a character typed at the
+  cursor, which costs one. A cell-level diff would make several things cheaper
+  — a TAB between fields is 79 bytes of which most is unchanged — and would make
+  `CONCEAL` usable for showing one field's advice at a time, which is otherwise
+  dearer than showing both.
+- **`CONCEAL` is unmeasured.** `Control.CONCEAL` exists and `Composition` emits
+  it, but nothing has established whether Commstar honours it, and REVEAL is a
+  viewer-side toggle in any case: concealed text is a suggestion to the terminal
+  rather than a guarantee. `screen_text()` reads the rendered framebuffer and
+  would settle it.
+
 ## Next, and specified
 
 - **Mosaic fonts** — large lettering drawn out of block graphics, for banners

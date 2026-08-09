@@ -148,6 +148,14 @@ Not measured but read directly from the emulation, which is a better oracle:
 So a row never inherits anything from the row above, white text needs no
 attribute at all, and `Canvas` writes each row independently.
 
+**And confirmed by eye**, which is worth saying because a partial repaint stakes
+a good deal on it: a form redraws one row in the middle of a frame and sends its
+attributes with it, so a background that outlived its row would spread down the
+screen behind everything beneath. Watched over a good many keystrokes on the
+position form, which moves a blue background between two rows on every TAB, and
+nothing has ever spread. By eye rather than by read-back because the emulator's
+cell API exposes no colour at all.
+
 ## Double height takes the row below, and needs the text on it too
 
 Read from the emulation and then **confirmed on screen**: the title frame draws

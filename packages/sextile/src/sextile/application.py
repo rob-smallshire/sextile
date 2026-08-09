@@ -34,7 +34,7 @@ from sextile.contents import contents_page
 from sextile.history import history_page
 from sextile.names import names_page
 from sextile.page import Page, PageFrame
-from sextile.routing import Converter, Match, Router
+from sextile.routing import Converter, ConverterFactory, Match, Router
 from sextile.templates import HOME_KEY
 from sextile.viewdata.canvas import Canvas
 from sextile.viewdata.controls import Colour
@@ -185,10 +185,17 @@ def page[H](
     return declare
 
 
-type Handler = Callable[..., Awaitable[Page]]
+#: A page handler. `None` rather than a page means there is no such page --
+#: something *said* to a reader who has not moved, as against somewhere they
+#: have gone -- and the session tells the two apart. Typed `Awaitable[Page]`
+#: here at first, which quietly refused the very handlers the documentation
+#: shows.
+type Handler = Callable[..., Awaitable[Page | None]]
 type NotFoundHandler = Callable[[str], Awaitable[Page]]
 type PartingHandler = Callable[[Parting], Awaitable[Page]]
 type FailureHandler = Callable[[PageAddress], Awaitable[Page]]
+type LifecycleHandler = Callable[[], Awaitable[None]]
+type ResolveHandler = Callable[[str], PageAddress | None]
 
 
 class Application(ABC):
@@ -399,6 +406,7 @@ class Sextile(Application):
         name: str = "",
         home: str | PageAddress = "1",
         index: str | PageAddress | None = None,
+        converters: Mapping[str, Converter | ConverterFactory] | None = None,
     ) -> None:
         self._name = name
         self._router: Router[Handler] = Router()
@@ -407,9 +415,19 @@ class Sextile(Application):
         self._not_found: NotFoundHandler | None = None
         self._timed_out: PartingHandler | None = None
         self._failed: FailureHandler | None = None
+        self._unresolved: ResolveHandler | None = None
+        self._opening: list[LifecycleHandler] = []
+        self._closing: list[LifecycleHandler] = []
         self._home = home if isinstance(home, PageAddress) else PageAddress(home)
         wanted = self._home if index is None else index
         self._index = wanted if isinstance(wanted, PageAddress) else PageAddress(wanted)
+        #  Before the declared pages, not after: a page declared beside the
+        #  method that builds it is registered here, so a pattern using a field
+        #  shape of the service's own would otherwise name a converter that did
+        #  not exist yet. `self.converter(...)` in a subclass constructor is
+        #  always too late, there being nowhere to put it before `super()`.
+        for shape, converter in (converters or {}).items():
+            self._router.converter(shape, converter)
         self._register_declared()
 
     @property
@@ -433,6 +451,7 @@ class Sextile(Application):
         name: str | None = None,
         title: str = "",
         detail: str = "",
+        keywords: Sequence[str] = (),
     ) -> Callable[[H], H]:
         """Register a handler for every page number matching ``pattern``.
 
@@ -444,6 +463,11 @@ class Sextile(Application):
         them here means saying them once. A page given no title is not
         advertised in the contents, which is how a title frame or a logoff page
         stays off it without needing a flag of its own.
+
+        ``keywords`` are words a reader may key instead of the number, aliased
+        onto this page. Said here rather than in a separate `alias` call for
+        the same reason the title is: a page should say what it is in one
+        place.
 
         Generic in the handler so that decorating one does not throw its own
         signature away: a service checked strictly should stay checked strictly
@@ -460,6 +484,8 @@ class Sextile(Application):
                     title=title,
                     detail=detail,
                 )
+            for keyword in keywords:
+                self.alias(keyword, self.address_for(route))
             return handler
 
         return register
@@ -485,9 +511,8 @@ class Sextile(Application):
                 name=route,
                 title=declaration.title,
                 detail=declaration.detail,
+                keywords=declaration.keywords,
             )(getattr(self, attribute))
-            for keyword in declaration.keywords:
-                self.alias(keyword, self.address_for(route))
 
     def page_info(self, name: str) -> PageInfo | None:
         """What was said about a named page when it was registered."""
@@ -509,7 +534,7 @@ class Sextile(Application):
         """Let a word be keyed in place of a page number: `*MAIN#` for `*1#`."""
         self._router.alias(keyword, address)
 
-    def converter(self, name: str, converter: Converter) -> None:
+    def converter(self, name: str, converter: Converter | ConverterFactory) -> None:
         """Offer a field shape this application's numbering needs."""
         self._router.converter(name, converter)
 
@@ -547,6 +572,41 @@ class Sextile(Application):
         self._failed = handler
         return handler
 
+    def on_unresolved[H: ResolveHandler](self, handler: H) -> H:
+        """Register a last resort for a target the numbering does not name.
+
+        A reader keys letters and the numbering knows only its own keywords, so
+        a service with a search of its own -- a place name, a callsign, a
+        postcode -- wants a say before the target is called unknown. Returning
+        None means it really is.
+
+        Tried after the numbering and never before it: a keyword a service has
+        registered must keep meaning what it was registered to mean.
+        """
+        self._unresolved = handler
+        return handler
+
+    def on_startup[H: LifecycleHandler](self, handler: H) -> H:
+        """Register something to open before the first call is answered.
+
+        A list rather than one handler, unlike the three above: those each
+        answer a question that has one answer, and a service may perfectly well
+        have an archive *and* a client to open.
+
+        This exists so that a service built round a module-level application
+        can hold something. `startup` and `shutdown` are overridable methods,
+        which is fine for a service that is a class and no use at all to one
+        that is not -- and a service with nothing to open is exactly the
+        service that had no reason to be a class.
+        """
+        self._opening.append(handler)
+        return handler
+
+    def on_shutdown[H: LifecycleHandler](self, handler: H) -> H:
+        """Register something to let go of after the last call."""
+        self._closing.append(handler)
+        return handler
+
     # -- answering ----------------------------------------------------------
 
     async def respond(self, request: PageRequest) -> Page | None:
@@ -569,6 +629,13 @@ class Sextile(Application):
                     return application.resolve(target)
                 except UnknownPageError:
                     continue
+            #  Last, so that a registered keyword always means what it was
+            #  registered to mean: a service searching its own data must not be
+            #  able to shadow its own numbering by accident.
+            if self._unresolved is not None:
+                found = self._unresolved(target)
+                if found is not None:
+                    return found
             raise
 
     async def not_found(self, target: str) -> Page:
@@ -620,12 +687,18 @@ class Sextile(Application):
     # -- lifespan -----------------------------------------------------------
 
     async def startup(self) -> None:
+        for opening in self._opening:
+            await opening()
         for _, application in self._mounted:
             await application.startup()
 
     async def shutdown(self) -> None:
         for _, application in self._mounted:
             await application.shutdown()
+        #  Backwards, so that what was opened last is closed first: anything
+        #  opened later may be holding what was opened earlier.
+        for closing in reversed(self._closing):
+            await closing()
 
 
 def _plain_notice(title: str, *lines: str, hang_up: bool = False) -> Page:

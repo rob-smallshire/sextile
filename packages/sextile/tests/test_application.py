@@ -21,7 +21,7 @@ from sextile.application import (
     page,
 )
 from sextile.page import Page, PageFrame
-from sextile.routing import NoSuchRouteError
+from sextile.routing import Converter, NoSuchRouteError
 from sextile.viewdata.canvas import Canvas
 from sextile.viewdata.frame import Frame
 
@@ -813,3 +813,180 @@ class TestWhenAPageBreaks:
     async def test_it_leaves_room_to_type_beneath(self) -> None:
         page = await Sextile().failed(PageAddress("1"))
         assert page.frames[0].frame.last_written_row() < 20
+
+
+class TestFieldShapesOfAnApplicationsOwn:
+    """A service may need a field the framework does not offer.
+
+    Registering one after construction is too late for a page declared with
+    `@page` beside the method that builds it -- those are registered by the
+    constructor, and a subclass has nowhere to put a call before `super()`.
+    So the constructor takes them.
+    """
+
+    def test_a_declared_page_may_use_one(self) -> None:
+        tens = Converter(
+            field_pattern=r"[0-9]{2}",
+            width=2,
+            parse=lambda digits: int(digits) * 10,
+            format=lambda value: f"{int(value) // 10:02d}",  # type: ignore[call-overload]
+        )
+
+        class Service(Sextile):
+            def __init__(self) -> None:
+                super().__init__(converters={"tens": tens})
+
+            @page("7{count:tens}", name="counted")
+            async def _counted(self, request: PageRequest, count: int) -> Page:
+                return Page(frames=(PageFrame(frame=Canvas().frame),))
+
+        app = Service()
+        assert app.address_for("counted", count=420) == PageAddress("742")
+        assert app.route(PageAddress("742")) is not None
+
+    def test_registering_one_afterwards_still_works(self) -> None:
+        #  For a service built round a module-level application, where the
+        #  decorator has an object to hang on and ordering never arises.
+        app = Sextile()
+        app.converter("pair", Converter(field_pattern=r"[0-9]{2}", width=2, parse=int))
+
+        @app.page("8{n:pair}", name="paired")
+        async def paired(request: PageRequest, n: int) -> Page:
+            return Page(frames=(PageFrame(frame=Canvas().frame),))
+
+        assert app.route(PageAddress("842")) is not None
+
+
+class TestOpeningAndClosingWithoutASubclass:
+    """A module-level application may still have something to open.
+
+    `startup` and `shutdown` are overridable methods, which serves a service
+    that is a class and no service that is not -- and a service with nothing to
+    open is exactly the one with no reason to be a class in the first place.
+    """
+
+    async def test_what_was_registered_is_opened(self) -> None:
+        app = Sextile()
+        opened: list[str] = []
+
+        @app.on_startup
+        async def open_archive() -> None:
+            opened.append("archive")
+
+        await app.startup()
+        assert opened == ["archive"]
+
+    async def test_several_things_may_be_opened(self) -> None:
+        #  Unlike the not-found handler, which answers a question with one
+        #  answer. A service may have an archive and a client both.
+        app = Sextile()
+        opened: list[str] = []
+
+        @app.on_startup
+        async def open_archive() -> None:
+            opened.append("archive")
+
+        @app.on_startup
+        async def open_client() -> None:
+            opened.append("client")
+
+        await app.startup()
+        assert opened == ["archive", "client"]
+
+    async def test_they_are_closed_in_the_reverse_order(self) -> None:
+        #  Anything opened later may be holding what was opened earlier.
+        app = Sextile()
+        closed: list[str] = []
+
+        @app.on_shutdown
+        async def close_archive() -> None:
+            closed.append("archive")
+
+        @app.on_shutdown
+        async def close_client() -> None:
+            closed.append("client")
+
+        await app.shutdown()
+        assert closed == ["client", "archive"]
+
+    async def test_a_service_with_nothing_to_open_still_starts(self) -> None:
+        app = Sextile()
+        await app.startup()
+        await app.shutdown()
+
+
+class TestATargetTheNumberingDoesNotName:
+    """A service may search its own data for what a reader keyed.
+
+    A viewdata reader keys letters and the numbering knows only the keywords it
+    was given, so a service holding a gazetteer, a callsign list or a postcode
+    table wants a say before the word is called unknown.
+    """
+
+    def test_a_word_no_keyword_names_is_offered_to_the_service(self) -> None:
+        app = Sextile()
+        app.page("82{n:int}", name="thing")(_nothing)
+
+        @app.on_unresolved
+        def look_it_up(target: str) -> PageAddress | None:
+            return PageAddress("8242") if target == "TROMBONE" else None
+
+        assert app.resolve("TROMBONE") == PageAddress("8242")
+
+    def test_and_may_still_say_it_names_nothing(self) -> None:
+        app = Sextile()
+
+        @app.on_unresolved
+        def look_it_up(target: str) -> PageAddress | None:
+            return None
+
+        with pytest.raises(UnknownPageError):
+            app.resolve("TROMBONE")
+
+    def test_a_registered_keyword_is_not_shadowed_by_it(self) -> None:
+        #  The handler is a last resort and never a first one. A service whose
+        #  search could quietly take over its own keywords would be a service
+        #  whose numbering means something different on Tuesdays.
+        app = Sextile()
+        app.page("1", name="main")(_nothing)
+        app.alias("MAIN", PageAddress("1"))
+
+        @app.on_unresolved
+        def look_it_up(target: str) -> PageAddress | None:
+            return PageAddress("999")
+
+        assert app.resolve("MAIN") == PageAddress("1")
+
+    def test_a_service_without_one_is_unaffected(self) -> None:
+        app = Sextile()
+        with pytest.raises(UnknownPageError):
+            app.resolve("TROMBONE")
+
+
+async def _nothing(request: PageRequest, **fields: object) -> Page:
+    return Page(frames=(PageFrame(frame=Canvas().frame),))
+
+
+class TestSayingAPagesKeywordsWhereItIsDeclared:
+    """Both ways of declaring a page take the same words about it.
+
+    The class form took `keywords` and the instance form did not, so a service
+    built round a module-level application had to say a page's name in the
+    decorator and its keywords in a separate `alias` call somewhere else --
+    which is the two-copies problem the decorator exists to solve.
+    """
+
+    def test_a_keyword_may_be_declared_beside_the_page(self) -> None:
+        app = Sextile()
+        app.page("5", name="contributors", title="By contributor",
+                 keywords=("WHO", "USERS"))(_nothing)
+        assert app.resolve("WHO") == PageAddress("5")
+        assert app.resolve("USERS") == PageAddress("5")
+
+    def test_a_page_with_no_title_may_still_have_one(self) -> None:
+        #  Being unadvertised and being unreachable by word are different
+        #  things: a logoff page stays off the contents and still answers *BYE#.
+        app = Sextile()
+        app.page("90", name="goodbye", keywords=("BYE",))(_nothing)
+        assert app.resolve("BYE") == PageAddress("90")
+        assert app.page_info("goodbye") is None

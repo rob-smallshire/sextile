@@ -75,17 +75,23 @@ Beeb for half an hour.
 
 ## Raised by the weather service
 
-- **GeoNames' alternate names carry no tag saying what they are.** The main
-  dump's `alternatenames` column mixes genuine names with IATA airport codes
-  and with romanised transliterations, and `weather-viewdata` tells them apart
-  by capitalisation — measured against the real `cities500`, not documented
-  anywhere. It works: `TRO` gives Tromsø rather than Taree, whose airport code
-  it is. But it is a rule of thumb, and `alternateNamesV2` carries a proper
-  language tag at a further 193M if it ever misleads.
-- **A few nicknames still surface.** `PARIS` offers Warsaw second and `NEWYORK`
-  offers Jakarta, both through multi-word alternates the places genuinely go
-  by. Harmless in the second and third rows; it would matter if it reached the
-  first.
+- **Alternate names are not indexed, and one thing is lost with them.** The
+  main dump's `alternatenames` column mixes genuine names with IATA airport
+  codes, romanisations from other scripts and outright data errors, and carries
+  no tag saying which is which. Three rounds of filtering made it less wrong
+  without making it right — keying `A` still offered Oslo, one of whose
+  alternates is `Asloa` — so what a reader types is now honoured as a prefix of
+  the place's own name and nothing else.
+
+  What that costs is smaller than it sounds, because GeoNames' own `name` is
+  already the name an English reader knows: Munich, Vienna, Prague, Rome,
+  Moscow, Tokyo and Beijing are all filed under exactly those. Köln is the
+  exception — `COLOGNE` finds nothing — and `MUNCHEN` now finds Münchenstein
+  rather than Munich, since Munich is not spelled that way in the dump.
+
+  Doing it properly needs `alternateNamesV2`, whose entries say which language
+  they are in: index the English and local-language ones and neither problem
+  arises. A further 193M, and the obvious next step if anybody misses Cologne.
 - **Whose weather the service is about is a setting, not a fact.** `--prefer NO`
   weights Norwegian places, without which `BER` gives Berlin before Bergen.
   Which is right depends on who is dialling, and nobody has yet dialled.

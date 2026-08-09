@@ -26,7 +26,7 @@ a device. The one caller kept waiting should not be all of them.
 from abc import ABC, abstractmethod
 from collections.abc import Awaitable, Callable, Mapping, MutableMapping, Sequence
 from contextlib import AbstractAsyncContextManager
-from dataclasses import dataclass, field, replace
+from dataclasses import dataclass, field
 from typing import Final
 
 from sextile import contents, history, keys, names
@@ -256,24 +256,6 @@ class PageRoute:
     """Words a reader may key instead of the number."""
 
 
-@dataclass(frozen=True)
-class Mount:
-    """A range of page numbers another service answers.
-
-    Declared in the same list as the pages, because it is the same kind of
-    statement: this is what the service is made of. A mount is not a page, but
-    it is a range of them, and putting it anywhere else would give a service an
-    assembly order again.
-    """
-
-    prefix: str
-    """The digits a page number must begin with. `""` takes everything not
-    answered locally, which is how a service that is one application rather
-    than several is assembled."""
-
-    application: "Application"
-
-
 type Next = Callable[[PageRequest], Awaitable[Page | None]]
 
 type Middleware = Callable[[PageRequest, Next], Awaitable[Page | None]]
@@ -453,15 +435,6 @@ class Application(ABC):
             )
         )
 
-    def route_known(self, address: PageAddress) -> bool:
-        """Whether this application answers that page number.
-
-        Asked by a host of the services it has mounted, so that whichever one
-        owns a page is the one that names it.
-        """
-        del address
-        return False
-
     async def not_found(self, target: str) -> Page:
         """Say that a request named nothing here.
 
@@ -548,13 +521,12 @@ class Sextile(Application):
         home: str | PageAddress = "1",
         index: str | PageAddress | None = None,
         converters: Mapping[str, Converter | ConverterFactory] | None = None,
-        pages: Sequence[PageRoute | Mount] = (),
+        pages: Sequence[PageRoute] = (),
         middleware: Sequence[Middleware] = (),
         lifespan: Lifespan | None = None,
     ) -> None:
         self._name = name
         self._router: Router[Handler] = Router()
-        self._mounted: list[tuple[str, Application]] = []
         self._pages: dict[str, PageInfo] = {}
         self._not_found: NotFoundHandler | None = None
         self._timed_out: PartingHandler | None = None
@@ -579,11 +551,8 @@ class Sextile(Application):
         #  subclass assembled by a factory can add to what its class declared
         #  rather than being unable to say anything at all.
         self._register_declared()
-        for entry in pages:
-            if isinstance(entry, Mount):
-                self.mount(entry.prefix, entry.application)
-            else:
-                self.add_page(entry)
+        for route in pages:
+            self.add_page(route)
 
     @property
     def name(self) -> str:
@@ -699,23 +668,8 @@ class Sextile(Application):
         would put the most literal pattern first for reasons a reader does not
         care about.
 
-        Mounted services are included, after this one's own: a reader meets the
-        service before whatever it is assembled from, and a contents page
-        listing half a service is worse than none because it is believed.
         """
-        mine = tuple(self._pages.values())
-        #  A mount is consulted only for numbers this service does not answer,
-        #  so a mounted page whose numbers are already answered here cannot be
-        #  reached -- and listing it would give a reader two entries for one
-        #  number with no way to tell which does anything.
-        shadowed = {about.keyed for about in mine}
-        theirs = tuple(
-            about
-            for _, application in self._mounted
-            for about in application.advertised()
-            if about.keyed not in shadowed
-        )
-        return mine + theirs
+        return tuple(self._pages.values())
 
     def alias(self, keyword: str, address: str | PageAddress) -> None:
         """Let a word be keyed in place of a page number: `*MAIN#` for `*1#`."""
@@ -725,43 +679,6 @@ class Sextile(Application):
         """Offer a field shape this application's numbering needs."""
         self._router.converter(name, converter)
 
-    def mount(self, prefix: str, application: Application) -> None:
-        """Hand every page number beginning ``prefix`` to another application.
-
-        The mounted application is given the address unchanged, which is not
-        what a web framework would do. It cannot be: the application draws the
-        page number into the frame itself, so a number stripped of its prefix
-        would be drawn as something the reader could not key back. The prefix
-        decides *who* answers, and nothing more.
-
-        Mount at `""` to hand over everything not answered here, which is how a
-        service that is one application rather than several is assembled.
-        """
-        if prefix and not (prefix.isascii() and prefix.isdigit()):
-            raise ValueError(f"{prefix!r} is not the start of a page number")
-        #  The prefix is not stripped, so a mounted service has to already
-        #  number its pages inside it. A service numbered outside is forwarded
-        #  nothing, ever, and every symptom of that appears somewhere else --
-        #  a keyword landing on the host's page of the same number, a contents
-        #  entry nobody can reach. Cheaper to refuse than to debug on a slow
-        #  line. Only advertised pages can be checked, a page that says nothing
-        #  about itself being invisible from here.
-        outside = [
-            about.keyed
-            for about in application.advertised()
-            if not about.keyed.removeprefix(keys.CANCEL).startswith(prefix)
-        ]
-        if outside:
-            raise ValueError(
-                f"{application.name or 'the mounted service'} is mounted at "
-                f"{prefix!r}, which is not stripped -- so it would never be "
-                f"asked for {', '.join(outside[:3])}. Number its pages under "
-                f"{prefix!r}, or mount it at ''."
-            )
-        self._mounted.append((prefix, application))
-        #  Longest prefix first, so a specific mount is not shadowed by a
-        #  general one however they were added.
-        self._mounted.sort(key=lambda mount: -len(mount[0]))
 
     def on_not_found[H: NotFoundHandler](self, handler: H) -> H:
         """Register what this service says about a page it has not got."""
@@ -816,22 +733,6 @@ class Sextile(Application):
         found = self._router.match(request.address)
         if found is not None:
             return await found.target(request, **found.params)
-        for prefix, application in self._mounted:
-            if request.address.digits.startswith(prefix):
-                #  Rebound, because a mounted service is still a service: its
-                #  pages must reach what its *own* lifespan opened, and must
-                #  build addresses from its *own* numbering. Handing on the
-                #  host's would give a page an archive it never opened and a
-                #  router that names somebody else's pages.
-                answered = await application.respond(
-                    replace(
-                        request,
-                        service=application.service,
-                        application=application,
-                    )
-                )
-                if answered is not None:
-                    return answered
         return None
 
     async def _chain(self, request: PageRequest) -> Page | None:
@@ -854,11 +755,6 @@ class Sextile(Application):
         try:
             return self._router.resolve(target)
         except UnknownPageError:
-            for _, application in self._mounted:
-                try:
-                    return application.resolve(target)
-                except UnknownPageError:
-                    continue
             #  Last, so that a registered keyword always means what it was
             #  registered to mean: a service searching its own data must not be
             #  able to shadow its own numbering by accident.
@@ -894,37 +790,15 @@ class Sextile(Application):
         wants to know what it names -- taking the digits apart again would be
         the scheme written down twice.
         """
-        found = self._router.match(address)
-        if found is not None:
-            return found
-        #  Through the mount, so that anything reading the numbering backwards
-        #  -- `describe`, and so the history page -- can name a page this
-        #  service does not answer itself.
-        for prefix, application in self._mounted:
-            if address.digits.startswith(prefix) and isinstance(application, Sextile):
-                inside = application.route(address)
-                if inside is not None:
-                    return inside
-        return None
-
-    def route_known(self, address: PageAddress) -> bool:
-        return self.route(address) is not None
+        return self._router.match(address)
 
     def describe(self, address: PageAddress) -> str:
         if self._describing is not None:
             said = self._describing(address)
             if said is not None:
                 return said
-        found = self._router.match(address)
-        if found is None:
-            #  Whoever answers a page names it, including by its own
-            #  `on_describe`: this service knows the number is theirs and
-            #  nothing else about it.
-            for prefix, application in self._mounted:
-                if address.digits.startswith(prefix) and application.route_known(address):
-                    return application.describe(address)
-            return super().describe(address)
-        if found.name is None:
+        found = self.route(address)
+        if found is None or found.name is None:
             return super().describe(address)
         about = self._pages.get(found.name)
         called = about.title if about is not None else found.name
@@ -937,16 +811,8 @@ class Sextile(Application):
         return about.title.upper() if about and about.title else default
 
     def keywords(self) -> dict[str, PageAddress]:
-        """The named jumps, for a page that wants to list them.
-
-        Mounted services' words are offered too, and never over this one's own:
-        a mount may not quietly take over a word its host has spoken for.
-        """
-        named: dict[str, PageAddress] = {}
-        for _, application in self._mounted:
-            named.update(application.keywords())
-        named.update(self._router.keywords())
-        return named
+        """The named jumps, for a page that wants to list them."""
+        return self._router.keywords()
 
     # -- lifespan -----------------------------------------------------------
 
@@ -961,12 +827,8 @@ class Sextile(Application):
             held = await self._running.__aenter__()
             if held is not None:
                 self._service.update(held)
-        for _, application in self._mounted:
-            await application.startup()
 
     async def shutdown(self) -> None:
-        for _, application in self._mounted:
-            await application.shutdown()
         if self._running is not None:
             #  Whatever the lifespan set up is torn down by the same function
             #  that set it up, which is the reason for it being a context

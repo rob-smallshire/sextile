@@ -73,8 +73,8 @@ The alternative was to be generic over an application-supplied reference type,
 which is what the original Stardot-shaped code did. Strings won because the page
 number is the one name that everyone shares — the reader keying it, the terminal
 displaying it, the application answering it, and whoever writes it on a beermat.
-History, the back key, mounting and linking between applications all become
-ordinary operations on a value that needs to know nothing about what it names.
+History, the back key and linking between services all become ordinary
+operations on a value that needs to know nothing about what it names.
 
 No length limit is imposed: page numbers were measured to have no practical
 limit on Commstar. What bounds a request is the command parser's own patience
@@ -175,42 +175,27 @@ need not remember to. Every one of them would remember, or would quietly not,
 and a page reached without them fails in a way unrelated to what was being
 tested.
 
-**Mounting** hands every address beginning with a prefix to another application,
-and gives it the address **unchanged**. That is not what a web framework does
-and cannot be here: the application draws the page number into the frame itself,
-so a number stripped of its prefix would be drawn as one the reader could not
-key back. The prefix decides *who* answers and nothing more. A mount at `""`
-takes everything not answered locally, which is how a service that is one
-application rather than several is assembled.
+**No mounting.** An application answered a prefix of the numbering by handing
+it to another application, which is what a web framework offers for assembling
+a large service out of small ones. It is gone.
 
-**So the namespaces are merged and must be disjoint.** A mounted service has to
-already number its pages inside the prefix it is mounted at; mounting a service
-numbered 1 to 9 under `6` forwards it nothing, ever. That is refused at mount
-time rather than left to be discovered, because every symptom of it appears
-somewhere else — a keyword landing on the host's page of the same number, a
-contents entry for a page nobody can reach — and none of them points at the
-mount.
+It never had a user. Three services are built on this framework and not one of
+them mounted anything; only the framework's own tests ever did. And it was not
+free: the prefix could not be stripped — a service draws its page number onto
+the frame, so a number with its prefix removed would be drawn as one the reader
+could not key back — which meant the numbering had to be *merged and disjoint*
+rather than nested. Everything that reports across a service then had to see
+through the seam: routing, keywords, the contents, `describe`. A mounted
+service had to be handed its own state rather than its host's. And a `history`
+page inside a mount could still only name half of where a reader had been,
+because a history is about a call and a call crosses the whole namespace.
 
-**A mounted service is still a service.** It is handed its own `service`
-mapping and its own `application`, not its host's: its pages must reach what
-*its* lifespan opened and build addresses from *its* numbering. Handing on the
-host's gives a page an archive it never opened and a router that names somebody
-else's pages, which is what happened the first time two real services were
-mounted together.
+That is a great deal of machinery for structural scalability nobody here wants.
+A viewdata service is small and self-contained: forty columns, a few dozen
+pages, one archive. The thing to notice is that the cost was not in the feature
+but in everything the feature obliged the rest of the framework to know about.
 
-**The generated pages report whatever answers them.** `contents` and `names`
-mapped in the host describe the whole namespace, mounts included — `route`,
-`pages` and `keywords` all see through a mount, and a mounted page whose
-numbers the host answers itself is left out, since it cannot be reached. Mapped
-inside a mounted service they describe that section, which is a reasonable
-thing for a section to offer.
 
-`history` is the exception, and the distinction is worth keeping: **`contents`
-and `names` describe a service, `history` describes a call.** A call crosses
-the whole namespace, so a history page mapped inside a mounted service can name
-only half of where the reader has been and shows bare numbers for the rest. Map
-it in the host. Nothing enforces that yet; see
-[open-questions.md](../../../docs/open-questions.md).
 
 ## Pages and frames
 

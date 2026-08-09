@@ -11,7 +11,7 @@ on nothing but the standard library, and is meant to be read.
 ## The smallest thing that answers
 
 ```python
-from sextile import Mount, Page, PageFrame, PageRequest, PageRoute, Sextile
+from sextile import Page, PageFrame, PageRequest, PageRoute, Sextile
 from sextile.viewdata.canvas import Canvas
 from sextile.viewdata.chrome import CONTENT_FIRST_ROW, draw_chrome
 
@@ -132,30 +132,6 @@ PageRoute("1", main, name="main", keywords=("MAIN", "INDEX"))
 
 `app.alias("MAIN", app.address_for("main"))` does the same for a word that
 names a page some other way.
-
-## Handing a range of numbers to another service
-
-```python
-app = Sextile(pages=[PageRoute("1", main, name="main"), Mount("6", weather)])
-```
-
-**The prefix says who answers; it is not stripped.** The mounted service is
-given the page number unchanged, because a service draws that number onto the
-frame and a number stripped of its prefix would be one the reader could not key
-back. So the two numbering schemes are merged and must be disjoint: a service
-mounted at `6` has to number its own pages `6…` already. Mounting one numbered
-`1` to `9` under `6` forwards it nothing, and is refused when you try.
-
-`Mount("")` takes everything this service does not answer itself, which is how
-a service assembled from several applications is put together.
-
-A mounted service keeps its own `request.service` and its own numbering, so its
-pages reach what *its* lifespan opened.
-
-**`contents` and `names` mapped in the host describe the whole namespace**,
-mounts included; mapped inside a mounted service they describe that section.
-`history` is different — it describes a *call* rather than a service, and a
-call crosses the whole namespace, so map it in the host.
 
 ## Menus and listings
 

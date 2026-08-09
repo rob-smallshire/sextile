@@ -403,6 +403,37 @@ class Application(ABC):
         """What this application holds while it is running. Nothing, by default."""
         return {}
 
+    async def ask(
+        self,
+        target: str | PageAddress,
+        *,
+        arrival: Arrival | None = None,
+        session: MutableMapping[str, object] | None = None,
+        history: tuple[PageAddress, ...] = (),
+    ) -> Page | None:
+        """Answer a page number, as a session would ask it.
+
+        A request carries more than the number now -- what the service holds,
+        and the service itself -- and building one by hand means remembering
+        both. Every test of every application would remember them, or would
+        quietly not, and a page reached without them fails in a way that has
+        nothing to do with what was being tested.
+
+        So the assembly lives here, once. `render_page` uses it, and so should
+        anything else that wants a page without a socket.
+        """
+        address = target if isinstance(target, PageAddress) else PageAddress(target)
+        return await self.respond(
+            PageRequest(
+                address=address,
+                arrival=arrival or Arrival(),
+                session=session if session is not None else {},
+                history=history,
+                service=self.service,
+                application=self,
+            )
+        )
+
     async def not_found(self, target: str) -> Page:
         """Say that a request named nothing here.
 

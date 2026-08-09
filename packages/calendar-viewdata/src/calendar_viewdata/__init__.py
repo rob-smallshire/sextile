@@ -1,10 +1,10 @@
-"""A calendar as a Viewdata service: the second Sextile application."""
+"""A calendar as a Viewdata service: the framework's worked example."""
 
-from calendar_viewdata.application import SERVICE_NAME, CalendarApplication
+from calendar_viewdata.application import PAGES, SERVICE_NAME, build_application
 
 __version__ = "0.1.0"
 
 #: The application a server is pointed at: `sextile serve calendar_viewdata:app`.
-app = CalendarApplication()
+app = build_application()
 
-__all__ = ["SERVICE_NAME", "CalendarApplication", "app"]
+__all__ = ["PAGES", "SERVICE_NAME", "app", "build_application"]

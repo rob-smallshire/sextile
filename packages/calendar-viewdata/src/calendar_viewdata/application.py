@@ -17,14 +17,28 @@ so it is meant to be read.
     42<date>    one day
     9           about
     90          goodbye
+
+A service is a list of pages given to a constructor, and a page is an ordinary
+function. Nothing here closes over anything: a page takes the clock from what
+the service holds and the numbering from the service itself, both through the
+request it is given.
 """
 
 import calendar
-from collections.abc import Callable, Sequence
+from collections.abc import AsyncIterator, Callable, Mapping, Sequence
+from contextlib import asynccontextmanager
 from datetime import UTC, date, datetime, timedelta
 from typing import Final
 
-from sextile import Page, PageAddress, PageFrame, PageRequest, Sextile, keys, page
+from sextile import (
+    Page,
+    PageAddress,
+    PageFrame,
+    PageRequest,
+    PageRoute,
+    Sextile,
+    keys,
+)
 from sextile.addressing import keyed
 from sextile.templates import HOME_KEY, Menu, MenuItem, Prose
 from sextile.viewdata.canvas import Canvas
@@ -42,290 +56,325 @@ from sextile.viewdata.frame import COLUMNS, Frame
 
 SERVICE_NAME: Final = "CALENDAR"
 
-
 #: How far ahead the days-to-come menu looks.
 DAYS_AHEAD: Final = 28
+
+#: What the clock is held under, in what the service holds. It is the only
+#: thing this service depends on that is not a pure function, which is why it
+#: is a parameter at all: a service whose pages change under it cannot
+#: otherwise be tested.
+CLOCK: Final = "clock"
 
 _WEEKDAYS: Final = ("MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN")
 
 
-class CalendarApplication(Sextile):
-    """The calendar service: its pages, and where its keys lead."""
+def _now(request: PageRequest) -> datetime:
+    clock = request.service.get(CLOCK)
+    if not callable(clock):
+        raise RuntimeError("the clock is not set; the service has not started")
+    moment: datetime = clock()
+    return moment
 
-    def __init__(self, now: Callable[[], datetime] | None = None) -> None:
-        """Build the service, optionally told how to find out the time.
 
-        The clock is a parameter because a service whose pages change under it
-        cannot otherwise be tested. It is the only thing this application
-        depends on that is not a pure function.
-        """
-        super().__init__(name=SERVICE_NAME.title())
-        self._now = now or (lambda: datetime.now(UTC))
+def _today(request: PageRequest) -> date:
+    return _now(request).date()
 
-    @property
-    def today(self) -> date:
-        return self._now().date()
 
-    # -- the pages ----------------------------------------------------------
+def _service(request: PageRequest) -> Sextile:
+    app = request.application
+    if not isinstance(app, Sextile):
+        raise RuntimeError("this page was asked for outside a running service")
+    return app
 
-    @page("1", title="The index", keywords=("MAIN", "INDEX"))
-    async def main(self, request: PageRequest) -> Page:
-        return self._menu(
-            request.address,
-            title=SERVICE_NAME,
-            preamble=[_long_date(self.today), ""],
-            items=[
-                ("The time now", "to the second", self.address_for("now")),
-                ("This month", _month_name(self.today), self.address_for("this_month")),
-                ("The days to come", f"the next {DAYS_AHEAD}", self.address_for("ahead")),
-                ("About this service", "", self.address_for("about")),
-            ],
-        )
 
-    @page(
-        "2",
-        name="now",
-        title="The time now",
-        detail="to the second",
-        keywords=("TIME", "NOW"),
+# -- the pages ---------------------------------------------------------------
+
+
+async def main(request: PageRequest) -> Page:
+    app = _service(request)
+    today = _today(request)
+    return _menu(
+        app,
+        request.address,
+        title=SERVICE_NAME,
+        preamble=[_long_date(today), ""],
+        items=[
+            ("The time now", "to the second", app.address_for("now")),
+            ("This month", _month_name(today), app.address_for("this_month")),
+            ("The days to come", f"the next {DAYS_AHEAD}", app.address_for("ahead")),
+            ("About this service", "", app.address_for("about")),
+        ],
     )
-    async def now_page(self, request: PageRequest) -> Page:
-        moment = self._now()
-        return self._notice(
-            request.address,
-            None,
-            [
-                _long_date(moment.date()),
-                "",
-                moment.strftime("%H:%M:%S"),
-                moment.tzname() or "",
-                "",
-                f"Key {keyed(keys.REFRESH)} to ask again.",
-            ],
-        )
 
-    @page("3", title="This month", detail="as a grid", keywords=("MONTH",))
-    async def this_month(self, request: PageRequest) -> Page:
-        return self._month_page(request.address, self.today)
 
-    @page("32{day:date}", title="One month")
-    async def month(self, request: PageRequest, day: date) -> Page:
-        return self._month_page(request.address, day)
-
-    @page("4", title="The days to come", detail="the next 28", keywords=("AHEAD",))
-    async def ahead(self, request: PageRequest) -> Page:
-        today = self.today
-        days = [today + timedelta(days=offset) for offset in range(DAYS_AHEAD)]
-        return self._menu(
-            request.address,
-            items=[
-                (
-                    _long_date(day),
-                    _in_words(day - today),
-                    self.address_for("day", day=day),
-                )
-                for day in days
-            ],
-        )
-
-    @page("42{day:date}", title="One day")
-    async def day(self, request: PageRequest, day: date) -> Page:
-        _, weeks_in_year, _ = day.isocalendar()
-        lines = [
-            _long_date(day),
+async def now_page(request: PageRequest) -> Page:
+    moment = _now(request)
+    return _notice(
+        _service(request),
+        request.address,
+        None,
+        [
+            _long_date(moment.date()),
             "",
-            f"Day {day.timetuple().tm_yday} of {366 if calendar.isleap(day.year) else 365}",
-            f"Week {weeks_in_year}",
-            f"ISO {day.isoformat()}",
+            moment.strftime("%H:%M:%S"),
+            moment.tzname() or "",
             "",
-            _in_words(day - self.today),
-        ]
-        #  Whichever menu the reader came through decides what "next" means, and
-        #  a day reached by keying its number came through none. A frame names
-        #  only the keys that do something on it, so the prompt is built from
-        #  the same description as the choices.
-        choices = {
-            "0": self.address_for("main"),
-            "1": self.address_for("month", day=day),
-        }
-        if request.arrival.preceding is not None:
-            choices["A"] = request.arrival.preceding
-        if request.arrival.following is not None:
-            choices["D"] = request.arrival.following
-        return Page(
-            frames=(
-                PageFrame(
-                    frame=self._notice_frame(
-                        request.address,
-                        _month_name(day),
-                        lines,
-                        prompt=_prompt(
-                            set(choices),
-                            selecting=False,
-                            item="day",
-                            offering=[FooterItem("1", "month", Priority.PRIMARY)],
-                        ),
+            f"Key {keyed(keys.REFRESH)} to ask again.",
+        ],
+    )
+
+
+async def this_month(request: PageRequest) -> Page:
+    return _month_page(_service(request), request.address, _today(request))
+
+
+async def month(request: PageRequest, day: date) -> Page:
+    return _month_page(_service(request), request.address, day)
+
+
+async def ahead(request: PageRequest) -> Page:
+    app = _service(request)
+    today = _today(request)
+    days = [today + timedelta(days=offset) for offset in range(DAYS_AHEAD)]
+    return _menu(
+        app,
+        request.address,
+        items=[
+            (_long_date(day), _in_words(day - today), app.address_for("day", day=day))
+            for day in days
+        ],
+    )
+
+
+async def one_day(request: PageRequest, day: date) -> Page:
+    app = _service(request)
+    _, weeks_in_year, _ = day.isocalendar()
+    lines = [
+        _long_date(day),
+        "",
+        f"Day {day.timetuple().tm_yday} of {366 if calendar.isleap(day.year) else 365}",
+        f"Week {weeks_in_year}",
+        f"ISO {day.isoformat()}",
+        "",
+        _in_words(day - _today(request)),
+    ]
+    #  Whichever menu the reader came through decides what "next" means, and a
+    #  day reached by keying its number came through none. A frame names only
+    #  the keys that do something on it, so the prompt is built from the same
+    #  description as the choices.
+    choices = {"0": app.address_for("main"), "1": app.address_for("month", day=day)}
+    if request.arrival.preceding is not None:
+        choices["A"] = request.arrival.preceding
+    if request.arrival.following is not None:
+        choices["D"] = request.arrival.following
+    return Page(
+        frames=(
+            PageFrame(
+                frame=_notice_frame(
+                    request.address,
+                    _month_name(day),
+                    lines,
+                    prompt=_prompt(
+                        set(choices),
+                        selecting=False,
+                        item="day",
+                        offering=[FooterItem("1", "month", Priority.PRIMARY)],
                     ),
-                    choices=choices,
                 ),
-            )
+                choices=choices,
+            ),
         )
-
-    @page(
-        "92",
-        name="history",
-        title="Where you have been",
-        detail="this call, newest first",
-        keywords=("HISTORY",),
     )
-    async def _history(self, request: PageRequest) -> Page:
-        """The framework's page, at this service's number."""
-        return await self.history(request)
 
-    @page(
-        "94",
-        name="names",
-        title="Words you can key",
-        detail="instead of a page number",
-        keywords=("KEYWORDS", "WORDS"),
-    )
-    async def _names(self, request: PageRequest) -> Page:
-        """The framework's page, at this service's number."""
-        return await self.names(request)
 
-    @page(
-        "93",
-        name="contents",
-        title="Every page",
-        detail="and the number that fetches it",
-        keywords=("PAGES",),
-    )
-    async def _contents(self, request: PageRequest) -> Page:
-        """The framework's page, at this service's number."""
-        return await self.contents(request)
+async def about(request: PageRequest) -> Page:
+    app = _service(request)
+    return Prose.of(
+        "A calendar, served as Viewdata frames.",
+        "It exists to demonstrate that Sextile is a framework and not one "
+        "service: nothing here knows about forums, and nothing in the "
+        "framework knows about calendars.",
+        "Everything it shows comes from the standard library.",
+        title=_headed(app, request.address),
+        home=app.index,
+    ).build(request.address)
 
-    @page("9", title="About this service", keywords=("ABOUT", "HELP"))
-    async def about(self, request: PageRequest) -> Page:
-        return Prose.of(
-            "A calendar, served as Viewdata frames.",
-            "It exists to demonstrate that Sextile is a framework and not one "
-            "service: nothing here knows about forums, and nothing in the "
-            "framework knows about calendars.",
-            "Everything it shows comes from the standard library.",
-            title=self._headed(request.address),
-            home=self.index,
-        ).build(request.address)
 
+async def goodbye(request: PageRequest) -> Page:
+    """The last thing a caller sees: no chrome, and room beneath to type.
+
+    A footer offering the index would be a lie on a page there is no coming
+    back from, and the reader needs somewhere blank for the cursor to be left
+    -- they are about to be talking to their modem.
+    """
+    canvas = Canvas()
+    canvas.row(0).text("GOODBYE", Colour.CYAN)
+    for offset, line in enumerate(["Thank you for calling.", "", "Ring off."]):
+        if line:
+            canvas.row(2 + offset).text(fitted(line, COLUMNS - 1), Colour.WHITE)
+    return Page(frames=(PageFrame(frame=canvas.frame),), hang_up=True)
+
+
+async def history(request: PageRequest) -> Page:
+    """The framework's page, at this service's number."""
+    return await _service(request).history(request)
+
+
+async def contents(request: PageRequest) -> Page:
+    """The framework's page, at this service's number."""
+    return await _service(request).contents(request)
+
+
+async def keywords(request: PageRequest) -> Page:
+    """The framework's page, at this service's number."""
+    return await _service(request).names(request)
+
+
+#: What the service is made of. Everything about a page is on one line of it:
+#: where it is in the numbering, what builds it, what it is called where it is
+#: listed rather than shown, and the words that reach it.
+PAGES: Final = (
+    PageRoute("1", main, name="main", title="The index",
+              keywords=("MAIN", "INDEX")),
+    PageRoute("2", now_page, name="now", title="The time now",
+              detail="to the second", keywords=("TIME", "NOW")),
+    PageRoute("3", this_month, name="this_month", title="This month",
+              detail="as a grid", keywords=("MONTH",)),
+    PageRoute("32{day:date}", month, name="month", title="One month"),
+    PageRoute("4", ahead, name="ahead", title="The days to come",
+              detail=f"the next {DAYS_AHEAD}", keywords=("AHEAD",)),
+    PageRoute("42{day:date}", one_day, name="day", title="One day"),
+    PageRoute("9", about, name="about", title="About this service",
+              keywords=("ABOUT", "HELP")),
     #  Listed: the contents page is a directory of numbers that do something,
     #  and a reader looking for how to ring off should find it there.
-    @page("90", title="Ring off", keywords=("BYE",))
-    async def goodbye(self, request: PageRequest) -> Page:
-        return self._farewell("GOODBYE", ["Thank you for calling.", "", "Ring off."])
+    PageRoute("90", goodbye, name="goodbye", title="Ring off",
+              keywords=("BYE",)),
+    #  Three the framework builds, mapped into this service's numbering. They
+    #  are here as much to show what a service gets for nothing as to be
+    #  useful: the calendar wrote none of them.
+    PageRoute("92", history, name="history", title="Where you have been",
+              detail="this call, newest first", keywords=("HISTORY",)),
+    PageRoute("93", contents, name="contents", title="Every page",
+              detail="and the number that fetches it", keywords=("PAGES",)),
+    PageRoute("94", keywords, name="names", title="Words you can key",
+              detail="instead of a page number", keywords=("KEYWORDS", "WORDS")),
+)
 
-    def _farewell(self, title: str, lines: list[str]) -> Page:
-        """The last thing a caller sees: no chrome, and room beneath to type.
 
-        A footer offering the index would be a lie on a page there is no coming
-        back from, and the reader needs somewhere blank for the cursor to be
-        left -- they are about to be talking to their modem.
-        """
-        canvas = Canvas()
-        canvas.row(0).text(title, Colour.CYAN)
-        for offset, line in enumerate(lines):
-            if line:
-                canvas.row(2 + offset).text(fitted(line, COLUMNS - 1), Colour.WHITE)
-        return Page(frames=(PageFrame(frame=canvas.frame),), hang_up=True)
+def build_application(now: Callable[[], datetime] | None = None) -> Sextile:
+    """The service, optionally told how to find out the time.
 
-    # -- drawing ------------------------------------------------------------
+    The clock is a parameter because a service whose pages change under it
+    cannot otherwise be tested. It is the only thing this application depends
+    on that is not a pure function, so it is the only thing the service holds.
+    """
+    reading = now or (lambda: datetime.now(UTC))
 
-    def _month_page(self, address: PageAddress, day: date) -> Page:
-        canvas = Canvas()
-        draw_chrome(
-            canvas,
-            title=_month_name(day).upper(),
-            page_number=address.frame_number(0),
-            prompt=_prompt({"A", "D"}, selecting=False, item="month"),
-        )
-        canvas.row(CONTENT_FIRST_ROW).text(
-            "  ".join(weekday[:2] for weekday in _WEEKDAYS), Colour.CYAN
-        )
-        weeks = calendar.Calendar().monthdayscalendar(day.year, day.month)
-        for offset, week in enumerate(weeks):
-            cells = " ".join(f"{number:>3}" if number else "   " for number in week)
-            #  The week the day falls in, rather than the day itself: a colour
-            #  attribute occupies a cell, and there is no spare cell inside a
-            #  row of seven three-column figures to put one in.
-            colour = Colour.YELLOW if day.day in week else Colour.WHITE
-            canvas.row(CONTENT_FIRST_ROW + 1 + offset).text(cells.rstrip(), colour)
+    @asynccontextmanager
+    async def lifespan(app: Sextile) -> AsyncIterator[Mapping[str, object]]:
+        yield {CLOCK: reading}
 
-        previous, following = _months_either_side(day)
-        choices = {
-            "0": self.address_for("main"),
-            "A": self.address_for("month", day=previous),
-            "D": self.address_for("month", day=following),
-        }
-        return Page(frames=(PageFrame(frame=canvas.frame, choices=choices),))
+    return Sextile(name=SERVICE_NAME.title(), pages=PAGES, lifespan=lifespan)
 
-    def _headed(self, address: PageAddress) -> str:
-        """What goes at the top of a page: what it was registered as, shouted.
 
-        A page that names itself in its decorator and again in its own chrome
-        has two copies to keep in step. Pages whose heading is not their name
-        -- a month's name, a day's date -- say so.
-        """
-        return self.describe(address).upper()
+# -- drawing -----------------------------------------------------------------
 
-    def _menu(
-        self,
-        address: PageAddress,
-        *,
-        title: str | None = None,
-        items: list[tuple[str, str, PageAddress]],
-        preamble: list[str] | None = None,
-    ) -> Page:
-        """A menu, dealt nine to a frame by the framework's template."""
-        return Menu(
-            title=title if title is not None else self._headed(address),
-            entries=[
-                MenuItem(text=text, detail=detail, destination=where)
-                for text, detail, where in items
-            ],
-            home=self.index,
-            preamble=preamble or (),
-        ).build(address)
 
-    def _notice(
-        self, address: PageAddress, title: str | None, lines: list[str]
-    ) -> Page:
-        """A page that simply says something, with no choices but the way back."""
-        return Page(
-            frames=(
-                PageFrame(
-                    frame=self._notice_frame(
-                        address,
-                        title if title is not None else self._headed(address),
-                        lines,
-                        prompt=_prompt(set(), selecting=False),
-                    ),
-                    choices={"0": self.address_for("main")},
+def _month_page(app: Sextile, address: PageAddress, day: date) -> Page:
+    canvas = Canvas()
+    draw_chrome(
+        canvas,
+        title=_month_name(day).upper(),
+        page_number=address.frame_number(0),
+        prompt=_prompt({"A", "D"}, selecting=False, item="month"),
+    )
+    canvas.row(CONTENT_FIRST_ROW).text(
+        "  ".join(weekday[:2] for weekday in _WEEKDAYS), Colour.CYAN
+    )
+    weeks = calendar.Calendar().monthdayscalendar(day.year, day.month)
+    for offset, week in enumerate(weeks):
+        cells = " ".join(f"{number:>3}" if number else "   " for number in week)
+        #  The week the day falls in, rather than the day itself: a colour
+        #  attribute occupies a cell, and there is no spare cell inside a row
+        #  of seven three-column figures to put one in.
+        colour = Colour.YELLOW if day.day in week else Colour.WHITE
+        canvas.row(CONTENT_FIRST_ROW + 1 + offset).text(cells.rstrip(), colour)
+
+    previous, following = _months_either_side(day)
+    choices = {
+        "0": app.address_for("main"),
+        "A": app.address_for("month", day=previous),
+        "D": app.address_for("month", day=following),
+    }
+    return Page(frames=(PageFrame(frame=canvas.frame, choices=choices),))
+
+
+def _headed(app: Sextile, address: PageAddress) -> str:
+    """What goes at the top of a page: what it was registered as, shouted.
+
+    A page that names itself where it is declared and again in its own chrome
+    has two copies to keep in step. Pages whose heading is not their name -- a
+    month's name, a day's date -- say so.
+    """
+    return app.describe(address).upper()
+
+
+def _menu(
+    app: Sextile,
+    address: PageAddress,
+    *,
+    title: str | None = None,
+    items: list[tuple[str, str, PageAddress]],
+    preamble: list[str] | None = None,
+) -> Page:
+    """A menu, dealt nine to a frame by the framework's template."""
+    return Menu(
+        title=title if title is not None else _headed(app, address),
+        entries=[
+            MenuItem(text=text, detail=detail, destination=where)
+            for text, detail, where in items
+        ],
+        home=app.index,
+        preamble=preamble or (),
+    ).build(address)
+
+
+def _notice(
+    app: Sextile, address: PageAddress, title: str | None, lines: list[str]
+) -> Page:
+    """A page that simply says something, with no choices but the way back."""
+    return Page(
+        frames=(
+            PageFrame(
+                frame=_notice_frame(
+                    address,
+                    title if title is not None else _headed(app, address),
+                    lines,
+                    prompt=_prompt(set(), selecting=False),
                 ),
+                choices={"0": app.address_for("main")},
+            ),
+        )
+    )
+
+
+def _notice_frame(
+    address: PageAddress, title: str, lines: list[str], *, prompt: str
+) -> Frame:
+    canvas = Canvas()
+    draw_chrome(
+        canvas, title=title, page_number=address.frame_number(0), prompt=prompt
+    )
+    for offset, line in enumerate(lines[:CONTENT_ROWS]):
+        if line:
+            canvas.row(CONTENT_FIRST_ROW + offset).text(
+                fitted(line, COLUMNS - 1), Colour.WHITE
             )
-        )
-
-    def _notice_frame(
-        self, address: PageAddress, title: str, lines: list[str], *, prompt: str
-    ) -> Frame:
-        canvas = Canvas()
-        draw_chrome(
-            canvas, title=title, page_number=address.frame_number(0), prompt=prompt
-        )
-        for offset, line in enumerate(lines[:CONTENT_ROWS]):
-            if line:
-                canvas.row(CONTENT_FIRST_ROW + offset).text(fitted(line, COLUMNS - 1), Colour.WHITE)
-        return canvas.frame
+    return canvas.frame
 
 
-# -- helpers ----------------------------------------------------------------
+# -- helpers -----------------------------------------------------------------
 
 
 def _month_name(day: date) -> str:

@@ -1211,3 +1211,49 @@ class TestAPageKnowingItsService:
     async def test_a_request_built_by_hand_has_none(self) -> None:
         #  Which is right: there is no service behind it.
         assert PageRequest(address=PageAddress("1")).application is None
+
+
+class TestAskingForAPageWithoutASocket:
+    """What a test, a renderer or a tool does instead of building a request.
+
+    A request carries what the service holds and the service itself, and
+    building one by hand means remembering both -- or quietly not, and then
+    failing in a way that has nothing to do with what was being tested.
+    """
+
+    async def test_a_page_number_is_answered(self) -> None:
+        app = Sextile(pages=[PageRoute("1", _nothing, name="main")])
+        assert await app.ask("1") is not None
+
+    async def test_a_page_number_it_has_not_got_is_not(self) -> None:
+        app = Sextile()
+        assert await app.ask("7") is None
+
+    async def test_the_page_is_handed_what_the_service_holds(self) -> None:
+        seen: list[object] = []
+
+        @asynccontextmanager
+        async def lifespan(app: Sextile) -> AsyncIterator[dict[str, object]]:
+            yield {"archive": "an archive"}
+
+        async def main(request: PageRequest) -> Page:
+            seen.append(request.service["archive"])
+            assert request.application is not None
+            return Page(frames=(PageFrame(frame=Canvas().frame),))
+
+        app = Sextile(lifespan=lifespan, pages=[PageRoute("1", main, name="main")])
+        await app.startup()
+        await app.ask("1")
+        assert seen == ["an archive"]
+
+    async def test_where_the_reader_came_from_may_be_said(self) -> None:
+        #  So that a page offering its neighbours can be tested at all.
+        seen: list[PageAddress | None] = []
+
+        async def main(request: PageRequest) -> Page:
+            seen.append(request.arrival.following)
+            return Page(frames=(PageFrame(frame=Canvas().frame),))
+
+        app = Sextile(pages=[PageRoute("1", main, name="main")])
+        await app.ask("1", arrival=Arrival(following=PageAddress("2")))
+        assert seen == [PageAddress("2")]

@@ -13,7 +13,7 @@ from contextlib import suppress
 from typing import Final
 
 from sextile.addressing import PageAddress, UnknownPageError, keyed
-from sextile.application import Application, PageRequest
+from sextile.application import Application
 from sextile.server import (
     DEFAULT_IDLE_TIMEOUT,
     DEFAULT_PORT,
@@ -120,13 +120,7 @@ async def render_page(application: Application, arguments: argparse.Namespace) -
 
     await application.startup()
     try:
-        page = await application.respond(
-            PageRequest(
-                address=address,
-                service=application.service,
-                application=application,
-            )
-        )
+        page = await application.ask(address)
         if page is None:
             print(f"{keyed(address)} is not a page there.", file=sys.stderr)
             return 2

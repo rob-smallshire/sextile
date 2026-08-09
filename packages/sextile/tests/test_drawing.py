@@ -9,8 +9,8 @@ import pytest
 
 from sextile.viewdata.canvas import Canvas
 from sextile.viewdata.controls import Colour, Control
-from sextile.viewdata.drawing import SOLID, bar, centred, centred_double, fitted, rule
-from sextile.viewdata.encoding import cell_count
+from sextile.viewdata.drawing import SOLID, bar, centred, centred_double, rule
+from sextile.viewdata.encoding import cell_count, fitted
 from sextile.viewdata.frame import COLUMNS
 
 

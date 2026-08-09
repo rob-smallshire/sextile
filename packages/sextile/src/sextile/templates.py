@@ -38,17 +38,20 @@ from sextile.keys import (
     with_arrows,
 )
 from sextile.page import Page, PageFrame
-from sextile.viewdata.canvas import Canvas, RowWriter
+from sextile.viewdata.canvas import Canvas, RowWriter, Run
 from sextile.viewdata.chrome import CONTENT_FIRST_ROW, CONTENT_ROWS, draw_chrome
 from sextile.viewdata.controls import Colour
-from sextile.viewdata.drawing import fitted
-from sextile.viewdata.encoding import cell_count
+from sextile.viewdata.encoding import cell_count, fitted
 from sextile.viewdata.footer import ROOM, FooterItem, Priority, movement, render_footer
 from sextile.viewdata.frame import COLUMNS
 from sextile.viewdata.layout import Row, rows_for
 
 if TYPE_CHECKING:
     from sextile.application import Sextile
+
+#: One line of a lead-in: plain text in white, or runs where the colours carry
+#: some of the meaning. The rows it costs are counted the same either way.
+type PreambleLine = str | Sequence[Run]
 
 #: A reader selects with one keypress, so nine is the most a frame can offer.
 CHOICES_PER_FRAME: Final = 9
@@ -126,7 +129,7 @@ class Template[E](ABC):
         title: str,
         entries: Sequence[E],
         home: PageAddress | None = None,
-        preamble: Sequence[str] = (),
+        preamble: Sequence[PreambleLine] = (),
         empty: str = "",
         headings: str = "",
     ) -> None:
@@ -223,8 +226,11 @@ class Template[E](ABC):
         """Draw the lead-in, and say which row the entries start on."""
         row = CONTENT_FIRST_ROW
         for line in self.preamble:
-            if line:
-                canvas.row(row).text(fitted(line, COLUMNS - 1), Colour.WHITE)
+            if isinstance(line, str):
+                if line:
+                    canvas.row(row).text(fitted(line, COLUMNS - 1), Colour.WHITE)
+            else:
+                canvas.row(row).runs(line)
             row += 1
         #  A blank row between the lead-in and the entries, so the two read as
         #  two things.
@@ -333,7 +339,7 @@ class Prose(Template[Row]):
         *paragraphs: str,
         title: str,
         home: PageAddress | None = None,
-        preamble: Sequence[str] = (),
+        preamble: Sequence[PreambleLine] = (),
         empty: str = "",
     ) -> "Prose":
         """A page of plain paragraphs, wrapped here rather than by the caller."""

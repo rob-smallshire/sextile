@@ -21,7 +21,7 @@ from typing import Final
 from sextile.viewdata.canvas import Canvas
 from sextile.viewdata.composition import Align, Composition, Style
 from sextile.viewdata.controls import Colour, Control, graphics_colour
-from sextile.viewdata.encoding import cell_count
+from sextile.viewdata.encoding import fitted
 from sextile.viewdata.frame import COLUMNS
 
 #: The mosaic character with all six blocks lit. Every rule and bar is a run of
@@ -35,22 +35,6 @@ SOLID_BLOCKS: Final = 0b111111
 #: separated attribute as well. Both occupy cells.
 _CONTIGUOUS_ATTRIBUTES: Final = 1
 _SEPARATED_ATTRIBUTES: Final = 2
-
-
-def fitted(text: str, cells: int) -> str:
-    """Text shortened until it occupies no more than the cells available.
-
-    Measured in cells rather than characters: transliteration can lengthen a
-    string on its way to the wire, so trimming by length would leave something
-    that still overruns. There is no ellipsis, because on forty columns three
-    dots to say "there was more" cost more than the three characters they hide.
-    """
-    if cells <= 0:
-        return ""
-    shortened = text
-    while cell_count(shortened) > cells:
-        shortened = shortened[:-1]
-    return shortened
 
 
 def centred(

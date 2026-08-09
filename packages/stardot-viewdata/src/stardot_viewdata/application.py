@@ -44,7 +44,8 @@ from sextile.viewdata.canvas import Canvas
 from sextile.viewdata.chrome import CONTENT_FIRST_ROW, CONTENT_ROWS, draw_chrome
 from sextile.viewdata.composition import Align, Composition
 from sextile.viewdata.controls import Colour
-from sextile.viewdata.drawing import fitted, rule
+from sextile.viewdata.drawing import rule
+from sextile.viewdata.encoding import fitted
 from sextile.viewdata.font import load_font
 from sextile.viewdata.footer import (
     ROOM,

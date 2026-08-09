@@ -34,7 +34,7 @@ from sextile.addressing import PageAddress
 from sextile.templates import Entry
 from sextile.viewdata.canvas import Canvas, RowWriter
 from sextile.viewdata.controls import Colour
-from sextile.viewdata.drawing import fitted
+from sextile.viewdata.encoding import fitted
 from sextile.viewdata.frame import COLUMNS, Frame
 
 #: What a form asks to find out what to offer. Given what has been typed so

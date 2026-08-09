@@ -10,7 +10,9 @@ from sextile.addressing import PageAddress
 from sextile.keys import with_arrows
 from sextile.page import Page
 from sextile.templates import CHOICES_PER_FRAME, Entry, Listing, Menu, MenuItem, Prose
+from sextile.viewdata.canvas import Run
 from sextile.viewdata.chrome import CONTENT_FIRST_ROW, CONTENT_ROWS
+from sextile.viewdata.controls import Colour, Control
 
 
 def at(digits: str) -> PageAddress:
@@ -105,6 +107,57 @@ class TestThePreamble:
             title="ITEMS", entries=items(20), home=at("1"), preamble=["One.", "Two."]
         ).build(at("8"))
         assert page.frames[1].destination("9") is not None
+
+
+class TestAPreambleLineInMoreThanOneColour:
+    """A lead-in is not always one thing said in one voice.
+
+    A weather page's is: a clock in UTC and the same clock locally, which mean
+    different things and are told apart by colour rather than by a label
+    costing four cells to say `UTC` twice. So a preamble line may be given as
+    runs instead of as a string, and the rows it costs are counted the same way.
+    """
+
+    def test_each_run_is_written_in_its_own_colour(self) -> None:
+        page = Menu(
+            title="ITEMS",
+            entries=items(1),
+            home=at("1"),
+            preamble=[[Run("10:29", Colour.YELLOW), Run("12:29", Colour.CYAN)]],
+        ).build(at("8"))
+        found = page.frame(0)
+        assert found is not None
+        characters, attributes = found.frame.to_grid()
+        written, marked = characters[CONTENT_FIRST_ROW], attributes[CONTENT_FIRST_ROW]
+        assert "10:29 12:29" in written
+        #  The attribute sits in the cell before the run it colours.
+        assert marked[written.index("10:29") - 1] == chr(Control.ALPHA_YELLOW + 0x40)
+        assert marked[written.index("12:29") - 1] == chr(Control.ALPHA_CYAN + 0x40)
+
+    def test_it_costs_a_row_like_any_other_line(self) -> None:
+        plain = Menu(
+            title="ITEMS", entries=items(20), home=at("1"), preamble=["One.", "Two."]
+        ).build(at("8"))
+        coloured = Menu(
+            title="ITEMS",
+            entries=items(20),
+            home=at("1"),
+            preamble=[[Run("One.")], [Run("Two.", Colour.GREEN)]],
+        ).build(at("8"))
+        assert len(coloured.frames[0].choices) == len(plain.frames[0].choices)
+
+    def test_and_a_line_too_long_for_the_row_is_trimmed_rather_than_refused(
+        self,
+    ) -> None:
+        #  A preamble is drawn from whatever an application has to say, and a
+        #  place name of forty letters must not take the frame down with it.
+        page = Menu(
+            title="ITEMS",
+            entries=items(1),
+            home=at("1"),
+            preamble=[[Run("x" * 60, Colour.GREEN)]],
+        ).build(at("8"))
+        assert "Item 1" in text_of(page)
 
 
 class TestAListing:

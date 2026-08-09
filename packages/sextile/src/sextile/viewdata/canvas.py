@@ -9,18 +9,38 @@ independently of its neighbours and white text needs no attribute at all. Rows
 are obtained one at a time from ``Canvas.row`` for exactly that reason.
 """
 
-from collections.abc import Sequence
+from collections.abc import Iterable, Sequence
+from dataclasses import dataclass
 from enum import Enum, auto
 from typing import Final, Self
 
 from sextile.viewdata.charset import mosaic_code
 from sextile.viewdata.controls import Colour, Control, alpha_colour, graphics_colour
-from sextile.viewdata.encoding import cell_count
+from sextile.viewdata.encoding import cell_count, fitted
 from sextile.viewdata.frame import COLUMNS, ROWS, Frame
 from sextile.viewdata.wrapping import wrap_text
 
 #: Every row begins displaying white alphanumerics.
 DEFAULT_COLOUR = Colour.WHITE
+
+#  What a colour attribute costs, where the cost has to be reserved before the
+#  writing rather than charged during it.
+_ATTRIBUTE_CELL: Final = 1
+
+
+@dataclass(frozen=True)
+class Run:
+    """A stretch of text in one colour.
+
+    A row written in one voice needs no such thing -- `RowWriter.text` takes
+    the colour with the words. This is for a line whose colours are the meaning
+    rather than the decoration: two clocks side by side, one in UTC and one
+    local, told apart by colour because a label saying which would cost four
+    cells to repeat what the row above already said.
+    """
+
+    text: str
+    colour: Colour | None = None
 
 #  Attributes that change the foreground colour, and so what a character
 #  written after them will look like.
@@ -95,6 +115,26 @@ class RowWriter:
             self._mode = _Mode.ALPHA
         self._frame.write(self._row, self._column, text)
         self._column += cell_count(text)
+        return self
+
+    def runs(self, runs: "Iterable[Run]") -> Self:
+        """Append several stretches of text, each in its own colour.
+
+        What `text` does repeatedly, with the difference that this trims rather
+        than raises: a line assembled from runs is usually a line assembled from
+        data, and a place name longer than anybody expected should cost the
+        reader the end of a sentence rather than the whole frame.
+
+        A cell is held back from each run for the attribute that may precede it,
+        which costs nothing except in the rare case where the trimming actually
+        bites -- and there one character is a cheap price for not having to ask
+        `text` what it is about to charge.
+        """
+        for run in runs:
+            room = self.remaining - _ATTRIBUTE_CELL
+            if room <= 0:
+                break
+            self.text(fitted(run.text, room), run.colour)
         return self
 
     def mosaic(

@@ -45,7 +45,7 @@ from sextile.templates import HOME_KEY, Menu, MenuItem, Prose
 from sextile.viewdata.canvas import Canvas
 from sextile.viewdata.chrome import CONTENT_FIRST_ROW, CONTENT_ROWS, draw_chrome
 from sextile.viewdata.controls import Colour
-from sextile.viewdata.drawing import fitted
+from sextile.viewdata.encoding import fitted
 from sextile.viewdata.footer import (
     ROOM,
     FooterItem,

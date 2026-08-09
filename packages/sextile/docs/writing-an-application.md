@@ -632,7 +632,8 @@ canvas.paragraph(first_row, rows, prose, colour=Colour.WHITE)
 functions, so your own sit beside them:
 
 ```python
-from sextile.viewdata.drawing import bar, centred, centred_double, fitted, rule
+from sextile.viewdata.drawing import bar, centred, centred_double, rule
+from sextile.viewdata.encoding import cell_count, fitted
 
 rule(canvas, 1)                                    # a mosaic rule across the row
 centred(canvas, 3, "STARDOT", Colour.YELLOW)       # across the middle of a row

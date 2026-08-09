@@ -19,8 +19,8 @@ from typing import Final
 
 from sextile.viewdata.canvas import Canvas
 from sextile.viewdata.controls import Colour
-from sextile.viewdata.drawing import fitted, rule
-from sextile.viewdata.encoding import cell_count
+from sextile.viewdata.drawing import rule
+from sextile.viewdata.encoding import cell_count, fitted
 from sextile.viewdata.frame import COLUMNS, ROWS
 
 HEADER_ROW: Final = 0

@@ -32,10 +32,17 @@ def curve(
 ) -> list[list[bool]]:
     """A line through evenly spaced values, drawn as a bitmap.
 
-    One block lit in every column, with the columns between two values filled
-    in so the line is joined rather than dotted -- at six or nine blocks tall a
-    step of three is common, and a line of unconnected marks does not read as a
-    line.
+    **One block to a column, and no more.** A rising line could be drawn with
+    the blocks between two heights filled in, which joins it four ways and
+    makes a staircase of solid treads; leaving them out joins it eight ways,
+    corner to corner, which is thinner and reads as a line rather than as a
+    wall. Blocks laid corner to corner read as the diagonal they are -- the
+    same fact the compass's arrows are drawn on.
+
+    It costs nothing here because the horizontal resolution is the generous
+    one: eight blocks between one value and the next, against nine blocks of
+    height in all, so a line climbing from the floor to the ceiling in a single
+    step still only rises about a block a column.
 
     A missing value breaks it. There is no interpolating across a gap: a
     forecast with an hour missing from the middle is not a forecast that says
@@ -45,16 +52,10 @@ def curve(
     if not fractions or across < 1 or down < 1:
         return grid
     heights = [None if value is None else _height(value, down) for value in fractions]
-    previous: int | None = None
     for column in range(across):
         here = _sampled(heights, column, across)
-        if here is None:
-            previous = None
-            continue
-        low, high = (here, here) if previous is None else _span(previous, here)
-        for level in range(low, high + 1):
-            grid[down - 1 - level][column] = True
-        previous = here
+        if here is not None:
+            grid[down - 1 - here][column] = True
     return grid
 
 
@@ -107,7 +108,3 @@ def _height(fraction: float, down: int) -> int:
     """A fraction of the height, as the block row it lands on."""
     return max(0, min(down - 1, round(fraction * (down - 1))))
 
-
-def _span(before: int, after: int) -> tuple[int, int]:
-    """The blocks to fill so that a step is a line and not two dots."""
-    return (before, after) if before <= after else (after, before)

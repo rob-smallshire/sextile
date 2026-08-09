@@ -544,6 +544,15 @@ the labels or pictures above it, and the line runs level out to the edges rather
 than stopping short. A missing value breaks the line: joining the ends would
 draw a claim about an hour there is nothing for.
 
+**One block to a column, and no more.** Filling the blocks between two heights
+joins a line four ways and makes a staircase of solid treads; leaving them out
+joins it eight ways, corner to corner, which is thinner and reads as a line
+rather than as a wall — the same fact the compass's arrows are drawn on. It
+costs nothing because the horizontal resolution is the generous one: eight
+blocks between one value and the next against nine of height in all, so a line
+climbing from floor to ceiling in a single step still rises about a block a
+column.
+
 **`thin_rule`** is the chrome's rule with a sixth of the ink — one block thick
 instead of three, in the same separated mosaics and across the same cells. A bar
 belongs where a page ends; between two things that are both content it reads as

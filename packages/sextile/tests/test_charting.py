@@ -44,14 +44,22 @@ class TestACurve:
         assert lit_in(curve([0.5, 0.5], across=8, down=3), 0) == [1]
         assert lit_in(curve([0.5, 0.5], across=8, down=3), 7) == [1]
 
-    def test_a_step_is_joined_rather_than_dotted(self) -> None:
-        #  At nine blocks tall a step of three is common, and a line of
-        #  unconnected marks does not read as a line.
-        steep = curve([0.0, 1.0], across=4, down=9)
-        for column in range(4):
-            assert lit_in(steep, column), column
-        every = sorted({level for column in range(4) for level in lit_in(steep, column)})
-        assert every == list(range(9))
+    def test_one_block_to_a_column_and_no_more(self) -> None:
+        #  Filling the blocks between two heights joins the line four ways and
+        #  makes a staircase of solid treads; leaving them out joins it eight
+        #  ways, corner to corner, which is thinner and reads as a line.
+        steep = curve([0.0, 1.0, 0.0, 1.0], across=32, down=9)
+        for column in range(32):
+            assert len(lit_in(steep, column)) == 1, column
+
+    def test_and_it_climbs_about_a_block_a_column(self) -> None:
+        #  Which is what makes one block a column enough: the horizontal
+        #  resolution is the generous one, eight blocks between values against
+        #  nine of height in all.
+        steep = curve([0.0, 1.0], across=16, down=9)
+        levels = [lit_in(steep, column)[0] for column in range(16)]
+        steps = [abs(b - a) for a, b in zip(levels, levels[1:], strict=False)]
+        assert max(steps) <= 1
 
     def test_a_missing_value_breaks_it(self) -> None:
         #  There is no interpolating across a gap: joining the ends would draw

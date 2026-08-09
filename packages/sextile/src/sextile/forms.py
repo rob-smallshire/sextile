@@ -55,6 +55,9 @@ FIELD_COLOUR: Final = Colour.WHITE
 #: colour of what is written on it.
 _BACKGROUND_CELLS: Final = 3
 
+#: And what ending one costs, which is what bounds a field to its own width.
+_END_CELLS: Final = 1
+
 #: What a reader keys to choose the nth suggestion. Digits, as every viewdata
 #: menu uses, so nothing new has to be learned.
 _FIRST_DIGIT: Final = 1
@@ -468,8 +471,13 @@ class Fields(Form):
                 #  alone would say which, and a caret is one cell of nine
                 #  hundred.
                 row.background(self._field, text=self._typing)
-                room = min(field.width, row.remaining)
-                row.text(fitted(field.value, room), self._typing)
+                #  The bar is exactly the field's width, padded and then ended.
+                #  A background runs to the end of the row unless something
+                #  stops it, which would say there is room for thirty
+                #  characters in a field that takes six.
+                room = min(field.width, row.remaining - _END_CELLS)
+                row.text(fitted(field.value, room).ljust(room), self._typing)
+                row.plain()
             else:
                 #  Two spaces and the colour attribute before them come to the
                 #  three cells a background costs, so a field does not shift

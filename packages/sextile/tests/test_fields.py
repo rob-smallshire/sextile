@@ -260,3 +260,40 @@ class TestThroughASession:
 
 async def _somewhere(request: PageRequest, n: int) -> Page:
     return Page(frames=(PageFrame(frame=Canvas().frame),))
+
+
+class TestTheBarIsTheFieldsWidth:
+    """A bar says how much room there is, so it had better be the room.
+
+    Left to itself a background runs to the end of the row, which on a field
+    of six characters promises about thirty.
+    """
+
+    def _bounded(self) -> Fields:
+        return Fields(
+            fields=[Field("latitude", "LAT", FIRST_ROW, _takes("NS"), width=6)],
+            complete=where,
+        )
+
+    async def test_it_stops_after_the_field(self) -> None:
+        frame = Frame()
+        draw_form(frame, self._bounded())
+        _, attributes = frame.to_grid()
+        row = attributes[FIRST_ROW]
+        assert row.index("\\") == row.index("]") + 1 + 6 + 1, "blue, six cells, black"
+
+    async def test_and_not_at_the_end_of_the_row(self) -> None:
+        frame = Frame()
+        draw_form(frame, self._bounded())
+        _, attributes = frame.to_grid()
+        assert attributes[FIRST_ROW].rstrip(".").endswith("\\")
+
+    async def test_a_full_field_still_fits_inside_it(self) -> None:
+        frame = Frame()
+        form = await typing(self._bounded(), "179.9W")
+        draw_form(frame, form)
+        assert "179.9W" in text_of(frame).splitlines()[FIRST_ROW]
+
+    async def test_and_nothing_longer_goes_in(self) -> None:
+        form = await typing(self._bounded(), "179.9WEST")
+        assert form.values["latitude"] == "179.9W"

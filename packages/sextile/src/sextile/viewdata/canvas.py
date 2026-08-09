@@ -189,6 +189,23 @@ class RowWriter:
         self._colour = text
         return self
 
+    def plain(self) -> Self:
+        """End any background, so what follows sits on black again.
+
+        One cell. The foreground is untouched -- black is taken as a background
+        directly, being the one colour that needs no foreground chosen first.
+
+        What this is for is bounding a field. A background runs to the end of
+        the row unless something stops it, which says "type as much as you
+        like"; a field of known width should say how much room there is, which
+        means saying where the room ends.
+        """
+        if self.remaining < 1:
+            raise ValueError(f"row {self._row} has no cell left to end a background")
+        self._frame.set_attribute(self._row, self._column, Control.BLACK_BACKGROUND)
+        self._column += 1
+        return self
+
     def _colour_in_force(self) -> Colour:
         """The colour a character written here would take.
 

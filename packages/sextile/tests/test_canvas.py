@@ -408,3 +408,32 @@ class TestABackground:
         row = Canvas().row(0).skip(COLUMNS - 2)
         with pytest.raises(ValueError, match="background"):
             row.background(Colour.BLUE, text=Colour.WHITE)
+
+
+class TestEndingABackground:
+    """A background runs to the end of the row unless something stops it.
+
+    Which is right for a field a reader may fill, and wrong for one of known
+    width: a bar six cells wide says there is room for six, and a bar running
+    to column 39 says there is room for thirty.
+    """
+
+    def test_it_costs_one_cell(self) -> None:
+        row = Canvas().row(0).background(Colour.BLUE, text=Colour.WHITE)
+        assert row.plain().column == 4
+
+    def test_the_cell_is_the_one_the_hardware_wants(self) -> None:
+        canvas = Canvas()
+        canvas.row(0).background(Colour.BLUE, text=Colour.WHITE).text("54.0N").plain()
+        assert canvas.frame.cell(0, 3 + len("54.0N")) == Control.BLACK_BACKGROUND
+
+    def test_what_follows_is_written_in_the_same_colour(self) -> None:
+        #  Black is taken as a background directly, being the one colour that
+        #  needs no foreground chosen first, so nothing else changes.
+        row = Canvas().row(0).background(Colour.BLUE, text=Colour.WHITE).plain()
+        assert row.colour == Colour.WHITE
+
+    def test_a_row_with_no_room_left_says_so(self) -> None:
+        row = Canvas().row(0).skip(COLUMNS)
+        with pytest.raises(ValueError, match="end a background"):
+            row.plain()

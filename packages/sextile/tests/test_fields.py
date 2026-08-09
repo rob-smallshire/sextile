@@ -90,16 +90,28 @@ class TestMovingBetweenThem:
         await form.typed(key)
         assert form.live.name == "latitude"
 
-    async def test_going_on_from_the_last_stays_there(self) -> None:
+    async def test_going_on_from_the_last_comes_round_to_the_first(self) -> None:
+        #  Not up to the end and no further. A reader who tabs into the last
+        #  field and wants the first back has nowhere else to go: the back
+        #  arrows are there, and nobody who has just learned that TAB moves on
+        #  will think to look for them.
         form = a_form()
-        for _ in range(4):
-            await form.typed(keys.RIGHT)
-        assert form.live.name == "longitude"
+        await form.typed(keys.RIGHT)
+        await form.typed(keys.RIGHT)
+        assert form.live.name == "latitude"
 
-    async def test_and_back_from_the_first(self) -> None:
+    async def test_and_back_from_the_first_comes_round_to_the_last(self) -> None:
         form = a_form()
         await form.typed(keys.LEFT)
-        assert form.live.name == "latitude"
+        assert form.live.name == "longitude"
+
+    async def test_but_return_does_not_cycle(self) -> None:
+        #  TAB moves about a form; RETURN gets to the end of one. If it came
+        #  round instead of finishing, a reader could never send anything.
+        form = await typing(a_form(), "54.0N")
+        form.submit()
+        await typing(form, "1.1W")
+        assert form.submit() is not None
 
     async def test_nothing_advances_by_itself(self) -> None:
         #  A field that jumped when it thought it had enough would put the
@@ -168,6 +180,29 @@ class TestWhatIsOnTheScreen:
         draw_form(frame, form)
         row, column = form.caret
         assert frame.text_at(row, column - len("54.0N"), len("54.0N")) == "54.0N"
+
+    async def test_a_field_may_explain_itself_while_it_is_live(self) -> None:
+        #  A form of several fields has several things to explain and no room
+        #  to explain them all at once.
+        form = Fields(
+            fields=[
+                Field("latitude", "LATITUDE", FIRST_ROW, _takes("NS"),
+                      hint="54.0N or 54.0"),
+                Field("longitude", "LONGITUDE", FIRST_ROW + 1, _takes("EW"),
+                      hint="1.1W or -1.1"),
+            ],
+            complete=where,
+            hint_row=NOTE_ROW,
+        )
+        frame = Frame()
+        draw_form(frame, form)
+        assert "54.0N" in text_of(frame).splitlines()[NOTE_ROW]
+        await form.typed(keys.RIGHT)
+        frame = Frame()
+        draw_form(frame, form)
+        shown = text_of(frame).splitlines()[NOTE_ROW]
+        assert "1.1W" in shown
+        assert "54.0N" not in shown
 
     async def test_something_may_be_said_beneath_them(self) -> None:
         async def note(values: Mapping[str, str]) -> str:

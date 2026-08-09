@@ -331,6 +331,15 @@ class Field:
     width: int = 12
     """Cells the value may take, after the label and the attributes."""
 
+    hint: str = ""
+    """What to say while the caret is in this field, and only then.
+
+    A form of several fields has several things to explain and no room to
+    explain them all at once. Saying the one that applies is both shorter and
+    more use than saying all of them: a reader in the longitude has no need of
+    an example latitude, and forty columns has no room for it either.
+    """
+
     value: str = ""
 
 
@@ -373,6 +382,7 @@ class Fields(Form):
         complete: Complete,
         note: Note | None = None,
         note_row: int | None = None,
+        hint_row: int | None = None,
         field: Colour = FIELD_BACKGROUND,
         typing: Colour = FIELD_COLOUR,
     ) -> None:
@@ -382,6 +392,7 @@ class Fields(Form):
         self._complete = complete
         self._note = note
         self._note_row = note_row
+        self._hint_row = hint_row
         self._field = field
         self._typing = typing
         self._live = 0
@@ -400,8 +411,7 @@ class Fields(Form):
     @property
     def rows(self) -> range:
         rows = [field.row for field in self._fields]
-        if self._note_row is not None:
-            rows.append(self._note_row)
+        rows += [row for row in (self._note_row, self._hint_row) if row is not None]
         return range(min(rows), max(rows) + 1)
 
     @property
@@ -418,9 +428,13 @@ class Fields(Form):
 
     async def typed(self, key: str) -> None:
         if key in self._ONWARD:
-            self._live = min(self._live + 1, len(self._fields) - 1)
+            #  Round, not up to the end and no further. A reader who tabs into
+            #  the last field and wants the first back has nowhere else to go:
+            #  the back arrows are there, but nobody who has just learned that
+            #  TAB moves on will think to look for them.
+            self._live = (self._live + 1) % len(self._fields)
         elif key in self._BACK:
-            self._live = max(self._live - 1, 0)
+            self._live = (self._live - 1) % len(self._fields)
         elif key == keys.RUB_OUT:
             self.live.value = self.live.value[:-1]
         elif len(self.live.value) < self.live.width:
@@ -434,6 +448,9 @@ class Fields(Form):
         RETURN on a form is the same key as RETURN on a terminal has always
         been: it finishes the field you are in. On the last one there is
         nothing left to finish, so it finishes the form.
+
+        Which is why it does not cycle where TAB does. TAB moves about a form;
+        RETURN gets to the end of one.
         """
         if self._live + 1 < len(self._fields):
             self._live += 1
@@ -461,6 +478,10 @@ class Fields(Form):
         if self._note_row is not None and self._said:
             canvas.row(self._note_row).text(
                 fitted(self._said, COLUMNS - 1), Colour.GREEN
+            )
+        if self._hint_row is not None and self.live.hint:
+            canvas.row(self._hint_row).text(
+                fitted(self.live.hint, COLUMNS - 1), Colour.GREEN
             )
 
     @property

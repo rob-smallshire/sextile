@@ -531,6 +531,19 @@ and the row the entry starts on, and its default is exactly what the text shapes
 want, so it is the unusual thing to override. The weather service's page of
 weather symbols is what asked for it.
 
+**`charting.py`** turns a run of numbers into a bitmap for the block grid:
+`curve` for a line and `bars` for columns standing on the floor. Values arrive
+as fractions of the height, never as data — deciding what the top and bottom of
+a chart mean is the caller's, and it is the whole of the interesting part
+(whether a scale starts at zero, whether it is fixed so two frames compare,
+where a threshold falls). A charting module that guessed at that would be
+guessing about somebody else's subject.
+
+A value sits at the middle of its share of the width, so a chart lines up with
+the labels or pictures above it, and the line runs level out to the edges rather
+than stopping short. A missing value breaks the line: joining the ends would
+draw a claim about an hour there is nothing for.
+
 **`thin_rule`** is the chrome's rule with a sixth of the ink — one block thick
 instead of three, in the same separated mosaics and across the same cells. A bar
 belongs where a page ends; between two things that are both content it reads as

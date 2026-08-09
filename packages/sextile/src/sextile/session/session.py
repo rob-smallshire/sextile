@@ -24,12 +24,12 @@ from typing import Final
 
 from sextile.addressing import PageAddress, UnknownPageError
 from sextile.application import Application, Arrival, PageRequest, Parting
+from sextile.forms import draw_form
 from sextile.keys import (
     CONVENTIONAL_NEXT_FRAME,
     NEXT_FRAME,
     PREVIOUS_FRAME,
 )
-from sextile.forms import draw_form
 from sextile.page import Page, PageFrame
 from sextile.session.commands import (
     Back,
@@ -49,8 +49,8 @@ from sextile.viewdata.command_line import (
 )
 from sextile.viewdata.countdown import countdown_bytes, lit_cells
 from sextile.viewdata.frame import Frame
-from sextile.viewdata.repaint import changed_rows, rows_bytes
 from sextile.viewdata.parting import parting_bytes
+from sextile.viewdata.repaint import changed_rows, rows_bytes
 
 _logger = logging.getLogger(__name__)
 

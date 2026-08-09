@@ -14,7 +14,6 @@ one more thing that could disagree.
 
 from collections.abc import Mapping
 from dataclasses import dataclass, field
-
 from typing import TYPE_CHECKING
 
 from sextile.addressing import PageAddress

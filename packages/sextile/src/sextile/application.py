@@ -25,6 +25,7 @@ a device. The one caller kept waiting should not be all of them.
 
 from abc import ABC, abstractmethod
 from collections.abc import Awaitable, Callable, Mapping, MutableMapping, Sequence
+from contextlib import AbstractAsyncContextManager
 from dataclasses import dataclass, field
 from typing import Final
 
@@ -78,6 +79,18 @@ class PageRequest:
     """Where this caller has been, oldest first, as far back as the session
     keeps. The terminal remembers none of it, so a service wanting to offer a
     way back through the call has to be handed the way back."""
+
+    service: Mapping[str, object] = field(default_factory=dict)
+    """What the service opened, for as long as it is running -- an archive, a
+    client, an index.
+
+    The counterpart of `session`, and the contrast is the whole point of there
+    being two: `session` is this caller's and lasts as long as the line,
+    `service` is everybody's and lasts as long as the process. Read-only here,
+    because a page that changed what the service holds would be changing it for
+    every other caller at once.
+
+    What goes in it is whatever the application's `lifespan` yielded."""
 
 
 @dataclass(frozen=True)
@@ -194,7 +207,7 @@ type Handler = Callable[..., Awaitable[Page | None]]
 type NotFoundHandler = Callable[[str], Awaitable[Page]]
 type PartingHandler = Callable[[Parting], Awaitable[Page]]
 type FailureHandler = Callable[[PageAddress], Awaitable[Page]]
-type LifecycleHandler = Callable[[], Awaitable[None]]
+type Lifespan = Callable[["Sextile"], AbstractAsyncContextManager[Mapping[str, object] | None]]
 type ResolveHandler = Callable[[str], PageAddress | None]
 
 
@@ -321,6 +334,11 @@ class Application(ABC):
         """
         return PageAddress(target.strip())
 
+    @property
+    def service(self) -> Mapping[str, object]:
+        """What this application holds while it is running. Nothing, by default."""
+        return {}
+
     async def not_found(self, target: str) -> Page:
         """Say that a request named nothing here.
 
@@ -407,6 +425,7 @@ class Sextile(Application):
         home: str | PageAddress = "1",
         index: str | PageAddress | None = None,
         converters: Mapping[str, Converter | ConverterFactory] | None = None,
+        lifespan: Lifespan | None = None,
     ) -> None:
         self._name = name
         self._router: Router[Handler] = Router()
@@ -416,8 +435,9 @@ class Sextile(Application):
         self._timed_out: PartingHandler | None = None
         self._failed: FailureHandler | None = None
         self._unresolved: ResolveHandler | None = None
-        self._opening: list[LifecycleHandler] = []
-        self._closing: list[LifecycleHandler] = []
+        self._lifespan = lifespan
+        self._running: AbstractAsyncContextManager[Mapping[str, object] | None] | None = None
+        self._service: dict[str, object] = {}
         self._home = home if isinstance(home, PageAddress) else PageAddress(home)
         wanted = self._home if index is None else index
         self._index = wanted if isinstance(wanted, PageAddress) else PageAddress(wanted)
@@ -586,27 +606,6 @@ class Sextile(Application):
         self._unresolved = handler
         return handler
 
-    def on_startup[H: LifecycleHandler](self, handler: H) -> H:
-        """Register something to open before the first call is answered.
-
-        A list rather than one handler, unlike the three above: those each
-        answer a question that has one answer, and a service may perfectly well
-        have an archive *and* a client to open.
-
-        This exists so that a service built round a module-level application
-        can hold something. `startup` and `shutdown` are overridable methods,
-        which is fine for a service that is a class and no use at all to one
-        that is not -- and a service with nothing to open is exactly the
-        service that had no reason to be a class.
-        """
-        self._opening.append(handler)
-        return handler
-
-    def on_shutdown[H: LifecycleHandler](self, handler: H) -> H:
-        """Register something to let go of after the last call."""
-        self._closing.append(handler)
-        return handler
-
     # -- answering ----------------------------------------------------------
 
     async def respond(self, request: PageRequest) -> Page | None:
@@ -686,19 +685,31 @@ class Sextile(Application):
 
     # -- lifespan -----------------------------------------------------------
 
+    @property
+    def service(self) -> Mapping[str, object]:
+        """What the lifespan yielded, for as long as the service is running."""
+        return self._service
+
     async def startup(self) -> None:
-        for opening in self._opening:
-            await opening()
+        if self._lifespan is not None:
+            self._running = self._lifespan(self)
+            held = await self._running.__aenter__()
+            if held is not None:
+                self._service.update(held)
         for _, application in self._mounted:
             await application.startup()
 
     async def shutdown(self) -> None:
         for _, application in self._mounted:
             await application.shutdown()
-        #  Backwards, so that what was opened last is closed first: anything
-        #  opened later may be holding what was opened earlier.
-        for closing in reversed(self._closing):
-            await closing()
+        if self._running is not None:
+            #  Whatever the lifespan set up is torn down by the same function
+            #  that set it up, which is the reason for it being a context
+            #  manager rather than a pair of handlers: setup and teardown
+            #  cannot drift apart when they are two halves of one function.
+            await self._running.__aexit__(None, None, None)
+            self._running = None
+        self._service.clear()
 
 
 def _plain_notice(title: str, *lines: str, hang_up: bool = False) -> Page:

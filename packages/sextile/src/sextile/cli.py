@@ -120,7 +120,9 @@ async def render_page(application: Application, arguments: argparse.Namespace) -
 
     await application.startup()
     try:
-        page = await application.respond(PageRequest(address=address))
+        page = await application.respond(
+            PageRequest(address=address, service=application.service)
+        )
         if page is None:
             print(f"{keyed(address)} is not a page there.", file=sys.stderr)
             return 2

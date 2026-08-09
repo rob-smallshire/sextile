@@ -460,6 +460,7 @@ class Session:
                     arrival=sequence.arrival() if sequence else Arrival(),
                     session=self._state,
                     history=been,
+                    service=self._application.service,
                 )
             )
         except Exception as error:

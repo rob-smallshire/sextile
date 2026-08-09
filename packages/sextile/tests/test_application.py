@@ -9,6 +9,9 @@ the same number may legitimately be shown different things once there is such a
 thing as being logged in.
 """
 
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
+
 import pytest
 
 from sextile.addressing import PageAddress, UnknownPageError
@@ -22,6 +25,7 @@ from sextile.application import (
 )
 from sextile.page import Page, PageFrame
 from sextile.routing import Converter, NoSuchRouteError
+from sextile.session.session import Session
 from sextile.viewdata.canvas import Canvas
 from sextile.viewdata.frame import Frame
 
@@ -857,62 +861,89 @@ class TestFieldShapesOfAnApplicationsOwn:
         assert app.route(PageAddress("842")) is not None
 
 
-class TestOpeningAndClosingWithoutASubclass:
-    """A module-level application may still have something to open.
+class TestWhatAServiceHoldsWhileItRuns:
+    """One function opens and closes it, and the pages are handed the result.
 
-    `startup` and `shutdown` are overridable methods, which serves a service
-    that is a class and no service that is not -- and a service with nothing to
-    open is exactly the one with no reason to be a class in the first place.
+    A pair of handlers was tried first and replaced. Setup and teardown as two
+    functions have to be kept in step by hand and hoist whatever they open into
+    somewhere both can see; as two halves of one function they cannot drift,
+    and the thing opened is an ordinary local held across the yield. Starlette
+    deprecated its own startup and shutdown handlers for this, which is the
+    same lesson learned earlier by somebody else.
     """
 
-    async def test_what_was_registered_is_opened(self) -> None:
-        app = Sextile()
-        opened: list[str] = []
+    async def test_the_lifespan_runs_before_the_first_call(self) -> None:
+        done: list[str] = []
 
-        @app.on_startup
-        async def open_archive() -> None:
-            opened.append("archive")
+        @asynccontextmanager
+        async def lifespan(app: Sextile) -> AsyncIterator[None]:
+            done.append("opened")
+            yield
+            done.append("closed")
 
+        app = Sextile(lifespan=lifespan)
         await app.startup()
-        assert opened == ["archive"]
-
-    async def test_several_things_may_be_opened(self) -> None:
-        #  Unlike the not-found handler, which answers a question with one
-        #  answer. A service may have an archive and a client both.
-        app = Sextile()
-        opened: list[str] = []
-
-        @app.on_startup
-        async def open_archive() -> None:
-            opened.append("archive")
-
-        @app.on_startup
-        async def open_client() -> None:
-            opened.append("client")
-
-        await app.startup()
-        assert opened == ["archive", "client"]
-
-    async def test_they_are_closed_in_the_reverse_order(self) -> None:
-        #  Anything opened later may be holding what was opened earlier.
-        app = Sextile()
-        closed: list[str] = []
-
-        @app.on_shutdown
-        async def close_archive() -> None:
-            closed.append("archive")
-
-        @app.on_shutdown
-        async def close_client() -> None:
-            closed.append("client")
-
+        assert done == ["opened"]
         await app.shutdown()
-        assert closed == ["client", "archive"]
+        assert done == ["opened", "closed"]
 
-    async def test_a_service_with_nothing_to_open_still_starts(self) -> None:
+    async def test_what_it_yields_is_what_the_service_holds(self) -> None:
+        @asynccontextmanager
+        async def lifespan(app: Sextile) -> AsyncIterator[dict[str, object]]:
+            yield {"archive": "an archive"}
+
+        app = Sextile(lifespan=lifespan)
+        await app.startup()
+        assert app.service["archive"] == "an archive"
+
+    async def test_a_page_is_handed_it(self) -> None:
+        #  Which is the point: a handler reaches what the service opened
+        #  without the service having to be a class holding it.
+        seen: list[object] = []
+
+        @asynccontextmanager
+        async def lifespan(app: Sextile) -> AsyncIterator[dict[str, object]]:
+            yield {"archive": "an archive"}
+
+        app = Sextile(lifespan=lifespan)
+
+        @app.page("1", name="main")
+        async def main(request: PageRequest) -> Page:
+            seen.append(request.service["archive"])
+            return Page(frames=(PageFrame(frame=Canvas().frame),))
+
+        await app.startup()
+        await Session(app).greeting()
+        assert seen == ["an archive"]
+
+    async def test_it_is_given_the_application(self) -> None:
+        #  So that a lifespan may reach the numbering -- and because a factory
+        #  has no name for the application until the constructor has returned.
+        seen: list[str] = []
+
+        @asynccontextmanager
+        async def lifespan(app: Sextile) -> AsyncIterator[None]:
+            seen.append(app.name)
+            yield
+
+        await Sextile(name="Weather", lifespan=lifespan).startup()
+        assert seen == ["Weather"]
+
+    async def test_a_service_with_no_lifespan_still_starts(self) -> None:
         app = Sextile()
         await app.startup()
+        assert app.service == {}
         await app.shutdown()
+
+    async def test_and_lets_go_of_it_afterwards(self) -> None:
+        @asynccontextmanager
+        async def lifespan(app: Sextile) -> AsyncIterator[dict[str, object]]:
+            yield {"archive": "an archive"}
+
+        app = Sextile(lifespan=lifespan)
+        await app.startup()
+        await app.shutdown()
+        assert app.service == {}
 
 
 class TestATargetTheNumberingDoesNotName:

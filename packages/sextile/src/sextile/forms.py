@@ -26,6 +26,7 @@ which is why `Suggest` offers three.
 
 from abc import ABC, abstractmethod
 from collections.abc import Awaitable, Callable, Mapping, Sequence
+from dataclasses import dataclass
 from typing import Final
 
 from sextile import keys
@@ -308,3 +309,171 @@ def draw_form(frame: Frame, form: Form) -> None:
     for row in form.rows:
         frame.write(row, 0, " " * COLUMNS)
     form.draw(canvas)
+
+
+@dataclass
+class Field:
+    """One place on a frame that a reader types into."""
+
+    name: str
+    """What the form calls it when it hands the values over."""
+
+    label: str
+    """Shown before it. Should not end in a space: the attributes that follow
+    occupy cells and show as spaces already."""
+
+    row: int
+
+    takes: Callable[[str], bool]
+    """Whether a character belongs in this field. A form knows about typing;
+    what a *latitude* is made of is the service's business."""
+
+    width: int = 12
+    """Cells the value may take, after the label and the attributes."""
+
+    value: str = ""
+
+
+#: Given what has been keyed into each field, where the reader should be sent
+#: -- or None while there is nowhere to send them.
+type Complete = Callable[[Mapping[str, str]], PageAddress | None]
+
+#: Something to say about what has been keyed so far, drawn beneath the fields.
+type Note = Callable[[Mapping[str, str]], Awaitable[str]]
+
+
+class Fields(Form):
+    """Several fields, one of them live, and something said beneath them.
+
+    The interaction is settled by what a viewdata keypad can send, and it is
+    narrower than it looks. Two of the four arrows are unusable on a form whose
+    fields hold compass letters -- up arrives as `W` for West and down as `S`
+    for South -- so the framework no longer translates them at all and this
+    reads them as arrows. TAB shares a byte with cursor right, measured against
+    Commstar, which is the key a reader will reach for first.
+
+    And `0` cannot be the way out where digits are data, so a page carrying one
+    of these should say `*1#` in its footer rather than offer a key that would
+    type a zero.
+
+    Nothing advances by itself. A field that jumped to the next when it thought
+    it had enough would be a field whose caret is somewhere the reader did not
+    put it -- and with two ways of writing a coordinate, one of them ending in
+    a letter and one not, it could not even be consistent about when.
+    """
+
+    #: Forward, and back. TAB is cursor right on this hardware.
+    _ONWARD: Final = frozenset({keys.RIGHT, keys.DOWN})
+    _BACK: Final = frozenset({keys.LEFT, keys.UP})
+
+    def __init__(
+        self,
+        *,
+        fields: Sequence[Field],
+        complete: Complete,
+        note: Note | None = None,
+        note_row: int | None = None,
+        field: Colour = FIELD_BACKGROUND,
+        typing: Colour = FIELD_COLOUR,
+    ) -> None:
+        if not fields:
+            raise ValueError("a form needs a field to type into")
+        self._fields = list(fields)
+        self._complete = complete
+        self._note = note
+        self._note_row = note_row
+        self._field = field
+        self._typing = typing
+        self._live = 0
+        self._said = ""
+
+    @property
+    def values(self) -> Mapping[str, str]:
+        """What has been keyed into each field, by name."""
+        return {field.name: field.value for field in self._fields}
+
+    @property
+    def live(self) -> Field:
+        """The field the caret is in."""
+        return self._fields[self._live]
+
+    @property
+    def rows(self) -> range:
+        rows = [field.row for field in self._fields]
+        if self._note_row is not None:
+            rows.append(self._note_row)
+        return range(min(rows), max(rows) + 1)
+
+    @property
+    def caret(self) -> tuple[int, int]:
+        return self.live.row, self._column_of(self.live) + len(self.live.value)
+
+    def accepts(self, key: str) -> bool:
+        return (
+            key in self._ONWARD
+            or key in self._BACK
+            or key == keys.RUB_OUT
+            or self.live.takes(key)
+        )
+
+    async def typed(self, key: str) -> None:
+        if key in self._ONWARD:
+            self._live = min(self._live + 1, len(self._fields) - 1)
+        elif key in self._BACK:
+            self._live = max(self._live - 1, 0)
+        elif key == keys.RUB_OUT:
+            self.live.value = self.live.value[:-1]
+        elif len(self.live.value) < self.live.width:
+            self.live.value += key.upper()
+        if self._note is not None:
+            self._said = await self._note(self.values)
+
+    def submit(self) -> PageAddress | None:
+        """Onward, and away from the last.
+
+        RETURN on a form is the same key as RETURN on a terminal has always
+        been: it finishes the field you are in. On the last one there is
+        nothing left to finish, so it finishes the form.
+        """
+        if self._live + 1 < len(self._fields):
+            self._live += 1
+            return None
+        return self._complete(self.values)
+
+    def draw(self, canvas: Canvas) -> None:
+        for offset, field in enumerate(self._fields):
+            row = canvas.row(field.row)
+            #  Labels padded to the widest, so the values line up as a column
+            #  rather than each starting wherever its own label happened to end.
+            row.text(field.label.ljust(self._widest), Colour.CYAN)
+            if offset == self._live:
+                #  The live field is marked out and the others are not. A caret
+                #  alone would say which, and a caret is one cell of nine
+                #  hundred.
+                row.background(self._field, text=self._typing)
+                room = min(field.width, row.remaining)
+                row.text(fitted(field.value, room), self._typing)
+            else:
+                #  Two spaces and the colour attribute before them come to the
+                #  three cells a background costs, so a field does not shift
+                #  sideways when the caret arrives in it.
+                row.text(f"  {fitted(field.value, field.width)}", Colour.WHITE)
+        if self._note_row is not None and self._said:
+            canvas.row(self._note_row).text(
+                fitted(self._said, COLUMNS - 1), Colour.GREEN
+            )
+
+    @property
+    def _widest(self) -> int:
+        """The widest label, which every value is set after."""
+        return max(len(field.label) for field in self._fields)
+
+    def _column_of(self, field: Field) -> int:
+        """Where a field's value starts, attributes counted.
+
+        The label costs its colour and the field costs three, a background
+        being taken from a foreground. The same for every field, live or not,
+        which is what stops one moving under the reader.
+        """
+        del field
+        return self._widest + 1 + _BACKGROUND_CELLS

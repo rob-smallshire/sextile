@@ -439,10 +439,19 @@ class Session:
             #  A reader who has typed something presses RETURN without being
             #  told to. Before the frames, because a page with a field on it is
             #  a page they are typing into rather than reading through.
+            was = copy.deepcopy(showing.frame)
             sending = showing.form.submit()
             if sending is not None:
                 return await self._go_to(sending, self._sequence_towards(sending))
-            return None
+            #  It kept the reader here and may have moved the caret -- a form
+            #  of several fields finishes one and starts the next. So the frame
+            #  is redrawn and the cursor put where it now belongs, which
+            #  nothing else would do: the rows may not have changed at all.
+            draw_form(showing.frame, showing.form)
+            moved = changed_rows(was, showing.frame, showing.form.rows)
+            return rows_bytes(
+                showing.frame, moved, was=was, caret=showing.form.caret
+            ) or caret_bytes(*showing.form.caret)
         if self._frame_index + 1 < len(self._page.frames):
             self._frame_index += 1
             return self._send()

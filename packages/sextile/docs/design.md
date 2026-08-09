@@ -531,6 +531,14 @@ and the row the entry starts on, and its default is exactly what the text shapes
 want, so it is the unusual thing to override. The weather service's page of
 weather symbols is what asked for it.
 
+**A lead-in may hold a `Block`** — a number of rows and a function to fill them
+— for a part of it that is drawn rather than written: a strip of mosaics is
+placed by cell and is several rows tall, which is the wrong shape for a line of
+text. The pagination counts a block's rows like any other lead-in's, so a
+lead-in that takes the whole of the first frame simply leaves no entries on it
+and starts them on the second, instead of overrunning the rule. Headings are
+drawn only on a frame that has entries to label.
+
 **`wrap_within(text, cells=, rows=)`** puts text into a region that has a
 height as well as a width. `wrap_text` knows how wide a line may be and nothing
 about how many there is room for, so every caller with a region to fill did the

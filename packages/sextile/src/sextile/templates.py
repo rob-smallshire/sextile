@@ -25,7 +25,7 @@ that have no such notion.
 """
 
 from abc import ABC, abstractmethod
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, ClassVar, Final, Protocol, runtime_checkable
 
@@ -49,9 +49,26 @@ from sextile.viewdata.layout import Row, rows_for
 if TYPE_CHECKING:
     from sextile.application import Sextile
 
-#: One line of a lead-in: plain text in white, or runs where the colours carry
-#: some of the meaning. The rows it costs are counted the same either way.
-type PreambleLine = str | Sequence[Run]
+@dataclass(frozen=True)
+class Block:
+    """Part of a lead-in that is drawn rather than written.
+
+    A picture is placed by cell and may be many rows tall, which is the wrong
+    shape for a line of text and the right shape for a strip of mosaics. This
+    says how many rows it wants and how to fill them, and the pagination counts
+    those rows like any others -- so a lead-in that takes the whole of the first
+    frame simply leaves no entries on it, rather than overrunning the rule.
+    """
+
+    rows: int
+    draw: "Callable[[Canvas, int], None]"
+    """Given the canvas and the row it starts on."""
+
+
+#: One line of a lead-in: plain text in white, runs where the colours carry some
+#: of the meaning, or a block of rows drawn by the page. The rows it costs are
+#: counted the same in every case.
+type PreambleLine = str | Sequence[Run] | Block
 
 #: A reader selects with one keypress, so nine is the most a frame can offer.
 CHOICES_PER_FRAME: Final = 9
@@ -214,7 +231,9 @@ class Template[E](ABC):
                 prompt=self.prompt(selecting=self.numbered and bool(batch), back=back, on=on),
             )
             row = self._draw_preamble(canvas) if index == 0 else CONTENT_FIRST_ROW
-            if self.headings:
+            #  Headings label a column of figures, so a frame with no figures
+            #  on it has nothing for them to label.
+            if self.headings and batch:
                 canvas.row(row).text(fitted(self.headings, COLUMNS - 1), Colour.CYAN)
                 row += 1
             choices: dict[str, PageAddress] = {}
@@ -242,15 +261,24 @@ class Template[E](ABC):
         """Draw the lead-in, and say which row the entries start on."""
         row = CONTENT_FIRST_ROW
         for line in self.preamble:
-            if isinstance(line, str):
+            if isinstance(line, Block):
+                line.draw(canvas, row)
+            elif isinstance(line, str):
                 if line:
                     canvas.row(row).text(fitted(line, COLUMNS - 1), Colour.WHITE)
             else:
                 canvas.row(row).runs(line)
-            row += 1
+            row += _rows_of(line)
         #  A blank row between the lead-in and the entries, so the two read as
         #  two things.
         return row + 1 if self.preamble else row
+
+    @property
+    def preamble_rows(self) -> int:
+        """Rows the lead-in occupies, the blank after it included."""
+        if not self.preamble:
+            return 0
+        return sum(_rows_of(line) for line in self.preamble) + 1
 
     def _deal(self) -> list[Sequence[E]]:
         """Entries, frame by frame. The first frame is the short one."""
@@ -258,21 +286,29 @@ class Template[E](ABC):
         #  them once would write the last entry of every later frame over the
         #  rule at the foot of it.
         labelled = 1 if self.headings else 0
-        first = self._capacity(
-            len(self.preamble) + (1 if self.preamble else 0) + labelled
-        )
-        rest = self._capacity(labelled)
+        first = self._capacity(self.preamble_rows + labelled)
+        rest = max(self._capacity(labelled), 1)
         batches: list[Sequence[E]] = []
         start = 0
         while start < len(self.entries):
             room = first if not batches else rest
+            if room == 0:
+                #  A lead-in that fills the frame. The entries begin on the
+                #  next one rather than being squeezed on to this.
+                batches.append(())
+                continue
             batches.append(self.entries[start : start + room])
             start += room
         return batches or [()]
 
     def _capacity(self, spent: int) -> int:
-        """How many entries fit once ``spent`` rows have gone on other things."""
-        room = max((CONTENT_ROWS - spent) // self.rows_per_entry, 1)
+        """How many entries fit once ``spent`` rows have gone on other things.
+
+        None is a real answer, where a lead-in has taken the frame. Only the
+        first frame can be in that position, and `_deal` gives it an empty
+        batch and starts the entries on the next.
+        """
+        room = max((CONTENT_ROWS - spent) // self.rows_per_entry, 0)
         return min(room, CHOICES_PER_FRAME) if self.numbered else room
 
 
@@ -376,6 +412,11 @@ class Prose(Template[Row]):
             #  row has, colour attribute and indent included. Cutting again
             #  would take a character off every line it had filled exactly.
             row.skip(entry.indent).text(entry.text, entry.colour)
+
+
+def _rows_of(line: PreambleLine) -> int:
+    """Rows one lead-in item occupies. Everything but a block is one."""
+    return line.rows if isinstance(line, Block) else 1
 
 
 def _last_content_row() -> int:

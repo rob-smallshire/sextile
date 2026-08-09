@@ -31,6 +31,7 @@ Commstar does with bytes, not about how they arrived.
 | `spike_cursor_output.py` | Can we redraw part of a screen? | Yes. Moving the cursor erases nothing, and cursor up from row 0 wraps to row 23 — so the footer is two bytes away. |
 | `spike_cursor_visibility.py` | Can the cursor be hidden? | 0x11 and 0x14 are consumed as controls, taking no cell. Which shows and which hides was confirmed by eye, the cursor's blink defeating a read-back. |
 | `spike_trimmed_frames.py` | Is a trimmed frame identical on screen? | Yes, across six frames including the one that would break it — a row filled to column 40. |
+| `spike_suggestion_block.py` | Can a block of rows be repainted as a reader types? | Yes, if each row is sent trimmed: a full-width row wraps by itself, so a cursor down after one moves two rows. Three suggestions cost 121 bytes, 1.0s at 1200 baud; the common keystroke costs 40. |
 
 What they established is written up in
 [../viewdata-encoding.md](../../packages/sextile/docs/viewdata-encoding.md), which keeps what was

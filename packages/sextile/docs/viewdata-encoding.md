@@ -285,6 +285,48 @@ sitting earlier in the row and going untouched.
 This is also what differential update would need, should the whole-frame repaint
 ever become the thing worth optimising.
 
+## A block of rows can be repainted, if each row is trimmed
+
+Measured by `docs/spikes/spike_suggestion_block.py`, which asks whether a
+type-ahead search is possible at all: the reader types, and the best three
+matching places are repainted beneath the field.
+
+**A row written to all forty columns must not be followed by a cursor down.**
+It wraps by itself — `spike_frame_geometry` established that — so the cursor is
+already on the next row, and the carriage return and cursor down that walk to
+the next row of the block move it down a second one. A three-row block written
+that way lands on rows 4, 6 and 8, overruns what is beneath it, and leaves the
+rows between showing whatever they showed before. This is what the spike found
+first, and nothing but a real screen would have found it: the arithmetic is
+identical either way.
+
+So each row of a multi-row repaint is sent **trimmed to its last non-blank
+cell**, which fixes the walk and costs a third fewer bytes into the bargain.
+
+What it costs, on real Commstar, for three suggestions of a name and a country:
+
+| Repainted | Bytes | At 1200 baud |
+|---|---|---|
+| The field alone — the common keystroke | 40 | 0.33 s |
+| The rows that changed | 81 | 0.68 s |
+| The whole block | 121 | 1.01 s |
+
+A reader on a BBC keypad types perhaps two characters a second, so the block
+keeps up when the list is settling and lags a little while it churns. Nine
+suggestions would not: the same measurement scaled is nearly three seconds a
+keystroke, which is why the design is three.
+
+Nothing below the block was disturbed, and the title row survived — so a
+repaint neither scrolls nor overruns once the trimming is right.
+
+**Two things this did not establish.** Whether an attribute can leak out of a
+row rewritten mid-frame is only inferred: the rows beneath kept their own text,
+and attributes are known to reset at the start of every row, but the emulator's
+cell API did not expose a foreground colour to read back. And where the cursor
+ends up after the walk could not be read at all — `cursor_row` and
+`cursor_column` are not exposed — so, as with cursor visibility, that one needs
+an eye on a real screen.
+
 ## The cursor
 
 Commstar shows a cursor by default, which is a distraction on a page nobody is

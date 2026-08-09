@@ -1,20 +1,21 @@
 """Spike: can a block of suggestions be repainted as a reader types?
 
 A place-name search wants what every search wants: the reader types, and the
-best few matches appear beneath the field. Nine of them, each on a digit, which
-is the shape a viewdata menu already has.
+best few matches appear beneath the field. Three of them, each on a digit --
+three rather than nine because the wire says so, which is question 1 below.
 
 The cursor machinery this needs is measured -- `spike_cursor_output.py`
 established that home-and-down reaches any row, that moving erases nothing, and
 that a carriage return alone returns to column zero. What is *not* measured is
-what happens when nine rows are repainted at once, on every keystroke, on a real
-screen at a real baud rate. Four questions, none of which arithmetic answers:
+what happens when a block of rows is repainted at once, on every keystroke, on
+a real screen at a real baud rate. Four questions, none of which arithmetic
+answers:
 
-1. **What does it cost?** A row of suggestion is thirty-odd cells. Nine of them
-   plus the moves between is a few hundred bytes, which at 1200 baud is seconds
-   rather than milliseconds -- and a reader types faster than that. If the block
-   cannot keep up, the design is a paged result list rather than type-ahead, and
-   it is much better to find that out now.
+1. **What does it cost?** A row of suggestion is thirty-odd cells, and the moves
+   between them are a few more, which at 1200 baud may be seconds rather than
+   milliseconds -- and a reader types faster than that. If the block cannot keep
+   up, the design is a paged result list rather than type-ahead, and it is much
+   better to find that out now.
 
 2. **Where does the cursor end up?** The reader is still typing, so it has to go
    back to the field afterwards, and be visible there. If the return trip is
@@ -50,8 +51,9 @@ from beebium.client import Beebium
 from beebium.client.exceptions import ServerNotFoundError
 from beebium.ext.peripheral.rpc_serial import RpcSerial
 from sextile.viewdata.canvas import Canvas
-from sextile.viewdata.controls import Colour
-from sextile.viewdata.frame import COLUMNS, ROWS
+from sextile.viewdata.controls import Colour, Control
+from sextile.viewdata.encoding import encode_control
+from sextile.viewdata.frame import COLUMNS, ROWS, Frame
 
 COMMSTAR_ROM_FILENAME = "commstar_1_40_SN882A.rom"
 
@@ -195,6 +197,37 @@ def search_frame(typed: str) -> bytes:
     return canvas.frame.to_bytes()
 
 
+BLANK = 0x20
+
+
+def used_columns(frame: Frame, row: int) -> int:
+    """How much of a row is worth sending: up to its last non-blank cell."""
+    codes = frame._cells[row * COLUMNS : (row + 1) * COLUMNS]
+    for column in reversed(range(COLUMNS)):
+        if codes[column] != BLANK:
+            return column + 1
+    return 0
+
+
+def row_bytes_upto(frame: Frame, row: int, upto: int) -> bytes:
+    """A row's cells, escaped, stopping at ``upto``.
+
+    `Frame.row_bytes` sends all forty columns, which is right for the command
+    line -- its field is deliberately full width -- and wrong here for a reason
+    that only shows on real hardware: **a row written to column 40 wraps by
+    itself**, measured in `spike_frame_geometry`. The cursor is then already on
+    the next row, and the carriage return and cursor down that follow move it
+    down a second one, so a three-row block lands on rows 4, 6 and 8.
+    """
+    out = bytearray()
+    for code in frame._cells[row * COLUMNS : row * COLUMNS + upto]:
+        if code < BLANK:
+            out.extend(encode_control(Control(code)))
+        else:
+            out.append(code)
+    return bytes(out)
+
+
 def to_row(row: int) -> bytes:
     """Home, then down. The only positioning viewdata offers."""
     return bytes([HOME]) + bytes([DOWN]) * row
@@ -234,7 +267,10 @@ def block_bytes(typed: str, *, only_rows: set[int] | None = None) -> bytes:
             #  Step over the rows being left alone: carriage return to column
             #  zero, then one cursor down per row skipped.
             out += bytes([CARRIAGE_RETURN]) + bytes([DOWN]) * (row - at)
-        out += canvas.frame.row_bytes(row)
+        #  Trimmed, so the row does not fill to column 40 and wrap of its own
+        #  accord -- which would put the cursor a row further on than the walk
+        #  below believes it to be.
+        out += row_bytes_upto(canvas.frame, row, used_columns(canvas.frame, row))
         at = row
     #  Back to the field, and visible: the reader has not finished typing.
     out += to_row(FIELD_ROW)
@@ -255,7 +291,7 @@ def test_a_full_block_repaint_costs_what_we_can_afford(commstar: Beebium) -> Non
     """
     send(commstar, search_frame("TRO"))
     painted = block_bytes("TROND")
-    print(f"\n  a full nine-row repaint: {len(painted)} bytes")
+    print(f"\n  a full block repaint: {len(painted)} bytes")
     print(f"  at {BAUD} baud: {seconds_at_1200(painted):.2f} s per keystroke")
     print(f"  at 9600 baud: {len(painted) * BITS_PER_CHARACTER / 9600:.2f} s")
     send(commstar, painted)
@@ -300,7 +336,9 @@ def test_the_block_leaves_the_rest_of_the_frame_alone(commstar: Beebium) -> None
     print(f"\n  rows below the block disturbed: {disturbed or 'none'}")
     print(f"  title row: {lines[0][:20]!r}")
     assert not disturbed
-    assert lines[0].startswith("FIND A PLACE")
+    #  Not `startswith`: the title is coloured, and a colour attribute occupies
+    #  the cell before it.
+    assert "FIND A PLACE" in lines[0]
 
 
 def test_colour_survives_a_row_rewritten_mid_frame(commstar: Beebium) -> None:

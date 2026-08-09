@@ -531,6 +531,18 @@ and the row the entry starts on, and its default is exactly what the text shapes
 want, so it is the unusual thing to override. The weather service's page of
 weather symbols is what asked for it.
 
+**`wrap_within(text, cells=, rows=)`** puts text into a region that has a
+height as well as a width. `wrap_text` knows how wide a line may be and nothing
+about how many there is room for, so every caller with a region to fill did the
+same two things by hand — wrap, then take the first however-many lines and hope.
+
+It wraps and then cuts, with nothing cleverer in between, and that is a measured
+result rather than a shrug: a greedy fill was the obvious fallback for a region
+one line short, and **balanced wrapping never costs a line** — twenty thousand
+random widths and word lengths, no exception. It follows from the last line
+being free. So text that does not fit is text the region was never going to
+hold; size the region for the longest thing it can be handed.
+
 **A preamble line may be `Run`s rather than a string**, where the colours carry
 meaning rather than decoration — two clocks side by side, one UTC and one local,
 told apart by colour because a label would cost four cells to repeat what the

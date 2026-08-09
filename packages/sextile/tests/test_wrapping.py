@@ -8,7 +8,7 @@ longer than the whole line -- are the point rather than the exception.
 import pytest
 
 from sextile.viewdata.encoding import cell_count
-from sextile.viewdata.wrapping import wrap_text
+from sextile.viewdata.wrapping import wrap_text, wrap_within
 
 
 class TestOrdinaryWrapping:
@@ -149,3 +149,56 @@ class TestMeasuredInCellsAndNotCharacters:
 
     def test_and_nothing_is_lost_in_the_splitting(self) -> None:
         assert "".join(wrap_text("…" * 8, 6)) == "…" * 8
+
+
+class TestWrappingIntoAFixedNumberOfRows:
+    """Text put into a region that has a height as well as a width.
+
+    `wrap_text` knows how wide a line may be and nothing about how many there
+    is room for, so every caller with a region to fill was doing the same two
+    things by hand: wrap, then take the first however-many lines and hope.
+
+    Wrapped as usual and then cut, with nothing cleverer in between: a greedy
+    fill was the obvious fallback for a region one line short, and measuring
+    said it never helps. Balanced wrapping never costs a line.
+    """
+
+    def test_it_wraps_to_the_width_as_before(self) -> None:
+        lines = wrap_within("heavy sleet showers and thunder", cells=14, rows=3)
+        assert all(cell_count(line) <= 14 for line in lines)
+
+    def test_and_never_gives_back_more_rows_than_there_are(self) -> None:
+        lines = wrap_within("one two three four five six seven eight", cells=6, rows=2)
+        assert len(lines) == 2
+
+    def test_a_short_run_of_words_is_left_balanced(self) -> None:
+        #  Two lines of similar length rather than a full one and a stub, which
+        #  is what `wrap_text` does by default and why it is tried first.
+        assert wrap_within("light rain showers", cells=14, rows=3) == [
+            "light rain",
+            "showers",
+        ]
+
+    @pytest.mark.parametrize("width", range(3, 21))
+    def test_balancing_never_costs_a_line(self, width: int) -> None:
+        #  Which is why there is no greedy fallback. Spreading the slack cannot
+        #  lose a line that filling would have saved, the last line being free,
+        #  and twenty thousand random cases found no exception either.
+        for words in range(1, 13):
+            text = " ".join("x" * ((step % width) + 1) for step in range(words))
+            assert len(wrap_text(text, width)) <= len(
+                wrap_text(text, width, balanced=False)
+            )
+
+    def test_what_will_not_fit_is_cut(self) -> None:
+        lines = wrap_within("one two three four five six", cells=5, rows=2)
+        assert lines == ["one", "two"]
+
+    def test_nothing_to_say_is_no_rows_at_all(self) -> None:
+        assert wrap_within("", cells=10, rows=3) == []
+
+    def test_a_region_with_no_room_holds_nothing(self) -> None:
+        #  Rather than raising. A region that has been squeezed to nothing is a
+        #  layout to fix, and a page that fell over would say so at the far end
+        #  of a telephone line.
+        assert wrap_within("something", cells=10, rows=0) == []

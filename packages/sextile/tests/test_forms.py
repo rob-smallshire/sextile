@@ -360,16 +360,21 @@ class TestMarkingWhatReturnWouldTake:
     async def test_the_first_suggestion_is_marked(self) -> None:
         frame = Frame()
         draw_form(frame, await typing(a_field(), "TROND"))
-        #  The mark sits to the left of the digit column, so it protrudes.
-        assert text_of(frame).splitlines()[FIRST_ROW].strip().startswith("#1")
+        assert text_of(frame).splitlines()[FIRST_ROW].rstrip().endswith(SUBMIT_MARK)
 
     async def test_and_the_others_are_not(self) -> None:
         frame = Frame()
         draw_form(frame, await typing(a_field(), "TROND"))
         rows = text_of(frame).splitlines()
-        assert rows[FIRST_ROW + 1].strip().startswith("2")
-        assert rows[FIRST_ROW + 2].strip().startswith("3")
-        assert "#" not in rows[FIRST_ROW + 1]
+        assert SUBMIT_MARK not in rows[FIRST_ROW + 1]
+        assert SUBMIT_MARK not in rows[FIRST_ROW + 2]
+
+    async def test_it_does_not_run_into_the_digit(self) -> None:
+        #  In front of the digit it abutted it, and "#1" reads as "number 1"
+        #  rather than as two keys that do the same thing.
+        frame = Frame()
+        draw_form(frame, await typing(a_field(), "TROND"))
+        assert f"{SUBMIT_MARK}1" not in text_of(frame)
 
     async def test_the_digits_still_line_up(self) -> None:
         #  A mark that shifted the first row would make the list read as two.
@@ -383,9 +388,7 @@ class TestMarkingWhatReturnWouldTake:
         form = await typing(a_field(), "TROND")
         frame = Frame()
         draw_form(frame, form)
-        assert text_of(frame).splitlines()[FIRST_ROW].strip().startswith(
-            f"{SUBMIT_MARK}1"
-        )
+        assert text_of(frame).splitlines()[FIRST_ROW].rstrip().endswith(SUBMIT_MARK)
         assert form.submit() == form.choices()["1"]
 
     async def test_nothing_on_offer_is_nothing_marked(self) -> None:

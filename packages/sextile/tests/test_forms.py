@@ -11,7 +11,7 @@ from collections.abc import Sequence
 import pytest
 
 from sextile import Page, PageAddress, PageFrame, PageRequest, PageRoute, Sextile, keys
-from sextile.forms import SUGGESTIONS, Suggest, draw_form
+from sextile.forms import SUBMIT_MARK, SUGGESTIONS, Suggest, draw_form
 from sextile.session.session import Session
 from sextile.templates import Entry, MenuItem
 from sextile.viewdata.canvas import Canvas
@@ -347,3 +347,48 @@ class TestSending:
         session = Session(app)
         await session.greeting()
         return session, form
+
+
+class TestMarkingWhatReturnWouldTake:
+    """A key that does something invisible is a key nobody presses.
+
+    A browser's address bar marks the row ENTER would choose. This does the
+    same with the key's own character, beside the digit it does the same thing
+    as.
+    """
+
+    async def test_the_first_suggestion_is_marked(self) -> None:
+        frame = Frame()
+        draw_form(frame, await typing(a_field(), "TROND"))
+        #  The mark sits to the left of the digit column, so it protrudes.
+        assert text_of(frame).splitlines()[FIRST_ROW].strip().startswith("#1")
+
+    async def test_and_the_others_are_not(self) -> None:
+        frame = Frame()
+        draw_form(frame, await typing(a_field(), "TROND"))
+        rows = text_of(frame).splitlines()
+        assert rows[FIRST_ROW + 1].strip().startswith("2")
+        assert rows[FIRST_ROW + 2].strip().startswith("3")
+        assert "#" not in rows[FIRST_ROW + 1]
+
+    async def test_the_digits_still_line_up(self) -> None:
+        #  A mark that shifted the first row would make the list read as two.
+        frame = Frame()
+        draw_form(frame, await typing(a_field(), "TROND"))
+        rows = text_of(frame).splitlines()[FIRST_ROW : FIRST_ROW + 3]
+        columns = {row.index(digit) for row, digit in zip(rows, "123", strict=True)}
+        assert len(columns) == 1
+
+    async def test_it_marks_what_return_actually_takes(self) -> None:
+        form = await typing(a_field(), "TROND")
+        frame = Frame()
+        draw_form(frame, form)
+        assert text_of(frame).splitlines()[FIRST_ROW].strip().startswith(
+            f"{SUBMIT_MARK}1"
+        )
+        assert form.submit() == form.choices()["1"]
+
+    async def test_nothing_on_offer_is_nothing_marked(self) -> None:
+        frame = Frame()
+        draw_form(frame, await typing(a_field(empty="No such place."), "ZZZ"))
+        assert SUBMIT_MARK not in text_of(frame)

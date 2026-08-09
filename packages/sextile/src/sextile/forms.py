@@ -58,6 +58,16 @@ _BACKGROUND_CELLS: Final = 3
 #: menu uses, so nothing new has to be learned.
 _FIRST_DIGIT: Final = 1
 
+#: Set against whichever suggestion RETURN would take, in the same colour as
+#: the digits, so it reads as one of them rather than as decoration.
+#:
+#: A browser's address bar marks the row that ENTER would choose, and for the
+#: same reason: a key that does something invisible is a key nobody presses.
+#: Marking it here rather than in the footer puts the answer beside the
+#: question -- and gives the footer back the room to say what the other keys do
+#: in words.
+SUBMIT_MARK: Final = keys.CONVENTIONAL_NEXT_FRAME
+
 
 class Form(ABC):
     """Rows of a frame that answer keypresses by redrawing themselves."""
@@ -256,7 +266,13 @@ class Suggest(Form):
     _DETAIL_SHARE: Final = 2
 
     def _draw_one(self, row: RowWriter, offset: int, entry: Entry) -> None:
-        row.text(f"{_FIRST_DIGIT + offset} ", Colour.YELLOW)
+        #  The mark goes where the eye already is, beside the digit it does the
+        #  same thing as. A blank cell on the others, so the digits stay in one
+        #  column and the list reads as a list.
+        marked = entry.destination is not None and entry.destination == self.submit()
+        row.text(
+            f"{SUBMIT_MARK if marked else ' '}{_FIRST_DIGIT + offset} ", Colour.YELLOW
+        )
         detail = fitted(entry.detail, (row.remaining - 2) // self._DETAIL_SHARE)
         name = fitted(entry.text, min(self._NAME_CELLS, row.remaining - 1))
         row.text(name, Colour.WHITE)

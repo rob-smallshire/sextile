@@ -18,7 +18,10 @@ from sextile.addressing import PageAddress, UnknownPageError
 from sextile.application import (
     Application,
     Arrival,
+    Middleware,
+    Next,
     PageRequest,
+    PageRoute,
     Parting,
     Sextile,
     page,
@@ -1021,3 +1024,190 @@ class TestSayingAPagesKeywordsWhereItIsDeclared:
         app.page("90", name="goodbye", keywords=("BYE",))(_nothing)
         assert app.resolve("BYE") == PageAddress("90")
         assert app.page_info("goodbye") is None
+
+
+class TestDeclaringPagesAsData:
+    """A service's pages, given to the constructor as a list.
+
+    The canonical form, and the one that makes ordering unobservable: the
+    converters a pattern needs, the pages themselves, the words that reach
+    them and what the service holds all arrive in one call, so there is no
+    "before" and "after" for a service to get wrong. Four of the five gaps
+    this framework had were that ordering showing through.
+
+    `@app.page` remains, defined in terms of this, so a small service still
+    reads as a small service.
+    """
+
+    def test_a_page_given_to_the_constructor_answers(self) -> None:
+        app = Sextile(pages=[PageRoute("1", _nothing, name="main")])
+        assert app.route(PageAddress("1")) is not None
+
+    def test_it_takes_the_handler_s_own_name_unless_told_one(self) -> None:
+        async def contributors(request: PageRequest) -> Page:
+            return Page(frames=(PageFrame(frame=Canvas().frame),))
+
+        app = Sextile(pages=[PageRoute("5", contributors)])
+        assert app.address_for("contributors") == PageAddress("5")
+
+    def test_what_a_page_is_called_comes_with_it(self) -> None:
+        app = Sextile(
+            pages=[
+                PageRoute("5", _nothing, name="who", title="By contributor",
+                          detail="browse by poster")
+            ]
+        )
+        about = app.page_info("who")
+        assert about is not None
+        assert (about.title, about.detail) == ("By contributor", "browse by poster")
+
+    def test_and_so_do_the_words_that_reach_it(self) -> None:
+        app = Sextile(
+            pages=[PageRoute("5", _nothing, name="who", keywords=("WHO", "USERS"))]
+        )
+        assert app.resolve("WHO") == PageAddress("5")
+        assert app.resolve("USERS") == PageAddress("5")
+
+    def test_a_field_shape_of_the_service_s_own_is_already_known(self) -> None:
+        #  The ordering problem, gone rather than patched: both arrive in the
+        #  same call, so there is no way to give them in the wrong order.
+        tens = Converter(field_pattern=r"[0-9]{2}", width=2, parse=int)
+        app = Sextile(
+            converters={"tens": tens},
+            pages=[PageRoute("7{count:tens}", _nothing, name="counted")],
+        )
+        assert app.route(PageAddress("742")) is not None
+
+    def test_the_decorator_still_works_beside_it(self) -> None:
+        app = Sextile(pages=[PageRoute("1", _nothing, name="main")])
+
+        @app.page("9", name="about", title="About")
+        async def about(request: PageRequest) -> Page:
+            return Page(frames=(PageFrame(frame=Canvas().frame),))
+
+        assert app.route(PageAddress("1")) is not None
+        assert app.route(PageAddress("9")) is not None
+
+    def test_a_service_declaring_nothing_is_still_a_service(self) -> None:
+        assert Sextile().pages() == ()
+
+
+class TestMiddleware:
+    """Something wrapped round every page a service builds.
+
+    The one Starlette shape Sextile had nothing resembling, and the natural
+    home for the things its design document lists as absent: authentication,
+    logging, timing. A page handler answers what a page *says*; middleware
+    answers what is true of every page.
+    """
+
+    async def test_it_sees_a_page_being_built(self) -> None:
+        seen: list[PageAddress] = []
+
+        async def watching(request: PageRequest, build: Next) -> Page | None:
+            seen.append(request.address)
+            return await build(request)
+
+        app = Sextile(middleware=[watching], pages=[PageRoute("1", _nothing, name="main")])
+        await app.respond(PageRequest(address=PageAddress("1")))
+        assert seen == [PageAddress("1")]
+
+    async def test_it_may_answer_instead_of_the_page(self) -> None:
+        #  Which is what makes authentication possible without the framework
+        #  having an opinion about how anybody logs in.
+        instead = Page(frames=(PageFrame(frame=Canvas().frame),))
+
+        async def refusing(request: PageRequest, build: Next) -> Page | None:
+            return instead
+
+        app = Sextile(middleware=[refusing], pages=[PageRoute("1", _nothing, name="main")])
+        assert await app.respond(PageRequest(address=PageAddress("1"))) is instead
+
+    async def test_it_may_change_what_comes_back(self) -> None:
+        async def hanging_up(request: PageRequest, build: Next) -> Page | None:
+            page = await build(request)
+            return None if page is None else Page(frames=page.frames, hang_up=True)
+
+        app = Sextile(middleware=[hanging_up], pages=[PageRoute("1", _nothing, name="main")])
+        page = await app.respond(PageRequest(address=PageAddress("1")))
+        assert page is not None and page.hang_up
+
+    async def test_the_first_given_is_the_outermost(self) -> None:
+        #  As Starlette's are. The reader of a list should see the request
+        #  entering at the top and leaving at the bottom.
+        order: list[str] = []
+
+        def noting(label: str) -> Middleware:
+            async def note(request: PageRequest, build: Next) -> Page | None:
+                order.append(f"into {label}")
+                page = await build(request)
+                order.append(f"out of {label}")
+                return page
+
+            return note
+
+        app = Sextile(
+            middleware=[noting("first"), noting("second")],
+            pages=[PageRoute("1", _nothing, name="main")],
+        )
+        await app.respond(PageRequest(address=PageAddress("1")))
+        assert order == ["into first", "into second", "out of second", "out of first"]
+
+    async def test_a_page_that_is_not_there_still_reaches_it(self) -> None:
+        #  A middleware counting pages would otherwise count only the ones
+        #  that existed, which is not what anybody means by counting requests.
+        seen: list[PageAddress] = []
+
+        async def watching(request: PageRequest, build: Next) -> Page | None:
+            seen.append(request.address)
+            return await build(request)
+
+        app = Sextile(middleware=[watching])
+        assert await app.respond(PageRequest(address=PageAddress("7"))) is None
+        assert seen == [PageAddress("7")]
+
+    async def test_a_service_with_none_is_unaffected(self) -> None:
+        app = Sextile(pages=[PageRoute("1", _nothing, name="main")])
+        assert await app.respond(PageRequest(address=PageAddress("1"))) is not None
+
+
+class TestAPageKnowingItsService:
+    """`request.application`, which is Starlette's `request.app`.
+
+    What lets a handler be an ordinary function declared beside its fellows
+    rather than a closure built inside a factory: a page offering another page
+    has to ask the numbering where that one is, and this is how it asks.
+    """
+
+    async def test_a_handler_is_handed_the_service(self) -> None:
+        seen: list[str] = []
+
+        async def main(request: PageRequest) -> Page:
+            assert request.application is not None
+            seen.append(request.application.name)
+            return Page(frames=(PageFrame(frame=Canvas().frame),))
+
+        app = Sextile(name="Weather", pages=[PageRoute("1", main, name="main")])
+        await Session(app).greeting()
+        assert seen == ["Weather"]
+
+    async def test_which_is_how_it_builds_another_page_s_number(self) -> None:
+        built: list[PageAddress] = []
+
+        async def main(request: PageRequest) -> Page:
+            assert isinstance(request.application, Sextile)
+            built.append(request.application.address_for("about"))
+            return Page(frames=(PageFrame(frame=Canvas().frame),))
+
+        app = Sextile(
+            pages=[
+                PageRoute("1", main, name="main"),
+                PageRoute("9", _nothing, name="about"),
+            ]
+        )
+        await Session(app).greeting()
+        assert built == [PageAddress("9")]
+
+    async def test_a_request_built_by_hand_has_none(self) -> None:
+        #  Which is right: there is no service behind it.
+        assert PageRequest(address=PageAddress("1")).application is None

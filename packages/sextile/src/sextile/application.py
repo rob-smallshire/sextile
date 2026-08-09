@@ -80,6 +80,18 @@ class PageRequest:
     keeps. The terminal remembers none of it, so a service wanting to offer a
     way back through the call has to be handed the way back."""
 
+    application: "Application | None" = None
+    """The service this page belongs to.
+
+    Starlette's `request.app`, and here for the same reason: it is what lets a
+    handler be an ordinary function declared beside its fellows rather than a
+    closure built inside a factory. A page that offers another page has to ask
+    the numbering where that one is, and this is how it asks.
+
+    Optional only because a request built by hand in a test has no service
+    behind it. Anything the session or the renderer builds carries one.
+    """
+
     service: Mapping[str, object] = field(default_factory=dict)
     """What the service opened, for as long as it is running -- an archive, a
     client, an index.
@@ -207,6 +219,58 @@ type Handler = Callable[..., Awaitable[Page | None]]
 type NotFoundHandler = Callable[[str], Awaitable[Page]]
 type PartingHandler = Callable[[Parting], Awaitable[Page]]
 type FailureHandler = Callable[[PageAddress], Awaitable[Page]]
+@dataclass(frozen=True)
+class PageRoute:
+    """One page of a service, declared as a value rather than as a decoration.
+
+    The canonical way to say what a service is made of. Everything about a
+    page is here -- where it is in the numbering, what builds it, what to call
+    it where it is listed, and the words that reach it -- so a page says what
+    it is once, in one place, and the service is a list of them.
+
+    Declaring pages as data is what makes registration order unobservable. A
+    pattern using a field shape of the service's own, a page wanting a keyword,
+    a service holding an archive: all of it arrives in one constructor call,
+    so there is no "before" and no "after" for anybody to get wrong.
+    """
+
+    pattern: str
+    """The page numbers this answers: literal digits and named fields."""
+
+    handler: Handler
+    """What builds the page. `None` rather than a page means there is no such
+    page, which the session shows differently from one it could not build."""
+
+    name: str | None = None
+    """What `address_for` calls it. The handler's own name unless given."""
+
+    title: str = ""
+    """What to call this page where it is *listed* rather than shown -- in a
+    menu, in the history, in the contents. A page with no title is not
+    advertised, which is how a title frame stays off the contents."""
+
+    detail: str = ""
+    """A second line, wherever the title gets one."""
+
+    keywords: Sequence[str] = ()
+    """Words a reader may key instead of the number."""
+
+
+type Next = Callable[[PageRequest], Awaitable[Page | None]]
+
+type Middleware = Callable[[PageRequest, Next], Awaitable[Page | None]]
+"""Something wrapped round every page a service builds.
+
+A page handler answers what one page *says*; middleware answers what is true
+of every page -- who is asking, how long it took, whether they may. It is
+given the request and the rest of the chain, and may look, may change what
+comes back, or may answer instead and never call it at all.
+
+The framework deliberately has no opinion about authentication, and this is
+why it does not need one: a service that wants it wraps its pages.
+"""
+
+
 type Lifespan = Callable[["Sextile"], AbstractAsyncContextManager[Mapping[str, object] | None]]
 type ResolveHandler = Callable[[str], PageAddress | None]
 
@@ -425,6 +489,8 @@ class Sextile(Application):
         home: str | PageAddress = "1",
         index: str | PageAddress | None = None,
         converters: Mapping[str, Converter | ConverterFactory] | None = None,
+        pages: Sequence[PageRoute] = (),
+        middleware: Sequence[Middleware] = (),
         lifespan: Lifespan | None = None,
     ) -> None:
         self._name = name
@@ -435,6 +501,7 @@ class Sextile(Application):
         self._timed_out: PartingHandler | None = None
         self._failed: FailureHandler | None = None
         self._unresolved: ResolveHandler | None = None
+        self._middleware = tuple(middleware)
         self._lifespan = lifespan
         self._running: AbstractAsyncContextManager[Mapping[str, object] | None] | None = None
         self._service: dict[str, object] = {}
@@ -448,7 +515,12 @@ class Sextile(Application):
         #  always too late, there being nowhere to put it before `super()`.
         for shape, converter in (converters or {}).items():
             self._router.converter(shape, converter)
+        #  Class declarations first, then the ones given here, so that a
+        #  subclass assembled by a factory can add to what its class declared
+        #  rather than being unable to say anything at all.
         self._register_declared()
+        for route in pages:
+            self.add_page(route)
 
     @property
     def name(self) -> str:
@@ -463,6 +535,20 @@ class Sextile(Application):
         return self._index
 
     # -- building it --------------------------------------------------------
+
+    def add_page(self, route: PageRoute) -> None:
+        """Register one page. What everything else here is written in terms of."""
+        name = route.name or route.handler.__name__
+        self._router.add(route.pattern, route.handler, name=name)
+        if route.title:
+            self._pages[name] = PageInfo(
+                name=name,
+                keyed=self._router.named(name).keyed,
+                title=route.title,
+                detail=route.detail,
+            )
+        for keyword in route.keywords:
+            self.alias(keyword, self.address_for(name))
 
     def page[H: Handler](
         self,
@@ -495,17 +581,16 @@ class Sextile(Application):
         """
 
         def register(handler: H) -> H:
-            route = name or handler.__name__
-            self._router.add(pattern, handler, name=route)
-            if title:
-                self._pages[route] = PageInfo(
-                    name=route,
-                    keyed=self._router.named(route).keyed,
+            self.add_page(
+                PageRoute(
+                    pattern=pattern,
+                    handler=handler,
+                    name=name,
                     title=title,
                     detail=detail,
+                    keywords=keywords,
                 )
-            for keyword in keywords:
-                self.alias(keyword, self.address_for(route))
+            )
             return handler
 
         return register
@@ -526,13 +611,16 @@ class Sextile(Application):
                     declared[attribute] = found
         for attribute, declaration in declared.items():
             route = declaration.name or attribute.lstrip("_")
-            self.page(
-                declaration.pattern,
-                name=route,
-                title=declaration.title,
-                detail=declaration.detail,
-                keywords=declaration.keywords,
-            )(getattr(self, attribute))
+            self.add_page(
+                PageRoute(
+                    pattern=declaration.pattern,
+                    handler=getattr(self, attribute),
+                    name=route,
+                    title=declaration.title,
+                    detail=declaration.detail,
+                    keywords=declaration.keywords,
+                )
+            )
 
     def page_info(self, name: str) -> PageInfo | None:
         """What was said about a named page when it was registered."""
@@ -609,6 +697,10 @@ class Sextile(Application):
     # -- answering ----------------------------------------------------------
 
     async def respond(self, request: PageRequest) -> Page | None:
+        return await self._chain(request)
+
+    async def _build(self, request: PageRequest) -> Page | None:
+        """The page itself, with nothing wrapped round it."""
         found = self._router.match(request.address)
         if found is not None:
             return await found.target(request, **found.params)
@@ -618,6 +710,22 @@ class Sextile(Application):
                 if answered is not None:
                     return answered
         return None
+
+    async def _chain(self, request: PageRequest) -> Page | None:
+        """The middleware, outermost first, and the page at the bottom.
+
+        Built per request rather than once, which costs a closure apiece and
+        buys the obvious thing: middleware may be added to an application that
+        has already answered something, and a service assembled in pieces does
+        not have to know it has finished being assembled.
+        """
+        build: Next = self._build
+        #  Reversed, so that the first given is the outermost: a reader of the
+        #  list should see a request entering at the top and leaving at the
+        #  bottom.
+        for middleware in reversed(self._middleware):
+            build = _wrap(middleware, build)
+        return await build(request)
 
     def resolve(self, target: str) -> PageAddress:
         try:
@@ -710,6 +818,16 @@ class Sextile(Application):
             await self._running.__aexit__(None, None, None)
             self._running = None
         self._service.clear()
+
+
+def _wrap(middleware: Middleware, build: Next) -> Next:
+    """One link of the chain. A function so the closure captures this loop's
+    values rather than the last ones, which is the oldest bug in the world."""
+
+    async def wrapped(request: PageRequest) -> Page | None:
+        return await middleware(request, build)
+
+    return wrapped
 
 
 def _plain_notice(title: str, *lines: str, hang_up: bool = False) -> Page:

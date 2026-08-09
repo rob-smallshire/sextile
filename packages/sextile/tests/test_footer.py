@@ -186,7 +186,7 @@ class TestTheWordsForTheMovementKeys:
     def test_each_key_is_named(self) -> None:
         from sextile import keys
 
-        said = {item.key: item.label for item in movement(keys.ARROWS.values())}
+        said = {item.key: item.label for item in movement(keys.ARROW_FOR)}
         assert said == {
             keys.PREVIOUS_FRAME: "page up",
             keys.NEXT_FRAME: "page down",
@@ -209,7 +209,7 @@ class TestTheWordsForTheMovementKeys:
     def test_they_come_out_in_the_order_they_are_pressed_in(self) -> None:
         from sextile import keys
 
-        assert [item.key for item in movement(keys.ARROWS.values())] == [
+        assert [item.key for item in movement(keys.ARROW_FOR)] == [
             keys.PREVIOUS_FRAME,
             keys.NEXT_FRAME,
             keys.PREVIOUS_ITEM,

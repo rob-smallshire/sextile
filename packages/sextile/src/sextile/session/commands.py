@@ -37,7 +37,7 @@ from dataclasses import dataclass
 from typing import Final
 
 from sextile import keys
-from sextile.keys import ARROWS
+from sextile.keys import ARROW_KEYS
 
 #: Longest request we will accumulate before deciding the reader is lost.
 ENTRY_LIMIT: Final = 32
@@ -165,9 +165,11 @@ class CommandParser:
             #  A frame that offers no such key ignores it, exactly as it
             #  ignores every other key it does not offer.
             return Select(character.upper())
-        arrow = ARROWS.get(ord(character))
+        arrow = ARROW_KEYS.get(ord(character))
         if arrow is not None:
-            #  The BBC's own cursor keys, which mean what WASD means.
+            #  Reported as the arrow it is. Whether it means what WASD means
+            #  depends on what is on the screen, and this layer cannot see
+            #  that: the session translates where nothing wants the arrow.
             return Select(arrow)
         #  Line feeds, escapes and other furniture mean nothing here.
         return None

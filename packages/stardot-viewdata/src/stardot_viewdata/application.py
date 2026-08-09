@@ -898,7 +898,10 @@ def _moves(moving: dict[str, str]) -> frozenset[str]:
     within = {key for key in moving if key in (PREVIOUS_FRAME_KEY, NEXT_FRAME_KEY)}
     if NEXT_FRAME_KEY in within:
         within.add(CONVENTIONAL_NEXT_FRAME_KEY)
-    return frozenset(within)
+    #  And the arrows a reader might press instead, which the framework knows
+    #  the codes for and deliberately does not act on: what an arrow means is
+    #  this page's business.
+    return keys.with_arrows(within)
 
 
 def _neighbour_choices(arrival: Arrival) -> dict[str, PageAddress]:
@@ -907,7 +910,7 @@ def _neighbour_choices(arrival: Arrival) -> dict[str, PageAddress]:
         choices[NEXT_ITEM_KEY] = arrival.following
     if arrival.preceding is not None:
         choices[PREVIOUS_ITEM_KEY] = arrival.preceding
-    return choices
+    return keys.arrows_lead_where(choices)
 
 
 def _prompt(moving: dict[str, str], *, selecting: bool) -> str:

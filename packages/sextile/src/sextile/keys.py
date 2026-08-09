@@ -17,6 +17,7 @@ the arrows are as period as anything here, and a reader may use whichever comes
 to hand.
 """
 
+from collections.abc import Iterable, Mapping
 from typing import Final
 
 #: Up and down the frames of one item, because a document reads top to bottom.
@@ -52,10 +53,57 @@ CANCEL: Final = "*"
 #: everything else does not.
 RUB_OUT: Final = "\x7f"
 
-#: What the BBC's cursor keys arrive as, once 7E1 has taken the eighth bit.
-ARROWS: Final[dict[int, str]] = {
-    0x08: PREVIOUS_ITEM,  # cursor left
-    0x09: NEXT_ITEM,  # cursor right
-    0x0A: NEXT_FRAME,  # cursor down
-    0x0B: PREVIOUS_FRAME,  # cursor up
+#: The cursor keys as themselves, once 7E1 has taken the eighth bit -- rather
+#: than turned into letters, because whether an arrow means the same as a
+#: letter depends on what is on the screen.
+#:
+#: On an ordinary page it does: a reader may press W or the up arrow and mean
+#: one thing. On a page with a field in it, it does not. W is West and S is
+#: South, so a reader reaching for the up arrow would silently type a letter
+#: into a coordinate. The parser therefore reports which key was pressed, and
+#: the session translates to WASD only where nothing wants the arrow itself.
+#:
+#: TAB sends 0x09 too, measured against Commstar and indistinguishable from
+#: cursor right. That is a gift rather than a nuisance: tabbing between the
+#: fields of a form is the first thing a reader will try.
+LEFT: Final = "\x08"
+RIGHT: Final = "\x09"
+DOWN: Final = "\x0a"
+UP: Final = "\x0b"
+
+#: Which byte is which arrow. The framework's whole opinion on the subject.
+ARROW_KEYS: Final[dict[int, str]] = {0x08: LEFT, 0x09: RIGHT, 0x0A: DOWN, 0x0B: UP}
+
+#: The arrow a reader would press instead of each letter, for a page that wants
+#: to offer both.
+#:
+#: Offered rather than applied. What an arrow *means* is the page's business:
+#: on most of them it means what the letter means, and on a page with a
+#: coordinate field it does not, W being West and S being South. A framework
+#: that translated arrows to letters before any page could see them would be
+#: deciding that for every service at once, which is not its to decide.
+ARROW_FOR: Final[dict[str, str]] = {
+    PREVIOUS_FRAME: UP,
+    NEXT_FRAME: DOWN,
+    PREVIOUS_ITEM: LEFT,
+    NEXT_ITEM: RIGHT,
 }
+
+
+def with_arrows(pressed: Iterable[str]) -> frozenset[str]:
+    """Those keys, and the arrows a reader might press instead.
+
+    For a page whose keys move about in the ordinary way, which is nearly all
+    of them:
+
+        moves=with_arrows({PREVIOUS_FRAME, NEXT_FRAME})
+    """
+    wanted = set(pressed)
+    return frozenset(wanted | {ARROW_FOR[key] for key in wanted if key in ARROW_FOR})
+
+
+def arrows_lead_where[T](choices: Mapping[str, T]) -> dict[str, T]:
+    """Those choices, with each arrow leading where its letter leads."""
+    return dict(choices) | {
+        ARROW_FOR[key]: where for key, where in choices.items() if key in ARROW_FOR
+    }

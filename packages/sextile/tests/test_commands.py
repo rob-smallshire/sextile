@@ -202,21 +202,31 @@ class TestTheCursorKeys:
     """The BBC's arrows arrive as viewdata cursor-control codes.
 
     Measured against Commstar: LEFT, RIGHT, UP and DOWN transmit 0x88-0x8B, and
-    the 7E1 line strips the eighth bit, leaving 0x08-0x0B. They mean the same
-    four things as WASD, so they parse to the same commands.
+    the 7E1 line strips the eighth bit, leaving 0x08-0x0B.
+
+    They are reported here as the arrows they are, not as the letters they
+    usually mean. Whether an arrow means what WASD means depends on what is on
+    the screen, and this layer cannot see that: on an ordinary page it does, and
+    on a page with a coordinate field in it W is West and S is South. The
+    session translates where nothing wants the arrow itself.
     """
 
     @pytest.mark.parametrize(
-        ("code", "same_as"),
+        ("code", "arrow"),
         [
-            (0x08, "A"),  # cursor left
-            (0x09, "D"),  # cursor right
-            (0x0A, "S"),  # cursor down
-            (0x0B, "W"),  # cursor up
+            (0x08, keys.LEFT),
+            (0x09, keys.RIGHT),  # and TAB, which sends the same byte
+            (0x0A, keys.DOWN),
+            (0x0B, keys.UP),
         ],
     )
-    def test_an_arrow_means_what_its_letter_means(self, code: int, same_as: str) -> None:
-        assert parse(bytes([code])) == parse(same_as.encode())
+    def test_an_arrow_is_reported_as_itself(self, code: int, arrow: str) -> None:
+        assert parse(bytes([code])) == [Select(arrow)]
+
+    def test_and_is_not_confused_with_the_letter_it_usually_means(self) -> None:
+        #  Which is the whole point: a reader keying West must not be taken to
+        #  have pressed the up arrow, nor the other way about.
+        assert parse(bytes([0x0B])) != parse(b"W")
 
     @pytest.mark.parametrize("code", [0x08, 0x09, 0x0A, 0x0B])
     def test_an_arrow_with_its_eighth_bit_still_set_is_read(self, code: int) -> None:
@@ -225,10 +235,10 @@ class TestTheCursorKeys:
 
     def test_the_four_arrows_together(self) -> None:
         assert parse(bytes([0x0B, 0x0A, 0x08, 0x09])) == [
-            Select("W"),
-            Select("S"),
-            Select("A"),
-            Select("D"),
+            Select(keys.UP),
+            Select(keys.DOWN),
+            Select(keys.LEFT),
+            Select(keys.RIGHT),
         ]
 
     def test_an_arrow_during_a_request_is_ignored(self) -> None:
@@ -258,10 +268,14 @@ class TestCarriageReturnAndLineFeed:
         assert parse(b"*8\r\n") == [GoTo("8")]
 
     def test_a_bare_line_feed_is_the_cursor_down_key(self) -> None:
-        assert parse(b"\n") == [Select("S")]
+        assert parse(b"\n") == [Select(keys.DOWN)]
 
     def test_a_line_feed_well_after_a_return_is_a_keypress_again(self) -> None:
-        assert parse(b"*8\r" + b"A" + b"\n") == [GoTo("8"), Select("A"), Select("S")]
+        assert parse(b"*8\r" + b"A" + b"\n") == [
+            GoTo("8"),
+            Select("A"),
+            Select(keys.DOWN),
+        ]
 
     def test_the_pair_split_across_two_reads_is_still_one_terminator(self) -> None:
         parser = CommandParser()
@@ -269,7 +283,7 @@ class TestCarriageReturnAndLineFeed:
         assert parser.feed(b"\n") == []
 
     def test_two_line_feeds_after_a_return_move_once(self) -> None:
-        assert parse(b"*8\r\n\n") == [GoTo("8"), Select("S")]
+        assert parse(b"*8\r\n\n") == [GoTo("8"), Select(keys.DOWN)]
 
 
 class TestDelete:

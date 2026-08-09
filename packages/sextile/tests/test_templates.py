@@ -7,6 +7,7 @@ what five hand-written copies had each got slightly differently.
 
 
 from sextile.addressing import PageAddress
+from sextile.keys import with_arrows
 from sextile.page import Page
 from sextile.templates import CHOICES_PER_FRAME, Entry, Listing, Menu, MenuItem, Prose
 from sextile.viewdata.chrome import CONTENT_FIRST_ROW, CONTENT_ROWS
@@ -142,11 +143,11 @@ class TestTheKeysAFrameOffers:
 
     def test_the_first_of_several_offers_forward_only(self) -> None:
         page = Menu(title="ITEMS", entries=items(10), home=at("1")).build(at("8"))
-        assert page.frames[0].moves == frozenset({"S", "#"})
+        assert page.frames[0].moves == with_arrows({"S", "#"})
 
     def test_the_last_offers_back_only(self) -> None:
         page = Menu(title="ITEMS", entries=items(10), home=at("1")).build(at("8"))
-        assert page.frames[-1].moves == frozenset({"W"})
+        assert page.frames[-1].moves == with_arrows({"W"})
 
     def test_the_prompt_names_selecting_only_where_there_is_a_choice(self) -> None:
         with_items = text_of(Menu(title="ITEMS", entries=items(1), home=at("1")).build(at("8")))

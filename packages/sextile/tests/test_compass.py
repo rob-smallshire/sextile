@@ -147,7 +147,7 @@ class TestWhatItCallsThings:
 
     def test_which_they_do(self) -> None:
         #  The claim is only worth making if the framework answers them.
-        assert set(keys.ARROWS.values()) == {
+        assert set(keys.ARROW_FOR) == {
             keys.PREVIOUS_FRAME,
             keys.NEXT_FRAME,
             keys.PREVIOUS_ITEM,

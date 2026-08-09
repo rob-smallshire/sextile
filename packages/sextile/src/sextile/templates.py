@@ -31,7 +31,12 @@ from typing import TYPE_CHECKING, ClassVar, Final, Protocol, runtime_checkable
 
 from sextile.addressing import PageAddress
 from sextile.content.blocks import Document, Paragraph
-from sextile.keys import CONVENTIONAL_NEXT_FRAME, NEXT_FRAME, PREVIOUS_FRAME
+from sextile.keys import (
+    CONVENTIONAL_NEXT_FRAME,
+    NEXT_FRAME,
+    PREVIOUS_FRAME,
+    with_arrows,
+)
 from sextile.page import Page, PageFrame
 from sextile.viewdata.canvas import Canvas, RowWriter
 from sextile.viewdata.chrome import CONTENT_FIRST_ROW, CONTENT_ROWS, draw_chrome
@@ -356,13 +361,16 @@ def _last_content_row() -> int:
 
 
 def _moves(*, back: bool, on: bool) -> frozenset[str]:
-    keys = set()
+    pressed = set()
     if back:
-        keys.add(PREVIOUS_FRAME)
+        pressed.add(PREVIOUS_FRAME)
     if on:
         #  `#` comes along wherever `S` does, so the conventional viewdata key
         #  keeps working for a reader who never learns the rest.
-        keys.update({NEXT_FRAME, CONVENTIONAL_NEXT_FRAME})
-    return frozenset(keys)
+        pressed.update({NEXT_FRAME, CONVENTIONAL_NEXT_FRAME})
+    #  And the arrows, because a page dealt into frames is a page a reader
+    #  moves through in the ordinary way. Said here rather than assumed by the
+    #  session: what an arrow means is the page's business.
+    return with_arrows(pressed)
 
 

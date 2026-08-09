@@ -40,6 +40,7 @@ from sextile import (
     keys,
 )
 from sextile.addressing import keyed
+from sextile.keys import arrows_lead_where
 from sextile.templates import HOME_KEY, Menu, MenuItem, Prose
 from sextile.viewdata.canvas import Canvas
 from sextile.viewdata.chrome import CONTENT_FIRST_ROW, CONTENT_ROWS, draw_chrome
@@ -181,7 +182,10 @@ async def one_day(request: PageRequest, day: date) -> Page:
                         offering=[FooterItem("1", "month", Priority.PRIMARY)],
                     ),
                 ),
-                choices=choices,
+                #  And under the arrows a reader might press instead. Said
+                #  here rather than assumed by the framework: what an arrow
+                #  means is this page's business.
+                choices=arrows_lead_where(choices),
             ),
         )
     )
@@ -307,7 +311,9 @@ def _month_page(app: Sextile, address: PageAddress, day: date) -> Page:
         "A": app.address_for("month", day=previous),
         "D": app.address_for("month", day=following),
     }
-    return Page(frames=(PageFrame(frame=canvas.frame, choices=choices),))
+    return Page(
+        frames=(PageFrame(frame=canvas.frame, choices=arrows_lead_where(choices)),)
+    )
 
 
 def _headed(app: Sextile, address: PageAddress) -> str:

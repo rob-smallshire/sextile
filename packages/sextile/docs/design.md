@@ -531,6 +531,11 @@ and the row the entry starts on, and its default is exactly what the text shapes
 want, so it is the unusual thing to override. The weather service's page of
 weather symbols is what asked for it.
 
+**`thin_rule`** is the chrome's rule with a sixth of the ink — one block thick
+instead of three, in the same separated mosaics and across the same cells. A bar
+belongs where a page ends; between two things that are both content it reads as
+a second frame beginning.
+
 **A lead-in may hold a `Block`** — a number of rows and a function to fill them
 — for a part of it that is drawn rather than written: a strip of mosaics is
 placed by cell and is several rows tall, which is the wrong shape for a line of

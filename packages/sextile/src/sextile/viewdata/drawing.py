@@ -31,6 +31,10 @@ SOLID: Final = "▮"
 #: The same as a block pattern, for a composition rather than a row writer.
 SOLID_BLOCKS: Final = 0b111111
 
+#: The middle row of blocks in a cell, and nothing else: a rule one block thick
+#: instead of three. Separated, it is a dotted line rather than a bar.
+MIDDLE_BLOCKS: Final = 0b001100
+
 #: A run of mosaic needs a graphics colour, and a separated run needs the
 #: separated attribute as well. Both occupy cells.
 _CONTIGUOUS_ATTRIBUTES: Final = 1
@@ -82,6 +86,20 @@ def rule(canvas: Canvas, row: int, colour: Colour = Colour.BLUE) -> None:
     cells = COLUMNS - 2 * _SEPARATED_ATTRIBUTES
     Composition().blocks(
         row, Align.CENTRE, [SOLID_BLOCKS] * cells, colour, separated=True
+    ).draw(canvas)
+
+
+def thin_rule(canvas: Canvas, row: int, colour: Colour = Colour.BLUE) -> None:
+    """A lighter rule: one block thick, across the middle of the row.
+
+    The chrome's `rule` is a bar, and a bar is what the top and bottom of a
+    frame want -- it is where the page ends. A rule *inside* a page is dividing
+    two things that are both content, and a bar there reads as a second frame
+    beginning. This is the same construction with a sixth of the ink.
+    """
+    cells = COLUMNS - 2 * _SEPARATED_ATTRIBUTES
+    Composition().blocks(
+        row, Align.CENTRE, [MIDDLE_BLOCKS] * cells, colour, separated=True
     ).draw(canvas)
 
 

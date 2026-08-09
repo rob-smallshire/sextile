@@ -8,8 +8,16 @@ a heading has.
 import pytest
 
 from sextile.viewdata.canvas import Canvas
+from sextile.viewdata.charset import mosaic_pattern
 from sextile.viewdata.controls import Colour, Control
-from sextile.viewdata.drawing import SOLID, bar, centred, centred_double, rule
+from sextile.viewdata.drawing import (
+    SOLID,
+    bar,
+    centred,
+    centred_double,
+    rule,
+    thin_rule,
+)
 from sextile.viewdata.encoding import cell_count, fitted
 from sextile.viewdata.frame import COLUMNS
 
@@ -178,3 +186,45 @@ class TestOneMiddleForTheWholeFrame:
         rule(canvas, 0)
         centred(canvas, 1, "V I E W D A T A", Colour.CYAN)
         assert abs(middle_of(canvas, 0) - middle_of(canvas, 1)) <= 0.5
+
+
+class TestAThinRule:
+    """A rule inside a page rather than at the edge of one.
+
+    The chrome's rule is a bar, which is right where the page ends and wrong
+    between two things that are both content: a bar there reads as a second
+    frame beginning.
+    """
+
+    def test_it_is_drawn_in_separated_mosaics_like_the_other(self) -> None:
+        canvas = Canvas()
+        thin_rule(canvas, 5)
+        _, attributes = canvas.frame.to_grid()
+        assert chr(Control.SEPARATED_GRAPHICS + 0x40) in attributes[5]
+
+    def test_and_is_a_sixth_of_the_ink(self) -> None:
+        thick, thin = Canvas(), Canvas()
+        rule(thick, 5)
+        thin_rule(thin, 5)
+        assert _lit(thin, 5) * 3 == _lit(thick, 5)
+
+    def test_it_spans_the_same_cells_as_the_thick_one(self) -> None:
+        #  Or a page with both on it would have two different middles.
+        thick, thin = Canvas(), Canvas()
+        rule(thick, 5)
+        thin_rule(thin, 5)
+        assert _drawn(thin, 5) == _drawn(thick, 5)
+
+
+def _codes(canvas: Canvas, row: int) -> list[int]:
+    return [canvas.frame.cell(row, column) for column in range(COLUMNS)]
+
+
+def _lit(canvas: Canvas, row: int) -> int:
+    return sum(
+        mosaic_pattern(code).bit_count() for code in _codes(canvas, row) if code >= 0x20
+    )
+
+
+def _drawn(canvas: Canvas, row: int) -> list[int]:
+    return [column for column, code in enumerate(_codes(canvas, row)) if code >= 0x20]

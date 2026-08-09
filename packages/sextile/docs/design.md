@@ -523,6 +523,19 @@ again — which is the point of it being a class rather than three functions. Th
 base is generic in *what* it deals: menus and listings deal entries, prose deals
 rendered rows.
 
+**A shape that is not written along a row overrides `draw_entry` instead.**
+`draw` and `draw_detail` are handed a `RowWriter`, which walks one row from left
+to right — the right shape for text and the wrong one for a mosaic picture,
+which is placed by cell and may be three rows tall. `draw_entry` gets the canvas
+and the row the entry starts on, and its default is exactly what the text shapes
+want, so it is the unusual thing to override. The weather service's page of
+weather symbols is what asked for it.
+
+**A preamble line may be `Run`s rather than a string**, where the colours carry
+meaning rather than decoration — two clocks side by side, one UTC and one local,
+told apart by colour because a label would cost four cells to repeat what the
+row above said. The rows it costs are counted the same either way.
+
 **`Prose` is the one that already had its machinery.** `wrap_text`,
 `Canvas.paragraph`, the `Document` block model and `viewdata/layout.py` were all
 there — nested quotations in cyan, listings in green, over-long words split

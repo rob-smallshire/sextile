@@ -157,6 +157,24 @@ class Template[E](ABC):
     def draw_detail(self, row: RowWriter, entry: E) -> None:  # noqa: B027
         """Draw an entry's second row, where the shape has one."""
 
+    def draw_entry(
+        self, canvas: Canvas, row: int, entry: E, digit: str | None
+    ) -> None:
+        """Draw a whole entry, given the canvas and the row it starts on.
+
+        The seam for a shape that is not written along a row: mosaic pictures
+        are placed by cell and may be several rows tall, and a row writer walks
+        one row from left to right. Overriding this gets the canvas and the
+        arithmetic about where the entry begins, and leaves the pagination, the
+        chrome and the keys where they are.
+
+        The default is what every shape made of text wants, and is why `draw`
+        and `draw_detail` are the usual things to override rather than this.
+        """
+        self.draw(canvas.row(row), entry, digit)
+        if self.rows_per_entry > 1 and row + 1 < _last_content_row():
+            self.draw_detail(canvas.row(row + 1), entry)
+
     def destination(self, entry: E) -> PageAddress | None:
         """Where choosing this entry leads. Nowhere, unless a shape says so."""
         del entry
@@ -209,9 +227,7 @@ class Template[E](ABC):
                 where = self.destination(entry) if digit is not None else None
                 if digit is not None and where is not None:
                     choices[digit] = where
-                self.draw(canvas.row(row), entry, digit)
-                if self.rows_per_entry > 1 and row + 1 < _last_content_row():
-                    self.draw_detail(canvas.row(row + 1), entry)
+                self.draw_entry(canvas, row, entry, digit)
                 row += self.rows_per_entry
             frames.append(
                 PageFrame(

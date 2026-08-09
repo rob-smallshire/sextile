@@ -558,6 +558,13 @@ instead of three, in the same separated mosaics and across the same cells. A bar
 belongs where a page ends; between two things that are both content it reads as
 a second frame beginning.
 
+**A page may offer `Shortcut`s** — keys carried on every frame, over and above
+the digits and the way home. A page's digits belong to its entries and change
+from frame to frame; a shortcut does not, and it is for the way out that is not
+the way home: a forecast going back to the search that found it, a post going
+back to the board it is on. They are named in the prompt, so a page cannot
+offer one silently.
+
 **A lead-in may hold a `Block`** — a number of rows and a function to fill them
 — for a part of it that is drawn rather than written: a strip of mosaics is
 placed by cell and is several rows tall, which is the wrong shape for a line of

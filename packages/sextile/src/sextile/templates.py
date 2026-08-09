@@ -50,6 +50,23 @@ if TYPE_CHECKING:
     from sextile.application import Sextile
 
 @dataclass(frozen=True)
+class Shortcut:
+    """A key offered on every frame of a page, and what the footer calls it.
+
+    A page's digits belong to its entries and change from frame to frame; a
+    shortcut does not. It is for the way out that is not the way home: a
+    forecast wanting to go back to the search that found it, a post wanting the
+    board it is on. `0` is that key for the index, and this is the same idea
+    without the framework having to know what else a service wants one for.
+    """
+
+    key: str
+    destination: PageAddress
+    says: str = ""
+    """What the footer calls it, where there is room to say anything."""
+
+
+@dataclass(frozen=True)
 class Block:
     """Part of a lead-in that is drawn rather than written.
 
@@ -149,10 +166,14 @@ class Template[E](ABC):
         preamble: Sequence[PreambleLine] = (),
         empty: str = "",
         headings: str = "",
+        shortcuts: Sequence[Shortcut] = (),
     ) -> None:
         self.title = title
         self.entries = entries
         self.home = home
+        #: Keys offered on every frame, over and above the digits and the way
+        #: home. Named in the prompt, so a page cannot offer one silently.
+        self.shortcuts = tuple(shortcuts)
         self.preamble = tuple(preamble)
         #: What the columns beneath mean, drawn on *every* frame. A preamble is
         #: a lead-in and belongs on the first frame only; headings are not, and
@@ -206,6 +227,10 @@ class Template[E](ABC):
         items = []
         if selecting and self.selecting_hint is not None:
             items.append(self.selecting_hint)
+        items += [
+            FooterItem(shortcut.key, shortcut.says, Priority.PRIMARY)
+            for shortcut in self.shortcuts
+        ]
         items += movement(
             key
             for key, answered in ((PREVIOUS_FRAME, back), (NEXT_FRAME, on))
@@ -236,7 +261,9 @@ class Template[E](ABC):
             if self.headings and batch:
                 canvas.row(row).text(fitted(self.headings, COLUMNS - 1), Colour.CYAN)
                 row += 1
-            choices: dict[str, PageAddress] = {}
+            choices: dict[str, PageAddress] = {
+                shortcut.key: shortcut.destination for shortcut in self.shortcuts
+            }
             if self.home is not None:
                 choices[HOME_KEY] = self.home
             if not batch and self.empty:

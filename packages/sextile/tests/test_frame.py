@@ -9,7 +9,7 @@ had just drawn. Making the grid fixed-size removes that failure entirely.
 import pytest
 
 from sextile.viewdata.controls import Colour, Control, alpha_colour
-from sextile.viewdata.encoding import ScreenControl
+from sextile.viewdata.encoding import ScreenControl, encode_control
 from sextile.viewdata.frame import COLUMNS, FRAME_PREAMBLE, ROWS, Frame
 
 SPACE = 0x20
@@ -226,3 +226,46 @@ class TestTrimming:
         for row in range(ROWS):
             frame.write(row, 0, "X" * COLUMNS)
         assert frame.to_bytes() == frame.to_bytes(trim=False)
+
+
+class TestSendingPartOfARow:
+    """A row of a multi-row repaint must stop short of column 40.
+
+    Measured on real Commstar in `docs/spikes/spike_suggestion_block.py`: a row
+    written to all forty columns wraps of its own accord, so the cursor is
+    already on the next row and a cursor down after it moves down a second one.
+    A three-row block written full width lands on rows 4, 6 and 8.
+    """
+
+    def test_a_row_is_sent_whole_by_default(self) -> None:
+        frame = Frame()
+        frame.write(0, 0, "HELLO")
+        assert len(frame.row_bytes(0)) == COLUMNS
+
+    def test_or_stopped_where_it_is_told(self) -> None:
+        frame = Frame()
+        frame.write(0, 0, "HELLO")
+        assert frame.row_bytes(0, upto=5) == b"HELLO"
+
+    def test_trimmed_to_what_is_written(self) -> None:
+        frame = Frame()
+        frame.write(0, 0, "HELLO")
+        assert frame.row_bytes(0, upto=frame.used_columns(0)) == b"HELLO"
+
+    def test_a_blank_row_trims_to_nothing(self) -> None:
+        assert Frame().row_bytes(0, upto=Frame().used_columns(0)) == b""
+
+    def test_an_attribute_still_travels_escaped(self) -> None:
+        #  Trimming changes how much of a row is sent, and nothing about how
+        #  what is sent is encoded.
+        frame = Frame()
+        frame.set_attribute(0, 0, Control.ALPHA_YELLOW)
+        frame.write(0, 1, "HI")
+        sent = frame.row_bytes(0, upto=frame.used_columns(0))
+        assert sent == encode_control(Control.ALPHA_YELLOW) + b"HI"
+
+    def test_the_width_a_row_uses_counts_attributes(self) -> None:
+        frame = Frame()
+        frame.set_attribute(0, 0, Control.ALPHA_YELLOW)
+        frame.write(0, 1, "HI")
+        assert frame.used_columns(0) == 3

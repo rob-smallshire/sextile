@@ -105,7 +105,7 @@ class Frame:
         stream = bytearray(FRAME_PREAMBLE)
         last_row = self.last_written_row() if trim else ROWS - 1
         for row in range(last_row + 1):
-            used = self._used_columns(row) if trim else COLUMNS
+            used = self.used_columns(row) if trim else COLUMNS
             offset = row * COLUMNS
             for code in self._cells[offset : offset + used]:
                 if code < _BLANK:
@@ -116,15 +116,26 @@ class Frame:
                 stream.extend((ScreenControl.CARRIAGE_RETURN, ScreenControl.LINE_FEED))
         return bytes(stream)
 
-    def row_bytes(self, row: int) -> bytes:
+    def row_bytes(self, row: int, *, upto: int | None = None) -> bytes:
         """One row's cells, escaped, with no preamble and no terminator.
 
-        For drawing over a single row of a screen that is already showing
-        something, which is what the command line does.
+        For drawing over a row of a screen that is already showing something,
+        which is what the command line does.
+
+        ``upto`` stops short of the row's end, and a repaint of *several* rows
+        must use it. Measured on real Commstar: a row written to all forty
+        columns wraps of its own accord, so the cursor is already on the next
+        row and the carriage return and cursor down that walk to the next row
+        of the block move it down a second one. A three-row block written full
+        width lands on rows 4, 6 and 8 and overruns what is beneath it.
+
+        The command line does not need it, its field being deliberately full
+        width and nothing following it.
         """
         offset = self._offset(row, 0)
         stream = bytearray()
-        for code in self._cells[offset : offset + COLUMNS]:
+        width = COLUMNS if upto is None else max(0, min(upto, COLUMNS))
+        for code in self._cells[offset : offset + width]:
             if code < _BLANK:
                 stream.extend(encode_control(Control(code)))
             else:
@@ -139,11 +150,11 @@ class Frame:
         way from there.
         """
         for row in reversed(range(ROWS)):
-            if self._used_columns(row):
+            if self.used_columns(row):
                 return row
         return -1
 
-    def _used_columns(self, row: int) -> int:
+    def used_columns(self, row: int) -> int:
         """How much of a row is worth sending: up to its last non-blank cell."""
         offset = row * COLUMNS
         codes = self._cells[offset : offset + COLUMNS]

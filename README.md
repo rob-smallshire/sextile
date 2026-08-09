@@ -8,7 +8,9 @@ Named after the star key on a viewdata keypad.
 ```
 packages/sextile/              the framework: connections, sessions, routing,
                                page numbering, frames on the wire
-packages/stardot-viewdata/     an application: the Stardot forum, as Viewdata
+packages/stardot-viewdata/     the Stardot phpBB forum, as Viewdata
+packages/calendar-viewdata/    a calendar; the framework's worked example
+packages/weather-viewdata/     the weather, from met.no and a local gazetteer
 ```
 
 Sextile is to a Viewdata service what Flask or Starlette is to a web

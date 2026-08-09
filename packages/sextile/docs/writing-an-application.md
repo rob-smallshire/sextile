@@ -11,19 +11,41 @@ on nothing but the standard library, and is meant to be read.
 ## The smallest thing that answers
 
 ```python
-from sextile import Page, PageFrame, PageRequest, Sextile
+from sextile import Page, PageFrame, PageRequest, PageRoute, Sextile
 from sextile.viewdata.canvas import Canvas
 from sextile.viewdata.chrome import CONTENT_FIRST_ROW, draw_chrome
 
-app = Sextile()
-
-@app.page("1", name="main")
 async def main(request: PageRequest) -> Page:
     canvas = Canvas()
     draw_chrome(canvas, title="MY SERVICE", page_number="1a", prompt="0 index")
     canvas.row(CONTENT_FIRST_ROW).text("Hello, 1981.")
     return Page(frames=(PageFrame(frame=canvas.frame),))
+
+app = Sextile(pages=[PageRoute("1", main, name="main")])
 ```
+
+**A page is a value and a service is a list of them.** Everything about a page
+is on one line of that list — where it is in the numbering, what builds it,
+what it is called where it is *listed* rather than shown, and the words that
+reach it — so a page says what it is once, in one place.
+
+That is also what makes the order things were registered in unobservable. The
+converters a pattern needs, the pages themselves, what wraps them and what the
+service holds all arrive in the same call, so there is no *before* and no
+*after* for a service to get wrong.
+
+`@app.page(...)` is the same thing said as a decoration, for a service small
+enough that a list would be ceremony:
+
+```python
+app = Sextile()
+
+@app.page("1", name="main")
+async def main(request: PageRequest) -> Page:
+    ...
+```
+
+It is defined in terms of the list, so the two cannot drift.
 
 ```sh
 uv run sextile serve my_service:app
@@ -44,13 +66,8 @@ writing anything. `--idle-timeout` and `--warn-after` change the timings, and
 Patterns are literal digits and named fields.
 
 ```python
-@app.page("82{post_id:int}", name="post")
-async def post(request: PageRequest, post_id: int) -> Page:
-    ...
-
-@app.page("32{day:date}", name="day")          # 3220260802 is 2 August 2026
-async def day(request: PageRequest, day: date) -> Page:
-    ...
+PageRoute("82{post_id:int}", post, name="post")
+PageRoute("32{day:date}", day, name="day")     # 3220260802 is 2 August 2026
 ```
 
 `int` takes one or more digits and refuses a leading zero, so a page cannot have
@@ -60,9 +77,7 @@ two numbers. `date` takes eight, as `YYYYMMDD`.
 next to one another, since a page number has no separators:
 
 ```python
-@app.page("32{year:int(4)}{month:int(2)}{day:int(2)}", name="iso")
-async def iso(request: PageRequest, year: int, month: int, day: int) -> Page:
-    ...
+PageRoute("32{year:int(4)}{month:int(2)}{day:int(2)}", iso, name="iso")
 
 app.address_for("iso", year=2026, month=8, day=2)     # 3220260802
 ```
@@ -77,9 +92,18 @@ An application that needs another field shape registers one, either fixed or
 parameterised by whatever is written in the brackets:
 
 ```python
-app.converter("pair", Converter(field_pattern="[0-9]{2}", width=2))
-app.converter("code", lambda width: Converter(...))    # for {x:code(3)}
+app = Sextile(
+    converters={
+        "pair": Converter(field_pattern="[0-9]{2}", width=2),
+        "code": lambda width: Converter(...),          # for {x:code(3)}
+    },
+    pages=[PageRoute("7{n:pair}", counted, name="counted")],
+)
 ```
+
+Given to the constructor, because the router has to know a field shape before
+it compiles a pattern that uses one. `app.converter(...)` adds one afterwards,
+which is fine for a page declared afterwards too.
 
 Two rules keep matching predictable. **Most literal wins**: `90` beats
 `9{n:int}` however they were registered, because a table whose meaning changed
@@ -100,11 +124,14 @@ choices = {"1": app.address_for("post", post_id=post.id)}
 
 That is what stops a numbering scheme existing in two places and drifting.
 
-**Keywords** cost nothing to offer beside numbers:
+**Keywords** cost nothing, and belong beside the page they reach:
 
 ```python
-app.alias("MAIN", app.address_for("main"))
+PageRoute("1", main, name="main", keywords=("MAIN", "INDEX"))
 ```
+
+`app.alias("MAIN", app.address_for("main"))` does the same for a word that
+names a page some other way.
 
 ## Menus and listings
 
@@ -262,33 +289,12 @@ and turns it on, so that the reader has somewhere to type to their modem.
 
 ## Say what a page is where you write it
 
-For a service that is a class — which is every service holding an archive or an
-HTTP client — declare pages beside the methods that build them:
-
 ```python
-from sextile import Sextile, page
-
-class Board(Sextile):
-    @page("5", name="contributors", title="By contributor",
+PageRoute("5", contributors, name="contributors", title="By contributor",
           detail="browse by poster", keywords=("WHO", "USERS"))
-    async def contributors_index(self, request: PageRequest) -> Page:
-        ...
 ```
 
-They are collected when the application is constructed, in the order they are
-written, base classes first. The route takes the method's name unless given one,
-leading underscores stripped.
-
-`app.page(...)` is the same thing for a service built round a module-level
-application, where there is an object to hang the decorator on:
-
-```python
-app = Sextile()
-
-@app.page("5", name="contributors", title="By contributor", detail="browse by poster")
-async def contributors(request: PageRequest) -> Page:
-    ...
-```
+The route takes the handler's own name unless given one.
 
 The title and detail are what the page is called wherever it is *listed* rather
 than shown — a menu offering it, a history naming it, the contents. Say them once
@@ -302,7 +308,13 @@ app.pages()                              # every page that has a title
 
 **A page with no title is not advertised.** Giving one a title is how a service
 says it may be listed, so a title frame or a logoff page stays off the contents
-without a flag.
+without a flag. Having no title and having no keywords are different things: a
+logoff page can stay off the contents and still answer `*BYE#`.
+
+A service whose handlers are methods may declare them beside those methods
+instead, with the class-level `@page(...)`. They are collected when the
+application is constructed, base classes first, in the order they are written.
+It is the same registration by another road.
 
 ## Say a page's name once
 
@@ -418,7 +430,9 @@ async def post(request: PageRequest, post_id: int) -> Page:
     request.address            # the page number asked for
     request.arrival.following  # the next page in the sequence, if any
     request.session["user"]    # this caller's own state, for as long as the line is up
+    request.service["client"]  # what the lifespan opened, for as long as the process
     request.history            # every page visited before this one, oldest first
+    request.application        # the service, for asking where another page is
 ```
 
 `arrival` is what makes "next" mean something: a page reached through one menu
@@ -430,13 +444,21 @@ choices the menu offered; the handler only has to decide whether to use it.
 terminal holds nothing but the frame on screen, so anything outlasting a single
 page belongs here.
 
+`application` is what lets a handler be an ordinary function rather than a
+closure built inside a factory: a page that offers another page has to ask the
+numbering where that one is, and this is how it asks.
+
+```python
+app = request.application
+choices = {"1": app.address_for("post", post_id=post.id)}
+```
+
 ## Saying that a page is not there
 
 Return `None`. The session then shows a notice and leaves the reader where they
 were, which is not the same as taking them somewhere empty.
 
 ```python
-@app.page("82{post_id:int}")
 async def post(request: PageRequest, post_id: int) -> Page | None:
     found = await lookup(post_id)
     return None if found is None else _page_for(found)
@@ -467,19 +489,78 @@ page that exists but has nothing to show. The second should be a real page that
 says why — an empty menu with no explanation looks like a fault, and on a
 service that answers slowly a reader cannot tell the difference.
 
+## What is true of every page
+
+A handler answers what one page says. **Middleware answers what is true of every
+page** — who is asking, how long it took, whether they may:
+
+```python
+async def timing(request: PageRequest, build: Next) -> Page | None:
+    began = time.monotonic()
+    page = await build(request)
+    log.info("*%s# in %.3fs", request.address, time.monotonic() - began)
+    return page
+
+app = Sextile(middleware=[timing], pages=[...])
+```
+
+It is given the request and the rest of the chain, and may look, may change
+what comes back, or may answer instead and never call it at all — which is how
+a service builds authentication without the framework having an opinion about
+how anybody logs in. The first given is the outermost, so a reader of the list
+sees a request entering at the top and leaving at the bottom.
+
+One comes with the framework, and it exists because of the wire:
+
+```python
+from sextile.middleware import log_pages
+
+app = Sextile(middleware=[log_pages()], pages=[...])
+```
+
+At 1200 baud a frame takes eight seconds to reach the reader, so "it felt slow"
+cannot tell the wire from the page. `log_pages` names every page and times it,
+warning on anything past a second — by *duration* rather than by outcome, since
+a missing page is ordinary and taking four seconds to decide it was missing is
+not.
+
 ## Anything that has to be opened
 
 ```python
-class MyApplication(Sextile):
-    async def startup(self) -> None:
-        self._client = httpx.AsyncClient()
+@asynccontextmanager
+async def lifespan(app: Sextile) -> AsyncIterator[Mapping[str, object]]:
+    client = httpx.AsyncClient()
+    try:
+        yield {"client": client}
+    finally:
+        await client.aclose()
 
-    async def shutdown(self) -> None:
-        await self._client.aclose()
+app = Sextile(lifespan=lifespan, pages=[...])
 ```
 
-Called once before the first call and once after the last, so a handler never
-has to wonder.
+Entered once before the first call and left once after the last, so a handler
+never has to wonder. **What it yields is what the service holds**, and every
+page is handed it:
+
+```python
+async def post(request: PageRequest, post_id: int) -> Page:
+    client = request.service["client"]
+```
+
+`service` is the counterpart of `session`, and the contrast is why there are
+two: `session` is this caller's and lasts as long as the line, `service` is
+everybody's and lasts as long as the process. A page cannot write to `service`,
+because a page that changed what the service holds would change it for every
+other caller at once.
+
+One function rather than a pair of handlers, because setup and teardown as two
+functions have to be kept in step by hand and must hoist whatever they open
+somewhere both can see. As two halves of one function they cannot drift, and
+the thing opened is an ordinary local held across the `yield`.
+
+The lifespan is given the application, which matters for a service assembled by
+a factory: there is no name for the application until its constructor has
+returned.
 
 Handlers are `async`. Anything synchronous and slow — SQLite, a file — belongs
 in `asyncio.to_thread`, or the one caller waiting on it is every caller waiting

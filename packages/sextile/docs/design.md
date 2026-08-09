@@ -25,6 +25,8 @@ might be about.
    page        Page, PageFrame                          what an application returns
             |
    application Application, Sextile, PageRequest        the seam
+            |  PageRoute, Middleware, Lifespan           what a service is made of
+            |  middleware  log_pages                     what wraps every page
             |
    keys     |  the four movements
             v
@@ -131,8 +133,11 @@ be all digits, because digits name themselves.
 ```python
 class Application(ABC):
     async def respond(self, request: PageRequest) -> Page | None: ...
+    async def ask(self, target: str | PageAddress, ...) -> Page | None: ...
     @property
     def home(self) -> PageAddress: ...
+    @property
+    def service(self) -> Mapping[str, object]: ...
     def resolve(self, target: str) -> PageAddress: ...
     async def not_found(self, target: str) -> Page: ...
     async def startup(self) -> None: ...
@@ -150,10 +155,25 @@ that exists is somewhere the reader has *gone*, and enters the history; a page
 that does not is something *said* to a reader who has not moved. This was
 discovered by writing the session, not designed in advance.
 
-**Lifespan** is `startup`/`shutdown`, called once each by whatever is running
-the application. The server does not call them: a server that opened an
-application's database would be a server with an opinion about what an
-application is. `sextile.cli.run_service` does it.
+**Lifespan is one async context manager**, given to the constructor, and what
+it yields is what the service holds — reached from a page as
+`request.service`. Starlette's shape, adopted for Starlette's reason: setup and
+teardown written as two handlers have to be kept in step by hand and must hoist
+whatever they open somewhere both can see, where two halves of one function
+cannot drift and the thing opened is an ordinary local held across the `yield`.
+Starlette deprecated its own `on_startup`/`on_shutdown` for this; Sextile had
+them for about an hour.
+
+`startup`/`shutdown` remain as the methods that enter and leave it, called once
+each by whatever is running the application. The server does not call them: a
+server that opened an application's database would be a server with an opinion
+about what an application is. `sextile.cli.run_service` does it.
+
+**`Application.ask`** assembles a request the way a session would — with what
+the service holds and the service itself — so that a test, a renderer or a tool
+need not remember to. Every one of them would remember, or would quietly not,
+and a page reached without them fails in a way unrelated to what was being
+tested.
 
 **Mounting** hands every address beginning with a prefix to another application,
 and gives it the address **unchanged**. That is not what a web framework does
@@ -189,13 +209,22 @@ disagree.
 page and should not acquire one: which number means goodbye is the application's
 affair.
 
-**A page says what it is where it is written.** `@page(...)` declares a pattern,
-a title, a detail and any keywords beside the method that builds the page, and
-the constructor collects them — base classes first, in the order they are
-written. `app.page(...)` does the same where a module-level application exists to
-hang a decorator on; the class-level form exists because a service whose handlers
-are methods has no `self` at class-definition time, and its registrations would
-otherwise sit in a block a long way from the functions they describe.
+**A page is a value, and a service is a list of them.** `PageRoute` carries the
+pattern, the handler, the title, the detail and any keywords, and
+`Sextile(pages=[...])` is what a service is made of.
+
+That is not merely tidier. **It makes registration order unobservable**, which
+is the root of four separate defects this framework had: a converter could not
+be registered in time for a class-declared pattern that used one, because
+`self.converter` needs a router that `super().__init__` creates and immediately
+uses; a module-level application could not open anything, could not resolve a
+word of its own, and could not say a page's keywords beside it. Every one of
+those was ordering showing through. Given as data, the converters, the pages,
+the middleware and the lifespan all arrive in one call and there is no *before*.
+
+`@app.page(...)` and the class-level `@page(...)` remain, both defined in terms
+of `add_page`, so a small service still reads as a small service and a service
+whose handlers are methods may declare them beside those methods.
 
 The words are what the page is called wherever it is listed rather than
 shown — in a menu, in the history, in the contents. Saying them once is the
@@ -484,6 +513,30 @@ costs only the frame it is on**, where the hand-written versions spent its rows
 on every frame. And **the prompt is built from the same description as the
 choices**, so a frame cannot name a key it does not answer.
 
+## Middleware
+
+A handler answers what one page says; **middleware answers what is true of every
+page**. It is given the request and the rest of the chain, and may look, may
+change what comes back, or may answer instead and never call it — which is what
+lets a service build authentication without the framework acquiring an opinion
+about how anybody logs in.
+
+Starlette's shape, including the ordering: the first given is the outermost, so
+a reader of the list sees a request entering at the top and leaving at the
+bottom. The chain is built per request rather than once, which costs a closure
+apiece and means an application that has already answered something can still
+be added to.
+
+One ships, and it exists because of the wire. At 1200 baud a frame takes eight
+seconds to reach the reader, so *"it felt slow"* cannot tell the wire from the
+page — from the far end of a telephone line the two are indistinguishable.
+`log_pages` names every page and times it. It logs at the level the **duration**
+deserves rather than the outcome: a page that is not there is ordinary, and one
+that took four seconds to decide it was not there is not.
+
+Nothing else is offered. What a service should say about itself is not a
+question a framework can answer; that it should say something is not in doubt.
+
 ## The wire
 
 Everything in this section was **measured against real Commstar under Beebium**,
@@ -565,7 +618,8 @@ that substitution would not be possible, and the framework would not be one.
   endpoint an emulator connects to, so a service is dialled exactly as any other
   viewdata board is. Speaking ip232 or a real serial port directly would be a new
   module beside `server.py`, not a change to it.
-- **No authentication.** The session carries a state mapping so that a service
-  can build one; the framework has no opinion about how.
+- **No authentication.** The session carries a state mapping and middleware can
+  refuse a page, so a service has what it needs to build one; the framework
+  still has no opinion about how.
 - **No differential frame update.** The cursor positioning it needs is measured
   and works, but trimming already took most of what was available.

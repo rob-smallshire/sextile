@@ -2,17 +2,16 @@
 
 What a service is made of:
 
-    from sextile import Page, PageRequest, Sextile
+    from sextile import Page, PageRequest, PageRoute, Sextile
 
-    app = Sextile()
-
-    @app.page("1", name="main")
     async def main(request: PageRequest) -> Page:
         ...
 
-    app.alias("MAIN", "1")
+    app = Sextile(pages=[PageRoute("1", main, name="main", keywords=("MAIN",))])
 
-and `sextile serve your_module:app` answers calls on it. Sessions, frames,
+and `sextile serve your_module:app` answers calls on it. A page is a value and
+a service is a list of them, so everything about a page is said in one place
+and the order things were registered in is nobody's business. Sessions, frames,
 control codes, page numbering and the wire are the framework's; what the pages
 say is yours.
 

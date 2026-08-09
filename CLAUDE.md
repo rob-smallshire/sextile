@@ -8,6 +8,7 @@ packages/sextile/              the framework: connections, sessions, routing,
                                page numbering, frames on the wire
 packages/stardot-viewdata/     the Stardot phpBB forum, as Viewdata
 packages/calendar-viewdata/    a calendar; the framework's worked example
+packages/weather-viewdata/     the weather, from met.no and a local gazetteer
 ```
 
 Read [docs/architecture.md](docs/architecture.md) first; it maps the workspace
@@ -17,6 +18,7 @@ is written up as built:
 - [sextile/docs/design.md](packages/sextile/docs/design.md)
 - [stardot-viewdata/docs/design.md](packages/stardot-viewdata/docs/design.md)
 - [calendar-viewdata/docs/design.md](packages/calendar-viewdata/docs/design.md)
+- [weather-viewdata/docs/design.md](packages/weather-viewdata/docs/design.md)
 
 [docs/target-architecture.md](docs/target-architecture.md) says where this is
 going: a phpBB extension replacing the Atom feed. For writing a new service,
@@ -29,12 +31,19 @@ for the two end-to-end narratives,
 
 They are the point of the whole arrangement, and both are checkable.
 
-1. **Nothing in `packages/sextile/` may know about a forum, phpBB or Stardot.**
+1. **Nothing in `packages/sextile/` may know about a forum, phpBB, Stardot, a
+   calendar or the weather.**
    Not in the code, and preferably not in the comments — a framework that
    explains itself in terms of posts will grow a dependency on them sooner or
-   later. `calendar-viewdata` exists to keep this honest: if a page there ever
-   needs something the framework offers only because Stardot wanted it, the seam
-   has moved.
+   later. `calendar-viewdata` and `weather-viewdata` exist to keep this honest: if a
+   page there ever needs something the framework offers only because Stardot
+   wanted it, the seam has moved.
+
+   Note the difference between that and an application finding the framework
+   *awkward*. `weather-viewdata` did, five times in a day, and each was a real
+   framework defect rather than a seam moving. When something in `sextile` is
+   awkward from an application, that is evidence: fix the framework and write
+   down what it was, rather than working around it in the application.
 
 2. **Nothing in an application may reach into the framework's internals.** The
    surface is `sextile`'s top-level exports plus `sextile.viewdata` for drawing.
@@ -114,6 +123,9 @@ uv run stardot-viewdata render --page 1             # a page, plus where its key
 uv run stardot-viewdata ingest --seed               # fill a new archive (an hour or more)
 uv run stardot-viewdata ingest                      # then poll every 5 minutes
 uv run stardot-viewdata serve                       # answer calls on port 6850
+uv run weather-viewdata import-places               # fill the gazetteer (11 seconds)
+uv run weather-viewdata render --page 323133880     # Trondheim's forecast
+uv run weather-viewdata serve                       # or answer calls
 nc localhost 6850                                   # and call it
 ```
 

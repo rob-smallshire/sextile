@@ -54,10 +54,14 @@ What each page exercises, since that is half the point:
 
 ## Decisions
 
-**The clock is a constructor argument.** `CalendarApplication(now=...)` takes a
-callable returning an aware `datetime`, defaulting to `datetime.now(UTC)`. It is
-the only thing here that is not a pure function, and a service whose pages
-change under it cannot be tested otherwise.
+**The clock is what the service holds.** `build_application(now=...)` takes a
+callable returning an aware `datetime`, defaulting to `datetime.now(UTC)`, and
+the lifespan yields it; a page reads it from `request.service`. It is the only
+thing here that is not a pure function, and a service whose pages change under
+it cannot be tested otherwise.
+
+That makes it a small demonstration of the general shape: a service holds
+whatever it opened, and pages are handed it rather than closing over it.
 
 **Nothing but the standard library.** No archive, no network, nothing to
 configure. That is what makes it a fair test of the framework: anything it needs
@@ -77,9 +81,12 @@ the months either side and nothing else.
 
 ## What it duplicates
 
-A menu builder — nine choices to a frame, a line of detail beneath each, `0` for
-the index — much like Stardot's. That is a viewdata convention rather than
-either service's, and it belongs in the framework. It is not there yet because
-with two examples the shared shape is a guess; with a third it would be
-evidence. Noted in [open-questions.md](../../../docs/open-questions.md) rather
-than acted on.
+Nothing, now. The menu builder it once shared with Stardot became the
+framework's `Menu`, and the six steps both were repeating became `Template`.
+
+## What it is written as
+
+Pages are module-level functions and the service is a list of `PageRoute`s.
+That is the framework's canonical shape as of August 2026, and this package was
+moved onto it first, since the documentation is written against it and a worked
+example that contradicted the prose would be worse than none.

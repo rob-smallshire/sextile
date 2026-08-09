@@ -17,6 +17,7 @@ difference between the two commands, and it is the difference a reader wants
 when the board has moved on since they arrived.
 """
 
+import copy
 import logging
 from dataclasses import dataclass
 from typing import Final
@@ -28,6 +29,7 @@ from sextile.keys import (
     NEXT_FRAME,
     PREVIOUS_FRAME,
 )
+from sextile.forms import draw_form
 from sextile.page import Page, PageFrame
 from sextile.session.commands import (
     Back,
@@ -47,6 +49,7 @@ from sextile.viewdata.command_line import (
 )
 from sextile.viewdata.countdown import countdown_bytes, lit_cells
 from sextile.viewdata.frame import Frame
+from sextile.viewdata.repaint import changed_rows, rows_bytes
 from sextile.viewdata.parting import parting_bytes
 
 _logger = logging.getLogger(__name__)
@@ -362,12 +365,39 @@ class Session:
             return None
         if key in found.moves:
             return await self._move(key)
+        #  Before the form is asked anything: a digit that leads somewhere is a
+        #  selection, never a character. `destination` consults the form's own
+        #  choices first, so what a digit means is whatever the reader has just
+        #  typed it into meaning.
         destination = found.destination(key)
+        if destination is not None:
+            return await self._go_to(destination, self._sequence_towards(destination))
+        if found.form is not None and found.form.accepts(key):
+            return await self._type(found, key)
         #  A key the frame does not offer does nothing. Guessing would take the
         #  reader somewhere they did not ask to go.
-        if destination is None:
-            return None
-        return await self._go_to(destination, self._sequence_towards(destination))
+        return None
+
+    async def _type(self, showing: PageFrame, key: str) -> bytes | None:
+        """Let a form take a keypress, and send back only what it changed.
+
+        The frame is redrawn **in place**, so what the terminal is showing and
+        what the session holds stay the same thing: `*00#` sends the frame in
+        hand, and it has to be the frame with the reader's typing on it.
+
+        Only the form's own rows are compared, so a form cannot disturb the
+        page around it however wrong it is about its own contents. And only the
+        rows that differ are sent -- typing narrows a list of suggestions, so
+        the common keystroke leaves the top of it alone and costs forty bytes
+        rather than a hundred and twenty.
+        """
+        form = showing.form
+        assert form is not None, "only asked of a frame that has one"
+        was = copy.deepcopy(showing.frame)
+        await form.typed(key)
+        draw_form(showing.frame, form)
+        moved = changed_rows(was, showing.frame, form.rows)
+        return rows_bytes(showing.frame, moved, was=was, caret=form.caret)
 
     def _sequence_towards(self, destination: PageAddress) -> "_Sequence | None":
         """The run of pages the reader is walking, once they step into it."""

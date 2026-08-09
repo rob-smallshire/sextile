@@ -15,8 +15,13 @@ one more thing that could disagree.
 from collections.abc import Mapping
 from dataclasses import dataclass, field
 
+from typing import TYPE_CHECKING
+
 from sextile.addressing import PageAddress
 from sextile.viewdata.frame import Frame
+
+if TYPE_CHECKING:
+    from sextile.forms import Form
 
 
 @dataclass(frozen=True)
@@ -35,12 +40,36 @@ class PageFrame:
     from the choices because they name no destination: the session moves within
     the page it is already showing."""
 
+    form: "Form | None" = None
+    """A field on this frame that the reader types into, if it has one.
+
+    A form answers a keypress by redrawing part of the frame rather than by
+    going anywhere, which is the one thing a viewdata page could not previously
+    do. Its digits lead somewhere and change as the reader types, so
+    `destination` asks it before the frame's own fixed choices -- and the
+    session then treats what comes back exactly as it treats a digit on a menu.
+    """
+
     def destination(self, key: str) -> PageAddress | None:
-        """Where a key leads, or None if it leads nowhere here."""
+        """Where a key leads, or None if it leads nowhere here.
+
+        A form's choices come first and shadow the frame's own, since they are
+        the ones that reflect what the reader has just typed. A frame carrying
+        a form should not offer a fixed digit as well; if it does, the form
+        wins while it has something to offer.
+        """
+        if self.form is not None:
+            found = self.form.choices().get(key)
+            if found is not None:
+                return found
         return self.choices.get(key)
 
     def offers(self, key: str) -> bool:
         """Whether this frame does anything at all with a key."""
+        if self.destination(key) is not None:
+            return True
+        if self.form is not None and self.form.accepts(key):
+            return True
         return key in self.choices or key in self.moves
 
 

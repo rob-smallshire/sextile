@@ -10,6 +10,7 @@ incrementally and must survive being split anywhere.
 
 import pytest
 
+from sextile import keys
 from sextile.session.commands import (
     ENTRY_LIMIT,
     Back,
@@ -298,11 +299,44 @@ class TestDelete:
     def test_what_is_left_is_still_a_usable_request(self) -> None:
         assert parse(b"*8249\x7f#") == [GoTo("824")]
 
-    def test_delete_outside_a_request_does_nothing(self) -> None:
-        assert parse(b"\x7f") == []
+    def test_delete_outside_a_request_reaches_the_frame(self) -> None:
+        #  It was dropped here once, and rightly: there was nothing a page
+        #  could do with it. A field the reader types into can rub out a
+        #  letter, so it is now an ordinary keypress and the showing frame
+        #  decides. A page that offers no such key ignores it, exactly as it
+        #  ignores every other key it does not offer.
+        assert parse(b"\x7f") == [Select(keys.RUB_OUT)]
 
     def test_delete_is_not_the_terminator(self) -> None:
         #  0x5F ends a request; 0x7F edits one. Sending the same byte for both
         #  would make rubbing out impossible.
         assert parse(b"*8\x7f") == []
         assert parse(b"*8\x5f") == [GoTo("8")]
+
+
+class TestRubOutOffARequest:
+    """DELETE on a page is a keypress like any other.
+
+    Over a request being typed it rubs out a character, which it has always
+    done. On a page it used to be dropped on the floor -- there was nothing a
+    page could do with it. A field the reader types into can, and every other
+    page goes on ignoring it exactly as it ignores any key it does not offer.
+    """
+
+    def test_it_reaches_the_frame(self) -> None:
+        assert CommandParser().feed(b"\x7f") == [Select(keys.RUB_OUT)]
+
+    def test_and_still_rubs_out_over_a_request(self) -> None:
+        parser = CommandParser()
+        parser.feed(b"*82")
+        parser.feed(b"\x7f")
+        assert parser.entry == "*8"
+
+    def test_deleting_the_star_still_cancels(self) -> None:
+        parser = CommandParser()
+        parser.feed(b"*")
+        assert parser.feed(b"\x7f") == [Clear()]
+
+    def test_it_is_not_confused_with_return(self) -> None:
+        #  RETURN sends 0x5F and terminates; DELETE sends 0x7F. Measured.
+        assert CommandParser().feed(b"\x5f") == [Next()]

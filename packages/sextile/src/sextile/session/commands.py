@@ -8,7 +8,8 @@ else typed on its own is an immediate keypress:
     *0<term>           back
     *00<term>          show this frame again
     *09<term>          fetch it afresh
-    DELETE             rub out the last character; over the star, cancel
+    DELETE             rub out the last character; over the star, cancel;
+                       on a page, a keypress the showing frame may answer
     *                  cancel it, if one is being typed
     **                 cancel and begin again, as Prestel's `**` did
     <term>             the next frame
@@ -45,7 +46,7 @@ _STAR: Final = keys.CANCEL
 _CARRIAGE_RETURN: Final = "\r"
 #: What the BBC's DELETE key transmits, measured against Commstar. Distinct
 #: from RETURN, which sends 0x5F and terminates a request.
-_DELETE: Final = "\x7f"
+_DELETE: Final = keys.RUB_OUT
 _LINE_FEED: Final = "\n"
 _TERMINATORS: Final = frozenset({"\x5f", "#", _CARRIAGE_RETURN})
 
@@ -143,6 +144,12 @@ class CommandParser:
             return self._accumulate(character)
         if character.isalnum():
             return Select(character.upper())
+        if character == _DELETE:
+            #  Off a request, DELETE is a keypress like any other and the
+            #  showing frame decides what it means. A field being typed into
+            #  rubs out a letter; every other page ignores it, as it ignores
+            #  any key it does not offer.
+            return Select(_DELETE)
         arrow = ARROWS.get(ord(character))
         if arrow is not None:
             #  The BBC's own cursor keys, which mean what WASD means.

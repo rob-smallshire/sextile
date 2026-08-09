@@ -42,6 +42,16 @@ REFRESH: Final = "09"
 #: A bare star cancels what is being keyed; two of them begin again.
 CANCEL: Final = "*"
 
+#: What the BBC's DELETE key transmits, measured against Commstar in
+#: `docs/spikes/spike_editing_keys.py`. Distinct from RETURN, which sends 0x5F
+#: and terminates a request.
+#:
+#: Over a request being typed the command parser rubs out a character with it.
+#: On a page it is an ordinary keypress like any other, which a frame may
+#: answer or ignore -- a field the reader is typing into answers it, and
+#: everything else does not.
+RUB_OUT: Final = "\x7f"
+
 #: What the BBC's cursor keys arrive as, once 7E1 has taken the eighth bit.
 ARROWS: Final[dict[int, str]] = {
     0x08: PREVIOUS_ITEM,  # cursor left

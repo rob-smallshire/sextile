@@ -1257,3 +1257,46 @@ class TestAskingForAPageWithoutASocket:
         app = Sextile(pages=[PageRoute("1", main, name="main")])
         await app.ask("1", arrival=Arrival(following=PageAddress("2")))
         assert seen == [PageAddress("2")]
+
+
+class TestBetterWordsForAPage:
+    """`describe` reads what a page said about itself when it was registered.
+
+    Right for a page whose number is fixed, wrong for one whose number carries
+    a field: "One post" is the right title in a list of *kinds* of page and the
+    wrong one in a list of pages a reader has been to.
+    """
+
+    def test_a_service_may_say_it_differently(self) -> None:
+        app = Sextile(
+            pages=[PageRoute("82{post_id:int}", _nothing, name="post", title="One post")]
+        )
+
+        @app.on_describe
+        def better(address: PageAddress) -> str | None:
+            found = app.route(address)
+            if found is not None and found.name == "post":
+                return f"Post {found.params['post_id']}"
+            return None
+
+        assert app.describe(PageAddress("82489493")) == "Post 489493"
+
+    def test_and_need_only_say_what_it_means_to_change(self) -> None:
+        #  None means the registration's own words will do, so a handler is a
+        #  list of exceptions rather than a reimplementation.
+        app = Sextile(
+            pages=[
+                PageRoute("1", _nothing, name="main", title="Main index"),
+                PageRoute("82{post_id:int}", _nothing, name="post", title="One post"),
+            ]
+        )
+
+        @app.on_describe
+        def better(address: PageAddress) -> str | None:
+            return None
+
+        assert app.describe(PageAddress("1")) == "Main index"
+
+    def test_a_service_without_one_is_unaffected(self) -> None:
+        app = Sextile(pages=[PageRoute("1", _nothing, name="main", title="Main index")])
+        assert app.describe(PageAddress("1")) == "Main index"

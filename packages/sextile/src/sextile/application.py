@@ -273,6 +273,7 @@ why it does not need one: a service that wants it wraps its pages.
 
 type Lifespan = Callable[["Sextile"], AbstractAsyncContextManager[Mapping[str, object] | None]]
 type ResolveHandler = Callable[[str], PageAddress | None]
+type DescribeHandler = Callable[[PageAddress], str | None]
 
 
 class Application(ABC):
@@ -532,6 +533,7 @@ class Sextile(Application):
         self._timed_out: PartingHandler | None = None
         self._failed: FailureHandler | None = None
         self._unresolved: ResolveHandler | None = None
+        self._describing: DescribeHandler | None = None
         self._middleware = tuple(middleware)
         self._lifespan = lifespan
         self._running: AbstractAsyncContextManager[Mapping[str, object] | None] | None = None
@@ -711,6 +713,20 @@ class Sextile(Application):
         self._failed = handler
         return handler
 
+    def on_describe[H: DescribeHandler](self, handler: H) -> H:
+        """Register better words for a page than its registration can give.
+
+        `describe` reads what a page said about itself, which is right for a
+        page whose number is fixed and wrong for one whose number carries a
+        field: "One post" is the right title in a list of *kinds* of page and
+        the wrong one in a list of pages a reader has been to.
+
+        Returning None means the registration's own words will do, so a handler
+        need only say what it means to say differently.
+        """
+        self._describing = handler
+        return handler
+
     def on_unresolved[H: ResolveHandler](self, handler: H) -> H:
         """Register a last resort for a target the numbering does not name.
 
@@ -805,6 +821,10 @@ class Sextile(Application):
         return self._router.match(address)
 
     def describe(self, address: PageAddress) -> str:
+        if self._describing is not None:
+            said = self._describing(address)
+            if said is not None:
+                return said
         found = self.route(address)
         if found is None or found.name is None:
             return super().describe(address)

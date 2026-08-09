@@ -181,28 +181,40 @@ class TestWhatIsOnTheScreen:
         row, column = form.caret
         assert frame.text_at(row, column - len("54.0N"), len("54.0N")) == "54.0N"
 
-    async def test_a_field_may_explain_itself_while_it_is_live(self) -> None:
-        #  A form of several fields has several things to explain and no room
-        #  to explain them all at once.
+    async def test_each_field_explains_itself_beneath_itself(self) -> None:
         form = Fields(
             fields=[
                 Field("latitude", "LATITUDE", FIRST_ROW, _takes("NS"),
-                      hint="54.0N or 54.0"),
-                Field("longitude", "LONGITUDE", FIRST_ROW + 1, _takes("EW"),
-                      hint="1.1W or -1.1"),
+                      hint="54.0N or 54.0", hint_row=FIRST_ROW + 1),
+                Field("longitude", "LONGITUDE", FIRST_ROW + 2, _takes("EW"),
+                      hint="1.1W or -1.1", hint_row=FIRST_ROW + 3),
             ],
             complete=where,
-            hint_row=NOTE_ROW,
         )
         frame = Frame()
         draw_form(frame, form)
-        assert "54.0N" in text_of(frame).splitlines()[NOTE_ROW]
+        rows = text_of(frame).splitlines()
+        assert "54.0N" in rows[FIRST_ROW + 1]
+        assert "1.1W" in rows[FIRST_ROW + 3]
+
+    async def test_and_goes_on_saying_it_when_the_caret_moves(self) -> None:
+        #  A hint that changed with the caret would be a row repainting on
+        #  every TAB, and standing still it costs nothing to move about.
+        form = Fields(
+            fields=[
+                Field("latitude", "LATITUDE", FIRST_ROW, _takes("NS"),
+                      hint="54.0N or 54.0", hint_row=FIRST_ROW + 1),
+                Field("longitude", "LONGITUDE", FIRST_ROW + 2, _takes("EW"),
+                      hint="1.1W or -1.1", hint_row=FIRST_ROW + 3),
+            ],
+            complete=where,
+        )
         await form.typed(keys.RIGHT)
         frame = Frame()
         draw_form(frame, form)
-        shown = text_of(frame).splitlines()[NOTE_ROW]
-        assert "1.1W" in shown
-        assert "54.0N" not in shown
+        rows = text_of(frame).splitlines()
+        assert "54.0N" in rows[FIRST_ROW + 1], "the latitude's advice stands"
+        assert "1.1W" in rows[FIRST_ROW + 3]
 
     async def test_something_may_be_said_beneath_them(self) -> None:
         async def note(values: Mapping[str, str]) -> str:

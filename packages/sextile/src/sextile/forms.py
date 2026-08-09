@@ -335,13 +335,16 @@ class Field:
     """Cells the value may take, after the label and the attributes."""
 
     hint: str = ""
-    """What to say while the caret is in this field, and only then.
+    """What this field takes, said beneath it and always.
 
-    A form of several fields has several things to explain and no room to
-    explain them all at once. Saying the one that applies is both shorter and
-    more use than saying all of them: a reader in the longitude has no need of
-    an example latitude, and forty columns has no room for it either.
+    Said beneath its own field rather than in one place that changes with the
+    caret, which is what this was first: a hint that changes is a row that
+    repaints on every TAB, and on a form of two fields the rows are there to
+    spare. Standing still it costs nothing to move about, and a reader can read
+    both before deciding which field to start in.
     """
+
+    hint_row: int | None = None
 
     value: str = ""
 
@@ -385,7 +388,6 @@ class Fields(Form):
         complete: Complete,
         note: Note | None = None,
         note_row: int | None = None,
-        hint_row: int | None = None,
         field: Colour = FIELD_BACKGROUND,
         typing: Colour = FIELD_COLOUR,
     ) -> None:
@@ -395,7 +397,6 @@ class Fields(Form):
         self._complete = complete
         self._note = note
         self._note_row = note_row
-        self._hint_row = hint_row
         self._field = field
         self._typing = typing
         self._live = 0
@@ -414,7 +415,9 @@ class Fields(Form):
     @property
     def rows(self) -> range:
         rows = [field.row for field in self._fields]
-        rows += [row for row in (self._note_row, self._hint_row) if row is not None]
+        rows += [field.hint_row for field in self._fields if field.hint_row is not None]
+        if self._note_row is not None:
+            rows.append(self._note_row)
         return range(min(rows), max(rows) + 1)
 
     @property
@@ -483,13 +486,13 @@ class Fields(Form):
                 #  three cells a background costs, so a field does not shift
                 #  sideways when the caret arrives in it.
                 row.text(f"  {fitted(field.value, field.width)}", Colour.WHITE)
+            if field.hint_row is not None and field.hint:
+                canvas.row(field.hint_row).text(
+                    fitted(field.hint, COLUMNS - 1), Colour.GREEN
+                )
         if self._note_row is not None and self._said:
             canvas.row(self._note_row).text(
                 fitted(self._said, COLUMNS - 1), Colour.GREEN
-            )
-        if self._hint_row is not None and self.live.hint:
-            canvas.row(self._hint_row).text(
-                fitted(self.live.hint, COLUMNS - 1), Colour.GREEN
             )
 
     @property

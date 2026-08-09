@@ -200,6 +200,23 @@ the eleven positions where the SAA5050's UK repertoire departs from ASCII, and
 Both agree with `sextile.viewdata.charset` exactly, including 0x60 as U+2015
 HORIZONTAL BAR — the one glyph the spike could not confirm.
 
+**0x60 is the long dash, and the underscore is not.** The font in
+`TeletextFont.hpp` settles a thing that is easy to get one position wrong: 0x60
+draws a bar the full width of the cell, 0x2D draws a three-pixel hyphen, and
+0x5F — where ASCII keeps its low line — draws the **hash**, the viewdata command
+key. So a range wanting a long dash is written with U+2015 and not with `_`,
+whatever a teletext editor's keyboard suggests; and a literal `_` in source is
+transliterated to a hyphen and comes out short.
+
+```
+0x5F  .#.#..     0x60  ......      0x2D  ......
+      .#.#..           ......            ......
+      #####.           ......            ......
+      .#.#..           #####.            .###..
+      #####.           ......            ......
+       hash          long dash          hyphen
+```
+
 0x7F is a twelfth departure: the font at `TeletextFont.hpp` has a glyph there
 labelled "Block", which Sextile maps to U+25AE. Beebium's text conversion
 deliberately returns nothing for it, since a block does not copy usefully as

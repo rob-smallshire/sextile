@@ -123,11 +123,17 @@ class Template[E](ABC):
         home: PageAddress | None = None,
         preamble: Sequence[str] = (),
         empty: str = "",
+        headings: str = "",
     ) -> None:
         self.title = title
         self.entries = entries
         self.home = home
         self.preamble = tuple(preamble)
+        #: What the columns beneath mean, drawn on *every* frame. A preamble is
+        #: a lead-in and belongs on the first frame only; headings are not, and
+        #: a reader on frame c looking at a column of figures has no way back
+        #: to the words that say what they are.
+        self.headings = headings
         #  Said instead of showing an empty frame: on a service that answers
         #  slowly, nothing at all is indistinguishable from a fault.
         self.empty = empty
@@ -182,6 +188,9 @@ class Template[E](ABC):
                 prompt=self.prompt(selecting=self.numbered and bool(batch), back=back, on=on),
             )
             row = self._draw_preamble(canvas) if index == 0 else CONTENT_FIRST_ROW
+            if self.headings:
+                canvas.row(row).text(fitted(self.headings, COLUMNS - 1), Colour.CYAN)
+                row += 1
             choices: dict[str, PageAddress] = {}
             if self.home is not None:
                 choices[HOME_KEY] = self.home
@@ -218,8 +227,14 @@ class Template[E](ABC):
 
     def _deal(self) -> list[Sequence[E]]:
         """Entries, frame by frame. The first frame is the short one."""
-        first = self._capacity(len(self.preamble) + (1 if self.preamble else 0))
-        rest = self._capacity(0)
+        #  Headings cost their row on every frame, not only the first: counting
+        #  them once would write the last entry of every later frame over the
+        #  rule at the foot of it.
+        labelled = 1 if self.headings else 0
+        first = self._capacity(
+            len(self.preamble) + (1 if self.preamble else 0) + labelled
+        )
+        rest = self._capacity(labelled)
         batches: list[Sequence[E]] = []
         start = 0
         while start < len(self.entries):

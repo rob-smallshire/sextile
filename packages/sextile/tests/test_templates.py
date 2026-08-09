@@ -267,3 +267,63 @@ class TestProse:
             home=at("1"),
         ).build(at("9"))
         assert "LDA &FE" in text_of(page)
+
+
+class TestColumnHeadings:
+    """A table dealt across frames needs its headings on each of them.
+
+    A preamble is a lead-in and belongs on the first frame only. Headings are
+    not a lead-in: they say what the columns beneath them mean, and a reader on
+    frame c looking at a column of numbers has no way back to the words.
+    """
+
+    def _table(self, count: int) -> Listing:
+        return Listing(
+            title="A TABLE",
+            entries=[MenuItem(f"row {n}", f"detail {n}") for n in range(count)],
+            headings="WHAT      AND WHAT ELSE",
+        )
+
+    def test_the_headings_are_drawn(self) -> None:
+        page = self._table(3).build(PageAddress("1"))
+        assert "WHAT      AND WHAT ELSE" in text_of(page, 0)
+
+    def test_on_every_frame_and_not_just_the_first(self) -> None:
+        page = self._table(60).build(PageAddress("1"))
+        assert len(page.frames) > 1
+        for index in range(len(page.frames)):
+            assert "AND WHAT ELSE" in text_of(page, index), f"frame {index} lost them"
+
+    def test_they_sit_immediately_above_the_entries(self) -> None:
+        rows = text_of(self._table(3).build(PageAddress("1")), 0).splitlines()
+        headings = next(n for n, row in enumerate(rows) if "AND WHAT ELSE" in row)
+        assert "row 0" in rows[headings + 1]
+
+    def test_they_cost_a_row_on_every_frame(self) -> None:
+        #  Not just the first, or the last entry of each later frame would be
+        #  written over the rule at the bottom.
+        without = Listing(
+            title="A TABLE",
+            entries=[MenuItem(f"row {n}") for n in range(60)],
+        ).build(PageAddress("1"))
+        with_them = self._table(60).build(PageAddress("1"))
+        assert len(with_them.frames) > len(without.frames)
+
+    def test_a_table_without_them_is_unchanged(self) -> None:
+        page = Listing(
+            title="A TABLE", entries=[MenuItem("row 0")]
+        ).build(PageAddress("1"))
+        rows = text_of(page, 0).splitlines()
+        assert "row 0" in rows[CONTENT_FIRST_ROW]
+
+    def test_a_preamble_and_headings_together(self) -> None:
+        page = Listing(
+            title="A TABLE",
+            entries=[MenuItem("row 0")],
+            preamble=["what this is"],
+            headings="WHAT",
+        ).build(PageAddress("1"))
+        shown = text_of(page, 0)
+        assert "what this is" in shown
+        assert "WHAT" in shown
+        assert "row 0" in shown

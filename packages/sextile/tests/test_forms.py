@@ -248,3 +248,24 @@ class TestThroughASession:
 
 async def _somewhere(request: PageRequest, n: int) -> Page:
     return Page(frames=(PageFrame(frame=Canvas().frame),))
+
+
+class TestTheSecondColumn:
+    async def test_the_detail_sits_in_a_column_of_its_own(self) -> None:
+        #  Names vary in length, so a detail written straight after one puts
+        #  the second column somewhere different on every row. A fixed column
+        #  reads as a column -- and a *fixed* one rather than one fitted to the
+        #  widest name showing, which would move as the reader types and turn
+        #  every keystroke into a repaint of all three rows.
+        frame = Frame()
+        draw_form(frame, await typing(a_field(), "TRO"))
+        rows = text_of(frame).splitlines()
+        ends = {row.rstrip().rfind("NO") for row in rows[FIRST_ROW : FIRST_ROW + 3]}
+        assert len(ends) == 1, "the countries do not line up"
+
+    async def test_a_long_name_is_shortened_rather_than_the_detail(self) -> None:
+        frame = Frame()
+        draw_form(frame, await typing(a_field(), "TRONDHEIMS"))
+        row = text_of(frame).splitlines()[FIRST_ROW]
+        assert "NO" in row, "the detail survives"
+        assert "Trondheims" in row, "and as much of the name as fits"

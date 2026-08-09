@@ -203,13 +203,28 @@ class Suggest(Form):
                 #  slowly a reader cannot tell nothing-found from not-answered.
                 row.text(fitted(self._empty, COLUMNS - 1), Colour.WHITE)
 
+    #: Cells the name is given before the detail begins. A *fixed* column
+    #: rather than one fitted to the widest name showing, for two reasons. A
+    #: fitted column moves as the reader types, which turns every keystroke
+    #: into a repaint of all three rows; and aligning the detail against the
+    #: row's right-hand edge instead makes every row near-full-width, which
+    #: costs 1.4 seconds a keystroke at 1200 baud against 0.7 for this.
+    _NAME_CELLS: Final = 20
+
+    #: Most of what is left that the detail may take, so a long one cannot
+    #: squeeze out the name it is there to qualify.
+    _DETAIL_SHARE: Final = 2
+
     def _draw_one(self, row: RowWriter, offset: int, entry: Entry) -> None:
         row.text(f"{_FIRST_DIGIT + offset} ", Colour.YELLOW)
-        room = row.remaining - 1
-        detail = f"  {entry.detail}" if entry.detail else ""
-        row.text(fitted(entry.text, room - len(detail)), Colour.WHITE)
+        detail = fitted(entry.detail, (row.remaining - 2) // self._DETAIL_SHARE)
+        name = fitted(entry.text, min(self._NAME_CELLS, row.remaining - 1))
+        row.text(name, Colour.WHITE)
         if detail:
-            row.text(fitted(detail, row.remaining - 1), Colour.GREEN)
+            #  Padded to the column rather than written straight after the
+            #  name, so the second column is a column whatever the names do.
+            row.skip(max(self._NAME_CELLS - len(name), 0))
+            row.text(detail, Colour.GREEN)
 
 
 def draw_form(frame: Frame, form: Form) -> None:

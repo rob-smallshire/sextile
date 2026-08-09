@@ -43,6 +43,13 @@ Beeb for half an hour.
 
 ## Wanted before it runs unattended
 
+- **The place index is derived data whose rules live in code**, so changing
+  them does nothing until somebody re-imports. It now records which rules built
+  it and the service refuses to start on a stale one, saying what to run —
+  because the failure mode is not a crash but a wrong answer given confidently.
+  Raise `store.RULES` whenever the folding or the ranking changes; nothing
+  checks that you remembered.
+
 - **Pacing does not survive a restart.** `FeedClient` spaces requests within one
   process, so a supervisor restarting the poller would bypass the site's
   60-second crawl delay. The last-request time should be persisted in the

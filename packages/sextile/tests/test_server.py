@@ -42,23 +42,53 @@ async def connect(server: asyncio.Server) -> tuple[asyncio.StreamReader, asyncio
     return await asyncio.open_connection(host, port)
 
 
+#: How long the line must be quiet for a frame to be judged complete. A frame
+#: has no terminator -- trailing blanks are not sent, so its length is not
+#: known in advance -- and each one is written in a single burst, so a pause
+#: means it is over.
+#:
+#: Bounded from both ends. It must outlast the gap between one frame's own
+#: segments -- under a kilobyte written in a single call over loopback, so
+#: microseconds, and fifty milliseconds is three orders of magnitude of margin.
+#: And it must be shorter than the shortest deliberate pause before the service
+#: says anything else, or a frame read would swallow what came next: the
+#: briefest here is a `warn_after` of 0.25.
+#:
+#: It is also paid once per frame read, so it is the suite's own tax. At 0.15
+#: it cost three seconds of a six-second run; at 0.05 it costs one.
+SETTLE = 0.05
+
+
 async def read_frame(reader: asyncio.StreamReader) -> bytes:
-    """Read until a whole frame arrives, and return it from its preamble on.
+    """Read a whole frame, and return it from its preamble on.
 
     Anything before it is discarded rather than the read being abandoned: a
     command-line update can precede a frame, and the two may well arrive in one
     chunk, so a frame has to be looked for inside what was read rather than only
     at the start of it.
+
+    **Read until the line goes quiet, not until the preamble appears.** This
+    used to return the moment it saw a preamble, which on an unloaded machine
+    is the whole frame in one chunk and on a busy one is the first few bytes of
+    it. The rest then turned up in whatever the next test line happened to
+    read, which is why the idle-caller test failed about one run in three and
+    only ever under the full suite.
     """
     buffer = b""
-    while True:
+    while FRAME_PREAMBLE not in buffer:
         chunk = await asyncio.wait_for(reader.read(4096), timeout=5.0)
         if not chunk:
             return buffer
         buffer += chunk
-        found = buffer.find(FRAME_PREAMBLE)
-        if found != -1:
-            return buffer[found:]
+    while True:
+        try:
+            chunk = await asyncio.wait_for(reader.read(4096), timeout=SETTLE)
+        except TimeoutError:
+            break
+        if not chunk:
+            break
+        buffer += chunk
+    return buffer[buffer.find(FRAME_PREAMBLE) :]
 
 
 def text_of(data: bytes) -> str:
@@ -216,24 +246,23 @@ class TestIdleCallers:
     async def test_a_silent_caller_is_eventually_released(self) -> None:
         #  A single-line board held open by someone who walked away locks
         #  everyone else out.
-        #  No warning here: this is about the timeout alone. Half a second
-        #  rather than a fifth: the shorter one failed once on a loaded machine,
-        #  and a test that fails when the box is busy teaches people to ignore
-        #  the suite.
+        #  No warning here: this is about the timeout alone.
         running = await serve(
             Board(), host="127.0.0.1", port=0, idle_timeout=0.5, warn_after=0
         )
-        host, port = running.sockets[0].getsockname()[:2]
-        reader, writer = await asyncio.open_connection(host, port)
+        reader, writer = await connect_to(running)
         await read_frame(reader)
 
-        assert await asyncio.wait_for(reader.read(4096), timeout=5.0)
-        assert await asyncio.wait_for(reader.read(1), timeout=5.0) == b""
+        #  Everything said between here and the end of the call, however the
+        #  network chose to divide it. Reading to EOF rather than counting
+        #  chunks is the point: a frame split across two packets used to
+        #  satisfy "something arrived" with its first half and then fail
+        #  "the line dropped" with its second.
+        tail = await asyncio.wait_for(reader.read(), timeout=5.0)
+        assert FRAME_PREAMBLE in tail, "being cut off is worth a frame of its own"
+        assert "RINGING OFF" in text_of(tail)
 
-        writer.close()
-        await writer.wait_closed()
-        running.close()
-        await running.wait_closed()
+        await close(writer, running)
 
 
 class TestWarningBeforeRingingOff:

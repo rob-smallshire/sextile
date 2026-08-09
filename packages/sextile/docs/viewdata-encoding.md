@@ -80,6 +80,18 @@ so a box's own first cell is spent on the attribute that colours it, and one
 black cell before that is unavoidable: a colour attribute cannot colour itself.
 `Composition.panel` does this arithmetic.
 
+**A field bar therefore begins two cells before anything can be typed into it**,
+and no arrangement avoids it. `NEW_BACKGROUND` takes the *current foreground* as
+the background, so the order is forced — choose blue, make it the background,
+choose white back — and the last two of those three cells are already inside the
+new background. Choosing white first would give a white background; a wider gap
+between the label and the field makes it worse rather than better, since the
+background runs on until something stops it and any padding after the attributes
+is coloured too.
+
+Two cells of a bar that nothing can be typed into is what a coloured field costs
+on this hardware. `Suggest` and `Fields` both wear it.
+
 ## Verified screen control
 
 Only these bare C0 codes have been measured, and they are all the frame

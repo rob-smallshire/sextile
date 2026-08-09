@@ -62,10 +62,22 @@ Beeb for half an hour.
   0. That is a viewdata convention rather than either service's, so it belongs
   in the framework — but with two examples the shared shape is a guess, and with
   three it would be evidence.
-- **Mounting is untested against a real second application.** `mount` gives the
-  mounted application the whole address rather than stripping a prefix, because
-  the application draws the page number into the frame itself. That is right,
-  but nothing yet runs two applications behind one number space.
+- **Mounting has now been tried against a real second application**, and found
+  two things. A mounted service was handed its host's `service` mapping and its
+  host's numbering, so its pages could not reach what its own lifespan had
+  opened — fixed. And a mount whose service is numbered outside its prefix is
+  forwarded nothing, ever, which is now refused at mount time.
+
+  Still open: **a `history` page mapped inside a mounted service names only its
+  own half of the namespace.** `contents` and `names` describe a service and
+  are legitimately sectional; a history describes a *call*, which crosses the
+  whole namespace. The fix is a back-reference from a mount to its host, used
+  when describing an address the mount does not own — not built, because
+  nothing has yet wanted a sectional history, and a mechanism with no user is
+  a guess.
+
+  Also still open: nothing yet *deploys* two applications behind one number
+  space. The mechanism works; no service is assembled that way.
 - **`sextile.viewdata` is a large surface for an application to reach into.**
   Chrome, canvas, colours, layout and the frame itself are all public, and an
   application needs most of them. Whether some of it should be a smaller,

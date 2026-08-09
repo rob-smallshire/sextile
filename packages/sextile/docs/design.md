@@ -183,6 +183,35 @@ key back. The prefix decides *who* answers and nothing more. A mount at `""`
 takes everything not answered locally, which is how a service that is one
 application rather than several is assembled.
 
+**So the namespaces are merged and must be disjoint.** A mounted service has to
+already number its pages inside the prefix it is mounted at; mounting a service
+numbered 1 to 9 under `6` forwards it nothing, ever. That is refused at mount
+time rather than left to be discovered, because every symptom of it appears
+somewhere else — a keyword landing on the host's page of the same number, a
+contents entry for a page nobody can reach — and none of them points at the
+mount.
+
+**A mounted service is still a service.** It is handed its own `service`
+mapping and its own `application`, not its host's: its pages must reach what
+*its* lifespan opened and build addresses from *its* numbering. Handing on the
+host's gives a page an archive it never opened and a router that names somebody
+else's pages, which is what happened the first time two real services were
+mounted together.
+
+**The generated pages report whatever answers them.** `contents` and `names`
+mapped in the host describe the whole namespace, mounts included — `route`,
+`pages` and `keywords` all see through a mount, and a mounted page whose
+numbers the host answers itself is left out, since it cannot be reached. Mapped
+inside a mounted service they describe that section, which is a reasonable
+thing for a section to offer.
+
+`history` is the exception, and the distinction is worth keeping: **`contents`
+and `names` describe a service, `history` describes a call.** A call crosses
+the whole namespace, so a history page mapped inside a mounted service can name
+only half of where the reader has been and shows bare numbers for the rest. Map
+it in the host. Nothing enforces that yet; see
+[open-questions.md](../../../docs/open-questions.md).
+
 ## Pages and frames
 
 ```python

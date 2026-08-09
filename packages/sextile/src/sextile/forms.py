@@ -43,6 +43,17 @@ type Lookup = Callable[[str], Awaitable[Sequence[Entry]]]
 #: As many suggestions as the wire affords at 1200 baud. Measured, not chosen.
 SUGGESTIONS: Final = 3
 
+#: How a field is marked out. The command line's colours, because a reader
+#: should have to learn "this is where typing goes" exactly once -- and because
+#: there is no alpha black, so light on dark is the only pairing the hardware
+#: offers.
+FIELD_BACKGROUND: Final = Colour.BLUE
+FIELD_COLOUR: Final = Colour.WHITE
+
+#: What a background costs: the colour, making it the background, and the
+#: colour of what is written on it.
+_BACKGROUND_CELLS: Final = 3
+
 #: What a reader keys to choose the nth suggestion. Digits, as every viewdata
 #: menu uses, so nothing new has to be learned.
 _FIRST_DIGIT: Final = 1
@@ -99,6 +110,22 @@ class Form(ABC):
         """
         return {}
 
+    def submit(self) -> PageAddress | None:
+        """Where RETURN leads, or None if there is nowhere to send the reader.
+
+        A reader who has typed something will press RETURN without being told
+        to, so a field that did nothing with it would feel broken. The default
+        is the first thing on offer -- the same as pressing 1 -- because the
+        reader can *see* that list, and refusing something visibly on offer
+        because it is not character-for-character what they typed would be
+        perverse.
+
+        None where nothing is on offer. The page will already be saying so
+        where the suggestions would be, and taking the reader somewhere is
+        worse than leaving them to correct what they typed.
+        """
+        return next(iter(self.choices().values()), None)
+
 
 class Suggest(Form):
     """A field, and the best few matches for what is in it.
@@ -122,15 +149,19 @@ class Suggest(Form):
         label: str = "",
         limit: int = SUGGESTIONS,
         empty: str = "",
+        field: Colour = FIELD_BACKGROUND,
+        typing: Colour = FIELD_COLOUR,
     ) -> None:
-        """``label`` should not end in a space: the colour attribute that
-        follows it occupies a cell and shows as one already."""
+        """``label`` should not end in a space: the attribute that follows it
+        occupies a cell and shows as one already."""
         self._look_up = look_up
         self._field_row = field_row
         self._first_row = first_row
         self._label = label
         self._limit = limit
         self._empty = empty
+        self._field = field
+        self._typing = typing
         self._value = ""
         self._found: Sequence[Entry] = ()
 
@@ -159,8 +190,12 @@ class Suggest(Form):
 
     @property
     def _field_column(self) -> int:
-        """The column the typed value starts at, attributes included."""
-        return (len(self._label) + 1 if self._label else 0) + 1
+        """The column the typed value starts at, attributes included.
+
+        The label costs its own colour; the field costs three, a background
+        being taken from a foreground.
+        """
+        return (len(self._label) + 1 if self._label else 0) + _BACKGROUND_CELLS
 
     def accepts(self, key: str) -> bool:
         #  Letters and the rub-out. Digits are spoken for by the suggestions,
@@ -190,10 +225,15 @@ class Suggest(Form):
         field = canvas.row(self._field_row)
         if self._label:
             field.text(self._label, Colour.CYAN)
-        #  No space is written between the label and the value: the colour
-        #  attribute before the value occupies a cell and shows as one. A
-        #  label ending in a space would therefore read with two.
-        field.text(fitted(self._value, field.remaining - 1), Colour.YELLOW)
+        #  A bar of colour to the end of the row, so a reader can see where
+        #  typing goes and how much room is left for it. The same marking the
+        #  command line has always used for the one other place on a service
+        #  that takes typing, so a reader learns it once.
+        #
+        #  No space is written between the label and the value either: the
+        #  attributes occupy cells and show as spaces already.
+        field.background(self._field, text=self._typing)
+        field.text(fitted(self._value, field.remaining), self._typing)
         for offset in range(self._limit):
             row = canvas.row(self._first_row + offset)
             if offset < len(self._found):

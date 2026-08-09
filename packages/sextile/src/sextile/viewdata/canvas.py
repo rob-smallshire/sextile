@@ -11,7 +11,7 @@ are obtained one at a time from ``Canvas.row`` for exactly that reason.
 
 from collections.abc import Sequence
 from enum import Enum, auto
-from typing import Self
+from typing import Final, Self
 
 from sextile.viewdata.charset import mosaic_code
 from sextile.viewdata.controls import Colour, Control, alpha_colour, graphics_colour
@@ -164,6 +164,31 @@ class RowWriter:
         self._colour = self._colour_in_force()
         return self
 
+    def background(self, colour: Colour, *, text: Colour) -> Self:
+        """Colour the rest of this row's background, and what is written on it.
+
+        **Three cells**, and the hardware's arrangement rather than a choice: a
+        background can only be taken from a foreground, so the colour has to be
+        chosen, made the background, and then the text colour chosen again.
+
+        The background runs to the end of the row, attributes being in force
+        until something changes them or the row ends. That is what makes a
+        field look like a field: a bar of colour a reader can see the extent
+        of, which is how the command line has always marked the one other place
+        on a service where typing goes.
+        """
+        if self.remaining < _BACKGROUND_CELLS:
+            raise ValueError(
+                f"a background needs {_BACKGROUND_CELLS} cells and row "
+                f"{self._row} has {self.remaining}"
+            )
+        self._frame.set_attribute(self._row, self._column, alpha_colour(colour))
+        self._frame.set_attribute(self._row, self._column + 1, Control.NEW_BACKGROUND)
+        self._frame.set_attribute(self._row, self._column + 2, alpha_colour(text))
+        self._column += _BACKGROUND_CELLS
+        self._colour = text
+        return self
+
     def _colour_in_force(self) -> Colour:
         """The colour a character written here would take.
 
@@ -190,6 +215,11 @@ class RowWriter:
             raise ValueError(f"cannot move from column {self._column} to {column}")
         self._column = column
         return self
+
+
+#: What a background costs: the colour, making it the background, and the
+#: colour of what is written on it.
+_BACKGROUND_CELLS: Final = 3
 
 
 class Canvas:

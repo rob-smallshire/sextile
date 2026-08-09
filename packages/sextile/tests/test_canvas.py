@@ -11,7 +11,7 @@ independently and white text needs no attribute at all.
 import pytest
 
 from sextile.viewdata.canvas import DEFAULT_COLOUR, Canvas
-from sextile.viewdata.controls import Colour, Control
+from sextile.viewdata.controls import Colour, Control, alpha_colour
 from sextile.viewdata.frame import COLUMNS, ROWS
 
 
@@ -368,3 +368,43 @@ class TestMosaicRuns:
         canvas = Canvas()
         with pytest.raises(ValueError):
             canvas.row(0).mosaic([0b111111] * COLUMNS, Colour.YELLOW)
+
+
+class TestABackground:
+    """Marking out a field, as the command line has always marked its own.
+
+    A reader needs to see where typing goes. It is the only place on a service
+    where a background earns its cells.
+    """
+
+    def test_what_follows_sits_on_the_colour(self) -> None:
+        canvas = Canvas()
+        canvas.row(0).background(Colour.BLUE, text=Colour.WHITE).text("TROND")
+        assert canvas.frame.text_at(0, 3, 5) == "TROND"
+
+    def test_it_costs_three_cells(self) -> None:
+        #  The hardware's arrangement: a background is taken from a foreground,
+        #  so the colour is chosen, made the background, and chosen again for
+        #  the text.
+        row = Canvas().row(0).background(Colour.BLUE, text=Colour.WHITE)
+        assert row.column == 3
+
+    def test_the_three_are_the_ones_the_hardware_wants(self) -> None:
+        canvas = Canvas()
+        canvas.row(0).background(Colour.BLUE, text=Colour.WHITE)
+        frame = canvas.frame
+        assert frame.cell(0, 0) == alpha_colour(Colour.BLUE)
+        assert frame.cell(0, 1) == Control.NEW_BACKGROUND
+        assert frame.cell(0, 2) == alpha_colour(Colour.WHITE)
+
+    def test_the_text_colour_is_then_in_force(self) -> None:
+        #  So writing in it costs no further attribute.
+        row = Canvas().row(0).background(Colour.BLUE, text=Colour.WHITE)
+        assert row.colour == Colour.WHITE
+        row.text("TROND", Colour.WHITE)
+        assert row.column == 3 + len("TROND")
+
+    def test_a_row_with_no_room_for_one_says_so(self) -> None:
+        row = Canvas().row(0).skip(COLUMNS - 2)
+        with pytest.raises(ValueError, match="background"):
+            row.background(Colour.BLUE, text=Colour.WHITE)

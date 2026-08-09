@@ -50,7 +50,7 @@ from sextile.viewdata.command_line import (
 from sextile.viewdata.countdown import countdown_bytes, lit_cells
 from sextile.viewdata.frame import Frame
 from sextile.viewdata.parting import parting_bytes
-from sextile.viewdata.repaint import changed_rows, rows_bytes
+from sextile.viewdata.repaint import caret_bytes, changed_rows, rows_bytes
 
 _logger = logging.getLogger(__name__)
 
@@ -418,6 +418,15 @@ class Session:
     async def _next_frame(self) -> bytes | None:
         if self._page is None:
             return None
+        showing = self._showing()
+        if showing is not None and showing.form is not None:
+            #  A reader who has typed something presses RETURN without being
+            #  told to. Before the frames, because a page with a field on it is
+            #  a page they are typing into rather than reading through.
+            sending = showing.form.submit()
+            if sending is not None:
+                return await self._go_to(sending, self._sequence_towards(sending))
+            return None
         if self._frame_index + 1 < len(self._page.frames):
             self._frame_index += 1
             return self._send()
@@ -523,7 +532,15 @@ class Session:
     def _send(self) -> bytes:
         found = self._showing()
         assert found is not None, "a page always has the frame it is showing"
-        return found.frame.to_bytes()
+        frame = found.frame.to_bytes()
+        if found.form is None:
+            return frame
+        #  A frame begins by hiding the cursor, which is right everywhere but
+        #  here: a reader who has arrived at a field needs to see where their
+        #  typing will go before they have typed anything. Without this the
+        #  caret appears only on the first repaint, which is to say only after
+        #  the reader has guessed correctly.
+        return frame + caret_bytes(*found.form.caret)
 
     async def _unknown(self, target: str) -> bytes:
         return await self._show(await self._application.not_found(target))

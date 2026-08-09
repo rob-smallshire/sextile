@@ -59,6 +59,17 @@ def text_of(frame: Frame) -> str:
     return "\n".join(characters)
 
 
+def field_value(frame: Frame, form: Suggest) -> str:
+    """What is in the field, read from where the caret says it ends.
+
+    Rather than by counting spaces: the label, the field's background and the
+    text colour all occupy cells and all show as spaces, so a literal is three
+    ways to be wrong when any of them changes.
+    """
+    row, column = form.caret
+    return frame.text_at(row, column - len(form.value), len(form.value))
+
+
 class TestTyping:
     async def test_a_letter_goes_into_the_field(self) -> None:
         assert (await typing(a_field(), "TRO")).value == "TRO"
@@ -128,8 +139,10 @@ class TestWhatIsOffered:
 class TestDrawing:
     async def test_the_field_shows_what_was_typed(self) -> None:
         frame = Frame()
-        draw_form(frame, await typing(a_field(), "TROND"))
-        assert "PLACE: TROND" in text_of(frame)
+        form = await typing(a_field(), "TROND")
+        draw_form(frame, form)
+        assert field_value(frame, form) == "TROND"
+        assert "PLACE:" in text_of(frame)
 
     async def test_the_suggestions_are_numbered_beneath_it(self) -> None:
         frame = Frame()
@@ -174,7 +187,7 @@ class TestDrawing:
 class TestThroughASession:
     """What a reader actually experiences, keystroke by keystroke."""
 
-    async def _session(self) -> Session:
+    async def _session(self) -> tuple[Session, Suggest]:
         form = a_field()
 
         async def search(request: PageRequest) -> Page:
@@ -191,40 +204,40 @@ class TestThroughASession:
         )
         session = Session(app)
         await session.greeting()
-        return session
+        return session, form
 
     async def test_a_letter_repaints_rather_than_moving(self) -> None:
-        session = await self._session()
+        session, _ = await self._session()
         before = session.address
         sent = await session.receive(b"T")
         assert session.address == before, "typing is not going anywhere"
         assert sent, "and something was sent"
 
     async def test_what_was_typed_reaches_the_screen(self) -> None:
-        session = await self._session()
+        session, form = await self._session()
         await session.receive(b"TROND")
         frame = session.current_frame()
         assert frame is not None
-        assert "PLACE: TROND" in text_of(frame)
+        assert field_value(frame, form) == "TROND"
 
     async def test_a_digit_goes_to_what_it_is_offering(self) -> None:
-        session = await self._session()
+        session, _ = await self._session()
         await session.receive(b"YORK")
         await session.receive(b"1")
         assert session.address == PageAddress("321004")
 
     async def test_rubbing_out_reaches_the_form(self) -> None:
-        session = await self._session()
+        session, form = await self._session()
         await session.receive(b"TROM")
         await session.receive(b"\x7f")
         frame = session.current_frame()
         assert frame is not None
-        assert "PLACE: TRO " in text_of(frame)
+        assert field_value(frame, form) == "TRO"
 
     async def test_a_page_request_still_leaves_the_page(self) -> None:
         #  The star is untouched by any of this: a reader is never trapped in a
         #  field they cannot get out of.
-        session = await self._session()
+        session, _ = await self._session()
         await session.receive(b"TROND")
         await session.receive(b"*321001#")
         assert session.address == PageAddress("321001")
@@ -232,7 +245,7 @@ class TestThroughASession:
     async def test_only_the_form_s_rows_are_sent(self) -> None:
         #  Not the whole frame, which is eight seconds at 1200 baud against
         #  one for the block.
-        session = await self._session()
+        session, _ = await self._session()
         await session.receive(b"TRO")
         sent = b"".join(await session.receive(b"N"))
         assert len(sent) < 200, f"a keystroke cost {len(sent)} bytes"
@@ -240,7 +253,7 @@ class TestThroughASession:
     async def test_and_a_keystroke_that_settles_the_list_costs_less(self) -> None:
         #  Typing on into a list that has narrowed to one leaves the
         #  suggestions alone and repaints the field only.
-        session = await self._session()
+        session, _ = await self._session()
         await session.receive(b"TROMS")
         settled = b"".join(await session.receive(b"O"))
         assert len(settled) < 60, f"the common keystroke cost {len(settled)} bytes"
@@ -269,3 +282,68 @@ class TestTheSecondColumn:
         row = text_of(frame).splitlines()[FIRST_ROW]
         assert "NO" in row, "the detail survives"
         assert "Trondheims" in row, "and as much of the name as fits"
+
+
+class TestSending:
+    """What RETURN does, which a reader will press without being told.
+
+    It takes the first suggestion -- the same as pressing 1. A reader can *see*
+    the list, so refusing something visibly on offer because it is not
+    character-for-character what they typed would be perverse; and nobody types
+    a name in full once three letters have found it.
+    """
+
+    async def test_it_takes_the_first_suggestion(self) -> None:
+        form = await typing(a_field(), "TROND")
+        assert form.submit() == form.choices()["1"]
+
+    async def test_which_is_what_pressing_one_would_have_done(self) -> None:
+        session, _ = await self._session()
+        await session.receive(b"YORK")
+        await session.receive(b"\x5f")
+        assert session.address == PageAddress("321004")
+
+    async def test_a_partial_word_still_sends(self) -> None:
+        #  TRO is not a place; Trondheim is, and it is the one on offer.
+        session, _ = await self._session()
+        await session.receive(b"TRO")
+        await session.receive(b"\x5f")
+        assert session.address != PageAddress("1"), "it went somewhere"
+
+    async def test_hash_does_the_same(self) -> None:
+        #  The conventional viewdata key, and the one most readers try first.
+        session, _ = await self._session()
+        await session.receive(b"YORK")
+        await session.receive(b"#")
+        assert session.address == PageAddress("321004")
+
+    async def test_sending_nothing_goes_nowhere(self) -> None:
+        session, _ = await self._session()
+        await session.receive(b"\x5f")
+        assert session.address == PageAddress("1")
+
+    async def test_and_nor_does_a_word_that_matches_nothing(self) -> None:
+        #  The page already says so where the suggestions would be; taking the
+        #  reader somewhere would be worse than leaving them to correct it.
+        session, _ = await self._session()
+        await session.receive(b"ZZZZ")
+        await session.receive(b"\x5f")
+        assert session.address == PageAddress("1")
+
+    async def _session(self) -> tuple[Session, Suggest]:
+        form = a_field()
+
+        async def search(request: PageRequest) -> Page:
+            canvas = Canvas()
+            draw_form(canvas.frame, form)
+            return Page(frames=(PageFrame(frame=canvas.frame, form=form),))
+
+        app = Sextile(
+            pages=[
+                PageRoute("1", search, name="search"),
+                PageRoute("32{n:int}", _somewhere, name="place"),
+            ]
+        )
+        session = Session(app)
+        await session.greeting()
+        return session, form

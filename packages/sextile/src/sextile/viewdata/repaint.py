@@ -89,7 +89,7 @@ def rows_bytes(
         wrapped = width == COLUMNS
         at = row
     if caret is not None:
-        out += _to_caret(*caret)
+        out += caret_bytes(*caret)
     return bytes(out)
 
 
@@ -102,8 +102,13 @@ def _to_row(row: int) -> bytes:
     return bytes([ScreenControl.CURSOR_HOME]) + bytes([ScreenControl.LINE_FEED]) * row
 
 
-def _to_caret(row: int, column: int) -> bytes:
+def caret_bytes(row: int, column: int) -> bytes:
     """Put the cursor at a cell and show it.
+
+    Sent after a whole frame as well as after a repaint: a frame begins by
+    hiding the cursor, which is right everywhere except a page with a field on
+    it, where a reader needs to see where their typing will go *before* they
+    have typed anything.
 
     Cursor right skips without erasing -- measured -- so walking across a row
     already drawn disturbs nothing. Cheaper than it looks: a field is near the

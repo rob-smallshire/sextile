@@ -53,6 +53,7 @@ class Cursor:
     def __init__(self) -> None:
         self.row = 0
         self.column = 0
+        self.visible = False
 
     def apply(self, sent: bytes | Sequence[bytes]) -> None:
         """Everything a session sends back, which is a list of replies."""
@@ -69,6 +70,10 @@ class Cursor:
                 self.column += 1
             elif byte == ScreenControl.CURSOR_UP:
                 self.row -= 1
+            elif byte == ScreenControl.CURSOR_ON:
+                self.visible = True
+            elif byte == ScreenControl.CURSOR_OFF:
+                self.visible = False
             elif byte >= 0x20:
                 self.column += 1
                 if self.column == COLUMNS:
@@ -138,3 +143,46 @@ class TestWhatWasTypedIsWhatIsHeld:
         for _ in range(2):
             await session.receive(b"\x7f")
         assert form.value == "ULAN"
+
+
+class TestTheCommandLineGivesTheCursorBack:
+    """`*` opens a request, a second `*` cancels it, and the field wants its
+    cursor back.
+
+    Putting the footer back begins by hiding the cursor, which is right --
+    something is about to be drawn over the row it was on. Nothing turned it
+    on again, so a reader who thought better of a page number was left in a
+    field with no cursor in it and no way to see where their next letter would
+    go.
+    """
+
+    async def test_a_cancelled_request_puts_the_cursor_back_in_the_field(
+        self,
+    ) -> None:
+        session, form, cursor = await a_session()
+        cursor.apply(await session.receive(b"ULAN"))
+        typing_at = form.caret
+        cursor.apply(await session.receive(b"*"))
+        assert cursor.at != typing_at, "the request is typed on the footer row"
+        cursor.apply(await session.receive(b"*"))
+        assert cursor.visible, "a field with no cursor is a field you cannot type in"
+        assert cursor.at == form.caret == typing_at
+
+    async def test_and_so_does_one_that_was_typed_into_first(self) -> None:
+        session, form, cursor = await a_session()
+        cursor.apply(await session.receive(b"ULAN"))
+        typing_at = form.caret
+        cursor.apply(await session.receive(b"*91"))
+        cursor.apply(await session.receive(b"*"))
+        assert cursor.visible
+        assert cursor.at == typing_at
+
+    async def test_and_the_field_still_takes_letters_afterwards(self) -> None:
+        #  The cursor being back is only worth having if it is back in the
+        #  right place: the next letter has to land after the last one.
+        session, form, cursor = await a_session()
+        cursor.apply(await session.receive(b"ULAN"))
+        cursor.apply(await session.receive(b"**"))
+        cursor.apply(await session.receive(b" BATOR"))
+        assert form.value == "ULAN BATOR"
+        assert cursor.at == form.caret

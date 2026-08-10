@@ -306,6 +306,15 @@ class Session:
             frame = self.current_frame()
             if frame is not None:
                 responses.append(footer_bytes(frame))
+                #  Putting the footer back begins by hiding the cursor, which
+                #  is right -- something is about to be drawn over the row it
+                #  was on. On a page with a field, it has to come back: a
+                #  reader who thought better of a page number is otherwise left
+                #  in a field with no cursor in it and nothing to say where
+                #  their next letter would go.
+                showing = self._showing()
+                if showing is not None and showing.form is not None:
+                    responses.append(caret_bytes(*showing.form.caret))
         self._displayed = entry
 
     async def _act(self, command: Command) -> bytes | None:

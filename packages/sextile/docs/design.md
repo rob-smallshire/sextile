@@ -553,6 +553,13 @@ blocks between one value and the next against nine of height in all, so a line
 climbing from floor to ceiling in a single step still rises about a block a
 column.
 
+**A page with a field gets its cursor back when a request is cancelled.**
+Putting the footer back begins by hiding the cursor — something is about to be
+drawn over the row it was on — and nothing turned it on again, so a reader who
+opened a `*` request over a search field and thought better of it was left in a
+field with no cursor in it. The same two lines cover the idle warning, which
+takes the footer row the same way.
+
 **A keystroke that draws nothing still moves the cursor.** A space is a blank
 cell written over a blank cell, so the frame comes out identical and the
 repaint has no rows to send — and sending nothing leaves the cursor a cell

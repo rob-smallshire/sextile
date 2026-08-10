@@ -558,6 +558,12 @@ instead of three, in the same separated mosaics and across the same cells. A bar
 belongs where a page ends; between two things that are both content it reads as
 a second frame beginning.
 
+**`separation` puts blank rows *between* entries**, not after the last of them.
+A shape several rows tall wants air around it or two entries read as one block;
+charging that air to every entry wastes it at the foot of the frame, where the
+chrome's rule is doing the same job for nothing. It is worth a whole entry a
+frame — the weather's day table fits five days where it fitted four.
+
 **A page may offer `Shortcut`s** — keys carried on every frame, over and above
 the digits and the way home. A page's digits belong to its entries and change
 from frame to frame; a shortcut does not, and it is for the way out that is not

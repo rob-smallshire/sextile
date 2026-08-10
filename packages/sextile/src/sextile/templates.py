@@ -151,6 +151,12 @@ class Template[E](ABC):
     #: Rows one entry occupies, which decides how many fit on a frame.
     rows_per_entry: ClassVar[int] = 1
 
+    #: Blank rows *between* entries, and not after the last of them. A shape
+    #: several rows tall wants air around it or two entries read as one block;
+    #: charging that air to every entry would waste it at the foot of the
+    #: frame, where the chrome's rule is doing the same job for nothing.
+    separation: ClassVar[int] = 0
+
     #: Whether entries take a digit, and so whether they can be chosen.
     numbered: ClassVar[bool] = False
 
@@ -274,7 +280,7 @@ class Template[E](ABC):
                 if digit is not None and where is not None:
                     choices[digit] = where
                 self.draw_entry(canvas, row, entry, digit)
-                row += self.rows_per_entry
+                row += self.rows_per_entry + self.separation
             frames.append(
                 PageFrame(
                     frame=canvas.frame,
@@ -331,11 +337,16 @@ class Template[E](ABC):
     def _capacity(self, spent: int) -> int:
         """How many entries fit once ``spent`` rows have gone on other things.
 
+        The separation goes between entries and not after the last, so what is
+        left over is one separation more than it looks: five three-row entries
+        with a blank between them take nineteen rows and not twenty.
+
         None is a real answer, where a lead-in has taken the frame. Only the
         first frame can be in that position, and `_deal` gives it an empty
         batch and starts the entries on the next.
         """
-        room = max((CONTENT_ROWS - spent) // self.rows_per_entry, 0)
+        left = CONTENT_ROWS - spent + self.separation
+        room = max(left // (self.rows_per_entry + self.separation), 0)
         return min(room, CHOICES_PER_FRAME) if self.numbered else room
 
 

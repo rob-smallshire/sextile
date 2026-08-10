@@ -28,7 +28,7 @@ things a reader keys, whereas this is about which way is which.
 from typing import Final
 
 from sextile import keys
-from sextile.viewdata.blocks import icon
+from sextile.viewdata.blocks import BLOCKS_DOWN, Icon, icon
 from sextile.viewdata.composition import Align, Composition
 from sextile.viewdata.controls import Colour
 
@@ -45,6 +45,15 @@ _RIGHT: Final = icon("""
 _UP: Final = _RIGHT.turned()
 _LEFT: Final = _UP.turned()
 _DOWN: Final = _LEFT.turned()
+
+#: The middle of the shaft, for a compass drawn without its sideways arm. The
+#: two vertical arrows stop short of the middle rows, and without something on
+#: them they read as two arrows rather than as one line a reader moves along.
+#:
+#: Taken from the bottom row of the up arrow rather than drawn again, so that
+#: it is in the same column as the shaft it continues however the arrow is
+#: redrawn. Two rows of cells, which is what the arrows leave between them.
+_SHAFT: Final = Icon(bitmap=(_UP.bitmap[-1],) * (2 * BLOCKS_DOWN))
 
 #: Rows the whole thing takes: a word, a key, two of arrow, the middle row and
 #: its labels, two more of arrow, a key, a word, and the line about the cursor
@@ -84,22 +93,35 @@ def compass(
     composition: Composition,
     row: int,
     *,
+    items: bool = True,
     colour: Colour = Colour.CYAN,
     key: Colour = Colour.YELLOW,
     word: Colour = Colour.WHITE,
 ) -> Composition:
-    """Draw the compass with its top row at `row`, taking `ROWS` in all."""
+    """Draw the compass with its top row at `row`, taking `ROWS` in all.
+
+    **`items=False` leaves the sideways arm off.** `A` and `D` step through the
+    run of pages a menu offered, and the framework does not implement them: a
+    service wires them to `request.arrival` or it has no such thing, and one
+    that has no such thing must not draw two keys that do nothing. The up and
+    down arm is always there, being frames, which every page has.
+    """
     composition.text(row, Align.CENTRE, _UP_WORDS, word)
     composition.text(row + 1, Align.CENTRE, keys.PREVIOUS_FRAME, key)
     composition.picture(row + 2, Align.CENTRE, _UP.cells(), colour)
-    composition.text(row + 4, _LEFT_WORD, "previous", word)
-    composition.text(row + 4, _LEFT_KEY, keys.PREVIOUS_ITEM, key)
-    composition.picture(row + 4, _LEFT_ARROW, _LEFT.cells(), colour)
-    composition.picture(row + 4, _RIGHT_ARROW, _RIGHT.cells(), colour)
-    composition.text(row + 4, _RIGHT_KEY, keys.NEXT_ITEM, key)
-    composition.text(row + 4, _RIGHT_WORD, "next", word)
-    composition.text(row + 5, _LEFT_WORD + _UNDER, "item", word)
-    composition.text(row + 5, _RIGHT_WORD, "item", word)
+    if items:
+        composition.text(row + 4, _LEFT_WORD, "previous", word)
+        composition.text(row + 4, _LEFT_KEY, keys.PREVIOUS_ITEM, key)
+        composition.picture(row + 4, _LEFT_ARROW, _LEFT.cells(), colour)
+        composition.picture(row + 4, _RIGHT_ARROW, _RIGHT.cells(), colour)
+        composition.text(row + 4, _RIGHT_KEY, keys.NEXT_ITEM, key)
+        composition.text(row + 4, _RIGHT_WORD, "next", word)
+        composition.text(row + 5, _LEFT_WORD + _UNDER, "item", word)
+        composition.text(row + 5, _RIGHT_WORD, "item", word)
+    #  The shaft of the up arrow, which the sideways arm would otherwise be
+    #  drawn across. Without the arm it is the only thing on these rows.
+    else:
+        composition.picture(row + 4, Align.CENTRE, _SHAFT.cells(), colour)
     composition.picture(row + 6, Align.CENTRE, _DOWN.cells(), colour)
     composition.text(row + 8, Align.CENTRE, keys.NEXT_FRAME, key)
     composition.text(row + 9, Align.CENTRE, _DOWN_WORDS, word)

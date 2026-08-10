@@ -153,3 +153,43 @@ class TestWhatItCallsThings:
             keys.PREVIOUS_ITEM,
             keys.NEXT_ITEM,
         }
+
+
+class TestLeavingTheSidewaysArmOff:
+    """`A` and `D` step through the run of pages a menu offered.
+
+    The framework does not implement them -- a service wires them to
+    `request.arrival` or has no such thing -- so a service without them must
+    not be shown two keys that do nothing, on the one page a reader goes to to
+    find out what the keys do.
+    """
+
+    def test_the_item_keys_are_not_drawn(self) -> None:
+        assert "previous" not in _drawn(items=False)
+        assert "item" not in _drawn(items=False)
+
+    def test_but_the_frame_keys_still_are(self) -> None:
+        #  Every page has frames, so this arm is never in doubt.
+        shown = _drawn(items=False)
+        assert "page up" in shown
+        assert "page down" in shown
+
+    def test_and_the_shaft_joins_the_two_arrows(self) -> None:
+        #  Without something on the rows the sideways arm had, the two arrows
+        #  read as two arrows rather than as one line a reader moves along.
+        rows = _drawn(items=False).splitlines()
+        assert all(row.strip() for row in rows[3:7]), rows[3:7]
+
+    def test_it_takes_the_same_rows_either_way(self) -> None:
+        #  A caller places it from the foot of the frame, so a compass that
+        #  shrank would leave a hole rather than move up.
+        assert len(_drawn(items=True).splitlines()) == len(
+            _drawn(items=False).splitlines()
+        )
+
+
+def _drawn(*, items: bool) -> str:
+    canvas = Canvas()
+    compass(Composition(), 0, items=items).draw(canvas)
+    characters, _ = canvas.frame.to_grid()
+    return "\n".join(characters[:ROWS])

@@ -73,6 +73,7 @@ def guide_page(
     home_called: str = "index",
     moving: Sequence[Key] = (),
     asking: Sequence[Key] = (),
+    items: bool = True,
 ) -> Page:
     """The guide, as two frames of keys.
 
@@ -86,7 +87,10 @@ def guide_page(
     second = [*_ASKING, Key(), *asking]
     column = max(cell_count(row.key) for row in [*first, *second]) + _GAP
     frames = [
-        _frame(address, index, rows, title, home, column, drawn=index == 0)
+        _frame(
+            address, index, rows, title, home, column,
+            drawn=index == 0, items=items,
+        )
         for index, rows in enumerate((first, second))
     ]
     return Page(frames=tuple(frames))
@@ -122,6 +126,7 @@ def _frame(
     column: int,
     *,
     drawn: bool,
+    items: bool,
 ) -> PageFrame:
     canvas = Canvas()
     back, on = index > 0, index == 0
@@ -138,7 +143,9 @@ def _frame(
     #  a great many keys of its own gets the keys, which are what it asked for.
     if drawn and CONTENT_ROWS - len(rows) >= COMPASS_ROWS:
         compass(
-            Composition(), CONTENT_FIRST_ROW + CONTENT_ROWS - COMPASS_ROWS
+            Composition(),
+            CONTENT_FIRST_ROW + CONTENT_ROWS - COMPASS_ROWS,
+            items=items,
         ).draw(canvas)
     return PageFrame(
         frame=canvas.frame,

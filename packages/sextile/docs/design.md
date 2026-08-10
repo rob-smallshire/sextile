@@ -580,6 +580,21 @@ charging that air to every entry wastes it at the foot of the frame, where the
 chrome's rule is doing the same job for nothing. It is worth a whole entry a
 frame — the weather's day table fits five days where it fitted four.
 
+**The arrow keys move.** A page names its keys in letters, because that is what
+its footer and its compass say to a reader, and `with_arrows` offers the arrows
+beside them — so the frame *offered* an arrow and nothing turned a pressed one
+back into the letter it stood for. Every multi-frame page in the workspace
+advertised the cursor keys and none of them moved. `keys.as_letter` does the
+translating, in the one place a move is acted on.
+
+**The compass leaves its sideways arm off where a service has no use for it.**
+`A` and `D` step through the run of pages a menu offered, and *the framework
+does not implement them*: a service wires them to `request.arrival` — Stardot
+does — or it has no such thing. The weather has no such thing, and was drawing
+two keys that do nothing on the one page a reader goes to to find out what the
+keys do. `compass(..., items=False)` and `guide(..., items=False)`. The up and
+down arm is always drawn, frames being something every page has.
+
 **The framework builds four pages, not three.** `history`, `contents`, `names`
 — and now `guide`, which was Stardot's, written by hand, and much the better of
 the two help pages the workspace had. A guide is mostly a description of the

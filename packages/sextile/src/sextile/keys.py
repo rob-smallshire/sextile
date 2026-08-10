@@ -102,6 +102,23 @@ def with_arrows(pressed: Iterable[str]) -> frozenset[str]:
     return frozenset(wanted | {ARROW_FOR[key] for key in wanted if key in ARROW_FOR})
 
 
+#: Which letter each arrow stands for, `ARROW_FOR` read backwards.
+LETTER_FOR: Final = {arrow: letter for letter, arrow in ARROW_FOR.items()}
+
+
+def as_letter(key: str) -> str:
+    """The letter a key stands for: an arrow becomes the letter it points like.
+
+    A page says which keys it answers in letters, because that is what its
+    footer and its compass say to the reader. `with_arrows` then offers the
+    arrows alongside them -- and something has to turn a pressed arrow back
+    into the letter it stands for, or a page offers a key it does not act on.
+    Which is what happened: every multi-frame page in the workspace advertised
+    the cursor keys and none of them moved.
+    """
+    return LETTER_FOR.get(key, key)
+
+
 def arrows_lead_where[T](choices: Mapping[str, T]) -> dict[str, T]:
     """Those choices, with each arrow leading where its letter leads."""
     return dict(choices) | {

@@ -29,6 +29,7 @@ from sextile.keys import (
     CONVENTIONAL_NEXT_FRAME,
     NEXT_FRAME,
     PREVIOUS_FRAME,
+    as_letter,
 )
 from sextile.page import Page, PageFrame
 from sextile.session.commands import (
@@ -444,6 +445,12 @@ class Session:
         return _Sequence(offered, offered.index(destination)) if destination in offered else None
 
     async def _move(self, key: str) -> bytes | None:
+        #  An arrow stands for the letter it points like. A page names its keys
+        #  in letters, because that is what its footer and its compass say, and
+        #  `with_arrows` offers the arrows beside them -- so the arrow has to be
+        #  read back as its letter here or the page offers a key it never acts
+        #  on.
+        key = as_letter(key)
         if key in (NEXT_FRAME, CONVENTIONAL_NEXT_FRAME):
             return await self._next_frame()
         if key == PREVIOUS_FRAME:

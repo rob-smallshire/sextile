@@ -16,10 +16,12 @@ import logging
 import pytest
 from exemplar import Board
 
+from sextile import keys
 from sextile.addressing import PageAddress
-from sextile.application import PageRequest, Sextile
+from sextile.application import PageRequest, PageRoute, Sextile
 from sextile.page import Page
 from sextile.session.session import Session
+from sextile.templates import Listing, MenuItem
 from sextile.viewdata.frame import FRAME_PREAMBLE
 
 
@@ -945,3 +947,48 @@ class TestAPageThatWillNotBuild:
         with caplog.at_level(logging.ERROR):
             await session.receive(b"*7#")
         assert "something a handler got wrong" in caplog.text
+
+
+class TestTheArrowKeysMove:
+    """A page names its keys in letters and offers the arrows beside them.
+
+    `with_arrows` puts the arrows in a frame's `moves`, so the frame *offers*
+    them -- and nothing turned a pressed arrow back into the letter it stands
+    for, so every multi-frame page in the workspace advertised the cursor keys
+    and none of them moved. Found by pressing one.
+    """
+
+    async def test_down_turns_to_the_next_frame(self) -> None:
+        session = await _paged()
+        assert session.frame_index == 0
+        await session.receive(keys.DOWN.encode())
+        assert session.frame_index == 1
+
+    async def test_and_up_turns_back(self) -> None:
+        session = await _paged()
+        await session.receive(keys.DOWN.encode())
+        await session.receive(keys.UP.encode())
+        assert session.frame_index == 0
+
+    async def test_the_letters_still_do_what_they_did(self) -> None:
+        session = await _paged()
+        await session.receive(keys.NEXT_FRAME.encode())
+        assert session.frame_index == 1
+        await session.receive(keys.PREVIOUS_FRAME.encode())
+        assert session.frame_index == 0
+
+
+async def _paged() -> Session:
+    """A session showing a page of three frames."""
+
+    async def long(request: PageRequest) -> Page:
+        return Listing(
+            title="LONG",
+            entries=[MenuItem(f"{n}", "row") for n in range(50)],
+            home=PageAddress("1"),
+        ).build(request.address)
+
+    app = Sextile(pages=[PageRoute("1", long, name="long")])
+    session = Session(app)
+    await session.greeting()
+    return session

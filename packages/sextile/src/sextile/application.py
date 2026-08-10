@@ -359,6 +359,7 @@ class Application(ABC):
         *,
         moving: "Sequence[guidance.Key]" = (),
         asking: "Sequence[guidance.Key]" = (),
+        items: bool = True,
     ) -> Page:
         """How to get about, as a table of the keys this service answers.
 
@@ -370,7 +371,9 @@ class Application(ABC):
         A service passes its own keys, since which they are is a thing only it
         knows: a search field answers letters, a forecast answers `F`, and a
         framework that guessed would be describing a service it had not met.
-        `moving` joins the first frame and `asking` the second.
+        `moving` joins the first frame and `asking` the second. `items=False`
+        leaves `A` and `D` off the compass, for a service that does not wire
+        them to `request.arrival` and so does not answer them.
 
         The row for `0` says "back to the main menu" on a service whose first
         page is called one, and "back to the main index" on a service whose is
@@ -383,6 +386,7 @@ class Application(ABC):
             home_called=self.describe(self.index).lower(),
             moving=moving,
             asking=asking,
+            items=items,
         )
 
     def keywords(self) -> dict[str, PageAddress]:
@@ -848,6 +852,7 @@ class Sextile(Application):
         *,
         moving: "Sequence[guidance.Key]" = (),
         asking: "Sequence[guidance.Key]" = (),
+        items: bool = True,
     ) -> Page:
         """How to get about, as a table of the keys this service answers.
 
@@ -859,7 +864,9 @@ class Sextile(Application):
         A service passes its own keys, since which they are is a thing only it
         knows: a search field answers letters, a forecast answers `F`, and a
         framework that guessed would be describing a service it had not met.
-        `moving` joins the first frame and `asking` the second.
+        `moving` joins the first frame and `asking` the second. `items=False`
+        leaves `A` and `D` off the compass, for a service that does not wire
+        them to `request.arrival` and so does not answer them.
 
         The row for `0` says "back to the main menu" on a service whose first
         page is called one, and "back to the main index" on a service whose is
@@ -872,6 +879,7 @@ class Sextile(Application):
             home_called=self.describe(self.index).lower(),
             moving=moving,
             asking=asking,
+            items=items,
         )
 
     def keywords(self) -> dict[str, PageAddress]:

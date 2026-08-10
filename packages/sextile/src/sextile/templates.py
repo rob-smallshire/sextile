@@ -41,6 +41,7 @@ from sextile.page import Page, PageFrame
 from sextile.viewdata.canvas import Canvas, RowWriter, Run
 from sextile.viewdata.chrome import CONTENT_FIRST_ROW, CONTENT_ROWS, draw_chrome
 from sextile.viewdata.controls import Colour
+from sextile.viewdata.drawing import key_row
 from sextile.viewdata.encoding import cell_count, fitted
 from sextile.viewdata.footer import ROOM, FooterItem, Priority, movement, render_footer
 from sextile.viewdata.frame import COLUMNS
@@ -390,7 +391,17 @@ class Listing(Template[Entry]):
     _WIDEST: Final = COLUMNS // 2
 
     #: A cell for the colour of each column.
-    _ATTRIBUTES: Final = 2
+    ATTRIBUTES: Final = 2
+
+    @classmethod
+    def widest(cls) -> int:
+        """The most the left column may take, for a caller sizing the right.
+
+        A page that has to know how much room the second column will have --
+        to wrap a long title into it rather than have it cut -- would otherwise
+        work the arithmetic out again and get it slightly different.
+        """
+        return cls._WIDEST
 
     def __init__(self, **wanted: object) -> None:
         super().__init__(**wanted)  # type: ignore[arg-type]
@@ -399,11 +410,7 @@ class Listing(Template[Entry]):
 
     def draw(self, row: RowWriter, entry: Entry, digit: str | None) -> None:
         del digit  # a listing numbers nothing
-        row.text(fitted(entry.text, self.column), Colour.YELLOW)
-        row.skip(max(self.column - cell_count(entry.text), 0))
-        row.text(
-            fitted(entry.detail, COLUMNS - self.column - self._ATTRIBUTES), Colour.WHITE
-        )
+        key_row(row, entry.text, entry.detail, column=self.column)
 
 
 class Prose(Template[Row]):

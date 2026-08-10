@@ -29,7 +29,7 @@ from contextlib import AbstractAsyncContextManager
 from dataclasses import dataclass, field
 from typing import Final
 
-from sextile import contents, history, keys, names
+from sextile import contents, guidance, history, keys, names
 from sextile.addressing import PageAddress, UnknownPageError, keyed
 from sextile.contents import contents_page
 from sextile.history import history_page
@@ -351,6 +351,38 @@ class Application(ABC):
             describe=self.describe,
             home=self.index,
             title=self.heading(request.address, history.TITLE),
+        )
+
+    async def guide(
+        self,
+        request: PageRequest,
+        *,
+        moving: "Sequence[guidance.Key]" = (),
+        asking: "Sequence[guidance.Key]" = (),
+    ) -> Page:
+        """How to get about, as a table of the keys this service answers.
+
+        Registered nowhere, like `history`, `contents` and `names`. Most of
+        what a guide has to say is the framework's -- the digits, the way home,
+        the syntax of a request, the key that turns a page -- and a guide that
+        drifts from the thing it describes is worse than none.
+
+        A service passes its own keys, since which they are is a thing only it
+        knows: a search field answers letters, a forecast answers `F`, and a
+        framework that guessed would be describing a service it had not met.
+        `moving` joins the first frame and `asking` the second.
+
+        The row for `0` says "back to the main menu" on a service whose first
+        page is called one, and "back to the main index" on a service whose is
+        called that: it is the page's own title, so the two cannot disagree.
+        """
+        return guidance.guide_page(
+            address=request.address,
+            title=self.heading(request.address, guidance.TITLE),
+            home=self.index,
+            home_called=self.describe(self.index).lower(),
+            moving=moving,
+            asking=asking,
         )
 
     def keywords(self) -> dict[str, PageAddress]:
@@ -809,6 +841,38 @@ class Sextile(Application):
         found = self.route(address)
         about = self._pages.get(found.name) if found and found.name else None
         return about.title.upper() if about and about.title else default
+
+    async def guide(
+        self,
+        request: PageRequest,
+        *,
+        moving: "Sequence[guidance.Key]" = (),
+        asking: "Sequence[guidance.Key]" = (),
+    ) -> Page:
+        """How to get about, as a table of the keys this service answers.
+
+        Registered nowhere, like `history`, `contents` and `names`. Most of
+        what a guide has to say is the framework's -- the digits, the way home,
+        the syntax of a request, the key that turns a page -- and a guide that
+        drifts from the thing it describes is worse than none.
+
+        A service passes its own keys, since which they are is a thing only it
+        knows: a search field answers letters, a forecast answers `F`, and a
+        framework that guessed would be describing a service it had not met.
+        `moving` joins the first frame and `asking` the second.
+
+        The row for `0` says "back to the main menu" on a service whose first
+        page is called one, and "back to the main index" on a service whose is
+        called that: it is the page's own title, so the two cannot disagree.
+        """
+        return guidance.guide_page(
+            address=request.address,
+            title=self.heading(request.address, guidance.TITLE),
+            home=self.index,
+            home_called=self.describe(self.index).lower(),
+            moving=moving,
+            asking=asking,
+        )
 
     def keywords(self) -> dict[str, PageAddress]:
         """The named jumps, for a page that wants to list them."""

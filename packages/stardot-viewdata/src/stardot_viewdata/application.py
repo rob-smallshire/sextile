@@ -36,9 +36,9 @@ from typing import Final
 from sextile import keys
 from sextile.addressing import PageAddress, keyed
 from sextile.application import Arrival, PageRequest, PageRoute, Parting, Sextile
-from sextile.compass import ROWS, compass
+from sextile.guidance import Key
 from sextile.page import Page, PageFrame
-from sextile.templates import CHOICES_PER_FRAME, HOME_KEY, Menu, MenuItem, Prose
+from sextile.templates import HOME_KEY, Menu, MenuItem, Prose
 from sextile.viewdata import lettering
 from sextile.viewdata.canvas import Canvas
 from sextile.viewdata.chrome import CONTENT_FIRST_ROW, CONTENT_ROWS, draw_chrome
@@ -488,116 +488,24 @@ async def _title(request: PageRequest) -> Page:
 
 
 async def _help(request: PageRequest) -> Page:
-    """How to get about, in two frames.
+    """How to get about: the framework's guide, with this service's own rows.
 
-    Every key named here is one the service actually answers; a guide that
-    drifts from the thing it describes is worse than none.
+    It was written by hand here first, and the framework has it now -- keys,
+    two frames, the compass under the first -- because a guide is mostly a
+    description of the framework and a description that drifts from the thing
+    it describes is worse than none. What is left for a service is the rows
+    only it can know, which here are the pages it keeps its own numbers for.
     """
     app = _service(request)
-    #  Every key and every number here is the one the service actually
-    #  answers, taken from the framework or from the router. The words are
-    #  this page's own: a description in a table of keys is a paraphrase
-    #  and cannot come to be untrue, but a number can, and did.
-    moving = [
-        (f"1-{CHOICES_PER_FRAME}", "choose from a menu"),
-        (HOME_KEY, "back to the main index"),
-        (keyed("<number>"), "go straight to a page"),
-        (keyed("<keyword>"), "go to named page"),
-        (keys.CONVENTIONAL_NEXT_FRAME, "next frame in series"),
-        ("DEL", "rub out a character"),
-    ]
-    asking = [
-        (keyed(keys.BACK), "back, through where you"),
-        ("", "  have been"),
-        (keyed(keys.REDISPLAY), "show this frame again"),
-        (keyed(keys.REFRESH), "fetch it afresh"),
-        ("", ""),
-        (keyed(app.address_for("logoff")), "ring off"),
-        ("", ""),
-        (keyed(app.address_for("contents")), "every page and its number"),
-        (keyed(app.address_for("names")), "every word you can key"),
-    ]
-    #  One column width for the whole guide, from the widest key in it, so
-    #  the two frames line up with each other and neither is set by hand.
-    column = max(len(key) for key, _ in moving + asking) + 1
-    return _guide(
-        app,
-        request.address,
-        [
-            _drawn(_keys(moving, column), _compass),
-            _keys(asking, column),
+    return await app.guide(
+        request,
+        asking=[
+            Key(keyed(app.address_for("logoff")), "ring off"),
+            Key(),
+            Key(keyed(app.address_for("contents")), "every page and its number"),
+            Key(keyed(app.address_for("names")), "every word you can key"),
         ],
     )
-
-
-def _guide(
-    app: Sextile, address: PageAddress, drawings: list[Callable[[Canvas], None]]
-) -> Page:
-    """The guide's frames, each drawn its own way under the same chrome."""
-    frames = []
-    for index, draw in enumerate(drawings):
-        canvas = Canvas()
-        moving = _frame_moves(index, len(drawings))
-        draw_chrome(
-            canvas,
-            title=_headed(app, address),
-            page_number=address.frame_number(index),
-            prompt=_prompt(moving, selecting=False),
-        )
-        draw(canvas)
-        frames.append(
-            PageFrame(
-                frame=canvas.frame,
-                choices={"0": app.address_for("main")},
-                moves=_moves(moving),
-            )
-        )
-    return Page(frames=tuple(frames))
-
-
-def _drawn(*drawings: Callable[[Canvas], None]) -> Callable[[Canvas], None]:
-    """Several things on one frame, drawn in the order they are given."""
-
-    def draw(canvas: Canvas) -> None:
-        for drawing in drawings:
-            drawing(canvas)
-
-    return draw
-
-
-def _compass(canvas: Canvas) -> None:
-    """Which way the four keys go, drawn rather than described.
-
-    The framework's picture of the framework's own keys: a service drawing
-    its own would be drawing the same thing, and would go on drawing it
-    after the keys had moved. At the foot of the frame, under whatever the
-    frame says in words.
-    """
-    compass(Composition(), CONTENT_FIRST_ROW + CONTENT_ROWS - ROWS).draw(canvas)
-
-
-def _keys(
-    rows: list[tuple[str, str]], column: int
-) -> Callable[[Canvas], None]:
-    """A key on the left, what it does on the right.
-
-    Two cells go on attributes -- the yellow of the key and the white of
-    what it does -- so what is left for the words is the row less the
-    column and those two.
-    """
-    room = COLUMNS - column - 2
-
-    def draw(canvas: Canvas) -> None:
-        for offset, (key, meaning) in enumerate(rows):
-            row = canvas.row(CONTENT_FIRST_ROW + offset)
-            if key:
-                row.text(f"{key:<{column}}", Colour.YELLOW)
-            else:
-                row.skip(column)
-            if meaning:
-                row.text(fitted(meaning, room), Colour.WHITE)
-
-    return draw
 
 
 async def _history(request: PageRequest) -> Page:

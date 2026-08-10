@@ -580,6 +580,28 @@ charging that air to every entry wastes it at the foot of the frame, where the
 chrome's rule is doing the same job for nothing. It is worth a whole entry a
 frame — the weather's day table fits five days where it fitted four.
 
+**The framework builds four pages, not three.** `history`, `contents`, `names`
+— and now `guide`, which was Stardot's, written by hand, and much the better of
+the two help pages the workspace had. A guide is mostly a description of the
+framework: the digits, the way home, the syntax of a request, the key that
+turns a page, the compass. A description that drifts from the thing it
+describes is worse than none, so it is generated from what is actually
+answered.
+
+A service passes the rows only it can know — a search field answers letters, a
+forecast answers `F` — as `moving` (which joins the first frame, under the
+compass) and `asking` (the second). The row for `0` says "back to the main
+menu" on a service whose first page is called one and "back to the main index"
+on a service whose is called that, taken from the page's own title so the two
+cannot disagree.
+
+**A contents page wraps a title rather than cutting it.** The title is written
+for a menu, where it has the width of the frame; a contents page gives it what
+is left after the widest page number, which is enough for `One day` and not for
+`Forecast by lat/lon position`. Cut, it reads as a fault rather than as a
+shortage of room, so it runs on to a second row with no number beside it —
+told apart from a page number by which column it is in.
+
 **A page may offer `Shortcut`s** — keys carried on every frame, over and above
 the digits and the way home. A page's digits belong to its entries and change
 from frame to frame; a shortcut does not, and it is for the way out that is not

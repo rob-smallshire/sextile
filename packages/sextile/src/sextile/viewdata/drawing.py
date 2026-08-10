@@ -18,10 +18,10 @@ points, and plotting into that is a matter of setting bits in the right cell.
 
 from typing import Final
 
-from sextile.viewdata.canvas import Canvas
+from sextile.viewdata.canvas import Canvas, RowWriter
 from sextile.viewdata.composition import Align, Composition, Style
 from sextile.viewdata.controls import Colour, Control, graphics_colour
-from sextile.viewdata.encoding import fitted
+from sextile.viewdata.encoding import cell_count, fitted
 from sextile.viewdata.frame import COLUMNS
 
 #: The mosaic character with all six blocks lit. Every rule and bar is a run of
@@ -34,6 +34,9 @@ SOLID_BLOCKS: Final = 0b111111
 #: The middle row of blocks in a cell, and nothing else: a rule one block thick
 #: instead of three. Separated, it is a dotted line rather than a bar.
 MIDDLE_BLOCKS: Final = 0b001100
+
+#: A cell for the colour of each of the two columns a key table has.
+_COLUMNS: Final = 2
 
 #: A run of mosaic needs a graphics colour, and a separated run needs the
 #: separated attribute as well. Both occupy cells.
@@ -87,6 +90,30 @@ def rule(canvas: Canvas, row: int, colour: Colour = Colour.BLUE) -> None:
     Composition().blocks(
         row, Align.CENTRE, [SOLID_BLOCKS] * cells, colour, separated=True
     ).draw(canvas)
+
+
+def key_row(row: "RowWriter", key: str, meaning: str, *, column: int) -> None:
+    """A key on the left and what it does on the right, in two columns.
+
+    The shape every reference page in a viewdata service turns out to want: a
+    guide, a contents page, a list of the words a reader may key. The column is
+    the caller's, so that several frames of one table line up with each other
+    and none of them is set by hand.
+
+    An empty key indents to where the meaning goes without writing anything,
+    which is how a meaning too long for one row is carried on to the next.
+    That indent counts the two attribute cells the row above spent -- one to
+    colour the key and one to colour the meaning -- since a row with no key
+    spends neither and would otherwise start two cells to the left of the
+    words it is continuing.
+    """
+    if key:
+        row.text(fitted(key, column), Colour.YELLOW)
+        row.skip(max(column - cell_count(key), 0))
+    else:
+        row.skip(column + _COLUMNS)
+    if meaning:
+        row.text(fitted(meaning, COLUMNS - column - _COLUMNS), Colour.WHITE)
 
 
 def thin_rule(canvas: Canvas, row: int, colour: Colour = Colour.BLUE) -> None:

@@ -30,6 +30,9 @@ from typing import TYPE_CHECKING, Final
 from sextile.addressing import PageAddress, keyed
 from sextile.page import Page
 from sextile.templates import Listing, MenuItem
+from sextile.viewdata.encoding import cell_count
+from sextile.viewdata.frame import COLUMNS
+from sextile.viewdata.wrapping import wrap_within
 
 if TYPE_CHECKING:
     from sextile.application import PageInfo
@@ -53,10 +56,38 @@ def contents_page(
     its members -- 5 then 52<user_id> -- which is what a scheme whose first
     digit names a namespace already means.
     """
-    entries = [
-        MenuItem(text=keyed(page.keyed), detail=page.title)
+    numbered = [
+        (keyed(page.keyed), page.title)
         for page in sorted(pages, key=lambda page: page.keyed)
     ]
     return Listing(
-        title=title, entries=entries, home=home, empty=_NOTHING
+        title=title, entries=_entries(numbered), home=home, empty=_NOTHING
     ).build(address)
+
+
+def _entries(numbered: Sequence[tuple[str, str]]) -> list[MenuItem]:
+    """One row a page, or two where the title will not fit on one.
+
+    A title is written for a menu, where it has the width of the frame, and a
+    contents page gives it what is left after the widest page number. That is
+    enough for a service whose pages are called `One day` and not for one whose
+    pages are called `Forecast by lat/lon position` -- and a title cut to
+    `Forecast by lat/lon ` reads as a fault rather than as a shortage of room.
+
+    So a title too long for the column is carried on to a second row, under
+    itself and with no number beside it: a page number and a title that has run
+    on are told apart by which column they are in, which is the same thing the
+    guide does with a meaning too long for its own column.
+    """
+    column = min(
+        max((cell_count(number) for number, _ in numbered), default=0) + 1,
+        Listing.widest(),
+    )
+    room = COLUMNS - column - Listing.ATTRIBUTES
+    entries = []
+    for number, title in numbered:
+        #  Two rows at most. A third would be a title that wants rewriting,
+        #  and a contents page is a directory rather than a description.
+        for offset, line in enumerate(wrap_within(title, cells=room, rows=2)):
+            entries.append(MenuItem(text=number if not offset else "", detail=line))
+    return entries

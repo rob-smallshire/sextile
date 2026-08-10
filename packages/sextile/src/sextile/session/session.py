@@ -51,6 +51,7 @@ from sextile.viewdata.countdown import countdown_bytes, lit_cells
 from sextile.viewdata.frame import Frame
 from sextile.viewdata.parting import parting_bytes
 from sextile.viewdata.repaint import (
+    NOTHING,
     caret_bytes,
     changed_rows,
     rows_bytes,
@@ -413,6 +414,15 @@ class Session:
             typed = typed_bytes(was, showing.frame, field, at=caret[1])
             if typed is not None:
                 return typed
+        if not moved:
+            #  A keystroke that draws nothing and still moves the cursor: a
+            #  space is a blank cell over a blank cell, so the frame comes out
+            #  identical and there are no rows to send. Sending nothing leaves
+            #  the cursor a cell behind where the form now thinks it is, and
+            #  every keystroke after it lands one cell out -- which is how
+            #  `ULAN BATOR` came to be typed with its space in the wrong place
+            #  and rubbed out leaving characters behind.
+            return caret_bytes(*form.caret) if form.caret != caret else NOTHING
         return rows_bytes(showing.frame, moved, was=was, caret=form.caret)
 
     def _sequence_towards(self, destination: PageAddress) -> "_Sequence | None":

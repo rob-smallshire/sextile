@@ -553,6 +553,15 @@ blocks between one value and the next against nine of height in all, so a line
 climbing from floor to ceiling in a single step still rises about a block a
 column.
 
+**A keystroke that draws nothing still moves the cursor.** A space is a blank
+cell written over a blank cell, so the frame comes out identical and the
+repaint has no rows to send — and sending nothing leaves the cursor a cell
+behind where the form thinks it is, with every keystroke after it landing one
+cell out and every rub-out taking the wrong one. Where nothing moved but the
+caret did, the caret alone is sent. Found by typing `ULAN BATOR` into the
+weather service; pinned by a test that follows the bytes and works out where
+they leave the cursor, rather than by one that looks at the screen.
+
 **`thin_rule`** is the chrome's rule with a sixth of the ink — one block thick
 instead of three, in the same separated mosaics and across the same cells. A bar
 belongs where a page ends; between two things that are both content it reads as

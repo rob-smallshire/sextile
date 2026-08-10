@@ -602,6 +602,12 @@ is left after the widest page number, which is enough for `One day` and not for
 shortage of room, so it runs on to a second row with no number beside it —
 told apart from a page number by which column it is in.
 
+**A hint and a note are drawn in different colours.** Both were green, so the
+service's answer to what had just been typed sat in a block of instructions and
+read as more instruction. A hint is advice — the same words on every frame, read
+once — where a note is a finding and the most interesting thing on the page:
+green and cyan.
+
 **A page may offer `Shortcut`s** — keys carried on every frame, over and above
 the digits and the way home. A page's digits belong to its entries and change
 from frame to frame; a shortcut does not, and it is for the way out that is not

@@ -78,6 +78,14 @@ _MARK_CELLS: Final = 3
 #: reads as "number 1" rather than as two keys that do the same thing.
 SUBMIT_MARK: Final = keys.CONVENTIONAL_NEXT_FRAME
 
+#: A hint is advice and a note is a finding, and they are not the same thing to
+#: a reader: the advice under a field says the same words on every frame and is
+#: read once, where the note is the service's answer to what has just been
+#: typed and is the most interesting thing on the page. Two colours, or the
+#: answer sits in a block of instructions and reads as more instruction.
+HINT_COLOUR: Final = Colour.GREEN
+NOTE_COLOUR: Final = Colour.CYAN
+
 
 class Form(ABC):
     """Rows of a frame that answer keypresses by redrawing themselves."""
@@ -498,11 +506,11 @@ class Fields(Form):
             self._mark_sending(row, offset)
             if field.hint_row is not None and field.hint:
                 canvas.row(field.hint_row).text(
-                    fitted(field.hint, COLUMNS - 1), Colour.GREEN
+                    fitted(field.hint, COLUMNS - 1), HINT_COLOUR
                 )
         if self._note_row is not None and self._said:
             canvas.row(self._note_row).text(
-                fitted(self._said, COLUMNS - 1), Colour.GREEN
+                fitted(self._said, COLUMNS - 1), NOTE_COLOUR
             )
 
     def _mark_sending(self, row: RowWriter, offset: int) -> None:

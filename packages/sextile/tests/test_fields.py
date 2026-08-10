@@ -12,13 +12,21 @@ from collections.abc import Callable, Mapping
 import pytest
 
 from sextile import Page, PageAddress, PageFrame, PageRequest, PageRoute, Sextile, keys
-from sextile.forms import Field, Fields, draw_form
+from sextile.forms import (
+    HINT_COLOUR,
+    NOTE_COLOUR,
+    Field,
+    Fields,
+    draw_form,
+)
 from sextile.session.session import Session
 from sextile.viewdata.canvas import Canvas
-from sextile.viewdata.frame import Frame
+from sextile.viewdata.controls import Colour
+from sextile.viewdata.frame import COLUMNS, Frame
 
 FIRST_ROW = 4
 NOTE_ROW = 8
+HINT_ROW = 3
 
 
 def _takes(hemispheres: str) -> Callable[[str], bool]:
@@ -367,3 +375,49 @@ class TestSayingWhatReturnWillDo:
         frame = Frame()
         draw_form(frame, form)
         assert "forecast" in text_of(frame)
+
+
+class TestAHintAndANoteAreNotTheSameThing:
+    """Advice under a field, and the service's answer to what was typed.
+
+    They were both green, so the answer sat in a block of instructions and
+    read as more instruction. A hint says the same words on every frame and is
+    read once; a note is the most interesting thing on the page.
+    """
+
+    async def test_a_hint_is_drawn_in_the_hint_colour(self) -> None:
+        form = _noted()
+        frame = Frame()
+        draw_form(frame, form)
+        assert _colour_of(frame, HINT_ROW) == HINT_COLOUR
+
+    async def test_and_a_note_in_its_own(self) -> None:
+        form = _noted()
+        await form.typed("5")
+        frame = Frame()
+        draw_form(frame, form)
+        assert _colour_of(frame, NOTE_ROW) == NOTE_COLOUR
+        #  Which is the whole point: an answer in the colour of the advice
+        #  around it reads as more advice.
+        assert _colour_of(frame, NOTE_ROW) != _colour_of(frame, HINT_ROW)
+
+
+def _noted() -> Fields:
+    async def note(values: Mapping[str, str]) -> str:
+        return f"nearest to {values['where']}" if values.get("where") else ""
+
+    return Fields(
+        fields=[Field(name="where", label="WHERE", row=2, takes=str.isdigit,
+                      hint="a number", hint_row=HINT_ROW)],
+        complete=lambda values: None,
+        note=note,
+        note_row=NOTE_ROW,
+    )
+
+
+def _colour_of(frame: Frame, row: int) -> Colour:
+    """The colour the first attribute on a row sets."""
+    for column in range(COLUMNS):
+        if frame.is_attribute(row, column):
+            return Colour(frame.cell(row, column))
+    raise AssertionError(f"row {row} carries no attribute")

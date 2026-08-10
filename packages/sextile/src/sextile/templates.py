@@ -46,6 +46,7 @@ from sextile.viewdata.encoding import cell_count, fitted
 from sextile.viewdata.footer import ROOM, FooterItem, Priority, movement, render_footer
 from sextile.viewdata.frame import COLUMNS
 from sextile.viewdata.layout import Row, rows_for
+from sextile.viewdata.wrapping import wrap_within
 
 if TYPE_CHECKING:
     from sextile.application import Sextile
@@ -407,6 +408,31 @@ class Listing(Template[Entry]):
         super().__init__(**wanted)  # type: ignore[arg-type]
         widest = max((cell_count(entry.text) for entry in self.entries), default=0)
         self.column = min(widest + 1, self._WIDEST)
+        self.entries = self._wrapped(self.entries)
+
+    def _wrapped(self, entries: Sequence[Entry]) -> list[Entry]:
+        """The entries, with a second column too long for its room carried on.
+
+        A listing's second column gets what is left after the first, which is
+        enough for `One day` and not for `Forecast by lat/lon position`. Cut,
+        it reads as a fault rather than as a shortage of room; carried on to a
+        row of its own with nothing in the first column, it reads as what it
+        is. Which column a thing is in is what tells the two apart.
+
+        Two rows at most. A third is a second column that wants rewriting, and
+        a listing is a table rather than a place for prose.
+        """
+        room = COLUMNS - self.column - self.ATTRIBUTES
+        carried: list[Entry] = []
+        for entry in entries:
+            lines = wrap_within(entry.detail, cells=room, rows=2) or [""]
+            carried.append(entry)
+            carried += [MenuItem(text="", detail=line) for line in lines[1:]]
+            if len(lines) > 1:
+                carried[-2] = MenuItem(
+                    text=entry.text, detail=lines[0], destination=entry.destination
+                )
+        return carried
 
     def draw(self, row: RowWriter, entry: Entry, digit: str | None) -> None:
         del digit  # a listing numbers nothing

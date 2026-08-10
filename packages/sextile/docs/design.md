@@ -610,12 +610,15 @@ menu" on a service whose first page is called one and "back to the main index"
 on a service whose is called that, taken from the page's own title so the two
 cannot disagree.
 
-**A contents page wraps a title rather than cutting it.** The title is written
-for a menu, where it has the width of the frame; a contents page gives it what
-is left after the widest page number, which is enough for `One day` and not for
-`Forecast by lat/lon position`. Cut, it reads as a fault rather than as a
-shortage of room, so it runs on to a second row with no number beside it —
-told apart from a page number by which column it is in.
+**A `Listing` carries a long second column on rather than cutting it.** Its
+second column gets what is left after the first, so how much room it has depends
+on the widest thing in the first: `*3#  Forecast by lat/lon position` fits, and
+the same title beside `*321<geoname-id>#` does not. Cut, it reads as a fault
+rather than as a shortage of room; carried on to a row with nothing in the first
+column, it reads as what it is — which column a thing is in being what tells a
+page number from a title that has run on. Two rows at most; a third is a title
+that wants rewriting. Both the contents page and the words page get it, and the
+pagination counts the extra rows.
 
 **A hint and a note are drawn in different colours.** Both were green, so the
 service's answer to what had just been typed sat in a block of instructions and

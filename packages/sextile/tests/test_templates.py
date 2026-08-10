@@ -381,3 +381,52 @@ class TestColumnHeadings:
         assert "what this is" in shown
         assert "WHAT" in shown
         assert "row 0" in shown
+
+
+class TestAListingCarriesOnRatherThanCuts:
+    """A second column too long for its room goes on to another row.
+
+    A listing's second column gets what is left after the first, so how much
+    room it has depends on the widest thing in the first: `*3#  Forecast by
+    lat/lon position` fits, and the same title beside `*321<geoname-id>#` does
+    not. Cut, it reads as a fault rather than as a shortage of room.
+    """
+
+    #  A wide first column, as a contents page has once a page number carries
+    #  a field, and a title written for a menu where it had the whole row.
+    WIDE = [
+        MenuItem("*321<geoname-id>#", "One place"),
+        MenuItem("*4#", "Forecast by lat/lon position"),
+    ]
+
+    def test_a_long_second_column_is_carried_on(self) -> None:
+        shown = text_of(Listing(title="PAGES", entries=self.WIDE, home=at("1")).build(at("9")))
+        assert "Forecast by lat/lon" in shown
+        assert "position" in shown
+
+    def test_and_the_carried_row_has_nothing_in_the_first_column(self) -> None:
+        #  Which column a thing is in is what tells a page number from a title
+        #  that has run on.
+        rows = text_of(
+            Listing(title="PAGES", entries=self.WIDE, home=at("1")).build(at("9"))
+        ).splitlines()
+        carried = next(row for row in rows if "position" in row and "*4#" not in row)
+        assert carried.strip() == "position"
+
+    def test_a_second_column_that_fits_is_left_where_it_was(self) -> None:
+        rows = [
+            row
+            for row in text_of(
+                Listing(title="PAGES", entries=self.WIDE, home=at("1")).build(at("9"))
+            ).splitlines()
+            if "One place" in row
+        ]
+        assert len(rows) == 1
+        assert "*321<geoname-id>#" in rows[0]
+
+    def test_and_the_carrying_costs_the_frame_its_rows(self) -> None:
+        #  A wrapped entry is two rows, and the pagination has to know it: a
+        #  listing that counted them as one would run off the bottom.
+        long = [MenuItem("*321<geoname-id>#", "Forecast by lat/lon position")] * 11
+        page = Listing(title="PAGES", entries=long, home=at("1")).build(at("9"))
+        assert len(page.frames) == 2

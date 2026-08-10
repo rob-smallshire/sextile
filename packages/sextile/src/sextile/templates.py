@@ -431,6 +431,7 @@ class Prose(Template[Row]):
         home: PageAddress | None = None,
         preamble: Sequence[PreambleLine] = (),
         empty: str = "",
+        shortcuts: Sequence[Shortcut] = (),
     ) -> "Prose":
         """A page of plain paragraphs, wrapped here rather than by the caller."""
         return cls(
@@ -441,6 +442,7 @@ class Prose(Template[Row]):
             home=home,
             preamble=preamble,
             empty=empty,
+            shortcuts=shortcuts,
         )
 
     def draw(self, row: RowWriter, entry: Row, digit: str | None) -> None:

@@ -1,7 +1,7 @@
 """The words a reader can key in place of a page number.
 
     *ABOUT#     About this service
-    *BYE#       Ring off
+    *BYE#       Log off
     *MAIN#      Main index
 
 Prestel was almost entirely numeric, but other viewdata services took keywords

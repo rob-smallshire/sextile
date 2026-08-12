@@ -252,7 +252,7 @@ PAGES: Final = (
               keywords=("ABOUT", "HELP")),
     #  Listed: the contents page is a directory of numbers that do something,
     #  and a reader looking for how to ring off should find it there.
-    PageRoute("90", goodbye, name="goodbye", title="Ring off",
+    PageRoute("90", goodbye, name="goodbye", title="Log off",
               keywords=("BYE",)),
     #  Three the framework builds, mapped into this service's numbering. They
     #  are here as much to show what a service gets for nothing as to be

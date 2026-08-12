@@ -500,7 +500,7 @@ async def _help(request: PageRequest) -> Page:
     return await app.guide(
         request,
         asking=[
-            Key(keyed(app.address_for("logoff")), "ring off"),
+            Key(keyed(app.address_for("logoff")), "log off"),
             Key(),
             Key(keyed(app.address_for("contents")), "every page and its number"),
             Key(keyed(app.address_for("names")), "every word you can key"),
@@ -669,7 +669,7 @@ PAGES: Final = (
     #  do something rather than a menu of places to go, and a reader looking
     #  for how to ring off should find it there. 9 is the system namespace,
     #  where the second digit is a function, so *90# keeps its Prestel meaning.
-    PageRoute("90", _logoff, name="logoff", title="Ring off",
+    PageRoute("90", _logoff, name="logoff", title="Log off",
               keywords=("BYE", "OFF")),
     PageRoute("91", _help, name="help", title="How to get about",
               detail="the keys, and what they do",

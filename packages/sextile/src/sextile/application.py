@@ -27,18 +27,20 @@ from abc import ABC, abstractmethod
 from collections.abc import Awaitable, Callable, Mapping, MutableMapping, Sequence
 from contextlib import AbstractAsyncContextManager
 from dataclasses import dataclass, field
+from datetime import datetime
 from typing import Final
 
-from sextile import contents, guidance, history, keys, names
+from sextile import contents, guidance, history, keys, names, readership
 from sextile.addressing import PageAddress, UnknownPageError, keyed
 from sextile.contents import contents_page
 from sextile.history import history_page
 from sextile.names import names_page
 from sextile.page import Page, PageFrame
 from sextile.routing import Converter, ConverterFactory, Match, Router
-from sextile.templates import HOME_KEY
+from sextile.templates import CHOICES_PER_FRAME, HOME_KEY
 from sextile.viewdata.canvas import Canvas
 from sextile.viewdata.controls import Colour
+from sextile.visits import Visits
 
 #: How much of a mistyped request is worth quoting back.
 _QUOTED: Final = 30
@@ -387,6 +389,50 @@ class Application(ABC):
             moving=moving,
             asking=asking,
             items=items,
+        )
+
+    async def lately_read(
+        self,
+        request: PageRequest,
+        visits: Visits,
+        *,
+        limit: int = CHOICES_PER_FRAME,
+        prefix: str = "",
+    ) -> Page:
+        """What has been looked at lately, as a menu of where to look.
+
+        Registered nowhere, like the history, the contents and the words. The
+        log is the service's -- it decides where it is kept and how long for --
+        and the page is the framework's, a page number being the framework's
+        own vocabulary.
+
+        `prefix` narrows it to a namespace, which is what a first digit already
+        means: a weather service can ask for the forecasts alone.
+        """
+        return readership.recent_page(
+            address=request.address,
+            visits=await visits.recent(limit, prefix=prefix),
+            describe=self.describe,
+            home=self.index,
+            title=self.heading(request.address, readership.RECENT_TITLE),
+        )
+
+    async def most_read(
+        self,
+        request: PageRequest,
+        visits: Visits,
+        *,
+        limit: int = CHOICES_PER_FRAME,
+        prefix: str = "",
+        since: datetime | None = None,
+    ) -> Page:
+        """What has been looked at most, as a menu of where to look."""
+        return readership.popular_page(
+            address=request.address,
+            visits=await visits.popular(limit, prefix=prefix, since=since),
+            describe=self.describe,
+            home=self.index,
+            title=self.heading(request.address, readership.POPULAR_TITLE),
         )
 
     def keywords(self) -> dict[str, PageAddress]:
@@ -787,6 +833,18 @@ class Sextile(Application):
             build = _wrap(middleware, build)
         return await build(request)
 
+    def params_for(self, address: PageAddress) -> Mapping[str, object] | None:
+        """What a page number means: the fields its route captured, or None.
+
+        The same reading of a number that served the page, offered to a service
+        that has the number and wants the thing again -- reading its own log
+        back, most likely. Taking the digits apart a second time is a second
+        thing to get wrong when the numbering changes, and this numbering has
+        changed once already.
+        """
+        found = self._router.match(address)
+        return None if found is None else found.params
+
     def resolve(self, target: str) -> PageAddress:
         try:
             return self._router.resolve(target)
@@ -880,6 +938,50 @@ class Sextile(Application):
             moving=moving,
             asking=asking,
             items=items,
+        )
+
+    async def lately_read(
+        self,
+        request: PageRequest,
+        visits: Visits,
+        *,
+        limit: int = CHOICES_PER_FRAME,
+        prefix: str = "",
+    ) -> Page:
+        """What has been looked at lately, as a menu of where to look.
+
+        Registered nowhere, like the history, the contents and the words. The
+        log is the service's -- it decides where it is kept and how long for --
+        and the page is the framework's, a page number being the framework's
+        own vocabulary.
+
+        `prefix` narrows it to a namespace, which is what a first digit already
+        means: a weather service can ask for the forecasts alone.
+        """
+        return readership.recent_page(
+            address=request.address,
+            visits=await visits.recent(limit, prefix=prefix),
+            describe=self.describe,
+            home=self.index,
+            title=self.heading(request.address, readership.RECENT_TITLE),
+        )
+
+    async def most_read(
+        self,
+        request: PageRequest,
+        visits: Visits,
+        *,
+        limit: int = CHOICES_PER_FRAME,
+        prefix: str = "",
+        since: datetime | None = None,
+    ) -> Page:
+        """What has been looked at most, as a menu of where to look."""
+        return readership.popular_page(
+            address=request.address,
+            visits=await visits.popular(limit, prefix=prefix, since=since),
+            describe=self.describe,
+            home=self.index,
+            title=self.heading(request.address, readership.POPULAR_TITLE),
         )
 
     def keywords(self) -> dict[str, PageAddress]:

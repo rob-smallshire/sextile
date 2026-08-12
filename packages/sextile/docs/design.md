@@ -595,6 +595,51 @@ two keys that do nothing on the one page a reader goes to to find out what the
 keys do. `compass(..., items=False)` and `guide(..., items=False)`. The up and
 down arm is always drawn, frames being something every page has.
 
+## What has been read
+
+A log of page fetches, and the two questions every service asks of one: what
+has been looked at lately, and what gets looked at most. Both are the same
+shape everywhere, because **a page number is the framework's own vocabulary** —
+so the log, the middleware that writes it and the pages that read it are here,
+and what a service adds is only its numbering.
+
+`Visits` is a protocol and `SqliteVisits` is one implementation of it, which is
+the arrangement every impure edge in this framework has: narrow enough to fake
+in a test, and a service that wants its log elsewhere writes forty lines rather
+than going without the pages.
+
+**The record is the address.** `321<geoname-id>` is what the reader keyed, what
+the router parses back, and what `describe` names — so there is nothing else to
+store and nothing that can come to disagree with it. A prefix filter is then a
+namespace filter, which is what a first digit already means: a weather service
+asks for `321` and gets its forecasts.
+
+**The caller is a token, not an address.** Counting readers wants to know how
+many and nothing else. `record_visits` mints a random token the first time it
+sees a session and keeps it in the session, so `count(distinct caller)` answers
+the question and answers nothing about who. A service that keeps what it does
+not need is a service that has to be trusted about it.
+
+**A page that was not there is logged and not read back.** A count that quietly
+omitted the ones nobody could reach would be the wrong count, and the numbers
+readers key wrongly are worth knowing — but a number that answers nothing has
+no business on a list of somewhere to go.
+
+**Thirty days, and it is a setting.** The trim runs once a day rather than once
+a page: a delete on every fetch is a write nobody asked for, and a day is short
+enough that the file has a ceiling.
+
+The middleware is made before the service's lifespan has opened anything, so it
+takes the log *or a way of finding it* — `record_visits(held_in("visits"))`
+looks in what the service holds, per page. A service holding nothing under that
+name still gets its page: the reader is owed it, so the visit goes unrecorded
+rather than the page going unsent.
+
+`Sextile.lately_read` and `Sextile.most_read` build the two pages, as menus
+rather than tables — every row is a page number, so every row is somewhere to
+go. A list of what other people have been reading that you cannot follow is a
+list that has been written at you.
+
 **The framework builds four pages, not three.** `history`, `contents`, `names`
 — and now `guide`, which was Stardot's, written by hand, and much the better of
 the two help pages the workspace had. A guide is mostly a description of the

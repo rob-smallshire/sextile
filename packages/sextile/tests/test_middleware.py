@@ -1,9 +1,11 @@
 """What the framework wraps round every page.
 
-One piece of middleware ships with Sextile, and it exists because of the wire.
-A frame takes eight seconds to reach a reader at 1200 baud, so "it felt slow"
-tells nobody anything: from the far end of a telephone line the wire and the
-page are indistinguishable. This tells them apart.
+Two pieces of middleware ship with Sextile. One exists because of the wire: a
+frame takes eight seconds to reach a reader at 1200 baud, so "it felt slow"
+tells nobody anything, and from the far end of a telephone line the wire and
+the page are indistinguishable. The other writes a log the service can read
+back, since a list of what has been looked at lately is a page rather than a
+diagnostic.
 """
 
 import logging
@@ -11,8 +13,13 @@ import logging
 import pytest
 
 from sextile import Page, PageAddress, PageFrame, PageRequest, PageRoute, Sextile
-from sextile.middleware import log_pages
+from sextile.application import Middleware
+from sextile.middleware import held_in, log_pages, record_visits
 from sextile.viewdata.canvas import Canvas
+from sextile.visits import SqliteVisits
+
+#: Any page at all, for a middleware that does not look at one.
+_SOMETHING = Page(frames=(PageFrame(frame=Canvas().frame),))
 
 
 class Clock:
@@ -109,3 +116,85 @@ class TestSayingWhenSomethingIsSlow:
         with caplog.at_level(logging.INFO, logger="sextile.pages"):
             await _app(clock, slow=0.1).respond(PageRequest(address=PageAddress("1")))
         assert caplog.records[0].levelno == logging.WARNING
+
+
+class TestRecordingVisits:
+    """A row per page built, for the pages that read the log back.
+
+    What it must not do is identify anybody: counting readers wants to know how
+    many and nothing else.
+    """
+
+    async def test_every_page_is_recorded(self) -> None:
+        log = SqliteVisits.open(":memory:")
+        await _through(record_visits(log), PageAddress("3"))
+        assert [visit.page.digits for visit in await log.recent(9)] == ["3"]
+
+    async def test_a_page_that_was_not_there_is_recorded_too(self) -> None:
+        #  A count of pages fetched that quietly omitted the ones nobody could
+        #  reach would be the wrong count.
+        log = SqliteVisits.open(":memory:")
+        await _through(record_visits(log), PageAddress("9999"), page=None)
+        assert await log.recent(9) == []
+        assert await log.callers() == 1
+
+    async def test_one_caller_is_one_token_however_many_pages(self) -> None:
+        log = SqliteVisits.open(":memory:")
+        recording = record_visits(log)
+        session: dict[str, object] = {}
+        for number in ("1", "3", "4"):
+            await _through(recording, PageAddress(number), session=session)
+        assert await log.callers() == 1
+
+    async def test_and_two_sessions_are_two_callers(self) -> None:
+        log = SqliteVisits.open(":memory:")
+        recording = record_visits(log)
+        for _ in range(2):
+            await _through(recording, PageAddress("1"), session={})
+        assert await log.callers() == 2
+
+    async def test_the_token_says_nothing_about_who(self) -> None:
+        #  Nothing identifying is asked for and nothing is stored: a service
+        #  that keeps what it does not need has to be trusted about it.
+        log = SqliteVisits.open(":memory:")
+        session: dict[str, object] = {}
+        await _through(record_visits(log), PageAddress("1"), session=session)
+        (token,) = session.values()
+        assert isinstance(token, str)
+        assert token.isalnum()
+
+    async def test_a_service_holding_no_log_still_gets_its_page(self) -> None:
+        #  The page has been built and the reader is owed it, so the visit goes
+        #  unrecorded rather than the page going unsent.
+        page = await _through(record_visits(held_in("visits")), PageAddress("1"))
+        assert page is not None
+
+    async def test_and_one_that_holds_one_has_it_found(self) -> None:
+        log = SqliteVisits.open(":memory:")
+        await _through(
+            record_visits(held_in("visits")),
+            PageAddress("1"),
+            service={"visits": log},
+        )
+        assert [visit.page.digits for visit in await log.recent(9)] == ["1"]
+
+
+async def _through(
+    middleware: Middleware,
+    address: PageAddress,
+    *,
+    page: Page | None = _SOMETHING,
+    session: dict[str, object] | None = None,
+    service: dict[str, object] | None = None,
+) -> Page | None:
+    async def build(request: PageRequest) -> Page | None:
+        return page
+
+    return await middleware(
+        PageRequest(
+            address=address,
+            session=session if session is not None else {},
+            service=service if service is not None else {},
+        ),
+        build,
+    )

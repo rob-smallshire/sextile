@@ -102,6 +102,24 @@ Beeb for half an hour.
 - **Whose weather the service is about is a setting, not a fact.** `--prefer NO`
   weights Norwegian places, without which `BER` gives Berlin before Bergen.
   Which is right depends on who is dialling, and nobody has yet dialled.
+- **Nine is the ceiling on a suggestion list, and 470 names are past it.** Santa
+  Cruz is sixty-nine places, San Isidro sixty-eight. Past nine there is no digit
+  left to choose with, and typing more letters does not help — the names are
+  identical. The country and the division within it tell most of them apart;
+  4,857 name-and-country-and-division groups are still ambiguous, and those want
+  `admin2`, which is another column and another download.
+- **Sleet with thunder is drawn as rain with thunder.** The bottom band of a
+  symbol holds two things and sleet already spends both, so six of the 41 codes
+  are drawn identically to six others and only the words tell them apart. It
+  errs towards wet, which is the safer way to be wrong.
+- **`322<geoname-id>` is reserved and empty.** The presentation digit was put in
+  so a forecast could be a graph as well as a table, and then the charts went
+  into the table instead. Either the graph arrives or the digit should be
+  reconsidered — a numbering that reserves what nobody builds is a numbering
+  with a hole in it.
+- **The visits log has no command that reads it.** `*2#`, `*96#` and `*97#` show
+  it to a reader and the about page counts callers, but somebody running the
+  service has no way to ask it anything without opening SQLite.
 
 ## Raised by the forms
 

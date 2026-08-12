@@ -21,7 +21,7 @@ Each is written up as built, and those are the documents to read:
 | [sextile/docs/design.md](../packages/sextile/docs/design.md) | the framework: the seam, addressing, routing, the session, the wire |
 | [stardot-viewdata/docs/design.md](../packages/stardot-viewdata/docs/design.md) | the numbering, the archive, the polite ingest, phpBB's HTML |
 | [calendar-viewdata/docs/design.md](../packages/calendar-viewdata/docs/design.md) | the second application, and what it was for |
-| [weather-viewdata/docs/design.md](../packages/weather-viewdata/docs/design.md) | the third: place search, met.no, and what it asked of the framework |
+| [weather-viewdata/docs/design.md](../packages/weather-viewdata/docs/design.md) | the third: place search, met.no, drawing the weather, and the twenty-odd things it asked of the framework |
 
 [target-architecture.md](target-architecture.md) says where all this is going
 and why — the phpBB extension, and the phases between here and it.
@@ -48,6 +48,13 @@ renderer or the session.
 seam again, and the one that shows it is a shape rather than a coincidence:
 everything above it deals in `Forecast` and `Moment` and has never heard of
 met.no, JSON or HTTP.
+
+**`sextile/visits.py` — the `Visits` port.** The third time the same shape has
+been wanted, and the first time in the framework rather than an application: a
+log of what has been read, with one SQLite implementation and a protocol narrow
+enough to fake. The middleware that writes it and the pages that read it talk to
+the protocol, so a service keeping its log elsewhere writes an adapter rather
+than going without the pages.
 
 **`sextile/server.py` — no transport knowledge.** A plain TCP server. tcpser is
 already the ip232 endpoint an emulator connects to, so a service is dialled

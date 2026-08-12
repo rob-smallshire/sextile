@@ -635,10 +635,17 @@ looks in what the service holds, per page. A service holding nothing under that
 name still gets its page: the reader is owed it, so the visit goes unrecorded
 rather than the page going unsent.
 
-`Sextile.lately_read` and `Sextile.most_read` build the two pages, as menus
-rather than tables — every row is a page number, so every row is somewhere to
-go. A list of what other people have been reading that you cannot follow is a
+`Sextile.lately_read` and `Sextile.most_read` build two of the three pages, as
+menus rather than tables — every row is a page number, so every row is somewhere
+to go. A list of what other people have been reading that you cannot follow is a
 list that has been written at you.
+
+`Sextile.who_has_called` builds the third: distinct callers over the last day,
+week and thirty days. It is the only figure a service keeps about its readers,
+and the page says on itself what it counts — a figure about readers that does
+not say what it counts invites the worst guess. **A period longer than the log
+is kept for reads low, and silently**, so the periods are the service's to pass;
+the defaults end at thirty days because that is what the log keeps by default.
 
 **The framework builds four pages, not three.** `history`, `contents`, `names`
 — and now `guide`, which was Stardot's, written by hand, and much the better of

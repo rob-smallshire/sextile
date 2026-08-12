@@ -18,12 +18,46 @@ from datetime import UTC, datetime, timedelta
 from typing import Final
 
 from sextile.addressing import PageAddress, keyed
-from sextile.page import Page
+from sextile.page import Page, PageFrame
 from sextile.templates import CHOICES_PER_FRAME, Menu, MenuItem
+from sextile.viewdata.canvas import Canvas
+from sextile.viewdata.chrome import CONTENT_FIRST_ROW, draw_chrome
+from sextile.viewdata.controls import Colour
+from sextile.viewdata.encoding import cell_count
+from sextile.viewdata.footer import ROOM, FooterItem, Priority, render_footer
+from sextile.viewdata.frame import COLUMNS
+from sextile.viewdata.wrapping import wrap_text
 from sextile.visits import Visit
 
 RECENT_TITLE: Final = "Lately read"
 POPULAR_TITLE: Final = "Most read"
+CALLERS_TITLE: Final = "Who has called"
+
+#: The windows the count of callers is reported over. Days rather than
+#: calendar days, so that no clock and no zone comes into it: "the last seven
+#: days" means the same thing to a service and to whoever is reading it,
+#: wherever either of them is.
+PERIODS: Final = (
+    (timedelta(days=1), "Last 24 hours"),
+    (timedelta(days=7), "Last 7 days"),
+    (timedelta(days=30), "Last 30 days"),
+)
+
+#: What a caller is, said on the page rather than left for somebody to wonder
+#: about. A figure about readers that does not say what it counts invites the
+#: worst guess.
+_WHAT_A_CALLER_IS: Final = (
+    "A caller is one connection. The log keeps a token for each and nothing "
+    "else, so this can say how many and never who."
+)
+
+_NOTHING_CALLED: Final = "Nobody has called yet."
+
+#: Where the figures sit: two cells of margin, the widest label, and then the
+#: count right-aligned against a column of its own.
+_LABEL_AT: Final = 2
+_COUNT_CELLS: Final = 6
+_GAP: Final = 2
 
 _NOTHING_RECENT: Final = "Nothing has been read yet."
 _NOTHING_POPULAR: Final = "Nothing has been read yet."
@@ -113,3 +147,45 @@ def _ago(since: timedelta) -> str:
 
 def _times(count: int) -> str:
     return "read once" if count == 1 else f"read {count} times"
+
+
+def callers_page(
+    *,
+    address: PageAddress,
+    counts: Sequence[tuple[str, int]],
+    home: PageAddress,
+    title: str = CALLERS_TITLE,
+) -> Page:
+    """How many have called, over each of a few periods.
+
+    The only figure a service keeps about its readers, and a count of
+    connections rather than of anybody: `record_visits` mints a token per
+    session and stores nothing else.
+
+    **A period longer than the log is kept for reads low**, and silently. The
+    default periods end at thirty days because that is what the log keeps by
+    default; a service that trims sooner should pass its own.
+    """
+    canvas = Canvas()
+    draw_chrome(
+        canvas,
+        title=title,
+        page_number=address.frame_number(0),
+        prompt=render_footer([FooterItem("0", "index", Priority.ESSENTIAL)], ROOM),
+    )
+    row = CONTENT_FIRST_ROW
+    if not counts or not any(count for _, count in counts):
+        canvas.row(row).text(_NOTHING_CALLED, Colour.WHITE)
+    else:
+        column = max(cell_count(label) for label, _ in counts) + _GAP
+        for offset, (label, count) in enumerate(counts):
+            written = canvas.row(row + offset)
+            written.skip(_LABEL_AT)
+            written.text(f"{label:<{column}}", Colour.WHITE)
+            written.text(f"{count:>{_COUNT_CELLS}}", Colour.CYAN)
+        row += len(counts) + 1
+    for offset, line in enumerate(wrap_text(_WHAT_A_CALLER_IS, COLUMNS - 1)):
+        canvas.row(row + offset + 1).text(line, Colour.GREEN)
+    return Page(
+        frames=(PageFrame(frame=canvas.frame, choices={"0": home}),)
+    )

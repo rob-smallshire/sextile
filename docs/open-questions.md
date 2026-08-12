@@ -117,9 +117,13 @@ Beeb for half an hour.
   into the table instead. Either the graph arrives or the digit should be
   reconsidered — a numbering that reserves what nobody builds is a numbering
   with a hole in it.
-- **The visits log has no command that reads it.** `*2#`, `*96#` and `*97#` show
-  it to a reader and the about page counts callers, but somebody running the
-  service has no way to ask it anything without opening SQLite.
+- **The visits log has no command that reads it.** `*2#`, `*96#`, `*97#` and
+  `*98#` show it to a reader, but somebody running the service has no way to ask
+  it anything without opening SQLite.
+- **A period longer than the log is kept for reads low, and silently.** `*98#`
+  asks for thirty days and the log keeps thirty days, so they agree today; a
+  service that trims sooner would be quietly understating its longest window.
+  The page cannot tell, `Visits` having no way to say how far back it goes.
 
 ## Raised by the forms
 

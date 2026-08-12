@@ -9,7 +9,7 @@ from datetime import UTC, datetime, timedelta
 
 from sextile.addressing import PageAddress
 from sextile.page import Page
-from sextile.readership import popular_page, recent_page
+from sextile.readership import callers_page, popular_page, recent_page
 from sextile.visits import Visit
 
 NOON = datetime(2026, 8, 11, 12, 0, tzinfo=UTC)
@@ -121,3 +121,72 @@ class TestMostRead:
             home=PageAddress("1"),
         )
         assert "*321333#" in text_of(page)
+
+
+class TestWhoHasCalled:
+    """The only figure a service keeps about its readers.
+
+    A count of connections and not of anybody: the log holds a token minted
+    per session and nothing else, so the page can say how many and never who
+    -- and says as much on itself, since a figure about readers that does not
+    say what it counts invites the worst guess.
+    """
+
+    def test_a_count_for_every_period(self) -> None:
+        shown = text_of(
+            callers_page(
+                address=PageAddress("98"),
+                counts=[("Last 24 hours", 4), ("Last 7 days", 19)],
+                home=PageAddress("1"),
+            )
+        )
+        assert "Last 24 hours" in shown
+        assert "4" in shown
+        assert "Last 7 days" in shown
+        assert "19" in shown
+
+    def test_the_counts_line_up(self) -> None:
+        #  A column of figures a reader can compare at a glance, which is the
+        #  whole use of a page like this.
+        rows = text_of(
+            callers_page(
+                address=PageAddress("98"),
+                counts=[("Last 24 hours", 4), ("Last 30 days", 1234)],
+                home=PageAddress("1"),
+            )
+        ).splitlines()
+        first = next(row for row in rows if "Last 24 hours" in row)
+        second = next(row for row in rows if "Last 30 days" in row)
+        #  Right-aligned, so 4 and 1234 end in the same column whatever their
+        #  width -- which is what lets a reader compare them down the page.
+        assert len(first.rstrip()) == len(second.rstrip())
+
+    def test_it_says_what_a_caller_is(self) -> None:
+        shown = text_of(
+            callers_page(
+                address=PageAddress("98"),
+                counts=[("Last 7 days", 3)],
+                home=PageAddress("1"),
+            )
+        )
+        assert "never who" in shown
+
+    def test_nobody_at_all_says_so(self) -> None:
+        #  Rather than three noughts, which read as a fault on a service that
+        #  has only just been switched on.
+        shown = text_of(
+            callers_page(
+                address=PageAddress("98"),
+                counts=[("Last 7 days", 0), ("Last 30 days", 0)],
+                home=PageAddress("1"),
+            )
+        )
+        assert "Nobody has called yet." in shown
+
+    def test_and_nought_goes_home(self) -> None:
+        page = callers_page(
+            address=PageAddress("98"), counts=[], home=PageAddress("1")
+        )
+        found = page.frame(0)
+        assert found is not None
+        assert found.destination("0") == PageAddress("1")

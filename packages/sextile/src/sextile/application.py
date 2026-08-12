@@ -27,7 +27,7 @@ from abc import ABC, abstractmethod
 from collections.abc import Awaitable, Callable, Mapping, MutableMapping, Sequence
 from contextlib import AbstractAsyncContextManager
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import UTC, datetime, timedelta
 from typing import Final
 
 from sextile import contents, guidance, history, keys, names, readership
@@ -433,6 +433,30 @@ class Application(ABC):
             describe=self.describe,
             home=self.index,
             title=self.heading(request.address, readership.POPULAR_TITLE),
+        )
+
+    async def who_has_called(
+        self,
+        request: PageRequest,
+        visits: Visits,
+        *,
+        periods: "Sequence[tuple[timedelta, str]]" = readership.PERIODS,
+    ) -> Page:
+        """How many have called, over each of a few periods.
+
+        The only figure a service keeps about its readers, and a count of
+        connections rather than of anybody. `periods` is the service's to
+        choose: one longer than the log is kept for reads low, and silently.
+        """
+        when = datetime.now(UTC)
+        return readership.callers_page(
+            address=request.address,
+            counts=[
+                (said, await visits.callers(since=when - window))
+                for window, said in periods
+            ],
+            home=self.index,
+            title=self.heading(request.address, readership.CALLERS_TITLE),
         )
 
     def keywords(self) -> dict[str, PageAddress]:
@@ -982,6 +1006,30 @@ class Sextile(Application):
             describe=self.describe,
             home=self.index,
             title=self.heading(request.address, readership.POPULAR_TITLE),
+        )
+
+    async def who_has_called(
+        self,
+        request: PageRequest,
+        visits: Visits,
+        *,
+        periods: "Sequence[tuple[timedelta, str]]" = readership.PERIODS,
+    ) -> Page:
+        """How many have called, over each of a few periods.
+
+        The only figure a service keeps about its readers, and a count of
+        connections rather than of anybody. `periods` is the service's to
+        choose: one longer than the log is kept for reads low, and silently.
+        """
+        when = datetime.now(UTC)
+        return readership.callers_page(
+            address=request.address,
+            counts=[
+                (said, await visits.callers(since=when - window))
+                for window, said in periods
+            ],
+            home=self.index,
+            title=self.heading(request.address, readership.CALLERS_TITLE),
         )
 
     def keywords(self) -> dict[str, PageAddress]:

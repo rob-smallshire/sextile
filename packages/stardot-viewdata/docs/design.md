@@ -73,13 +73,19 @@ There is no conventional number for a help page; viewdata's conventions are abou
 commands rather than about where a service files its own pages. `91` is this
 scheme's choice. The keyword is the conventional part, and `*HELP#` reaches it.
 
-Declared as data, with the handler names that `address_for` uses, so no page
-spells another's number:
+Declared beside the handlers, with the route names that `address_for` uses, so
+no page spells another's number:
 
 ```python
-PageRoute("82{post_id:int}", _post, name="post", title="One post")
+@page("82{post_id:int}", name="post", title="One post")
+async def one_post(request: PageRequest, post_id: int) -> Page: ...
+
 app.address_for("post", post_id=post.post_id)
 ```
+
+`pages.py` holds those declarations and `application.py` gathers them with
+`routes_in`; `title_frame.py` draws the masthead, and `post_page.py` deals one
+post into frames.
 
 Seventeen keywords — `*MAIN#`, `*LATEST#`, `*HELP#`, `*BYE#` and the rest — are
 aliases onto those same routes rather than onto literal numbers.

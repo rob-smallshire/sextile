@@ -1,0 +1,474 @@
+"""The Stardot service's pages, each declared beside the function that builds it.
+
+Menus are the shape most pages take. A reader selects with a single keypress, so
+a menu offers at most nine choices on a frame and moving down goes to the next
+nine. Digit 0 always returns to the main index: it is the one key a reader who
+has lost their bearings can rely on.
+
+Where the archive has nothing to show, the page says so. An empty menu with no
+explanation looks like a fault, and on a service that deliberately answers
+slowly a reader has no way to tell the difference.
+
+The pages are ordinary functions. Nothing here closes over anything: a page
+takes the archive from what the service holds and the numbering from the
+service itself, both through the request it is given. The `@page` declaration
+above each is everything the service says about it, and the order they are
+written in is the order the contents page lists them.
+
+The numbering is documented in docs/page-numbering.md. Its one rule worth
+repeating here is that every identifier comes from Stardot -- post, forum, topic
+and contributor ids are the board's own -- so nothing in this file allocates a
+number, nothing can renumber, and a page number means the same thing on the web
+forum as on a BBC Micro.
+"""
+
+import asyncio
+from collections.abc import Callable
+from datetime import date
+from typing import Final
+
+from sextile import Held, PageRequest, Sextile, page
+from sextile.addressing import PageAddress, keyed
+from sextile.application import Parting
+from sextile.guidance import Key
+from sextile.page import Page, PageFrame
+from sextile.templates import Menu, MenuItem, Prose
+from sextile.viewdata.canvas import Canvas
+from sextile.viewdata.chrome import CONTENT_FIRST_ROW, CONTENT_ROWS, draw_chrome
+from sextile.viewdata.controls import Colour
+from sextile.viewdata.encoding import fitted
+from sextile.viewdata.footer import ROOM, FooterItem, Priority, render_footer
+from sextile.viewdata.frame import COLUMNS
+from stardot_viewdata.model import Post
+from stardot_viewdata.post_page import (
+    CONVENTIONAL_NEXT_FRAME_KEY,
+    NEXT_FRAME_KEY,
+    post_page,
+    prompt,
+    time_of,
+)
+from stardot_viewdata.store.repository import Repository
+from stardot_viewdata.title_frame import draw_masthead
+
+#: What this service is called, which is not what the framework is called.
+SERVICE_NAME: Final = "STARDOT"
+
+#: What the archive is held under, in what the service holds. A key rather
+#: than a string, so every page narrows what it takes in the same call and a
+#: mistyped key fails by name.
+ARCHIVE: Final = Held("archive", Repository)
+
+
+async def _read[T](request: PageRequest, query: Callable[[Repository], T]) -> T:
+    """Ask the archive something, off the event loop.
+
+    SQLite is synchronous, and a caller waiting on a query should not be every
+    caller waiting on it.
+    """
+    return await asyncio.to_thread(query, ARCHIVE.of(request.service))
+
+
+@page("0")
+async def title(request: PageRequest) -> Page:
+    """The frame the line opens on: what this is, and how to get in.
+
+    No page number in the header, because `*0#` is the back command and a
+    number a reader cannot key is an instruction that misleads them.
+    """
+    app = Sextile.of(request)
+    held = await _read(request, lambda repository: repository.count_posts())
+    canvas = Canvas()
+    draw_masthead(canvas, SERVICE_NAME)
+    canvas.row(12).text("The Stardot forum for users of Acorn", Colour.WHITE)
+    canvas.row(13).text("computers and emulators.", Colour.WHITE)
+    canvas.row(15).text(f"{held} posts held.", Colour.GREEN)
+    #  Both instructions are built from the pages they name and the keys
+    #  this frame actually answers, so neither can come to say something
+    #  the service no longer does. The words are the ones the pages were
+    #  registered with, the numbers are the ones the router would build,
+    #  and the key is the one in `moves` below.
+    index, guide_item = MenuItem.for_page(app, "main"), MenuItem.for_page(app, "help")
+    main_page, about = app.address_for("main"), app.address_for("help")
+    moves = frozenset({NEXT_FRAME_KEY, CONVENTIONAL_NEXT_FRAME_KEY})
+    #  Each colour change costs a cell, which shows as a space -- so the
+    #  attribute is the space, rather than being paid for on top of one.
+    canvas.row(17).text("Key", Colour.WHITE).text(
+        CONVENTIONAL_NEXT_FRAME_KEY, Colour.YELLOW
+    ).text(f"for the {index.text.lower()}.", Colour.WHITE)
+    canvas.row(19).text("Key", Colour.WHITE).text(
+        keyed(about), Colour.YELLOW
+    ).text(f"for {guide_item.text.lower()}.", Colour.WHITE)
+    return Page(
+        frames=(
+            PageFrame(
+                frame=canvas.frame,
+                choices={"1": main_page},
+                moves=moves,
+            ),
+        ),
+        #  `#` is the one key a viewdata reader tries without being told, and
+        #  a title frame is nothing but an invitation to press it.
+        follows=main_page,
+    )
+
+
+@page("1", name="main", title="Main index", keywords=("MAIN", "INDEX", "HOME"))
+async def main_index(request: PageRequest) -> Page:
+    app = Sextile.of(request)
+    held = await _read(request, lambda repository: repository.count_posts())
+    items = [
+        MenuItem.for_page(app, name)
+        for name in (
+            "posts",
+            "topics",
+            "days",
+            "forums",
+            "contributors",
+            "history",
+            "help",
+            "contents",
+            "about",
+        )
+    ]
+    return _menu(
+        app,
+        request.address,
+        title=SERVICE_NAME,
+        items=items,
+        preamble=["Stardot, for users of Acorn computers.", f"{held} posts held."],
+    )
+
+
+@page("3", name="days", title="By day", detail="browse by date", keywords=("DAYS",))
+async def days_index(request: PageRequest) -> Page:
+    app = Sextile.of(request)
+    days = await _read(request, lambda repository: repository.days(limit=60))
+    if not days:
+        return _notice(app, request.address, None, ["NO POSTS held yet."])
+    items = [
+        MenuItem(
+            day_title(day),
+            f"{count} post{'' if count == 1 else 's'}",
+            app.address_for("day", day=day),
+        )
+        for day, count in days
+    ]
+    return _menu(app, request.address, items=items)
+
+
+@page("32{day:date}", name="day", title="One day")
+async def one_day(request: PageRequest, day: date) -> Page:
+    app = Sextile.of(request)
+    posts = await _read(request, lambda repository: repository.posts_on(day))
+    return _posts_menu(app, request.address, posts, day_title(day))
+
+
+@page("4", name="forums", title="By forum", detail="browse by section",
+      keywords=("FORUMS",))
+async def forums_index(request: PageRequest) -> Page:
+    app = Sextile.of(request)
+    forums = await _read(request, lambda repository: repository.forums())
+    if not forums:
+        return _notice(app, request.address, None, ["NO POSTS held yet."])
+    items = [
+        MenuItem(
+            name,
+            f"{count} post{'' if count == 1 else 's'}",
+            app.address_for("forum", forum_id=forum_id),
+        )
+        for forum_id, name, count in forums
+    ]
+    return _menu(app, request.address, items=items)
+
+
+@page("42{forum_id:int}", name="forum", title="One forum")
+async def one_forum(request: PageRequest, forum_id: int) -> Page:
+    app = Sextile.of(request)
+    posts = await _read(request, lambda repository: repository.posts_in_forum(forum_id))
+    #  Ask the archive rather than the post: a post first seen in a
+    #  per-topic feed knows its forum's id but not its name, and the archive
+    #  keeps whichever name any post supplied.
+    forums = await _read(request, lambda repository: repository.forums())
+    named = {found_id: name for found_id, name, _ in forums}
+    title = named.get(forum_id) or f"FORUM {forum_id}"
+    return _posts_menu(app, request.address, posts, title)
+
+
+@page("5", name="contributors", title="By contributor", detail="browse by poster",
+      keywords=("WHO", "USERS"))
+async def contributors_index(request: PageRequest) -> Page:
+    app = Sextile.of(request)
+    contributors = await _read(request, lambda repository: repository.contributors())
+    if not contributors:
+        return _notice(app, request.address, None, ["NO POSTS held yet."])
+    items = [
+        MenuItem(
+            name,
+            f"{count} post{'' if count == 1 else 's'}",
+            app.address_for("contributor", user_id=user_id),
+        )
+        for user_id, name, count in contributors
+    ]
+    return _menu(app, request.address, items=items)
+
+
+@page("52{user_id:int}", name="contributor", title="One contributor")
+async def one_contributor(request: PageRequest, user_id: int) -> Page:
+    app = Sextile.of(request)
+    posts = await _read(request, lambda repository: repository.posts_by_author(user_id))
+    title = posts[0].author_name if posts else f"USER {user_id}"
+    return _posts_menu(app, request.address, posts, title)
+
+
+@page("7", name="topics", title="By topic", detail="read whole threads",
+      keywords=("TOPICS",))
+async def topics_index(request: PageRequest) -> Page:
+    app = Sextile.of(request)
+    topics = await _read(request, lambda repository: repository.topics(limit=60))
+    if not topics:
+        return Prose.of(
+            "NO TOPICS held yet.",
+            "Topics are known only for posts seen since the board's feed "
+            "began carrying them. Older posts have none.",
+            title=_headed(app, request.address),
+            home=app.index,
+        ).build(request.address)
+    items = [
+        MenuItem(
+            title,
+            f"{count} post{'' if count == 1 else 's'}",
+            app.address_for("topic", topic_id=topic_id),
+        )
+        for topic_id, title, count in topics
+    ]
+    return _menu(app, request.address, items=items)
+
+
+@page("72{topic_id:int}", name="topic", title="One topic")
+async def one_topic(request: PageRequest, topic_id: int) -> Page:
+    app = Sextile.of(request)
+    posts = await _read(request, lambda repository: repository.posts_in_topic(topic_id))
+    title = posts[0].topic_title if posts else f"TOPIC {topic_id}"
+    return _posts_menu(app, request.address, posts, title)
+
+
+@page("8", name="posts", title="Latest posts", detail="the newest first",
+      keywords=("LATEST", "NEW", "POSTS"))
+async def latest_posts(request: PageRequest) -> Page:
+    app = Sextile.of(request)
+    posts = await _read(request, lambda repository: repository.latest_posts(limit=60))
+    return _posts_menu(app, request.address, posts)
+
+
+@page("82{post_id:int}", name="post", title="One post")
+async def one_post(request: PageRequest, post_id: int) -> Page:
+    app = Sextile.of(request)
+    post = await _read(request, lambda repository: repository.post(post_id))
+    if post is None:
+        return Prose.of(
+            f"Post {post_id} is NOT in the archive.",
+            "This service holds what it has seen in the board's feed, "
+            "which reaches back only a little way.",
+            title="POST",
+            home=app.index,
+        ).build(request.address)
+    return post_page(
+        app, request.address, post, request.arrival, untitled=SERVICE_NAME
+    )
+
+
+@page("9", name="about", title="About this service", keywords=("ABOUT",))
+async def about(request: PageRequest) -> Page:
+    app = Sextile.of(request)
+    held = await _read(request, lambda repository: repository.count_posts())
+    return Prose.of(
+        "A Viewdata service carrying posts from stardot.org.uk, for users "
+        "of Acorn computers and emulators.",
+        f"{held} posts held.",
+        "Page numbers follow the board's own identifiers, so *82489493# "
+        "here is post 489493 there.",
+        "Served by Sextile, named after the star key on a viewdata keypad.",
+        title=f"ABOUT {app.name.upper()}",
+        home=app.index,
+    ).build(request.address)
+
+
+#  Titled, and so listed: the contents page is a directory of numbers that
+#  do something rather than a menu of places to go, and a reader looking
+#  for how to ring off should find it there. 9 is the system namespace,
+#  where the second digit is a function, so *90# keeps its Prestel meaning.
+@page("90", name="logoff", title="Log off", keywords=("BYE", "OFF"))
+async def logoff(request: PageRequest) -> Page:
+    app = Sextile.of(request)
+    return _farewell(
+        app,
+        "GOODBYE",
+        [f"Thank you for calling {app.name}.", "", "Ring off."],
+    )
+
+
+@page("91", name="help", title="How to get about",
+      detail="the keys, and what they do", keywords=("HELP", "GUIDE", "KEYS"))
+async def guide(request: PageRequest) -> Page:
+    """How to get about: the framework's guide, with this service's own rows.
+
+    It was written by hand here first, and the framework has it now -- keys,
+    two frames, the compass under the first -- because a guide is mostly a
+    description of the framework and a description that drifts from the thing
+    it describes is worse than none. What is left for a service is the rows
+    only it can know, which here are the pages it keeps its own numbers for.
+    """
+    app = Sextile.of(request)
+    return await app.guide(
+        request,
+        asking=[
+            Key(keyed(app.address_for("logoff")), "log off"),
+            Key(),
+            Key(keyed(app.address_for("contents")), "every page and its number"),
+            Key(keyed(app.address_for("names")), "every word you can key"),
+        ],
+    )
+
+
+# -- the service's own voice, off any page number -----------------------------
+
+
+def ringing_off(app: Sextile, parting: Parting) -> Page:
+    """Said in the service's own voice as an idle caller is released.
+
+    Naming the page they were on, because the terminal keeps nothing and a
+    reader who dials back in has no other way to pick up where they were.
+    """
+    return _farewell(
+        app,
+        "RINGING OFF",
+        [
+            "No reply for some time, so the line",
+            "has been released for somebody else.",
+            "",
+            f"You were reading *{parting.address}#.",
+            "",
+            f"Thank you for calling {app.name}. Do call",
+            "again.",
+        ],
+    )
+
+
+def unknown_page(app: Sextile, target: str) -> Page:
+    """Say so, in the service's own furniture, and leave the way back open."""
+    canvas = Canvas()
+    draw_chrome(
+        canvas,
+        title="UNKNOWN PAGE",
+        page_number="",
+        #  Through the renderer like every other prompt, so the key named here
+        #  is the same constant the choices answer. The advice rides in the
+        #  label: there is no key for "another page", only the command line.
+        prompt=render_footer(
+            [FooterItem("0", "index, or key another page", Priority.ESSENTIAL, brief="index")],
+            ROOM,
+        ),
+    )
+    canvas.row(CONTENT_FIRST_ROW).text(f"*{target[:30]}# is NOT a page here.", Colour.WHITE)
+    canvas.row(CONTENT_FIRST_ROW + 2).text("Try *1# for the main index.", Colour.WHITE)
+    return Page(
+        frames=(PageFrame(frame=canvas.frame, choices={"0": app.address_for("main")}),)
+    )
+
+
+# -- the shapes the pages above share -----------------------------------------
+
+
+def _headed(app: Sextile, address: PageAddress) -> str:
+    """What goes at the top of a page: what it was registered as, shouted.
+
+    A page that names itself where it is declared and again in its own chrome
+    has two copies of its name to keep in step, and they do not stay in step.
+    Pages whose heading is not their name -- a post's forum, a day's date --
+    say so; the rest say nothing and get this.
+    """
+    return app.describe(address).upper()
+
+
+def _posts_menu(
+    app: Sextile, address: PageAddress, posts: list[Post], title: str | None = None
+) -> Page:
+    if not posts:
+        return _notice(app, address, title, ["NO POSTS held for this page."])
+    items = [
+        MenuItem(
+            post.subject,
+            f"{post.author_name}  {time_of(post)}",
+            app.address_for("post", post_id=post.post_id),
+        )
+        for post in posts
+    ]
+    return _menu(app, address, title=title, items=items)
+
+
+def _menu(
+    app: Sextile,
+    address: PageAddress,
+    *,
+    title: str | None = None,
+    items: list[MenuItem],
+    preamble: list[str] | None = None,
+    empty: str = "",
+) -> Page:
+    """A menu, dealt nine to a frame by the framework's template."""
+    return Menu(
+        title=title if title is not None else _headed(app, address),
+        entries=items,
+        home=app.index,
+        preamble=preamble or (),
+        empty=empty,
+    ).build(address)
+
+
+def _farewell(app: Sextile, title: str, lines: list[str]) -> Page:
+    """The last thing a caller sees, and the last thing this service draws.
+
+    No chrome. A footer offering the index would be a lie on a page there is
+    no coming back from, and the rows it and the rules occupy are exactly
+    the ones the framework wants to leave blank: the reader is about to be
+    talking to their modem, and the cursor is put below the last thing said.
+    """
+    canvas = Canvas()
+    canvas.row(0).text(title, Colour.CYAN)
+    for offset, line in enumerate(lines):
+        if line:
+            canvas.row(2 + offset).text(fitted(line, COLUMNS - 1), Colour.WHITE)
+    return Page(frames=(PageFrame(frame=canvas.frame),), hang_up=True)
+
+
+def _notice(
+    app: Sextile,
+    address: PageAddress,
+    title: str | None,
+    lines: list[str],
+) -> Page:
+    """A page that simply says something, with no choices but the way back."""
+    canvas = Canvas()
+    #  Through the same renderer as every other page, so a notice says what
+    #  everything else says and degrades the same way.
+    draw_chrome(
+        canvas,
+        title=title if title is not None else _headed(app, address),
+        page_number=address.frame_number(0),
+        prompt=prompt({}, selecting=False),
+    )
+    for offset, line in enumerate(lines[:CONTENT_ROWS]):
+        if line:
+            canvas.row(CONTENT_FIRST_ROW + offset).text(
+                fitted(line, COLUMNS - 1), Colour.WHITE
+            )
+    return Page(
+        frames=(
+            PageFrame(frame=canvas.frame, choices={"0": app.address_for("main")}),
+        )
+    )
+
+
+def day_title(day: date) -> str:
+    """A day as a menu names it, and as the history describes one."""
+    return day.strftime("%a %d %b %Y").upper()

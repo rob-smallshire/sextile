@@ -29,18 +29,17 @@ from sextile.viewdata.font import load_font
 from sextile.viewdata.frame import COLUMNS, Frame
 from sextile.viewdata.lettering import Spacing
 from stardot_viewdata import PAGES, build_application
-from stardot_viewdata.application import (
-    ARCHIVE,
+from stardot_viewdata.model import Post
+from stardot_viewdata.pages import ARCHIVE, SERVICE_NAME
+from stardot_viewdata.post_page import CONVENTIONAL_NEXT_FRAME_KEY
+from stardot_viewdata.store.repository import Repository
+from stardot_viewdata.title_frame import (
     BANNER_FACE,
     BANNER_ROW,
-    CONVENTIONAL_NEXT_FRAME_KEY,
     SERVICE_KIND,
-    SERVICE_NAME,
     SUBTITLE_FACE,
     SUBTITLE_ROW,
 )
-from stardot_viewdata.model import Post
-from stardot_viewdata.store.repository import Repository
 
 BST = timezone(timedelta(hours=1))
 

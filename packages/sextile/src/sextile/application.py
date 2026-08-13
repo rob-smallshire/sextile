@@ -232,13 +232,19 @@ class Application(ABC):
     ) -> Page:
         """What has been looked at lately, as a menu of where to look.
 
+        Args:
+            request: The request for this page.
+            visits: The log to read.
+            limit: How many to show, defaulting to the nine a frame holds. More
+                than that is dealt into further frames rather than dropped.
+            prefix: Narrows it to a namespace, which is what a first digit
+                already means: a weather service can ask for the forecasts
+                alone.
+
         Registered nowhere, like the history, the contents and the words. The
         log is the service's -- it decides where it is kept and how long for --
         and the page is the framework's, a page number being the framework's
         own vocabulary.
-
-        `prefix` narrows it to a namespace, which is what a first digit already
-        means: a weather service can ask for the forecasts alone.
         """
         return readership.recent_page(
             address=request.address,
@@ -257,7 +263,17 @@ class Application(ABC):
         prefix: str = "",
         since: datetime | None = None,
     ) -> Page:
-        """What has been looked at most, as a menu of where to look."""
+        """What has been looked at most, as a menu of where to look.
+
+        Args:
+            request: The request for this page.
+            visits: The log to read.
+            limit: How many to show, defaulting to the nine a frame holds. More
+                than that is dealt into further frames rather than dropped.
+            prefix: Narrows it to a namespace of the numbering.
+            since: Counts only what has been read since then, where the service
+                wants "most read lately" rather than most read ever.
+        """
         return readership.popular_page(
             address=request.address,
             visits=await visits.popular(limit, prefix=prefix, since=since),

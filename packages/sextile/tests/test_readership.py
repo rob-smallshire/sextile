@@ -100,6 +100,19 @@ class TestLatelyRead:
         )
         assert "Nothing has been read yet." in text_of(page)
 
+    def test_more_than_a_frame_holds_goes_on_to_the_next(self) -> None:
+        #  A caller asking for twenty gets twenty, dealt nine to a frame like
+        #  any other menu. Showing nine and dropping the rest without saying so
+        #  would make the limit mean something other than what it says.
+        page = recent_page(
+            address=PageAddress("96"),
+            visits=[visit("1") for _ in range(20)],
+            describe=describe,
+            home=PageAddress("1"),
+            now=NOON,
+        )
+        assert len(page.frames) == 3
+
 
 class TestMostRead:
     def test_it_says_how_often(self) -> None:

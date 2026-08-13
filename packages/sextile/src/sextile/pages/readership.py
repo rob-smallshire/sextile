@@ -19,7 +19,7 @@ from typing import Final
 
 from sextile.addressing import PageAddress, keyed
 from sextile.page import Page, PageFrame
-from sextile.templates import CHOICES_PER_FRAME, Menu, MenuItem
+from sextile.templates import Menu, MenuItem
 from sextile.viewdata.canvas import Canvas
 from sextile.viewdata.chrome import CONTENT_FIRST_ROW, draw_chrome
 from sextile.viewdata.controls import Colour
@@ -29,9 +29,13 @@ from sextile.viewdata.frame import COLUMNS
 from sextile.viewdata.wrapping import wrap_text
 from sextile.visits import Visit
 
-RECENT_TITLE: Final = "Lately read"
-POPULAR_TITLE: Final = "Most read"
-CALLERS_TITLE: Final = "Who has called"
+#  Shouted, as every heading is: `Sextile.heading` upper-cases the title a
+#  service registered, and these are what it falls back to when a service
+#  registered none. Two adjacent framework pages should not disagree about
+#  their own case.
+RECENT_TITLE: Final = "LATELY READ"
+POPULAR_TITLE: Final = "MOST READ"
+CALLERS_TITLE: Final = "WHO HAS CALLED"
 
 #: The windows the count of callers is reported over. Days rather than
 #: calendar days, so that no clock and no zone comes into it: "the last seven
@@ -59,8 +63,9 @@ _LABEL_AT: Final = 2
 _COUNT_CELLS: Final = 6
 _GAP: Final = 2
 
-_NOTHING_RECENT: Final = "Nothing has been read yet."
-_NOTHING_POPULAR: Final = "Nothing has been read yet."
+#  One string: what the two pages have to say about an empty log is the same
+#  thing, and two copies of it drift.
+_NOTHING_READ: Final = "Nothing has been read yet."
 
 #: How long ago, in the largest unit that says something. A reader wants "an
 #: hour ago" rather than "63 minutes ago", and "just now" rather than a figure
@@ -83,7 +88,7 @@ def recent_page(
         address=address,
         title=title,
         home=home,
-        empty=_NOTHING_RECENT,
+        empty=_NOTHING_READ,
         entries=[
             (visit, _ago(when - visit.at.astimezone(UTC))) for visit in visits
         ],
@@ -104,7 +109,7 @@ def popular_page(
         address=address,
         title=title,
         home=home,
-        empty=_NOTHING_POPULAR,
+        empty=_NOTHING_READ,
         entries=[(visit, _times(visit.times)) for visit in visits],
         describe=describe,
     )
@@ -129,7 +134,7 @@ def _menu(
             )
             for visit, said in entries
             if (named := describe(visit.page))
-        ][:CHOICES_PER_FRAME],
+        ],
         home=home,
         empty=empty,
     ).build(address)

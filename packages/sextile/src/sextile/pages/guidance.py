@@ -37,7 +37,7 @@ from sextile.viewdata.drawing import key_row
 from sextile.viewdata.encoding import cell_count
 from sextile.viewdata.footer import ROOM, FooterItem, Priority, movement, render_footer
 
-TITLE: Final = "How to get about"
+TITLE: Final = "HOW TO GET ABOUT"
 
 #: A reader selects with one keypress, so nine is the most a menu offers. Said
 #: here rather than imported from the templates, which are a different subject.

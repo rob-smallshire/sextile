@@ -21,23 +21,13 @@ Named after the star key on a viewdata keypad.
 from importlib.metadata import version
 
 from sextile.addressing import PageAddress, UnknownPageError
-from sextile.application import (
-    Application,
-    Arrival,
-    Middleware,
-    Next,
-    PageInfo,
-    PageRequest,
-    PageRoute,
-    Parting,
-    Sextile,
-    page,
-    routes_in,
-)
+from sextile.application import Application, Middleware, Next, Sextile
 from sextile.content.transliterate import transliterate
+from sextile.declarations import PageInfo, PageRoute, page, routes_in
 from sextile.forms import Form, Suggest, draw_form
 from sextile.held import Held
 from sextile.page import Page, PageFrame
+from sextile.requests import Arrival, PageRequest, Parting
 from sextile.routing import Converter
 
 __version__ = version("sextile")

@@ -21,287 +21,62 @@ having arrived from a particular menu.
 Handlers are `async` because the second thing every application does after
 answering from memory is answer from somewhere else -- a database, an HTTP API,
 a device. The one caller kept waiting should not be all of them.
+
+The request a handler takes is `sextile.requests`'s; the vocabulary for
+declaring a page beside its handler is `sextile.declarations`'s. Both are
+re-exported here, `sextile` itself being where a service imports from.
 """
 
 from abc import ABC, abstractmethod
 from collections.abc import Awaitable, Callable, Mapping, MutableMapping, Sequence
 from contextlib import AbstractAsyncContextManager
-from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
-from types import ModuleType
 from typing import Final, Self
 
 from sextile import contents, guidance, history, keys, names, readership
 from sextile.addressing import PageAddress, UnknownPageError, keyed
 from sextile.contents import contents_page
+from sextile.declarations import (
+    Handler,
+    PageInfo,
+    PageRoute,
+    page,
+    routes_in,
+    routes_on,
+)
 from sextile.history import history_page
 from sextile.names import names_page
 from sextile.page import Page, PageFrame
+from sextile.requests import Arrival, PageRequest, Parting
 from sextile.routing import Converter, ConverterFactory, Match, Router
 from sextile.templates import CHOICES_PER_FRAME, HOME_KEY
 from sextile.viewdata.canvas import Canvas
 from sextile.viewdata.controls import Colour
 from sextile.visits import Visits
 
+__all__ = [
+    "Application",
+    "Arrival",
+    "Handler",
+    "Middleware",
+    "Next",
+    "PageInfo",
+    "PageRequest",
+    "PageRoute",
+    "Parting",
+    "Sextile",
+    "page",
+    "routes_in",
+    "routes_on",
+]
+
 #: How much of a mistyped request is worth quoting back.
 _QUOTED: Final = 30
 
 
-@dataclass(frozen=True)
-class Arrival:
-    """The pages either side of this one, in the sequence being read.
-
-    Which sequence depends on how the reader got here: a page reached through
-    one menu has that menu's pages either side of it, and through another has
-    that one's. A page reached by keying its number has neither, and should be
-    offered neither.
-    """
-
-    preceding: PageAddress | None = None
-    following: PageAddress | None = None
-
-
-@dataclass(frozen=True)
-class PageRequest:
-    """One page, asked for."""
-
-    address: PageAddress
-
-    params: dict[str, object] = field(default_factory=dict)
-    """What the route's pattern captured. Also passed to the handler as keyword
-    arguments, so a handler need not unpack them."""
-
-    arrival: Arrival = Arrival()
-
-    session: MutableMapping[str, object] = field(default_factory=dict)
-    """What this caller has accumulated over their connection. The connection is
-    the session -- the terminal keeps nothing but the frame on screen -- so this
-    is where anything outlasting a single page belongs."""
-
-    history: tuple[PageAddress, ...] = ()
-    """Where this caller has been, oldest first, as far back as the session
-    keeps. The terminal remembers none of it, so a service wanting to offer a
-    way back through the call has to be handed the way back."""
-
-    application: "Application | None" = None
-    """The service this page belongs to.
-
-    Starlette's `request.app`, and here for the same reason: it is what lets a
-    handler be an ordinary function declared beside its fellows rather than a
-    closure built inside a factory. A page that offers another page has to ask
-    the numbering where that one is, and this is how it asks.
-
-    Optional only because a request built by hand in a test has no service
-    behind it. Anything the session or the renderer builds carries one.
-    """
-
-    service: Mapping[str, object] = field(default_factory=dict)
-    """What the service opened, for as long as it is running -- an archive, a
-    client, an index.
-
-    The counterpart of `session`, and the contrast is the whole point of there
-    being two: `session` is this caller's and lasts as long as the line,
-    `service` is everybody's and lasts as long as the process. Read-only here,
-    because a page that changed what the service holds would be changing it for
-    every other caller at once.
-
-    What goes in it is whatever the application's `lifespan` yielded."""
-
-    @property
-    def app(self) -> "Application":
-        """The service this page belongs to, and not None.
-
-        `application` is optional because a request built by hand in a test
-        has no service behind it. Every request the session or the renderer
-        builds carries one, so a handler reached through either says
-        `request.app` -- the narrowing every application was otherwise
-        writing for itself, at the top of its own module.
-        """
-        if self.application is None:
-            raise RuntimeError("this page was asked for outside a running service")
-        return self.application
-
-
-@dataclass(frozen=True)
-class Parting:
-    """Where a caller had got to when the line was taken from them.
-
-    Everything the session knew, handed over because the terminal keeps none of
-    it. A service can say "you were reading *82489493#", which is the one thing
-    worth telling somebody who is about to dial back in.
-    """
-
-    address: PageAddress
-    """The page they were on."""
-
-    frame_index: int = 0
-    """Which frame of it, for a page that ran to several."""
-
-    history: tuple[PageAddress, ...] = ()
-    """Where they had been, oldest first, as far back as the session kept."""
-
-    session: Mapping[str, object] = field(default_factory=dict)
-    """What they had accumulated over the call."""
-
-
-@dataclass(frozen=True)
-class PageInfo:
-    """What a service said about a page when it registered it.
-
-    The words belong where the page is declared. A service that names each page
-    again in its menu, again wherever one is listed, and again in its own guide
-    has three copies to keep in step, and they do not stay in step.
-    """
-
-    name: str
-    """The route's name, which `address_for` also answers to."""
-
-    keyed: str
-    """The number a reader would key, fields shown as `<name>`: `52<user_id>`."""
-
-    title: str
-    """What to call it. A page with no title is not advertised."""
-
-    detail: str = ""
-    """A second line, for a menu with room for one."""
-
-
-#: Where a declared page keeps what was said about it until a service is built.
-_DECLARED: Final = "__sextile_page__"
-
-
-@dataclass(frozen=True)
-class _Declaration:
-    """A page declared on a class, waiting for an instance to register it on."""
-
-    pattern: str
-    name: str | None
-    title: str
-    detail: str
-    keywords: tuple[str, ...]
-
-
-def page[H](
-    pattern: str,
-    *,
-    name: str | None = None,
-    title: str = "",
-    detail: str = "",
-    keywords: Sequence[str] = (),
-) -> Callable[[H], H]:
-    """Declare a page beside the method that builds it.
-
-        class Board(Sextile):
-            @page("5", title="By contributor", detail="browse by poster")
-            async def contributors(self, request: PageRequest) -> Page:
-                ...
-
-    `app.page(...)` does the same thing, but only where an application object
-    already exists to hang it on. A service whose handlers are methods -- which
-    is every service holding an archive or an HTTP client -- has no `self` at
-    class-definition time, so its registrations end up in a block a long way
-    from the functions they describe. This puts them back together.
-
-    Collected when the application is constructed, in the order they are
-    written, base classes first. The route takes the method's name unless given
-    one, leading underscores stripped.
-
-    Unbounded in the handler's type: what is decorated here is an unbound
-    method, taking a `self` that does not exist yet.
-    """
-
-    def declare(handler: H) -> H:
-        setattr(
-            handler,
-            _DECLARED,
-            _Declaration(
-                pattern=pattern,
-                name=name,
-                title=title,
-                detail=detail,
-                keywords=tuple(keywords),
-            ),
-        )
-        return handler
-
-    return declare
-
-
-#: A page handler. `None` rather than a page means there is no such page --
-#: something *said* to a reader who has not moved, as against somewhere they
-#: have gone -- and the session tells the two apart. Typed `Awaitable[Page]`
-#: here at first, which quietly refused the very handlers the documentation
-#: shows.
-type Handler = Callable[..., Awaitable[Page | None]]
 type NotFoundHandler = Callable[[str], Awaitable[Page]]
 type PartingHandler = Callable[[Parting], Awaitable[Page]]
 type FailureHandler = Callable[[PageAddress], Awaitable[Page]]
-@dataclass(frozen=True)
-class PageRoute:
-    """One page of a service, declared as a value rather than as a decoration.
-
-    The canonical way to say what a service is made of. Everything about a
-    page is here -- where it is in the numbering, what builds it, what to call
-    it where it is listed, and the words that reach it -- so a page says what
-    it is once, in one place, and the service is a list of them.
-
-    Declaring pages as data is what makes registration order unobservable. A
-    pattern using a field shape of the service's own, a page wanting a keyword,
-    a service holding an archive: all of it arrives in one constructor call,
-    so there is no "before" and no "after" for anybody to get wrong.
-    """
-
-    pattern: str
-    """The page numbers this answers: literal digits and named fields."""
-
-    handler: Handler
-    """What builds the page. `None` rather than a page means there is no such
-    page, which the session shows differently from one it could not build."""
-
-    name: str | None = None
-    """What `address_for` calls it. The handler's own name unless given."""
-
-    title: str = ""
-    """What to call this page where it is *listed* rather than shown -- in a
-    menu, in the history, in the contents. A page with no title is not
-    advertised, which is how a title frame stays off the contents."""
-
-    detail: str = ""
-    """A second line, wherever the title gets one."""
-
-    keywords: Sequence[str] = ()
-    """Words a reader may key instead of the number."""
-
-
-def routes_in(module: ModuleType) -> tuple[PageRoute, ...]:
-    """The pages a module declares with `@page`, in the order they are written.
-
-    The module-level counterpart of declaring pages on a class, for the
-    service whose handlers are ordinary functions. The declaration sits on
-    the function that builds the page, and the factory says
-    `pages=routes_in(pages_module)` instead of keeping a list that has to
-    trail its handlers -- which is how such a list ends up two thirds of the
-    way down a long module.
-
-    Decorate a function where it is defined, not where it is imported: the
-    declaration rides on the function object itself, so decorating a
-    borrowed handler would declare it for everyone who imports it. A route
-    for somebody else's handler -- the framework's own pages, say -- is one
-    `PageRoute` line beside the call to this.
-    """
-    return tuple(
-        PageRoute(
-            pattern=declaration.pattern,
-            handler=value,
-            name=declaration.name or attribute.lstrip("_"),
-            title=declaration.title,
-            detail=declaration.detail,
-            keywords=declaration.keywords,
-        )
-        for attribute, value in vars(module).items()
-        if isinstance(declaration := getattr(value, _DECLARED, None), _Declaration)
-    )
-
 
 type Next = Callable[[PageRequest], Awaitable[Page | None]]
 
@@ -797,31 +572,9 @@ class Sextile(Application):
         return register
 
     def _register_declared(self) -> None:
-        """Register the pages this class declared with `@page`.
-
-        Base classes first, and within each the order they are written, so that
-        `pages()` lists a service the way its source reads. Keyed by attribute
-        so that a subclass overriding a page replaces it rather than colliding
-        with it.
-        """
-        declared: dict[str, _Declaration] = {}
-        for klass in reversed(type(self).__mro__):
-            for attribute, value in vars(klass).items():
-                found = getattr(value, _DECLARED, None)
-                if isinstance(found, _Declaration):
-                    declared[attribute] = found
-        for attribute, declaration in declared.items():
-            route = declaration.name or attribute.lstrip("_")
-            self.add_page(
-                PageRoute(
-                    pattern=declaration.pattern,
-                    handler=getattr(self, attribute),
-                    name=route,
-                    title=declaration.title,
-                    detail=declaration.detail,
-                    keywords=declaration.keywords,
-                )
-            )
+        """Register the pages this class declared with `@page`."""
+        for route in routes_on(self):
+            self.add_page(route)
 
     def page_info(self, name: str) -> PageInfo | None:
         """What was said about a named page when it was registered."""

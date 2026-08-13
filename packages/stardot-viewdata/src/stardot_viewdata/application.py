@@ -33,7 +33,7 @@ from datetime import date, datetime
 from pathlib import Path
 from typing import Final
 
-from sextile import keys
+from sextile import Held, keys
 from sextile.addressing import PageAddress, keyed
 from sextile.application import Arrival, PageRequest, PageRoute, Parting, Sextile
 from sextile.guidance import Key
@@ -97,8 +97,10 @@ SUBTITLE_ROWS: Final = 3
 DEFAULT_DATABASE_FILEPATH: Final = Path("stardot.sqlite")
 
 
-#: What the archive is held under, in what the service holds.
-ARCHIVE: Final = "archive"
+#: What the archive is held under, in what the service holds. A key rather
+#: than a string, so every page narrows what it takes in the same call and a
+#: mistyped key fails by name.
+ARCHIVE: Final = Held("archive", Repository)
 
 
 #: Each menu entry takes a line of its own plus a line of detail beneath.
@@ -131,19 +133,6 @@ _FOOTER_ATTRIBUTE: Final = 1
 # -- what a page reaches through the request ---------------------------------
 
 
-def _archive(service: Mapping[str, object]) -> Repository:
-    """The archive, out of what the service holds.
-
-    A narrowing with a reason attached: what a service holds is typed as
-    objects, because the framework cannot know what any service puts in it, and
-    this is the one function that does know.
-    """
-    repository = service.get(ARCHIVE)
-    if not isinstance(repository, Repository):
-        raise RuntimeError("the archive is not open; the service was never started")
-    return repository
-
-
 def _service(request: PageRequest) -> Sextile:
     """The application a page belongs to, narrowed to the one it is."""
     app = request.application
@@ -158,7 +147,7 @@ async def _read[T](request: PageRequest, query: Callable[[Repository], T]) -> T:
     SQLite is synchronous, and a caller waiting on a query should not be every
     caller waiting on it.
     """
-    return await asyncio.to_thread(query, _archive(request.service))
+    return await asyncio.to_thread(query, ARCHIVE.of(request.service))
 
 
 # -- menus --------------------------------------------------------------------
@@ -710,11 +699,11 @@ def build_application(
     @asynccontextmanager
     async def lifespan(app: Sextile) -> AsyncIterator[Mapping[str, object]]:
         if repository is not None:
-            yield {ARCHIVE: repository}
+            yield ARCHIVE.holding(repository)
             return
         ours = await asyncio.to_thread(Repository.open, database_filepath)
         try:
-            yield {ARCHIVE: ours}
+            yield ARCHIVE.holding(ours)
         finally:
             await asyncio.to_thread(ours.close)
 

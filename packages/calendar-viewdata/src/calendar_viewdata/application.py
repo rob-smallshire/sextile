@@ -28,9 +28,10 @@ import calendar
 from collections.abc import AsyncIterator, Callable, Mapping, Sequence
 from contextlib import asynccontextmanager
 from datetime import UTC, date, datetime, timedelta
-from typing import Final
+from typing import Final, Protocol, runtime_checkable
 
 from sextile import (
+    Held,
     Page,
     PageAddress,
     PageFrame,
@@ -60,21 +61,24 @@ SERVICE_NAME: Final = "CALENDAR"
 #: How far ahead the days-to-come menu looks.
 DAYS_AHEAD: Final = 28
 
+@runtime_checkable
+class Clock(Protocol):
+    """How the service finds out the time: any callable answering a datetime."""
+
+    def __call__(self) -> datetime: ...
+
+
 #: What the clock is held under, in what the service holds. It is the only
 #: thing this service depends on that is not a pure function, which is why it
 #: is a parameter at all: a service whose pages change under it cannot
 #: otherwise be tested.
-CLOCK: Final = "clock"
+CLOCK: Final[Held[Clock]] = Held.checking("clock", Clock)
 
 _WEEKDAYS: Final = ("MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN")
 
 
 def _now(request: PageRequest) -> datetime:
-    clock = request.service.get(CLOCK)
-    if not callable(clock):
-        raise RuntimeError("the clock is not set; the service has not started")
-    moment: datetime = clock()
-    return moment
+    return CLOCK.of(request.service)()
 
 
 def _today(request: PageRequest) -> date:
@@ -277,7 +281,7 @@ def build_application(now: Callable[[], datetime] | None = None) -> Sextile:
 
     @asynccontextmanager
     async def lifespan(app: Sextile) -> AsyncIterator[Mapping[str, object]]:
-        yield {CLOCK: reading}
+        yield CLOCK.holding(reading)
 
     return Sextile(name=SERVICE_NAME.title(), pages=PAGES, lifespan=lifespan)
 

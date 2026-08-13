@@ -577,11 +577,13 @@ not.
 ## Anything that has to be opened
 
 ```python
+CLIENT = Held("client", httpx.AsyncClient)
+
 @asynccontextmanager
 async def lifespan(app: Sextile) -> AsyncIterator[Mapping[str, object]]:
     client = httpx.AsyncClient()
     try:
-        yield {"client": client}
+        yield CLIENT.holding(client)
     finally:
         await client.aclose()
 
@@ -594,7 +596,20 @@ page is handed it:
 
 ```python
 async def post(request: PageRequest, post_id: int) -> Page:
-    client = request.service["client"]
+    client = CLIENT.of(request.service)
+```
+
+What a service holds is typed as objects, because the framework cannot know
+what any service puts in it. A `Held` key is the narrowing said once: the name
+and the type travel together, `of` raises by name when the service has not
+started, and `found_in` answers `None` for a thing a service may run without.
+Yield several with `|`: `CLIENT.holding(client) | VISITS.holding(log)`. For a
+kind that is a protocol or an abstract class, `Held.checking(name, kind)` makes
+the same key — the type checker refuses those where a type is expected, and
+the assignment's annotation says what the key holds:
+
+```python
+VISITS: Final[Held[Visits]] = Held.checking("visits", Visits)
 ```
 
 `service` is the counterpart of `session`, and the contrast is why there are

@@ -21,6 +21,7 @@ from collections.abc import Callable
 from typing import Final
 
 from sextile.application import Middleware, Next, PageRequest
+from sextile.held import Held
 from sextile.page import Page
 from sextile.visits import Visits
 
@@ -126,15 +127,11 @@ def record_visits(
 def held_in(name: str) -> "Finder":
     """The log a service put in what it holds, under this name.
 
-    What a service holds is typed as objects, because the framework cannot know
-    what any service puts in it. This is the one narrowing the framework can do
-    for itself: it knows what a log looks like.
+    `Held.checking(name, Visits).find` said for a service that has not made a
+    key of its own: the framework knows what a log looks like, so the name
+    alone is enough.
     """
-
-    def found(request: PageRequest) -> Visits | None:
-        held = request.service.get(name)
-        return held if isinstance(held, Visits) else None
-
-    return found
+    key: Held[Visits] = Held.checking(name, Visits)
+    return key.find
 
 

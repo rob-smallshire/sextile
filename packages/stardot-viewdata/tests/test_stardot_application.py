@@ -281,8 +281,7 @@ class TestTheArchiveIsOpenedWhenTheServiceStarts:
     ) -> None:
         service = build_application(tmp_path / "archive.sqlite")
         await service.startup()
-        held = service.service[ARCHIVE]
-        assert isinstance(held, Repository)
+        held = ARCHIVE.of(service.service)
         assert held.count_posts() == 0
         await service.shutdown()
         assert service.service == {}

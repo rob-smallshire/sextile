@@ -7,8 +7,8 @@ which is exactly what a hand-written list of keywords in a help page does.
 """
 
 from sextile.addressing import PageAddress
-from sextile.names import TITLE, names_page
 from sextile.page import Page
+from sextile.pages.names import TITLE, names_page
 
 
 def at(digits: str) -> PageAddress:

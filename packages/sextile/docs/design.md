@@ -31,6 +31,10 @@ might be about.
             |  PageRoute, Middleware, Lifespan           what a service is made of
             |  middleware  log_pages                     what wraps every page
             |
+   pages/      contents, names, history                 pages the framework
+            |  guidance, readership                     builds from what it knows
+            |  handlers                                  the routes that name them
+            |
    keys     |  the four movements
             v
    session/    commands, session                        one caller's conversation
@@ -649,7 +653,11 @@ the defaults end at thirty days because that is what the log keeps by default.
 
 **The framework builds four pages, not three.** `history`, `contents`, `names`
 — and now `guide`, which was Stardot's, written by hand, and much the better of
-the two help pages the workspace had. A guide is mostly a description of the
+the two help pages the workspace had. They live in `sextile/pages/` with the
+readership pages, all five being the same kind of thing: a page built from what
+the framework holds already, registered nowhere, mapped in by a service that
+wants it. `sextile/handlers.py` is the other half of that — the handlers a
+`PageRoute` can name, where these modules are what those handlers reach. A guide is mostly a description of the
 framework: the digits, the way home, the syntax of a request, the key that
 turns a page, the compass. A description that drifts from the thing it
 describes is worse than none, so it is generated from what is actually

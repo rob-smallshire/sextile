@@ -349,7 +349,7 @@ beside the call:
 ```python
 app = Sextile(pages=[
     *routes_in(pages_module),
-    PageRoute("92", pages.history, title="Where you have been"),
+    PageRoute("92", handlers.history, title="Where you have been"),
 ])
 ```
 
@@ -428,11 +428,11 @@ them into its own numbering or does without. They are handlers already, so
 the mapping is one line apiece:
 
 ```python
-from sextile import pages
+from sextile import handlers
 
-PageRoute("92", pages.history, title="Where you have been", keywords=("HISTORY",))
-PageRoute("93", pages.contents, title="Every page", keywords=("PAGES",))
-PageRoute("94", pages.names, title="Words you can key", keywords=("KEYWORDS",))
+PageRoute("92", handlers.history, title="Where you have been", keywords=("HISTORY",))
+PageRoute("93", handlers.contents, title="Every page", keywords=("PAGES",))
+PageRoute("94", handlers.names, title="Words you can key", keywords=("KEYWORDS",))
 ```
 
 Each answers by calling the application's method of the same name, so a

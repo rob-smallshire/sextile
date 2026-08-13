@@ -7,8 +7,8 @@ where to put it, and only the framework knows the patterns well enough to say.
 
 from sextile.addressing import PageAddress
 from sextile.application import Arrival, PageInfo, PageRequest, Sextile
-from sextile.contents import TITLE, contents_page
 from sextile.page import Page
+from sextile.pages.contents import TITLE, contents_page
 
 
 def at(digits: str) -> PageAddress:

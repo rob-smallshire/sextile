@@ -1,4 +1,4 @@
-"""The framework's pages, as handlers a route can name directly.
+"""Handlers naming the framework's own pages, for a route to point at.
 
 `history`, `contents` and `names` are methods on the application, which a
 `PageRoute` cannot name without an instance to bind them to -- so every
@@ -10,7 +10,7 @@ they are built.
 
 import pytest
 
-from sextile import PageRoute, Sextile, pages
+from sextile import PageRoute, Sextile, handlers
 from sextile.addressing import PageAddress
 
 
@@ -19,11 +19,11 @@ class TestRoutingStraightToAFrameworkPage:
     def app(self) -> Sextile:
         return Sextile(
             pages=[
-                PageRoute("92", pages.history, name="history",
+                PageRoute("92", handlers.history, name="history",
                           title="Where you have been"),
-                PageRoute("93", pages.contents, name="contents",
+                PageRoute("93", handlers.contents, name="contents",
                           title="Every page"),
-                PageRoute("94", pages.names, name="names",
+                PageRoute("94", handlers.names, name="names",
                           title="Words you can key", keywords=("KEYWORDS",)),
             ]
         )
@@ -52,6 +52,6 @@ class TestRoutingStraightToAFrameworkPage:
     async def test_the_route_needs_no_name_of_its_own(self) -> None:
         #  The handler's own name is the route's, as for any handler -- which
         #  is what lets the line in the service's list stay short.
-        app = Sextile(pages=[PageRoute("92", pages.history, title="Been")])
+        app = Sextile(pages=[PageRoute("92", handlers.history, title="Been")])
 
         assert app.address_for("history") == PageAddress("92")

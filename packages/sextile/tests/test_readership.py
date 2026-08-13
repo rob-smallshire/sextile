@@ -9,7 +9,7 @@ from datetime import UTC, datetime, timedelta
 
 from sextile.addressing import PageAddress
 from sextile.page import Page
-from sextile.readership import callers_page, popular_page, recent_page
+from sextile.pages.readership import callers_page, popular_page, recent_page
 from sextile.visits import Visit
 
 NOON = datetime(2026, 8, 11, 12, 0, tzinfo=UTC)

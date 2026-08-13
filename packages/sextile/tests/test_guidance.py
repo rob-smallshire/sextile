@@ -6,8 +6,8 @@ than none.
 """
 
 from sextile.addressing import PageAddress
-from sextile.guidance import Key, guide_page
 from sextile.page import Page
+from sextile.pages.guidance import Key, guide_page
 
 
 def text_of(page: Page, index: int = 0) -> str:

@@ -30,8 +30,8 @@ from typing import Final
 from sextile import Held, PageRequest, Sextile, page
 from sextile.addressing import PageAddress, keyed
 from sextile.application import Parting
-from sextile.guidance import Key
 from sextile.page import Page, PageFrame
+from sextile.pages.guidance import Key
 from sextile.templates import Menu, MenuItem, Prose, farewell_page
 from sextile.viewdata.canvas import Canvas
 from sextile.viewdata.chrome import CONTENT_FIRST_ROW, CONTENT_ROWS, draw_chrome

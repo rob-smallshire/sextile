@@ -11,8 +11,8 @@ it at all, which is why these tests build it directly.
 import pytest
 
 from sextile.addressing import PageAddress
-from sextile.history import TITLE, history_page
 from sextile.page import Page
+from sextile.pages.history import TITLE, history_page
 from sextile.templates import CHOICES_PER_FRAME
 
 

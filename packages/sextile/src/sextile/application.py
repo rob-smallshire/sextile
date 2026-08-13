@@ -33,9 +33,8 @@ from contextlib import AbstractAsyncContextManager
 from datetime import UTC, datetime, timedelta
 from typing import Final, Self
 
-from sextile import contents, guidance, history, keys, names, readership
+from sextile import keys
 from sextile.addressing import PageAddress, UnknownPageError, keyed
-from sextile.contents import contents_page
 from sextile.declarations import (
     Handler,
     PageInfo,
@@ -44,9 +43,11 @@ from sextile.declarations import (
     routes_in,
     routes_on,
 )
-from sextile.history import history_page
-from sextile.names import names_page
 from sextile.page import Page, PageFrame
+from sextile.pages import contents, guidance, history, names, readership
+from sextile.pages.contents import contents_page
+from sextile.pages.history import history_page
+from sextile.pages.names import names_page
 from sextile.requests import Arrival, PageRequest, Parting
 from sextile.routing import Converter, ConverterFactory, Match, Router
 from sextile.templates import CHOICES_PER_FRAME, HOME_KEY

@@ -21,8 +21,8 @@ from typing import Final
 from sextile import PageRoute, Sextile, routes_in
 from sextile.addressing import PageAddress
 from sextile.application import Parting
+from sextile.handlers import contents, history, names
 from sextile.page import Page
-from sextile.pages import contents, history, names
 from stardot_viewdata import pages
 from stardot_viewdata.pages import ARCHIVE, SERVICE_NAME, day_title, ringing_off, unknown_page
 from stardot_viewdata.store.repository import Repository

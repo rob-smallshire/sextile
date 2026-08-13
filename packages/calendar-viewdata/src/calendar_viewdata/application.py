@@ -38,8 +38,8 @@ from sextile import (
     PageRequest,
     PageRoute,
     Sextile,
+    handlers,
     keys,
-    pages,
 )
 from sextile.addressing import keyed
 from sextile.keys import arrows_lead_where
@@ -237,11 +237,11 @@ PAGES: Final = (
     #  Three the framework builds and hands over as handlers, mapped into this
     #  service's numbering. They are here as much to show what a service gets
     #  for nothing as to be useful: the calendar wrote none of them.
-    PageRoute("92", pages.history, title="Where you have been",
+    PageRoute("92", handlers.history, title="Where you have been",
               detail="this call, newest first", keywords=("HISTORY",)),
-    PageRoute("93", pages.contents, title="Every page",
+    PageRoute("93", handlers.contents, title="Every page",
               detail="and the number that fetches it", keywords=("PAGES",)),
-    PageRoute("94", pages.names, title="Words you can key",
+    PageRoute("94", handlers.names, title="Words you can key",
               detail="instead of a page number", keywords=("KEYWORDS", "WORDS")),
 )
 

@@ -1,4 +1,4 @@
-"""The Stardot service's pages, each declared beside the function that builds it.
+"""The Stardot service's page handlers, each declared beside its function.
 
 Menus are the shape most pages take. A reader selects with a single keypress, so
 a menu offers at most nine choices on a frame and moving down goes to the next

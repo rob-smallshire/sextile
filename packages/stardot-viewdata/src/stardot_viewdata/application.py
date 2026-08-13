@@ -5,7 +5,7 @@ exist, what each of them shows, and where the keys lead. Everything about
 connections, sessions, frames, control codes and routing belongs to the
 framework, and everything about forums belongs here.
 
-The pages are in `pages`, each declared beside the function that builds it;
+The handlers are in `handlers`, each declared beside its function;
 `title_frame` draws the masthead and `post_page` deals one post into frames.
 This module is the assembly alone: the archive the service holds, the pages
 mapped into the numbering, and the words it uses for a page it has not got.
@@ -23,8 +23,8 @@ from sextile.addressing import PageAddress
 from sextile.application import Parting
 from sextile.handlers import contents, history, names
 from sextile.page import Page
-from stardot_viewdata import pages
-from stardot_viewdata.pages import ARCHIVE, SERVICE_NAME, day_title, ringing_off, unknown_page
+from stardot_viewdata import handlers
+from stardot_viewdata.handlers import ARCHIVE, SERVICE_NAME, day_title, ringing_off, unknown_page
 from stardot_viewdata.store.repository import Repository
 
 #: Named for the service rather than for the framework serving it, and
@@ -36,7 +36,7 @@ DEFAULT_DATABASE_FILEPATH: Final = Path("stardot.sqlite")
 #: that build them and gathered in the order the numbering runs, and three the
 #: framework builds and hands over as handlers, mapped into this numbering.
 PAGES: Final = (
-    *routes_in(pages),
+    *routes_in(handlers),
     PageRoute("92", history, title="Where you have been",
               detail="this call, newest first", keywords=("HISTORY", "BEEN")),
     PageRoute("93", contents, title="Every page",

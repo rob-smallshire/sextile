@@ -83,7 +83,7 @@ async def one_post(request: PageRequest, post_id: int) -> Page: ...
 app.address_for("post", post_id=post.post_id)
 ```
 
-`pages.py` holds those declarations and `application.py` gathers them with
+`handlers.py` holds those declarations and `application.py` gathers them with
 `routes_in`; `title_frame.py` draws the masthead, and `post_page.py` deals one
 post into frames.
 

@@ -19,6 +19,15 @@ have only one.
 The words are the framework's own and not taken from the routes. A description
 in a table of keys is a paraphrase and cannot come to be untrue; a *number* can,
 and did, which is why every number here is asked of the router instead.
+
+**Drawn here rather than by a template**, which is the one page of the five for
+which that is true. A template divides one list between as many frames as it
+takes; these two frames are two different lists, split by what a reader is
+doing rather than by what will fit, and the compass hangs off the foot of the
+first when the words above it have left the room. Neither is something a
+template could be given without becoming a second thing wearing the same name.
+What it does share with them -- the keys that turn a frame -- it shares
+properly, through `keys.moving`.
 """
 
 from collections.abc import Sequence
@@ -150,17 +159,8 @@ def _frame(
     return PageFrame(
         frame=canvas.frame,
         choices={keys.BACK: home} if home is not None else {},
-        moves=keys.with_arrows(_pressed(back=back, on=on)),
+        moves=keys.moving(back=back, on=on),
     )
-
-
-def _pressed(*, back: bool, on: bool) -> set[str]:
-    pressed = set()
-    if back:
-        pressed.add(keys.PREVIOUS_FRAME)
-    if on:
-        pressed.update({keys.NEXT_FRAME, keys.CONVENTIONAL_NEXT_FRAME})
-    return pressed
 
 
 def _prompt(*, back: bool, on: bool, home: PageAddress | None) -> str:

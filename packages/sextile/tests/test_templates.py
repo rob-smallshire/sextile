@@ -12,6 +12,7 @@ from sextile.page import Page
 from sextile.templates import (
     CHOICES_PER_FRAME,
     Entry,
+    Figures,
     Listing,
     Menu,
     MenuItem,
@@ -462,3 +463,105 @@ class TestAFarewell:
         #  The involuntary parting: the session drops the line itself, so the
         #  page need not insist.
         assert not farewell_page("RINGING OFF", hang_up=False).hang_up
+
+
+class TestFigures:
+    """A label and a figure a row, for a page that reports rather than offers.
+
+    The figures line up in a column of their own, because a column of numbers
+    that does not line up is a column a reader has to check twice.
+    """
+
+    def figures(self, *pairs: tuple[str, int]) -> list[MenuItem]:
+        return [MenuItem(text=label, detail=str(count)) for label, count in pairs]
+
+    def test_the_label_and_the_figure_are_both_shown(self) -> None:
+        shown = text_of(
+            Figures(
+                title="CALLERS",
+                entries=self.figures(("Last 24 hours", 4), ("Last 7 days", 19)),
+                home=at("1"),
+            ).build(at("98"))
+        )
+        assert "Last 24 hours" in shown
+        assert "Last 7 days" in shown
+        assert "4" in shown
+        assert "19" in shown
+
+    def test_the_figures_end_in_the_same_column(self) -> None:
+        rows = text_of(
+            Figures(
+                title="CALLERS",
+                entries=self.figures(("One", 4), ("A much longer label", 1908)),
+                home=at("1"),
+            ).build(at("98"))
+        ).splitlines()
+        written = [row for row in rows if "One" in row or "1908" in row]
+        assert len(written) == 2
+        ends = {len(row.rstrip()) for row in written}
+        assert len(ends) == 1, f"figures do not end in one column: {written}"
+
+    def test_nothing_to_report_says_so(self) -> None:
+        shown = text_of(
+            Figures(
+                title="CALLERS", entries=[], home=at("1"), empty="Nobody has called yet."
+            ).build(at("98"))
+        )
+        assert "Nobody has called yet." in shown
+
+    def test_a_figure_is_not_something_to_choose(self) -> None:
+        page = Figures(
+            title="CALLERS", entries=self.figures(("Last 7 days", 19)), home=at("1")
+        ).build(at("98"))
+        found = page.frame(0)
+        assert found is not None
+        assert found.destination("1") is None
+
+
+class TestAFootnote:
+    """What the entries above mean, said beneath them on every frame.
+
+    The same argument as the headings: a reader on frame c looking at a column
+    of figures has no way back to the words that say what they are.
+    """
+
+    NOTE = "A caller is one connection, counted once however long they stay."
+
+    def test_it_is_drawn_beneath_the_entries(self) -> None:
+        rows = text_of(
+            Menu(title="ITEMS", entries=items(2), home=at("1"), footnote=self.NOTE)
+            .build(at("8"))
+        ).splitlines()
+        said = next(number for number, row in enumerate(rows) if "A caller is one" in row)
+        last = max(number for number, row in enumerate(rows) if "Item 2" in row)
+        assert said > last
+
+    def test_it_is_on_every_frame(self) -> None:
+        page = Menu(
+            title="ITEMS", entries=items(12), home=at("1"), footnote=self.NOTE
+        ).build(at("8"))
+        assert len(page.frames) > 1
+        for index in range(len(page.frames)):
+            assert "A caller is one" in text_of(page, index)
+
+    def test_it_takes_its_room_from_the_entries(self) -> None:
+        #  Counted like the headings and not like the preamble: a footnote on
+        #  every frame costs its rows on every frame, and an entry written over
+        #  it would be an entry written over the rule at the foot as well. A
+        #  listing rather than a menu, a menu being capped at nine by the
+        #  digits before the rows ever come into it.
+        without = Listing(title="PAGES", entries=items(40), home=at("1")).build(at("9"))
+        with_note = Listing(
+            title="PAGES", entries=items(40), home=at("1"), footnote=self.NOTE
+        ).build(at("9"))
+        assert len(with_note.frames) > len(without.frames)
+
+    def test_it_is_said_even_where_there_is_nothing_to_say_it_about(self) -> None:
+        shown = text_of(
+            Menu(
+                title="ITEMS", entries=[], home=at("1"),
+                empty="Nothing yet.", footnote=self.NOTE,
+            ).build(at("8"))
+        )
+        assert "Nothing yet." in shown
+        assert "A caller is one" in shown

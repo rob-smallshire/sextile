@@ -1,8 +1,10 @@
 """What readers have been looking at, as pages a reader can look at.
 
-Two of them, and both are menus rather than tables: every row is a page number,
-so every row is somewhere to go. A list of what other people have been reading
-that you cannot follow is a list that has been written at you.
+What has been read lately and what has been read most are menus rather than
+tables: every row is a page number, so every row is somewhere to go. A list of
+what other people have been reading that you cannot follow is a list that has
+been written at you. How many have called is a table of figures, there being
+nothing to follow in a count.
 
 Registered nowhere, like the history, the contents and the words. A service
 maps them into its own numbering or does without.
@@ -18,15 +20,8 @@ from datetime import UTC, datetime, timedelta
 from typing import Final
 
 from sextile.addressing import PageAddress, keyed
-from sextile.page import Page, PageFrame
-from sextile.templates import Menu, MenuItem
-from sextile.viewdata.canvas import Canvas
-from sextile.viewdata.chrome import CONTENT_FIRST_ROW, draw_chrome
-from sextile.viewdata.controls import Colour
-from sextile.viewdata.encoding import cell_count
-from sextile.viewdata.footer import ROOM, FooterItem, Priority, render_footer
-from sextile.viewdata.frame import COLUMNS
-from sextile.viewdata.wrapping import wrap_text
+from sextile.page import Page
+from sextile.templates import Figures, Menu, MenuItem
 from sextile.visits import Visit
 
 #  Shouted, as every heading is: `Sextile.heading` upper-cases the title a
@@ -56,12 +51,6 @@ _WHAT_A_CALLER_IS: Final = (
 )
 
 _NOTHING_CALLED: Final = "Nobody has called yet."
-
-#: Where the figures sit: two cells of margin, the widest label, and then the
-#: count right-aligned against a column of its own.
-_LABEL_AT: Final = 2
-_COUNT_CELLS: Final = 6
-_GAP: Final = 2
 
 #  One string: what the two pages have to say about an empty log is the same
 #  thing, and two copies of it drift.
@@ -171,26 +160,15 @@ def callers_page(
     default periods end at thirty days because that is what the log keeps by
     default; a service that trims sooner should pass its own.
     """
-    canvas = Canvas()
-    draw_chrome(
-        canvas,
+    #  Nought against every period reads as a fault rather than as a service
+    #  that has only just been switched on, so it is the empty case too.
+    reporting = counts if any(count for _, count in counts) else ()
+    return Figures(
         title=title,
-        page_number=address.frame_number(0),
-        prompt=render_footer([FooterItem("0", "index", Priority.ESSENTIAL)], ROOM),
-    )
-    row = CONTENT_FIRST_ROW
-    if not counts or not any(count for _, count in counts):
-        canvas.row(row).text(_NOTHING_CALLED, Colour.WHITE)
-    else:
-        column = max(cell_count(label) for label, _ in counts) + _GAP
-        for offset, (label, count) in enumerate(counts):
-            written = canvas.row(row + offset)
-            written.skip(_LABEL_AT)
-            written.text(f"{label:<{column}}", Colour.WHITE)
-            written.text(f"{count:>{_COUNT_CELLS}}", Colour.CYAN)
-        row += len(counts) + 1
-    for offset, line in enumerate(wrap_text(_WHAT_A_CALLER_IS, COLUMNS - 1)):
-        canvas.row(row + offset + 1).text(line, Colour.GREEN)
-    return Page(
-        frames=(PageFrame(frame=canvas.frame, choices={"0": home}),)
-    )
+        entries=[
+            MenuItem(text=said, detail=str(count)) for said, count in reporting
+        ],
+        home=home,
+        empty=_NOTHING_CALLED,
+        footnote=_WHAT_A_CALLER_IS,
+    ).build(address)

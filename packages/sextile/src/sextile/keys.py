@@ -124,3 +124,27 @@ def arrows_lead_where[T](choices: Mapping[str, T]) -> dict[str, T]:
     return dict(choices) | {
         ARROW_FOR[key]: where for key, where in choices.items() if key in ARROW_FOR
     }
+
+
+def moving(*, back: bool, on: bool) -> frozenset[str]:
+    """The keys that move between the frames of one page, arrows included.
+
+    Args:
+        back: Whether there is a previous frame to go back to.
+        on: Whether there is a further frame to go on to.
+
+    Returns:
+        The keys the frame should answer, empty for a page of one frame.
+
+    `#` comes along wherever `S` does, so the conventional viewdata key keeps
+    working for a reader who never learns the rest, and the arrows come along
+    with both: a page divided into frames is a page a reader moves through in
+    the ordinary way. Said by the page rather than assumed by the session,
+    because what an arrow means is the page's business.
+    """
+    pressed = set()
+    if back:
+        pressed.add(PREVIOUS_FRAME)
+    if on:
+        pressed.update({NEXT_FRAME, CONVENTIONAL_NEXT_FRAME})
+    return with_arrows(pressed)

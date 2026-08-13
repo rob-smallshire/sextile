@@ -1,10 +1,11 @@
 """Divide a sequence of entries into the frames of a page, and draw them.
 
-Three shapes are ready to use, differing in how many entries a frame holds and
-how each one is drawn:
+The shapes ready to use, differing in how many entries a frame holds and how
+each one is drawn:
 
     Menu       nine entries a frame, each numbered, a line of detail beneath
     Listing    twenty entries a frame, none numbered, detail in a second column
+    Figures    a label and a figure a row, the figures aligned in one column
     Prose      running text, wrapped, in as many rows as it takes
 
 `Template` performs the part they have in common: dividing the entries between
@@ -12,10 +13,10 @@ frames, drawing the chrome, composing the prompt, and wiring up the keys that
 move from one frame to the next. A subclass supplies `rows_per_entry`, a
 `draw_entry`, and whether entries are `numbered`.
 
-A service needing a fourth shape subclasses `Template` or `RowTemplate` rather
-than starting again, which is why the base class is generic in the type of its
-entries: `Menu` and `Listing` divide up `Entry` values, `Prose` divides up
-rendered `Row` values.
+A service needing a shape that is not here subclasses `Template` or
+`RowTemplate` rather than starting again, which is why the base class is
+generic in the type of its entries: most of them divide up `Entry` values,
+`Prose` divides up rendered `Row` values.
 
 A template will accept anything satisfying the `Entry` protocol, so a service
 with a richer notion of a menu entry can pass that rather than convert it to a
@@ -30,12 +31,7 @@ from typing import TYPE_CHECKING, ClassVar, Final, Protocol, runtime_checkable
 
 from sextile.addressing import PageAddress
 from sextile.content.blocks import Document, Paragraph
-from sextile.keys import (
-    CONVENTIONAL_NEXT_FRAME,
-    NEXT_FRAME,
-    PREVIOUS_FRAME,
-    with_arrows,
-)
+from sextile.keys import NEXT_FRAME, PREVIOUS_FRAME, moving
 from sextile.page import Page, PageFrame
 from sextile.viewdata.canvas import Canvas, RowWriter, Run
 from sextile.viewdata.chrome import CONTENT_FIRST_ROW, CONTENT_ROWS, draw_chrome
@@ -45,7 +41,7 @@ from sextile.viewdata.encoding import cell_count, fitted
 from sextile.viewdata.footer import ROOM, FooterItem, Priority, movement, render_footer
 from sextile.viewdata.frame import COLUMNS
 from sextile.viewdata.layout import Row, rows_for
-from sextile.viewdata.wrapping import wrap_within
+from sextile.viewdata.wrapping import wrap_text, wrap_within
 
 if TYPE_CHECKING:
     from sextile.application import Sextile
@@ -102,6 +98,10 @@ CHOICES_PER_FRAME: Final = 9
 
 #: The key that leads home, on every frame of every template.
 HOME_KEY: Final = "0"
+
+#: One cell for the colour attribute of each of two columns, which a template
+#: setting one column against another has to leave room for.
+_ATTRIBUTES: Final = 2
 
 
 @runtime_checkable
@@ -201,6 +201,8 @@ class Template[E](ABC):
         empty: Text drawn in place of the entries when there are none.
         headings: A row labelling the columns, drawn on every frame.
         shortcuts: Keys offered on every frame, besides the digits and `0`.
+        footnote: Said beneath the entries on every frame, wrapped to the room
+            a row has.
 
     Type parameters:
         E: What one entry is. `Menu` and `Listing` fix this as `Entry`; a
@@ -257,6 +259,11 @@ class Template[E](ABC):
 
     #  Named in the prompt, so that a page cannot offer a key silently.
     shortcuts: Sequence[Shortcut] = ()
+
+    #  Beneath the entries on every frame, for the same reason the headings sit
+    #  above them on every frame: a reader on frame c looking at a column of
+    #  figures has no way back to the words that say what they are.
+    footnote: str = ""
 
     def __post_init__(self) -> None:
         self.shortcuts = tuple(self.shortcuts)
@@ -361,6 +368,7 @@ class Template[E](ABC):
                 choices[HOME_KEY] = self.home
             if not batch and self.empty:
                 canvas.row(row).text(fitted(self.empty, COLUMNS - 1), Colour.WHITE)
+                row += 1
             for offset, entry in enumerate(batch):
                 digit = str(offset + 1) if self.numbered else None
                 where = self.destination(entry) if digit is not None else None
@@ -368,11 +376,12 @@ class Template[E](ABC):
                     choices[digit] = where
                 self.draw_entry(canvas, row, entry, digit)
                 row += self.rows_per_entry + self.separation
+            self._draw_footnote(canvas, row)
             frames.append(
                 PageFrame(
                     frame=canvas.frame,
                     choices=choices,
-                    moves=_moves(back=back, on=on),
+                    moves=moving(back=back, on=on),
                 )
             )
         return Page(frames=tuple(frames))
@@ -393,6 +402,22 @@ class Template[E](ABC):
         #  read as two things.
         return row + 1 if self.preamble else row
 
+    def _draw_footnote(self, canvas: Canvas, row: int) -> None:
+        """Say what the entries mean, a blank row below the last of them."""
+        if not self.footnote:
+            return
+        for offset, line in enumerate(self._footnote_lines(), start=1):
+            canvas.row(row + offset).text(line, Colour.GREEN)
+
+    def _footnote_lines(self) -> Sequence[str]:
+        return wrap_text(self.footnote, COLUMNS - 1) if self.footnote else ()
+
+    @property
+    def footnote_rows(self) -> int:
+        """Rows the footnote occupies, including the blank row above it."""
+        lines = self._footnote_lines()
+        return len(lines) + 1 if lines else 0
+
     @property
     def preamble_rows(self) -> int:
         """Rows the preamble occupies, including the blank row after it."""
@@ -410,9 +435,10 @@ class Template[E](ABC):
         #  Headings cost their row on every frame, not only the first: counting
         #  them once would write the last entry of every later frame over the
         #  rule at the foot of it.
-        labelled = 1 if self.headings else 0
-        first = self._capacity(self.preamble_rows + labelled)
-        rest = max(self._capacity(labelled), 1)
+        #  A footnote is charged the same way and for the same reason.
+        fixed = (1 if self.headings else 0) + self.footnote_rows
+        first = self._capacity(self.preamble_rows + fixed)
+        rest = max(self._capacity(fixed), 1)
         batches: list[Sequence[E]] = []
         start = 0
         while start < len(self.entries):
@@ -581,7 +607,7 @@ class Listing(RowTemplate[Entry]):
         to a row with an empty left column, it reads as what it is, because
         which column a thing is in is what tells the two apart.
         """
-        room = COLUMNS - self.column - self.ATTRIBUTES
+        room = COLUMNS - self.column - _ATTRIBUTES
         carried: list[Entry] = []
         for entry in entries:
             lines = wrap_within(entry.detail, cells=room, rows=2) or [""]
@@ -596,6 +622,64 @@ class Listing(RowTemplate[Entry]):
     def draw(self, row: RowWriter, entry: Entry, digit: str | None) -> None:
         del digit  # a listing numbers nothing
         key_row(row, entry.text, entry.detail, column=self.column)
+
+
+class Figures(RowTemplate[Entry]):
+    """A label and a figure a row, the figures right-aligned in one column.
+
+    For a page that reports rather than offers: how many callers, how much is
+    held, how long since. The entry's `text` is the label and its `detail` is
+    the figure, already written out as the page wants it read. Nothing is
+    selectable, a figure being something to look at rather than somewhere to
+    go.
+
+    The figures share a column and are right-aligned within it, so that their
+    units line up under each other. A column of numbers that does not line up
+    is a column a reader has to check twice.
+
+    Example::
+
+        Figures(
+            title="WHO HAS CALLED",
+            entries=[MenuItem(text=said, detail=str(count)) for said, count in counts],
+            home=INDEX,
+            empty="Nobody has called yet.",
+            footnote="A caller is one connection.",
+        ).build(address)
+    """
+
+    rows_per_entry = 1
+    numbered = False
+
+    #: Two cells of margin before the label. A table of figures reads as a
+    #: block rather than as a list, and a block wants a margin.
+    INDENT: Final = 2
+
+    #: A cell between the longest label and its figure, over and above the
+    #: attribute cell that colours the figure. Without it the widest label in
+    #: the table runs straight into the number beside it.
+    _GAP: Final = 1
+
+    def __post_init__(self) -> None:
+        super().__post_init__()
+        self.figure = max(
+            (cell_count(entry.detail) for entry in self.entries), default=0
+        )
+        widest = max((cell_count(entry.text) for entry in self.entries), default=0)
+        self.label = min(widest + self._GAP, self._room())
+
+    def _room(self) -> int:
+        """The most the labels may take, the figures having their column first."""
+        return COLUMNS - self.INDENT - self.figure - _ATTRIBUTES
+
+    def draw(self, row: RowWriter, entry: Entry, digit: str | None) -> None:
+        del digit  # a figure numbers nothing
+        row.skip(self.INDENT)
+        #  The label is padded rather than the figure indented, so that one
+        #  long label pushes the whole column of figures right and no figure
+        #  ends up under a label.
+        row.text(fitted(entry.text, self.label).ljust(self.label), Colour.WHITE)
+        row.text(entry.detail.rjust(self.figure), Colour.CYAN)
 
 
 class Prose(RowTemplate[Row]):
@@ -708,17 +792,5 @@ def _last_content_row() -> int:
     return CONTENT_FIRST_ROW + CONTENT_ROWS
 
 
-def _moves(*, back: bool, on: bool) -> frozenset[str]:
-    pressed = set()
-    if back:
-        pressed.add(PREVIOUS_FRAME)
-    if on:
-        #  `#` comes along wherever `S` does, so the conventional viewdata key
-        #  keeps working for a reader who never learns the rest.
-        pressed.update({NEXT_FRAME, CONVENTIONAL_NEXT_FRAME})
-    #  And the arrows, because a page dealt into frames is a page a reader
-    #  moves through in the ordinary way. Said here rather than assumed by the
-    #  session: what an arrow means is the page's business.
-    return with_arrows(pressed)
 
 

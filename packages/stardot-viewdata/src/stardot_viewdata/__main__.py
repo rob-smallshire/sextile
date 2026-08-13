@@ -38,6 +38,7 @@ from stardot_viewdata.store.repository import Repository
 
 
 def build_parser() -> argparse.ArgumentParser:
+    """The command line this service answers to, subcommands and all."""
     parser = argparse.ArgumentParser(
         prog="stardot-viewdata", description="A Viewdata service for the Stardot forum"
     )
@@ -84,6 +85,15 @@ def _add_database_argument(parser: argparse.ArgumentParser) -> None:
 
 
 def main(argv: Sequence[str] | None = None) -> int:
+    """Run one command.
+
+    Args:
+        argv: The arguments after the program name, or None to take
+            them from `sys.argv`.
+
+    Returns:
+        The process exit status: nought where the command succeeded.
+    """
     parser = build_parser()
     arguments = parser.parse_args(argv)
 

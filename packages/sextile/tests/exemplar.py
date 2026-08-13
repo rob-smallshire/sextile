@@ -28,11 +28,11 @@ ITEMS: Final = 25
 class Board(Sextile):
     """A service of no particular kind.
 
-        1           the front page
-        8           its items, nine to a frame
-        82<id>      one item
-        9           a notice, in one frame
-        90          goodbye
+    1           the front page
+    8           its items, nine to a frame
+    82<id>      one item
+    9           a notice, in one frame
+    90          goodbye
     """
 
     def __init__(self) -> None:

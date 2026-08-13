@@ -146,7 +146,9 @@ class TestWhatWasTypedIsWhatIsHeld:
 
 
 class TestTheCommandLineGivesTheCursorBack:
-    """`*` opens a request, a second `*` cancels it, and the field wants its
+    """Cancelling a request puts the cursor back in the field it left.
+
+    `*` opens a request, a second `*` cancels it, and the field wants its
     cursor back.
 
     Putting the footer back begins by hiding the cursor, which is right --

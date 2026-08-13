@@ -198,6 +198,16 @@ def rendered(frame: Frame, form: str, *, colour: bool) -> str:
 
 
 def hex_dump(data: bytes, width: int = 16) -> str:
+    """Lay bytes out as offset, hexadecimal and printable characters.
+
+    Args:
+        data: The bytes to show.
+        width: How many bytes to a line.
+
+    Returns:
+        The dump, one line a row of `width` bytes, with unprintable bytes
+        shown as full stops.
+    """
     lines = []
     for offset in range(0, len(data), width):
         chunk = data[offset : offset + width]

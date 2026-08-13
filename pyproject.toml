@@ -62,7 +62,24 @@ src = [
 extend-exclude = ["docs/spikes"]
 
 [tool.ruff.lint]
-select = ["E", "F", "I", "UP", "B", "SIM"]
+select = ["E", "F", "I", "UP", "B", "SIM", "D"]
+#  D102 asks for a docstring on every public method, which here would mostly be
+#  a restatement of the signature or of the base class the method overrides.
+#  The conventions in CLAUDE.md are against padding of that kind, so a method is
+#  documented when it has something to say. D105 and D107 go for the same
+#  reason: what a magic method means is fixed by the protocol, and this codebase
+#  builds its objects with dataclasses rather than by hand.
+ignore = ["D102", "D105", "D107"]
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
+[tool.ruff.lint.per-file-ignores]
+#  A test says what it is about in its name, and a name needing a docstring to
+#  explain it wants rewriting instead. The rules about how a docstring is
+#  written still apply to the ones that are there.
+"**/tests/**" = ["D1"]
+"tools/test_*.py" = ["D1"]
 
 [tool.mypy]
 strict = true

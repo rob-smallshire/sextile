@@ -1,4 +1,4 @@
-"""Reducing arbitrary Unicode to characters the G0 set can display.
+r"""Reducing arbitrary Unicode to characters the G0 set can display.
 
 Transliteration is total: every input produces output that is displayable, with
 an explicit question mark standing for anything genuinely beyond reach. The
@@ -16,7 +16,7 @@ decompose them and why each had to be listed by hand in the first place.
 
 What is left here is the part no library can know: **which ASCII characters the
 G0 set has not got.** Ten of them, their code points occupied by arrows,
-fractions and rules, so `[` and `\\` and `~` need spelling some other way
+fractions and rules, so `[` and `\` and `~` need spelling some other way
 whatever produced them -- including `anyascii` itself, whose output is therefore
 put through the same table.
 

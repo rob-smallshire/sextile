@@ -128,6 +128,16 @@ def _moves(moving: dict[str, str]) -> frozenset[str]:
 
 
 def neighbour_choices(arrival: Arrival) -> dict[str, PageAddress]:
+    """The keys leading to the posts either side of this one in its list.
+
+    Args:
+        arrival: How the reader reached this post, which is what knows what
+            came before and after it.
+
+    Returns:
+        The next and previous keys that have somewhere to lead, with the
+        arrows leading to the same places.
+    """
     choices: dict[str, PageAddress] = {}
     if arrival.following is not None:
         choices[NEXT_ITEM_KEY] = arrival.following

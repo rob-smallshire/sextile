@@ -784,8 +784,12 @@ class Sextile(Application):
 
 
 def _wrap(middleware: Middleware, build: Next) -> Next:
-    """One link of the chain. A function so the closure captures this loop's
-    values rather than the last ones, which is the oldest bug in the world."""
+    """Bind one middleware to the rest of the chain below it.
+
+    A function rather than a closure written in place, so that it captures this
+    iteration's values rather than the last iteration's, which is the oldest
+    bug in the world.
+    """
 
     async def wrapped(request: PageRequest) -> Page | None:
         return await middleware(request, build)

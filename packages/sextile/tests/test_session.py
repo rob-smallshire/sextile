@@ -639,9 +639,11 @@ class TestTheIdleWarning:
 
 
 class TestTheWarningOverAPartTypedRequest:
-    """The command line has the same row, and being cut off mid-request is
-    the rudest thing the service can do. So the bar covers it: what was typed
-    is held in the parser, not on the screen, and comes back untouched.
+    """A part-typed request survives the warning that shares its row.
+
+    The command line has the same row, and being cut off mid-request is the
+    rudest thing the service can do. So the bar covers it: what was typed is
+    held in the parser, not on the screen, and comes back untouched.
 
     Nothing is swallowed here. While a request is being typed no key navigates
     -- digits accumulate, `*` cancels, DELETE rubs out -- so every key can

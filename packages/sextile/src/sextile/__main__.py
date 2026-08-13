@@ -31,6 +31,7 @@ from sextile.demo import demo_frame
 
 
 def build_parser() -> argparse.ArgumentParser:
+    """The command line this service answers to, subcommands and all."""
     parser = argparse.ArgumentParser(
         prog="sextile", description="A framework for Viewdata services"
     )
@@ -55,6 +56,15 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def main(argv: Sequence[str] | None = None) -> int:
+    """Run one command.
+
+    Args:
+        argv: The arguments after the program name, or None to take
+            them from `sys.argv`.
+
+    Returns:
+        The process exit status: nought where the command succeeded.
+    """
     parser = build_parser()
     arguments = parser.parse_args(argv)
 

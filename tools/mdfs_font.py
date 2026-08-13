@@ -113,6 +113,15 @@ def _glyph(picture: Sequence[str], tracking: int, space: int) -> Glyph:
 
 
 def main(argv: Sequence[str] | None = None) -> int:
+    """Turn one MDFS font file into a Sextile mosaic font.
+
+    Args:
+        argv: The arguments after the program name, or None to take them
+            from `sys.argv`.
+
+    Returns:
+        The process exit status: nought where the conversion succeeded.
+    """
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("source_filepath", type=Path, help="an MDFS font file")
     parser.add_argument("name", help="what to call the face in the font file")

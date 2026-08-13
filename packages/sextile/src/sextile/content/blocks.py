@@ -37,6 +37,8 @@ class Code:
 
 @dataclass(frozen=True)
 class ListItem:
+    """One item of a bulleted or numbered list."""
+
     text: str
 
 

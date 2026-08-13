@@ -180,8 +180,21 @@ class Suggest(Form):
         field: Colour = FIELD_BACKGROUND,
         typing: Colour = FIELD_COLOUR,
     ) -> None:
-        """``label`` should not end in a space: the attribute that follows it
-        occupies a cell and shows as one already."""
+        """Set up the field, its label, and the list of suggestions beneath it.
+
+        Args:
+            look_up: Awaited with what has been typed, returning the entries to
+                suggest.
+            field_row: The row the field itself occupies.
+            first_row: The row the suggestions begin on.
+            label: Drawn before the field. It should not end in a space: the
+                colour attribute that follows it occupies a cell and shows as
+                one already.
+            limit: The most suggestions to offer at once.
+            empty: Said where something has been typed and nothing matched it.
+            field: The background colour of the field.
+            typing: The colour of what the reader has typed.
+        """
         self._look_up = look_up
         self._field_row = field_row
         self._first_row = first_row

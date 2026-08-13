@@ -90,6 +90,7 @@ def _today(request: PageRequest) -> date:
 
 
 async def main(request: PageRequest) -> Page:
+    """The index: today's date, and the four pages the service offers."""
     app = Sextile.of(request)
     today = _today(request)
     return _menu(
@@ -107,6 +108,7 @@ async def main(request: PageRequest) -> Page:
 
 
 async def now_page(request: PageRequest) -> Page:
+    """The time now, to the second, with the key that asks again."""
     moment = _now(request)
     return _notice(
         Sextile.of(request),
@@ -124,14 +126,17 @@ async def now_page(request: PageRequest) -> Page:
 
 
 async def this_month(request: PageRequest) -> Page:
+    """The current month as a grid, taken from the request's own clock."""
     return _month_page(Sextile.of(request), request.address, _today(request))
 
 
 async def month(request: PageRequest, day: date) -> Page:
+    """The month a given day falls in, as a grid."""
     return _month_page(Sextile.of(request), request.address, day)
 
 
 async def ahead(request: PageRequest) -> Page:
+    """The next `DAYS_AHEAD` days, each with how far off it is in words."""
     app = Sextile.of(request)
     today = _today(request)
     days = [today + timedelta(days=offset) for offset in range(DAYS_AHEAD)]
@@ -146,6 +151,7 @@ async def ahead(request: PageRequest) -> Page:
 
 
 async def one_day(request: PageRequest, day: date) -> Page:
+    """One day, with its place in the week, the month and the year."""
     app = Sextile.of(request)
     _, weeks_in_year, _ = day.isocalendar()
     lines = [
@@ -190,6 +196,7 @@ async def one_day(request: PageRequest, day: date) -> Page:
 
 
 async def about(request: PageRequest) -> Page:
+    """What the service is, and why a calendar was chosen for it."""
     app = Sextile.of(request)
     return Prose.of(
         "A calendar, served as Viewdata frames.",
@@ -203,6 +210,7 @@ async def about(request: PageRequest) -> Page:
 
 
 async def goodbye(request: PageRequest) -> Page:
+    """The farewell frame, after which the line drops."""
     return farewell_page("GOODBYE", "Thank you for calling.", "", "Ring off.")
 
 

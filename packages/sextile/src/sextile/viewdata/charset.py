@@ -1,4 +1,4 @@
-"""The teletext G0 character set displayed by the SAA5050 in BBC Mode 7.
+r"""The teletext G0 character set displayed by the SAA5050 in BBC Mode 7.
 
 G0 occupies positions 0x20-0x7F and coincides with ASCII everywhere except the
 thirteen national-option positions, which here take their English values per
@@ -6,7 +6,7 @@ ETS 300 706. Two of those transpositions bite immediately: 0x23 displays a pound
 sign rather than a hash, and the hash -- the viewdata command key -- sits at 0x5F.
 
 Ten characters a modern keyboard offers have no G0 representation at all:
-``[ \\ ] ^ _ ` { | } ~``. Those positions are occupied by arrows, fractions and
+``[ \ ] ^ _ ` { | } ~``. Those positions are occupied by arrows, fractions and
 rules instead. Quoted source code meets them constantly, so
 ``encode_g0`` reports them as unrepresentable rather than guessing; deciding what
 to show in their place belongs to the transliteration layer.

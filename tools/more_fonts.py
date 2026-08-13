@@ -224,6 +224,15 @@ def _glyph(
 
 
 def main(argv: Sequence[str] | None = None) -> int:
+    """Turn one `more-fonts` Lua font into a Sextile mosaic font.
+
+    Args:
+        argv: The arguments after the program name, or None to take them
+            from `sys.argv`.
+
+    Returns:
+        The process exit status: nought where the conversion succeeded.
+    """
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("source_filepath", type=Path, help="a more-fonts Lua font")
     parser.add_argument("--name", default=None, help="what to call the converted face")

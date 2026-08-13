@@ -151,9 +151,11 @@ class TestPostFields:
 
 
 class TestTopicFeedsAreShapedDifferently:
-    """Per-topic feeds carry no `<category>`, and their titles have no forum
-    name prepended. They used to leave a post not knowing its forum at all;
-    the `rel="up"` link the board added now supplies it.
+    """A post from a per-topic feed learns its forum from the `rel="up"` link.
+
+    Per-topic feeds carry no `<category>`, and their titles have no forum name
+    prepended. They used to leave a post not knowing its forum at all; the
+    `rel="up"` link the board added now supplies it.
     """
 
     def test_a_topic_feed_names_its_forum_through_the_up_link(self) -> None:

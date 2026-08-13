@@ -193,8 +193,13 @@ would be:
 Prose(title="...", entries=rows_for(document), home=self.index)
 ```
 
-For a shape none of the three has, subclass `Template` and say how tall an entry
-is and how to draw it; the pagination, chrome and keys come with it.
+For a shape none of the three has, subclass `RowTemplate` and say how tall an
+entry is and how to draw its rows; the pagination, chrome and keys come with
+it. A shape placed by cell rather than written along its rows — a mosaic
+picture several rows tall — subclasses `Template` itself and writes
+`draw_entry`, which gets the canvas and the row the entry starts on. Both are
+dataclasses, so a subclass adding something an entry needs — a date to mark,
+a column to size — declares a field rather than writing a constructor.
 
 ## Pages, frames and keys
 

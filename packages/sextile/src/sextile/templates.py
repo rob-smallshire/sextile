@@ -141,13 +141,19 @@ class MenuItem:
         )
 
 
+@dataclass(kw_only=True, eq=False)
 class Template[E](ABC):
-    """Rows dealt into frames, with the chrome and keys that go with them.
+    """Entries dealt into frames, with the chrome and keys that go with them.
 
     A subclass says how tall an entry is, how to draw one, and whether entries
     can be chosen. Everything else -- pagination, the header, the prompt, the
     keys that move between frames, and the way home -- happens here, the same
     way on every page that uses one.
+
+    The primitive is `draw_entry`, which gets the canvas and the row an entry
+    starts on: the right shape for a picture placed by cell. A shape written
+    along its rows -- which is most of them -- subclasses `RowTemplate`
+    instead and writes `draw` and `draw_detail`.
     """
 
     #: Rows one entry occupies, which decides how many fit on a frame.
@@ -165,61 +171,47 @@ class Template[E](ABC):
     #: What the prompt says about choosing, where there is anything to choose.
     selecting_hint: ClassVar[FooterItem | None] = None
 
-    def __init__(
-        self,
-        *,
-        title: str,
-        entries: Sequence[E],
-        home: PageAddress | None = None,
-        preamble: Sequence[PreambleLine] = (),
-        empty: str = "",
-        headings: str = "",
-        shortcuts: Sequence[Shortcut] = (),
-    ) -> None:
-        self.title = title
-        self.entries = entries
-        self.home = home
-        #: Keys offered on every frame, over and above the digits and the way
-        #: home. Named in the prompt, so a page cannot offer one silently.
-        self.shortcuts = tuple(shortcuts)
-        self.preamble = tuple(preamble)
-        #: What the columns beneath mean, drawn on *every* frame. A preamble is
-        #: a lead-in and belongs on the first frame only; headings are not, and
-        #: a reader on frame c looking at a column of figures has no way back
-        #: to the words that say what they are.
-        self.headings = headings
-        #  Said instead of showing an empty frame: on a service that answers
-        #  slowly, nothing at all is indistinguishable from a fault.
-        self.empty = empty
+    title: str
+
+    entries: Sequence[E]
+
+    home: PageAddress | None = None
+
+    preamble: Sequence[PreambleLine] = ()
+
+    empty: str = ""
+    """Said instead of showing an empty frame: on a service that answers
+    slowly, nothing at all is indistinguishable from a fault."""
+
+    headings: str = ""
+    """What the columns beneath mean, drawn on *every* frame. A preamble is
+    a lead-in and belongs on the first frame only; headings are not, and
+    a reader on frame c looking at a column of figures has no way back
+    to the words that say what they are."""
+
+    shortcuts: Sequence[Shortcut] = ()
+    """Keys offered on every frame, over and above the digits and the way
+    home. Named in the prompt, so a page cannot offer one silently."""
+
+    def __post_init__(self) -> None:
+        self.shortcuts = tuple(self.shortcuts)
+        self.preamble = tuple(self.preamble)
 
     # -- what a subclass decides --------------------------------------------
 
     @abstractmethod
-    def draw(self, row: RowWriter, entry: E, digit: str | None) -> None:
-        """Draw one entry's first row. Later rows are `draw_detail`'s."""
-
-    #  Empty on purpose, and not abstract: a shape one row tall has no second
-    #  row to draw.
-    def draw_detail(self, row: RowWriter, entry: E) -> None:  # noqa: B027
-        """Draw an entry's second row, where the shape has one."""
-
     def draw_entry(
         self, canvas: Canvas, row: int, entry: E, digit: str | None
     ) -> None:
         """Draw a whole entry, given the canvas and the row it starts on.
 
-        The seam for a shape that is not written along a row: mosaic pictures
-        are placed by cell and may be several rows tall, and a row writer walks
-        one row from left to right. Overriding this gets the canvas and the
-        arithmetic about where the entry begins, and leaves the pagination, the
-        chrome and the keys where they are.
-
-        The default is what every shape made of text wants, and is why `draw`
-        and `draw_detail` are the usual things to override rather than this.
+        The canvas and the arithmetic about where the entry begins, with the
+        pagination, the chrome and the keys staying up here. Mosaic pictures
+        are placed by cell and may be several rows tall, which is why this is
+        the primitive rather than a row writer: a row writer walks one row
+        from left to right, the wrong shape for a picture and the right shape
+        for everything else -- which is what `RowTemplate` is for.
         """
-        self.draw(canvas.row(row), entry, digit)
-        if self.rows_per_entry > 1 and row + 1 < _last_content_row():
-            self.draw_detail(canvas.row(row + 1), entry)
 
     def destination(self, entry: E) -> PageAddress | None:
         """Where choosing this entry leads. Nowhere, unless a shape says so."""
@@ -352,7 +344,34 @@ class Template[E](ABC):
         return min(room, CHOICES_PER_FRAME) if self.numbered else room
 
 
-class Menu(Template[Entry]):
+class RowTemplate[E](Template[E]):
+    """A template whose entries are written along their rows.
+
+    The shape most pages take: a subclass writes an entry's first row in
+    `draw` and its second in `draw_detail`, and this walks the rows. A shape
+    placed by cell -- a picture several rows tall -- subclasses `Template`
+    and writes `draw_entry` itself, rather than writing a `draw` that does
+    nothing.
+    """
+
+    @abstractmethod
+    def draw(self, row: RowWriter, entry: E, digit: str | None) -> None:
+        """Draw one entry's first row. Later rows are `draw_detail`'s."""
+
+    #  Empty on purpose, and not abstract: a shape one row tall has no second
+    #  row to draw.
+    def draw_detail(self, row: RowWriter, entry: E) -> None:  # noqa: B027
+        """Draw an entry's second row, where the shape has one."""
+
+    def draw_entry(
+        self, canvas: Canvas, row: int, entry: E, digit: str | None
+    ) -> None:
+        self.draw(canvas.row(row), entry, digit)
+        if self.rows_per_entry > 1 and row + 1 < _last_content_row():
+            self.draw_detail(canvas.row(row + 1), entry)
+
+
+class Menu(RowTemplate[Entry]):
     """Nine choices to a frame, each with a line of detail beneath it.
 
     The shape most viewdata pages take: a reader selects with one keypress, so
@@ -376,7 +395,7 @@ class Menu(Template[Entry]):
             row.skip(2).text(fitted(entry.detail, COLUMNS - 4), Colour.GREEN)
 
 
-class Listing(Template[Entry]):
+class Listing(RowTemplate[Entry]):
     """Two columns, twenty to a frame, nothing to select.
 
     For a page that is a reference rather than a menu -- what a service is made
@@ -404,8 +423,8 @@ class Listing(Template[Entry]):
         """
         return cls._WIDEST
 
-    def __init__(self, **wanted: object) -> None:
-        super().__init__(**wanted)  # type: ignore[arg-type]
+    def __post_init__(self) -> None:
+        super().__post_init__()
         widest = max((cell_count(entry.text) for entry in self.entries), default=0)
         self.column = min(widest + 1, self._WIDEST)
         self.entries = self._wrapped(self.entries)
@@ -439,7 +458,7 @@ class Listing(Template[Entry]):
         key_row(row, entry.text, entry.detail, column=self.column)
 
 
-class Prose(Template[Row]):
+class Prose(RowTemplate[Row]):
     """Running text, wrapped and dealt into frames.
 
     The third shape, and the one every notice page was writing out by hand --

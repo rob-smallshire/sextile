@@ -133,14 +133,6 @@ _FOOTER_ATTRIBUTE: Final = 1
 # -- what a page reaches through the request ---------------------------------
 
 
-def _service(request: PageRequest) -> Sextile:
-    """The application a page belongs to, narrowed to the one it is."""
-    app = request.application
-    if not isinstance(app, Sextile):
-        raise RuntimeError("this page was asked for outside a running service")
-    return app
-
-
 async def _read[T](request: PageRequest, query: Callable[[Repository], T]) -> T:
     """Ask the archive something, off the event loop.
 
@@ -154,7 +146,7 @@ async def _read[T](request: PageRequest, query: Callable[[Repository], T]) -> T:
 
 
 async def _main_index(request: PageRequest) -> Page:
-    app = _service(request)
+    app = Sextile.of(request)
     held = await _read(request, lambda repository: repository.count_posts())
     items = [
         MenuItem.for_page(app, name)
@@ -180,13 +172,13 @@ async def _main_index(request: PageRequest) -> Page:
 
 
 async def _latest_posts(request: PageRequest) -> Page:
-    app = _service(request)
+    app = Sextile.of(request)
     posts = await _read(request, lambda repository: repository.latest_posts(limit=60))
     return _posts_menu(app, request.address, posts)
 
 
 async def _days_index(request: PageRequest) -> Page:
-    app = _service(request)
+    app = Sextile.of(request)
     days = await _read(request, lambda repository: repository.days(limit=60))
     if not days:
         return _notice(app, request.address, None, ["NO POSTS held yet."])
@@ -202,13 +194,13 @@ async def _days_index(request: PageRequest) -> Page:
 
 
 async def _day(request: PageRequest, day: date) -> Page:
-    app = _service(request)
+    app = Sextile.of(request)
     posts = await _read(request, lambda repository: repository.posts_on(day))
     return _posts_menu(app, request.address, posts, _day_title(day))
 
 
 async def _forums_index(request: PageRequest) -> Page:
-    app = _service(request)
+    app = Sextile.of(request)
     forums = await _read(request, lambda repository: repository.forums())
     if not forums:
         return _notice(app, request.address, None, ["NO POSTS held yet."])
@@ -224,7 +216,7 @@ async def _forums_index(request: PageRequest) -> Page:
 
 
 async def _forum(request: PageRequest, forum_id: int) -> Page:
-    app = _service(request)
+    app = Sextile.of(request)
     posts = await _read(request, lambda repository: repository.posts_in_forum(forum_id))
     #  Ask the archive rather than the post: a post first seen in a
     #  per-topic feed knows its forum's id but not its name, and the archive
@@ -236,7 +228,7 @@ async def _forum(request: PageRequest, forum_id: int) -> Page:
 
 
 async def _contributors_index(request: PageRequest) -> Page:
-    app = _service(request)
+    app = Sextile.of(request)
     contributors = await _read(request, lambda repository: repository.contributors())
     if not contributors:
         return _notice(app, request.address, None, ["NO POSTS held yet."])
@@ -252,14 +244,14 @@ async def _contributors_index(request: PageRequest) -> Page:
 
 
 async def _contributor(request: PageRequest, user_id: int) -> Page:
-    app = _service(request)
+    app = Sextile.of(request)
     posts = await _read(request, lambda repository: repository.posts_by_author(user_id))
     title = posts[0].author_name if posts else f"USER {user_id}"
     return _posts_menu(app, request.address, posts, title)
 
 
 async def _topics_index(request: PageRequest) -> Page:
-    app = _service(request)
+    app = Sextile.of(request)
     topics = await _read(request, lambda repository: repository.topics(limit=60))
     if not topics:
         return Prose.of(
@@ -281,7 +273,7 @@ async def _topics_index(request: PageRequest) -> Page:
 
 
 async def _topic(request: PageRequest, topic_id: int) -> Page:
-    app = _service(request)
+    app = Sextile.of(request)
     posts = await _read(request, lambda repository: repository.posts_in_topic(topic_id))
     title = posts[0].topic_title if posts else f"TOPIC {topic_id}"
     return _posts_menu(app, request.address, posts, title)
@@ -336,7 +328,7 @@ def _menu(
 
 
 async def _post(request: PageRequest, post_id: int) -> Page:
-    app = _service(request)
+    app = Sextile.of(request)
     post = await _read(request, lambda repository: repository.post(post_id))
     if post is None:
         return Prose.of(
@@ -389,7 +381,7 @@ async def _title(request: PageRequest) -> Page:
     No page number in the header, because `*0#` is the back command and a
     number a reader cannot key is an instruction that misleads them.
     """
-    app = _service(request)
+    app = Sextile.of(request)
     held = await _read(request, lambda repository: repository.count_posts())
     canvas = Canvas()
     #  The rule sits on the top row rather than the second, so that the
@@ -485,7 +477,7 @@ async def _help(request: PageRequest) -> Page:
     it describes is worse than none. What is left for a service is the rows
     only it can know, which here are the pages it keeps its own numbers for.
     """
-    app = _service(request)
+    app = Sextile.of(request)
     return await app.guide(
         request,
         asking=[
@@ -499,22 +491,22 @@ async def _help(request: PageRequest) -> Page:
 
 async def _history(request: PageRequest) -> Page:
     """The framework's page, at this service's number."""
-    return await _service(request).history(request)
+    return await Sextile.of(request).history(request)
 
 
 async def _names(request: PageRequest) -> Page:
     """The framework's page, at this service's number."""
-    app = _service(request)
+    app = Sextile.of(request)
     return await app.names(request)
 
 
 async def _contents(request: PageRequest) -> Page:
     """The framework's page, at this service's number."""
-    return await _service(request).contents(request)
+    return await Sextile.of(request).contents(request)
 
 
 async def _about(request: PageRequest) -> Page:
-    app = _service(request)
+    app = Sextile.of(request)
     held = await _read(request, lambda repository: repository.count_posts())
     return Prose.of(
         "A Viewdata service carrying posts from stardot.org.uk, for users "
@@ -534,7 +526,7 @@ async def _about(request: PageRequest) -> Page:
 
 
 async def _logoff(request: PageRequest) -> Page:
-    app = _service(request)
+    app = Sextile.of(request)
     return _farewell(
         app,
         "GOODBYE",

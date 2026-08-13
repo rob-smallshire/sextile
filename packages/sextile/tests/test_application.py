@@ -1123,6 +1123,38 @@ class TestAPageKnowingItsService:
         #  Which is right: there is no service behind it.
         assert PageRequest(address=PageAddress("1")).application is None
 
+    async def test_app_is_the_service_without_the_none(self) -> None:
+        seen: list[Application] = []
+
+        async def main(request: PageRequest) -> Page:
+            seen.append(request.app)
+            return Page(frames=(PageFrame(frame=Canvas().frame),))
+
+        app = Sextile(pages=[PageRoute("1", main, name="main")])
+        await Session(app).greeting()
+        assert seen == [app]
+
+    async def test_app_on_a_bare_request_says_what_is_wrong(self) -> None:
+        with pytest.raises(RuntimeError, match="outside a running service"):
+            PageRequest(address=PageAddress("1")).app  # noqa: B018
+
+    async def test_sextile_of_narrows_to_the_routing_application(self) -> None:
+        app = Sextile(pages=[PageRoute("1", _nothing, name="main")])
+
+        request = PageRequest(address=PageAddress("1"), application=app)
+
+        assert Sextile.of(request) is app
+
+    async def test_sextile_of_refuses_an_application_that_does_not_route(self) -> None:
+        class Bare(Application):
+            async def respond(self, request: PageRequest) -> Page | None:
+                return None
+
+        request = PageRequest(address=PageAddress("1"), application=Bare())
+
+        with pytest.raises(RuntimeError, match="numbering"):
+            Sextile.of(request)
+
 
 class TestAskingForAPageWithoutASocket:
     """What a test, a renderer or a tool does instead of building a request.

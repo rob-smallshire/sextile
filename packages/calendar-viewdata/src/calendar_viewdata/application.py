@@ -85,18 +85,11 @@ def _today(request: PageRequest) -> date:
     return _now(request).date()
 
 
-def _service(request: PageRequest) -> Sextile:
-    app = request.application
-    if not isinstance(app, Sextile):
-        raise RuntimeError("this page was asked for outside a running service")
-    return app
-
-
 # -- the pages ---------------------------------------------------------------
 
 
 async def main(request: PageRequest) -> Page:
-    app = _service(request)
+    app = Sextile.of(request)
     today = _today(request)
     return _menu(
         app,
@@ -115,7 +108,7 @@ async def main(request: PageRequest) -> Page:
 async def now_page(request: PageRequest) -> Page:
     moment = _now(request)
     return _notice(
-        _service(request),
+        Sextile.of(request),
         request.address,
         None,
         [
@@ -130,15 +123,15 @@ async def now_page(request: PageRequest) -> Page:
 
 
 async def this_month(request: PageRequest) -> Page:
-    return _month_page(_service(request), request.address, _today(request))
+    return _month_page(Sextile.of(request), request.address, _today(request))
 
 
 async def month(request: PageRequest, day: date) -> Page:
-    return _month_page(_service(request), request.address, day)
+    return _month_page(Sextile.of(request), request.address, day)
 
 
 async def ahead(request: PageRequest) -> Page:
-    app = _service(request)
+    app = Sextile.of(request)
     today = _today(request)
     days = [today + timedelta(days=offset) for offset in range(DAYS_AHEAD)]
     return _menu(
@@ -152,7 +145,7 @@ async def ahead(request: PageRequest) -> Page:
 
 
 async def one_day(request: PageRequest, day: date) -> Page:
-    app = _service(request)
+    app = Sextile.of(request)
     _, weeks_in_year, _ = day.isocalendar()
     lines = [
         _long_date(day),
@@ -196,7 +189,7 @@ async def one_day(request: PageRequest, day: date) -> Page:
 
 
 async def about(request: PageRequest) -> Page:
-    app = _service(request)
+    app = Sextile.of(request)
     return Prose.of(
         "A calendar, served as Viewdata frames.",
         "It exists to demonstrate that Sextile is a framework and not one "
@@ -225,17 +218,17 @@ async def goodbye(request: PageRequest) -> Page:
 
 async def history(request: PageRequest) -> Page:
     """The framework's page, at this service's number."""
-    return await _service(request).history(request)
+    return await Sextile.of(request).history(request)
 
 
 async def contents(request: PageRequest) -> Page:
     """The framework's page, at this service's number."""
-    return await _service(request).contents(request)
+    return await Sextile.of(request).contents(request)
 
 
 async def keywords(request: PageRequest) -> Page:
     """The framework's page, at this service's number."""
-    return await _service(request).names(request)
+    return await Sextile.of(request).names(request)
 
 
 #: What the service is made of. Everything about a page is on one line of it:

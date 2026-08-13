@@ -28,7 +28,7 @@ from collections.abc import Awaitable, Callable, Mapping, MutableMapping, Sequen
 from contextlib import AbstractAsyncContextManager
 from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
-from typing import Final
+from typing import Final, Self
 
 from sextile import contents, guidance, history, keys, names, readership
 from sextile.addressing import PageAddress, UnknownPageError, keyed
@@ -105,6 +105,20 @@ class PageRequest:
     every other caller at once.
 
     What goes in it is whatever the application's `lifespan` yielded."""
+
+    @property
+    def app(self) -> "Application":
+        """The service this page belongs to, and not None.
+
+        `application` is optional because a request built by hand in a test
+        has no service behind it. Every request the session or the renderer
+        builds carries one, so a handler reached through either says
+        `request.app` -- the narrowing every application was otherwise
+        writing for itself, at the top of its own module.
+        """
+        if self.application is None:
+            raise RuntimeError("this page was asked for outside a running service")
+        return self.application
 
 
 @dataclass(frozen=True)
@@ -619,6 +633,24 @@ class Application(ABC):
 
 class Sextile(Application):
     """An application that answers by routing page numbers to handlers."""
+
+    @classmethod
+    def of(cls, request: PageRequest) -> "Self":
+        """The application a page belongs to, narrowed to the routing kind.
+
+        For a handler that asks the numbering something -- `address_for`,
+        `page_info` -- which is this class's surface rather than the
+        `Application` one. Written here once rather than at the top of every
+        service, and on the class rather than the request so that a service
+        with an application type of its own narrows to that: `Board.of(...)`.
+        """
+        app = request.app
+        if not isinstance(app, cls):
+            raise RuntimeError(
+                f"this page was asked outside a {cls.__name__} service and "
+                "cannot ask the numbering anything"
+            )
+        return app
 
     def __init__(
         self,

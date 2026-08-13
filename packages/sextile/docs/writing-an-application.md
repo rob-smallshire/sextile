@@ -446,10 +446,14 @@ page belongs here.
 
 `application` is what lets a handler be an ordinary function rather than a
 closure built inside a factory: a page that offers another page has to ask the
-numbering where that one is, and this is how it asks.
+numbering where that one is, and this is how it asks. It is optional only
+because a request built by hand in a test has no service behind it;
+`request.app` is the same thing without the `None`, and `Sextile.of(request)`
+narrows to the routing application for a handler that asks the numbering
+something:
 
 ```python
-app = request.application
+app = Sextile.of(request)
 choices = {"1": app.address_for("post", post_id=post.id)}
 ```
 

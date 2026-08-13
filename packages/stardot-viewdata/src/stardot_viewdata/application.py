@@ -161,7 +161,7 @@ async def _read[T](request: PageRequest, query: Callable[[Repository], T]) -> T:
     return await asyncio.to_thread(query, _archive(request.service))
 
 
-    # -- menus --------------------------------------------------------------
+# -- menus --------------------------------------------------------------------
 
 
 async def _main_index(request: PageRequest) -> Page:
@@ -595,8 +595,6 @@ def _notice(
     address: PageAddress,
     title: str | None,
     lines: list[str],
-    *,
-    hang_up: bool = False,
 ) -> Page:
     """A page that simply says something, with no choices but the way back."""
     canvas = Canvas()
@@ -616,8 +614,7 @@ def _notice(
     return Page(
         frames=(
             PageFrame(frame=canvas.frame, choices={"0": app.address_for("main")}),
-        ),
-        hang_up=hang_up,
+        )
     )
 
 # -- when a page is not here --------------------------------------------
@@ -630,7 +627,13 @@ def _unknown_page(app: Sextile, target: str) -> Page:
         canvas,
         title="UNKNOWN PAGE",
         page_number="",
-        prompt="0 index, or key another page",
+        #  Through the renderer like every other prompt, so the key named here
+        #  is the same constant the choices answer. The advice rides in the
+        #  label: there is no key for "another page", only the command line.
+        prompt=render_footer(
+            [FooterItem(HOME_KEY, "index, or key another page", Priority.ESSENTIAL, brief="index")],
+            ROOM,
+        ),
     )
     canvas.row(CONTENT_FIRST_ROW).text(f"*{target[:30]}# is NOT a page here.", Colour.WHITE)
     canvas.row(CONTENT_FIRST_ROW + 2).text("Try *1# for the main index.", Colour.WHITE)

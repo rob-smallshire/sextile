@@ -343,7 +343,7 @@ class Template[E](ABC):
         left over is one separation more than it looks: five three-row entries
         with a blank between them take nineteen rows and not twenty.
 
-        None is a real answer, where a lead-in has taken the frame. Only the
+        Nought is a real answer, where a lead-in has taken the frame. Only the
         first frame can be in that position, and `_deal` gives it an empty
         batch and starts the entries on the next.
         """

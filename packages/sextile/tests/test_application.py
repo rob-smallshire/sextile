@@ -11,6 +11,7 @@ thing as being logged in.
 
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
+from types import ModuleType
 
 import pytest
 
@@ -25,6 +26,7 @@ from sextile.application import (
     Parting,
     Sextile,
     page,
+    routes_in,
 )
 from sextile.page import Page, PageFrame
 from sextile.routing import Converter, NoSuchRouteError
@@ -639,6 +641,62 @@ class TestDeclaringPagesOnTheClass:
     def test_a_page_with_no_title_is_still_registered(self) -> None:
         #  It simply is not advertised.
         assert self.build().route(PageAddress("90")) is not None
+
+
+class TestDeclaringPagesInAModule:
+    """`@page` beside a module-level handler, gathered by `routes_in`.
+
+    The same declaration as on a class, for the service whose handlers are
+    ordinary functions: the route sits on the function that builds the page,
+    and the factory says `pages=routes_in(module)` instead of keeping a list
+    that has to trail its handlers.
+    """
+
+    def build_module(self) -> ModuleType:
+        module = ModuleType("some_service_pages")
+
+        @page("1", title="Main index", keywords=("MAIN",))
+        async def main(request: PageRequest) -> Page:
+            return saying("MAIN")
+
+        @page("82{post_id:int}", name="post", title="One post")
+        async def _a_post(request: PageRequest, post_id: int) -> Page:
+            return saying(f"POST {post_id}")
+
+        async def helper(request: PageRequest) -> Page:
+            #  Undecorated, so not a page: a module is allowed helpers.
+            return one_frame()
+
+        module.main = main  # type: ignore[attr-defined]
+        module._a_post = _a_post  # type: ignore[attr-defined]
+        module.helper = helper  # type: ignore[attr-defined]
+        return module
+
+    def build(self) -> Sextile:
+        return Sextile(pages=routes_in(self.build_module()))
+
+    async def test_a_declared_page_is_registered(self) -> None:
+        assert text_of(await self.build().respond(request_for("1"))) == "MAIN"
+
+    async def test_with_its_fields(self) -> None:
+        page_shown = await self.build().respond(request_for("82489493"))
+        assert text_of(page_shown) == "POST 489493"
+
+    def test_the_route_takes_the_function_s_name(self) -> None:
+        assert self.build().address_for("main") == PageAddress("1")
+
+    def test_unless_it_is_given_one(self) -> None:
+        #  The function is `_a_post`; the route is `post`, because it says so.
+        assert self.build().address_for("post", post_id=1) == PageAddress("821")
+
+    def test_an_undecorated_function_is_not_a_page(self) -> None:
+        assert len(routes_in(self.build_module())) == 2
+
+    def test_they_are_listed_in_the_order_they_are_written(self) -> None:
+        assert [about.name for about in self.build().pages()] == ["main", "post"]
+
+    def test_the_keywords_travel_with_the_page(self) -> None:
+        assert self.build().resolve("MAIN") == PageAddress("1")
 
 
 class TestDeclaringKeywordsToo:

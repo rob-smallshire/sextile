@@ -28,6 +28,7 @@ from collections.abc import Awaitable, Callable, Mapping, MutableMapping, Sequen
 from contextlib import AbstractAsyncContextManager
 from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
+from types import ModuleType
 from typing import Final, Self
 
 from sextile import contents, guidance, history, keys, names, readership
@@ -270,6 +271,36 @@ class PageRoute:
 
     keywords: Sequence[str] = ()
     """Words a reader may key instead of the number."""
+
+
+def routes_in(module: ModuleType) -> tuple[PageRoute, ...]:
+    """The pages a module declares with `@page`, in the order they are written.
+
+    The module-level counterpart of declaring pages on a class, for the
+    service whose handlers are ordinary functions. The declaration sits on
+    the function that builds the page, and the factory says
+    `pages=routes_in(pages_module)` instead of keeping a list that has to
+    trail its handlers -- which is how such a list ends up two thirds of the
+    way down a long module.
+
+    Decorate a function where it is defined, not where it is imported: the
+    declaration rides on the function object itself, so decorating a
+    borrowed handler would declare it for everyone who imports it. A route
+    for somebody else's handler -- the framework's own pages, say -- is one
+    `PageRoute` line beside the call to this.
+    """
+    return tuple(
+        PageRoute(
+            pattern=declaration.pattern,
+            handler=value,
+            name=declaration.name or attribute.lstrip("_"),
+            title=declaration.title,
+            detail=declaration.detail,
+            keywords=declaration.keywords,
+        )
+        for attribute, value in vars(module).items()
+        if isinstance(declaration := getattr(value, _DECLARED, None), _Declaration)
+    )
 
 
 type Next = Callable[[PageRequest], Awaitable[Page | None]]

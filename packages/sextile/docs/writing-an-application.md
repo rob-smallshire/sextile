@@ -316,6 +316,33 @@ instead, with the class-level `@page(...)`. They are collected when the
 application is constructed, base classes first, in the order they are written.
 It is the same registration by another road.
 
+The same declaration works on module-level functions, gathered with
+`routes_in`, so a service of ordinary functions keeps each route on the
+function that builds the page rather than in a list that has to trail its
+handlers:
+
+```python
+@page("5", title="By contributor", detail="browse by poster",
+      keywords=("WHO", "USERS"))
+async def contributors(request: PageRequest) -> Page:
+    ...
+
+app = Sextile(pages=routes_in(sys.modules[__name__]))
+```
+
+Decorate a function where it is defined, not where it is imported: the
+declaration rides on the function object itself, so decorating a borrowed
+handler would declare it for everyone who imports it. A route for somebody
+else's handler — the framework's own pages, say — is one `PageRoute` line
+beside the call:
+
+```python
+app = Sextile(pages=[
+    *routes_in(pages_module),
+    PageRoute("92", pages.history, title="Where you have been"),
+])
+```
+
 ## Say a page's name once
 
 A page that names itself in its decorator and again in its own chrome has two

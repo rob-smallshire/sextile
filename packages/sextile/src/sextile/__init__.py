@@ -32,6 +32,7 @@ from sextile.application import (
     Parting,
     Sextile,
     page,
+    routes_in,
 )
 from sextile.content.transliterate import transliterate
 from sextile.forms import Form, Suggest, draw_form
@@ -63,4 +64,5 @@ __all__ = [
     "__version__",
     "transliterate",
     "page",
+    "routes_in",
 ]

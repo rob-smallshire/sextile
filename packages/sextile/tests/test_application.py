@@ -1214,6 +1214,15 @@ class TestAPageKnowingItsService:
             Sextile.of(request)
 
 
+class TestHeadingAPage:
+    def test_the_heading_is_the_registered_title_shouted(self) -> None:
+        app = Sextile(
+            pages=[PageRoute("5", _nothing, name="contributors", title="By contributor")]
+        )
+
+        assert app.heading_for(PageAddress("5")) == "BY CONTRIBUTOR"
+
+
 class TestAskingForAPageWithoutASocket:
     """What a test, a renderer or a tool does instead of building a request.
 

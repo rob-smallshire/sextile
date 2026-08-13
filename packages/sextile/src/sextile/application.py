@@ -145,6 +145,16 @@ class Application(ABC):
         """
         return keyed(address)
 
+    def heading_for(self, address: PageAddress) -> str:
+        """What to head a page with: what it was registered as, shouted.
+
+        A page that names itself where it is declared and again in its own
+        chrome has two copies of its name to keep in step, and they do not
+        stay in step. A page whose heading is not its name -- a post's forum,
+        a month's name -- writes its own instead of calling this.
+        """
+        return self.describe(address).upper()
+
     def heading(self, address: PageAddress, default: str) -> str:
         """What to head a page with. The framework's own name, unless told.
 

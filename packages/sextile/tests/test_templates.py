@@ -9,7 +9,15 @@ what five hand-written copies had each got slightly differently.
 from sextile.addressing import PageAddress
 from sextile.keys import with_arrows
 from sextile.page import Page
-from sextile.templates import CHOICES_PER_FRAME, Entry, Listing, Menu, MenuItem, Prose
+from sextile.templates import (
+    CHOICES_PER_FRAME,
+    Entry,
+    Listing,
+    Menu,
+    MenuItem,
+    Prose,
+    farewell_page,
+)
 from sextile.viewdata.canvas import Run
 from sextile.viewdata.chrome import CONTENT_FIRST_ROW, CONTENT_ROWS
 from sextile.viewdata.controls import Colour, Control
@@ -430,3 +438,27 @@ class TestAListingCarriesOnRatherThanCuts:
         long = [MenuItem("*321<geoname-id>#", "Forecast by lat/lon position")] * 11
         page = Listing(title="PAGES", entries=long, home=at("1")).build(at("9"))
         assert len(page.frames) == 2
+
+
+class TestAFarewell:
+    """The last thing a caller sees, drawn the same way by every service.
+
+    No chrome, and the lower rows left blank: the reader is about to be
+    talking to their modem, and the cursor needs somewhere to be left.
+    """
+
+    def test_the_title_heads_the_frame_and_the_lines_follow(self) -> None:
+        page = farewell_page("GOODBYE", "Thank you for calling.", "", "Ring off.")
+        rows = text_of(page).splitlines()
+        assert rows[0].startswith(" GOODBYE")
+        assert "Thank you for calling." in rows[2]
+        assert rows[3].strip() == ""
+        assert "Ring off." in rows[4]
+
+    def test_it_ends_the_call(self) -> None:
+        assert farewell_page("GOODBYE").hang_up
+
+    def test_a_ringing_off_page_may_be_shown_without_dropping_the_line(self) -> None:
+        #  The involuntary parting: the session drops the line itself, so the
+        #  page need not insist.
+        assert not farewell_page("RINGING OFF", hang_up=False).hang_up

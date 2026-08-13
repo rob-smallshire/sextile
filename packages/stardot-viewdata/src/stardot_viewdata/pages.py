@@ -32,7 +32,7 @@ from sextile.addressing import PageAddress, keyed
 from sextile.application import Parting
 from sextile.guidance import Key
 from sextile.page import Page, PageFrame
-from sextile.templates import Menu, MenuItem, Prose
+from sextile.templates import Menu, MenuItem, Prose, farewell_page
 from sextile.viewdata.canvas import Canvas
 from sextile.viewdata.chrome import CONTENT_FIRST_ROW, CONTENT_ROWS, draw_chrome
 from sextile.viewdata.controls import Colour
@@ -230,7 +230,7 @@ async def topics_index(request: PageRequest) -> Page:
             "NO TOPICS held yet.",
             "Topics are known only for posts seen since the board's feed "
             "began carrying them. Older posts have none.",
-            title=_headed(app, request.address),
+            title=app.heading_for(request.address),
             home=app.index,
         ).build(request.address)
     items = [
@@ -300,10 +300,8 @@ async def about(request: PageRequest) -> Page:
 @page("90", name="logoff", title="Log off", keywords=("BYE", "OFF"))
 async def logoff(request: PageRequest) -> Page:
     app = Sextile.of(request)
-    return _farewell(
-        app,
-        "GOODBYE",
-        [f"Thank you for calling {app.name}.", "", "Ring off."],
+    return farewell_page(
+        "GOODBYE", f"Thank you for calling {app.name}.", "", "Ring off."
     )
 
 
@@ -339,18 +337,15 @@ def ringing_off(app: Sextile, parting: Parting) -> Page:
     Naming the page they were on, because the terminal keeps nothing and a
     reader who dials back in has no other way to pick up where they were.
     """
-    return _farewell(
-        app,
+    return farewell_page(
         "RINGING OFF",
-        [
-            "No reply for some time, so the line",
-            "has been released for somebody else.",
-            "",
-            f"You were reading *{parting.address}#.",
-            "",
-            f"Thank you for calling {app.name}. Do call",
-            "again.",
-        ],
+        "No reply for some time, so the line",
+        "has been released for somebody else.",
+        "",
+        f"You were reading *{parting.address}#.",
+        "",
+        f"Thank you for calling {app.name}. Do call",
+        "again.",
     )
 
 
@@ -377,17 +372,6 @@ def unknown_page(app: Sextile, target: str) -> Page:
 
 
 # -- the shapes the pages above share -----------------------------------------
-
-
-def _headed(app: Sextile, address: PageAddress) -> str:
-    """What goes at the top of a page: what it was registered as, shouted.
-
-    A page that names itself where it is declared and again in its own chrome
-    has two copies of its name to keep in step, and they do not stay in step.
-    Pages whose heading is not their name -- a post's forum, a day's date --
-    say so; the rest say nothing and get this.
-    """
-    return app.describe(address).upper()
 
 
 def _posts_menu(
@@ -417,28 +401,12 @@ def _menu(
 ) -> Page:
     """A menu, dealt nine to a frame by the framework's template."""
     return Menu(
-        title=title if title is not None else _headed(app, address),
+        title=title if title is not None else app.heading_for(address),
         entries=items,
         home=app.index,
         preamble=preamble or (),
         empty=empty,
     ).build(address)
-
-
-def _farewell(app: Sextile, title: str, lines: list[str]) -> Page:
-    """The last thing a caller sees, and the last thing this service draws.
-
-    No chrome. A footer offering the index would be a lie on a page there is
-    no coming back from, and the rows it and the rules occupy are exactly
-    the ones the framework wants to leave blank: the reader is about to be
-    talking to their modem, and the cursor is put below the last thing said.
-    """
-    canvas = Canvas()
-    canvas.row(0).text(title, Colour.CYAN)
-    for offset, line in enumerate(lines):
-        if line:
-            canvas.row(2 + offset).text(fitted(line, COLUMNS - 1), Colour.WHITE)
-    return Page(frames=(PageFrame(frame=canvas.frame),), hang_up=True)
 
 
 def _notice(
@@ -453,7 +421,7 @@ def _notice(
     #  everything else says and degrades the same way.
     draw_chrome(
         canvas,
-        title=title if title is not None else _headed(app, address),
+        title=title if title is not None else app.heading_for(address),
         page_number=address.frame_number(0),
         prompt=prompt({}, selecting=False),
     )

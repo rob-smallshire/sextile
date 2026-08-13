@@ -43,7 +43,7 @@ from sextile import (
 )
 from sextile.addressing import keyed
 from sextile.keys import arrows_lead_where
-from sextile.templates import HOME_KEY, Menu, MenuItem, Prose
+from sextile.templates import HOME_KEY, Menu, MenuItem, Prose, farewell_page
 from sextile.viewdata.canvas import Canvas
 from sextile.viewdata.chrome import CONTENT_FIRST_ROW, CONTENT_ROWS, draw_chrome
 from sextile.viewdata.controls import Colour
@@ -197,24 +197,13 @@ async def about(request: PageRequest) -> Page:
         "service: nothing here knows about forums, and nothing in the "
         "framework knows about calendars.",
         "Everything it shows comes from the standard library.",
-        title=_headed(app, request.address),
+        title=app.heading_for(request.address),
         home=app.index,
     ).build(request.address)
 
 
 async def goodbye(request: PageRequest) -> Page:
-    """The last thing a caller sees: no chrome, and room beneath to type.
-
-    A footer offering the index would be a lie on a page there is no coming
-    back from, and the reader needs somewhere blank for the cursor to be left
-    -- they are about to be talking to their modem.
-    """
-    canvas = Canvas()
-    canvas.row(0).text("GOODBYE", Colour.CYAN)
-    for offset, line in enumerate(["Thank you for calling.", "", "Ring off."]):
-        if line:
-            canvas.row(2 + offset).text(fitted(line, COLUMNS - 1), Colour.WHITE)
-    return Page(frames=(PageFrame(frame=canvas.frame),), hang_up=True)
+    return farewell_page("GOODBYE", "Thank you for calling.", "", "Ring off.")
 
 
 #: What the service is made of. Everything about a page is on one line of it:
@@ -299,16 +288,6 @@ def _month_page(app: Sextile, address: PageAddress, day: date) -> Page:
     )
 
 
-def _headed(app: Sextile, address: PageAddress) -> str:
-    """What goes at the top of a page: what it was registered as, shouted.
-
-    A page that names itself where it is declared and again in its own chrome
-    has two copies to keep in step. Pages whose heading is not their name -- a
-    month's name, a day's date -- say so.
-    """
-    return app.describe(address).upper()
-
-
 def _menu(
     app: Sextile,
     address: PageAddress,
@@ -319,7 +298,7 @@ def _menu(
 ) -> Page:
     """A menu, dealt nine to a frame by the framework's template."""
     return Menu(
-        title=title if title is not None else _headed(app, address),
+        title=title if title is not None else app.heading_for(address),
         entries=[
             MenuItem(text=text, detail=detail, destination=where)
             for text, detail, where in items
@@ -338,7 +317,7 @@ def _notice(
             PageFrame(
                 frame=_notice_frame(
                     address,
-                    title if title is not None else _headed(app, address),
+                    title if title is not None else app.heading_for(address),
                     lines,
                     prompt=_prompt(set(), selecting=False),
                 ),

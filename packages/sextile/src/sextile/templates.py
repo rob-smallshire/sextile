@@ -506,6 +506,27 @@ class Prose(RowTemplate[Row]):
             row.skip(entry.indent).text(entry.text, entry.colour)
 
 
+def farewell_page(title: str, *lines: str, hang_up: bool = True) -> Page:
+    """The last thing a caller sees: no chrome, and room beneath to type.
+
+    A footer offering the index would be a lie on a page there is no coming
+    back from, and the rows it and the rules would occupy are exactly the
+    ones to leave blank: the reader is about to be talking to their modem,
+    and the framework puts the cursor below the last thing said. Every
+    service was drawing this frame for itself, and three copies of a
+    farewell drift like any others.
+
+    `hang_up=False` is for the involuntary parting -- an idle caller being
+    released -- where the session drops the line itself.
+    """
+    canvas = Canvas()
+    canvas.row(0).text(title, Colour.CYAN)
+    for offset, line in enumerate(lines):
+        if line:
+            canvas.row(2 + offset).text(fitted(line, COLUMNS - 1), Colour.WHITE)
+    return Page(frames=(PageFrame(frame=canvas.frame),), hang_up=hang_up)
+
+
 def _rows_of(line: PreambleLine) -> int:
     """Rows one lead-in item occupies. Everything but a block is one."""
     return line.rows if isinstance(line, Block) else 1

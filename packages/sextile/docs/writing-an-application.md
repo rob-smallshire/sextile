@@ -291,6 +291,11 @@ Both are the last thing a reader sees, so **draw them without a footer and leave
 the lower rows blank**. A key offering the index would be a key that does
 nothing, and the framework puts the cursor two rows below the last thing said
 and turns it on, so that the reader has somewhere to type to their modem.
+`farewell_page` in `sextile.templates` draws exactly that frame:
+
+```python
+return farewell_page("GOODBYE", f"Thank you for calling {app.name}.", "", "Ring off.")
+```
 
 ## Say what a page is where you write it
 
@@ -360,9 +365,10 @@ async def _days(self, request: PageRequest) -> Page:
     return self._menu(request.address, items=items)   # headed BY DAY
 ```
 
-`describe(address)` gives the registered title, so `describe(address).upper()`
-is a heading. Pages whose heading is *not* their name — a post's forum, a day's
-date — pass one, and passing one now means something.
+`describe(address)` gives the registered title, and `heading_for(address)` is
+that title shouted, which is what a heading is. Pages whose heading is *not*
+their name — a post's forum, a day's date — pass one, and passing one now
+means something.
 
 The framework's own pages work the same way from the other side: map `contents`
 into your numbering with a title and the page takes it, and keeps its own if

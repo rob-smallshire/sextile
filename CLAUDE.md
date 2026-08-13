@@ -103,6 +103,66 @@ code is worse than none, because it is believed.
   but is not. There are many such choices here.
 - Commit at each working increment. Do not push; that is the user's call.
 
+## Writing the documentation
+
+Docstrings here have drifted into essay: fluent, metaphorical, and about the
+design rather than about the interface. The prose was pleasant enough to hide
+mistakes in itself — a list of three introduced as "two shapes", "the six steps"
+that are enumerated nowhere. Everything below is a correction to that, and
+applies to new docstrings and to any old one being touched. Bring an old
+docstring up to this standard rather than patching around it.
+
+**Google style, and nothing else.** `Args:`, `Returns:`, `Yields:`, `Raises:`,
+`Attributes:`, `Example:`, in that order. Every parameter appears under `Args:`.
+Do not restate a type — `mypy --strict` has already said it; say what the value
+*means* and what constrains it.
+
+**Two jobs, and they do not share a paragraph.**
+
+- The *contract*: what this is, what goes in, what comes out, what a subclass
+  must override. It comes first, it is plain, and it is complete.
+- The *rationale*: why this and not the obvious alternative. It comes after the
+  sections, or better, goes in an inline `#` comment beside the line that makes
+  the choice, or in the package's `design.md`. If the rationale is longer than
+  the contract, it is in the wrong place.
+
+The discursive register belongs in `#` comments, where there is no contract
+competing for the space. The existing why-comments in `templates.py` are the
+model; its class docstrings are not.
+
+**The rules, in order of how often they are broken here.**
+
+1. Name the identifier, do not paraphrase it. Write "`rows_per_entry` rows",
+   not "how tall an entry is". Names are what a reader greps for, what
+   autocomplete offers, and what a traceback prints; a paraphrase is a
+   translation exercise set for the reader.
+2. The summary line is one sentence with a finite verb, saying what the thing
+   is or does. It is often the only line a tooltip shows. Not a bare noun
+   phrase, not a metaphor, not the least informative sentence in the docstring.
+3. No anthropomorphism. A class does not say, want, know, ask or decide. Name
+   the actor — the caller, the subclass author, the session — or rewrite so
+   none is needed.
+4. One term, one meaning, fixed across the package. *Frame*, *entry*,
+   *template*, *row*, *chrome* each have exactly one sense. Do not press a word
+   into a second job because it sounds well (as *shape* was: subclass kind,
+   visual layout, and goodness of fit, in one file).
+5. Give an `Example:` wherever the call sequence is not obvious from the
+   signature — anything constructed then built, anything subclassed. Six lines
+   of real code outteach three paragraphs.
+6. A public class gets `Attributes:`, covering every field a caller passes. Put
+   the `ClassVar` knobs a subclass overrides in a block of their own above it,
+   labelled as such: which of the two a reader is looking at is the most
+   important thing about a base class here, and one merged list loses it.
+7. Count nothing you have not enumerated, and enumerate nothing you have not
+   counted. Better still, do not count: say "the shapes are" and list them.
+8. Cut ornament. Em-dash asides, inversions, and rhythm for its own sake. If a
+   sentence survives being said flatly, say it flatly. This is the rule that
+   catches the error the others let through, because plain prose makes a wrong
+   claim look wrong.
+
+The same applies to Markdown in `docs/`, with the register loosened one notch:
+a reader there has chosen to be reading, but still cannot act on a metaphor.
+
 ## Politeness is not optional
 
 Stardot asks for a 60-second crawl delay and forbids several paths, including

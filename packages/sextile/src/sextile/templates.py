@@ -1,27 +1,26 @@
-"""Pages made of rows, dealt into frames.
+"""Divide a sequence of entries into the frames of a page, and draw them.
 
-Five places had grown their own version of the same six steps -- take a list,
-deal it into frames, draw the chrome, write the rows, wire up the keys, return a
-`Page` -- and they had drifted, as five copies do. Two of them disagreed about
-how much room a preamble costs, and one advertised a `1-9 select` on a frame
-with nothing to select.
+Three shapes are ready to use, differing in how many entries a frame holds and
+how each one is drawn:
 
-There are two shapes, and they differ in three things:
+    Menu       nine entries a frame, each numbered, a line of detail beneath
+    Listing    twenty entries a frame, none numbered, detail in a second column
+    Prose      running text, wrapped, in as many rows as it takes
 
-    Menu       nine to a frame, each entry numbered, a line of detail beneath
-    Listing    twenty to a frame, nothing numbered, detail in a second column
-    Prose      running text, wrapped, in whatever rows it takes
+`Template` performs the part they have in common: dividing the entries between
+frames, drawing the chrome, composing the prompt, and wiring up the keys that
+move from one frame to the next. A subclass supplies `rows_per_entry`, a
+`draw_entry`, and whether entries are `numbered`.
 
-so `Template` does the six steps and a subclass says how tall an entry is, how
-to draw one, and whether it can be chosen. An application wanting a fourth shape
-subclasses it rather than starting again -- which is what the base class being
-generic in *what* it deals is for: menus and listings deal entries, prose deals
-rendered rows.
+A service needing a fourth shape subclasses `Template` or `RowTemplate` rather
+than starting again, which is why the base class is generic in the type of its
+entries: `Menu` and `Listing` divide up `Entry` values, `Prose` divides up
+rendered `Row` values.
 
-What a template consumes is the `Entry` protocol -- text, detail, and where it
-leads -- so a service with its own richer notion of a menu entry passes that
-instead of converting to somebody else's type. `MenuItem` is here for services
-that have no such notion.
+A template will accept anything satisfying the `Entry` protocol, so a service
+with a richer notion of a menu entry can pass that rather than convert it to a
+type of the framework's choosing. `MenuItem` is here for services with no such
+notion of their own.
 """
 
 from abc import ABC, abstractmethod
@@ -53,74 +52,91 @@ if TYPE_CHECKING:
 
 @dataclass(frozen=True)
 class Shortcut:
-    """A key offered on every frame of a page, and what the footer calls it.
+    """A key offered on every frame of a page, always leading to one address.
 
-    A page's digits belong to its entries and change from frame to frame; a
-    shortcut does not. It is for the way out that is not the way home: a
-    forecast wanting to go back to the search that found it, a post wanting the
-    board it is on. `0` is that key for the index, and this is the same idea
-    without the framework having to know what else a service wants one for.
+    Attributes:
+        key: The character the reader presses, such as `*` or `R`.
+        destination: The address that key leads to, from every frame.
+        says: How the footer names the key, where there is room to name it at
+            all. Empty leaves it to the footer's abbreviation.
+
+    A page's digits belong to its entries and change from frame to frame, but a
+    shortcut is fixed. It is for the way out that is not the way home: a
+    forecast returning to the search that found it, a post returning to the
+    board it was on. `0` is the equivalent key for the index, and a shortcut is
+    that idea generalised, so that the framework need not know what else a
+    service might want one for.
     """
 
     key: str
     destination: PageAddress
     says: str = ""
-    """What the footer calls it, where there is room to say anything."""
 
 
 @dataclass(frozen=True)
 class Block:
-    """Part of a lead-in that is drawn rather than written.
+    """A part of a preamble that is drawn cell by cell rather than written.
 
-    A picture is placed by cell and may be many rows tall, which is the wrong
-    shape for a line of text and the right shape for a strip of mosaics. This
-    says how many rows it wants and how to fill them, and the pagination counts
-    those rows like any others -- so a lead-in that takes the whole of the first
-    frame simply leaves no entries on it, rather than overrunning the rule.
+    Attributes:
+        rows: How many rows of the frame the block occupies.
+        draw: Called with the canvas and the row the block begins on.
+
+    A picture is positioned by cell and may be several rows tall, which suits a
+    strip of mosaics and does not suit a line of text. `Template` counts a
+    block's rows along with all the others, so a preamble that fills the first
+    frame leaves no entries on it instead of overrunning the rule at its foot.
     """
 
     rows: int
     draw: "Callable[[Canvas, int], None]"
-    """Given the canvas and the row it starts on."""
 
 
-#: One line of a lead-in: plain text in white, runs where the colours carry some
-#: of the meaning, or a block of rows drawn by the page. The rows it costs are
-#: counted the same in every case.
+#: One line of a preamble: plain text in white, a sequence of coloured runs
+#: where the colours carry part of the meaning, or a `Block` of rows the page
+#: draws itself. `Template` counts the rows of all three the same way.
 type PreambleLine = str | Sequence[Run] | Block
 
-#: A reader selects with one keypress, so nine is the most a frame can offer.
+#: The most entries one frame can offer a choice of, a reader choosing with a
+#: single keypress.
 CHOICES_PER_FRAME: Final = 9
 
-#: The digit that goes home, on every frame of every template.
+#: The key that leads home, on every frame of every template.
 HOME_KEY: Final = "0"
 
 
 @runtime_checkable
 class Entry(Protocol):
-    """One line of a page made of rows.
+    """What `Menu` and `Listing` require of the values they are given.
 
-    A protocol rather than a type, so that a service with its own idea of what
-    a menu entry is -- carrying a post, a timestamp, whatever it needs later --
-    hands that over instead of copying it into somebody else's dataclass.
+    A protocol rather than a base class, so that a service with its own idea of
+    a menu entry, carrying a post or a timestamp or whatever it will need
+    later, can pass that value directly rather than copy it into a dataclass
+    belonging to the framework.
     """
 
     @property
     def text(self) -> str:
-        """What the line says."""
+        """The text drawn on the entry's first row."""
 
     @property
     def detail(self) -> str:
-        """A second line, or a second column, or nothing."""
+        """A second line, a second column, or empty for neither."""
 
     @property
     def destination(self) -> PageAddress | None:
-        """Where choosing it leads, or None if it is only to be read."""
+        """The address choosing this entry leads to, or None if it is only read."""
 
 
 @dataclass(frozen=True)
 class MenuItem:
-    """One selectable line, for a service with nothing richer of its own."""
+    """An `Entry` for a service that has nothing richer of its own.
+
+    Attributes:
+        text: The text drawn on the entry's first row.
+        detail: A second line, a second column, or empty for neither.
+        destination: The address choosing it leads to, or None if it is only
+            read.
+    """
 
     text: str
     detail: str = ""
@@ -128,10 +144,21 @@ class MenuItem:
 
     @classmethod
     def for_page(cls, app: "Sextile", name: str) -> "MenuItem":
-        """A line taken from what the page said about itself when registered.
+        """Build an item from what a page recorded about itself at registration.
 
-        The words are at the registration, so a menu offering a page and a list
-        naming it cannot drift apart -- they are the same words.
+        Args:
+            app: The application the page is registered with.
+            name: The name the page was registered under.
+
+        Returns:
+            An item carrying the page's title and detail, leading to its
+            address.
+
+        Raises:
+            ValueError: If no page is registered under `name`.
+
+        The words come from the registration, so a menu offering a page and a
+        listing naming it cannot drift apart: they are the same words.
         """
         about = app.page_info(name)
         if about is None:
@@ -143,32 +170,72 @@ class MenuItem:
 
 @dataclass(kw_only=True, eq=False)
 class Template[E](ABC):
-    """Entries dealt into frames, with the chrome and keys that go with them.
+    """Abstract base for the templates: builds a `Page` from a list of entries.
 
-    A subclass says how tall an entry is, how to draw one, and whether entries
-    can be chosen. Everything else -- pagination, the header, the prompt, the
-    keys that move between frames, and the way home -- happens here, the same
-    way on every page that uses one.
+    Construct a concrete template with the entries and the surrounding text,
+    then call `build` with the address the page answers to. A subclass decides
+    how an entry is drawn and how much room it takes; this class divides the
+    entries between frames, draws the chrome, composes the prompt, and wires up
+    the keys.
 
-    The primitive is `draw_entry`, which gets the canvas and the row an entry
-    starts on: the right shape for a picture placed by cell. A shape written
-    along its rows -- which is most of them -- subclasses `RowTemplate`
-    instead and writes `draw` and `draw_detail`.
+    Subclasses must implement `draw_entry` and will usually override
+    `rows_per_entry`, `numbered` and `destination`. Templates whose entries are
+    written along their rows should subclass `RowTemplate` instead, which
+    implements `draw_entry` in terms of a simpler `draw`.
+
+    Class attributes, overridden by a subclass to describe its shape:
+        rows_per_entry: Rows one entry occupies, which fixes how many entries
+            fit on a frame.
+        separation: Blank rows between one entry and the next, and not after
+            the last of them.
+        numbered: Whether entries take a digit, and so whether the reader can
+            choose them.
+        selecting_hint: What the prompt says about choosing, on frames with
+            something to choose.
+
+    Attributes:
+        title: The heading drawn at the top of every frame.
+        entries: The values to draw, in the order they are to appear.
+        home: Where `0` leads from every frame, or None to offer no way home.
+        preamble: Lines drawn above the entries on the first frame only.
+        empty: Text drawn in place of the entries when there are none.
+        headings: A row labelling the columns, drawn on every frame.
+        shortcuts: Keys offered on every frame, besides the digits and `0`.
+
+    Type parameters:
+        E: What one entry is. `Menu` and `Listing` fix this as `Entry`; a
+            subclass may fix it as whatever it draws, as `Prose` does with
+            `Row`.
+
+    Example:
+        A shape of its own, four rows to an entry and nothing selectable::
+
+            @dataclass(kw_only=True, eq=False)
+            class ForecastTable(Template[Day]):
+                rows_per_entry = 4
+                separation = 1
+                numbered = False
+
+                today: date
+
+                def draw_entry(self, canvas, row, entry, digit):
+                    draw_day(canvas, row, entry, self.today)
+
+            page = ForecastTable(
+                title="TRONDHEIM", entries=days, home=INDEX, today=today
+            ).build(address)
     """
 
-    #: Rows one entry occupies, which decides how many fit on a frame.
     rows_per_entry: ClassVar[int] = 1
 
-    #: Blank rows *between* entries, and not after the last of them. A shape
-    #: several rows tall wants air around it or two entries read as one block;
-    #: charging that air to every entry would waste it at the foot of the
-    #: frame, where the chrome's rule is doing the same job for nothing.
+    #  The separation goes between entries rather than beneath each of them: an
+    #  entry several rows tall needs air around it or two of them read as one
+    #  block, but charging that air to every entry would waste a row at the foot
+    #  of the frame, where the chrome's rule already does the same job.
     separation: ClassVar[int] = 0
 
-    #: Whether entries take a digit, and so whether they can be chosen.
     numbered: ClassVar[bool] = False
 
-    #: What the prompt says about choosing, where there is anything to choose.
     selecting_hint: ClassVar[FooterItem | None] = None
 
     title: str
@@ -179,19 +246,17 @@ class Template[E](ABC):
 
     preamble: Sequence[PreambleLine] = ()
 
+    #  A service that answers slowly cannot let a frame come up empty and
+    #  unexplained, because the reader cannot tell that from a fault.
     empty: str = ""
-    """Said instead of showing an empty frame: on a service that answers
-    slowly, nothing at all is indistinguishable from a fault."""
 
+    #  Headings are drawn on every frame, where a preamble is drawn on the
+    #  first: a reader on frame c looking at a column of figures has no way
+    #  back to the words that say what they are.
     headings: str = ""
-    """What the columns beneath mean, drawn on *every* frame. A preamble is
-    a lead-in and belongs on the first frame only; headings are not, and
-    a reader on frame c looking at a column of figures has no way back
-    to the words that say what they are."""
 
+    #  Named in the prompt, so that a page cannot offer a key silently.
     shortcuts: Sequence[Shortcut] = ()
-    """Keys offered on every frame, over and above the digits and the way
-    home. Named in the prompt, so a page cannot offer one silently."""
 
     def __post_init__(self) -> None:
         self.shortcuts = tuple(self.shortcuts)
@@ -203,26 +268,44 @@ class Template[E](ABC):
     def draw_entry(
         self, canvas: Canvas, row: int, entry: E, digit: str | None
     ) -> None:
-        """Draw a whole entry, given the canvas and the row it starts on.
+        """Draw one entry in the `rows_per_entry` rows beginning at `row`.
 
-        The canvas and the arithmetic about where the entry begins, with the
-        pagination, the chrome and the keys staying up here. Mosaic pictures
-        are placed by cell and may be several rows tall, which is why this is
-        the primitive rather than a row writer: a row writer walks one row
-        from left to right, the wrong shape for a picture and the right shape
-        for everything else -- which is what `RowTemplate` is for.
+        Args:
+            canvas: The frame being drawn, which the entry writes into.
+            row: The row the entry begins on, counting from the top of the
+                frame.
+            entry: The value to draw.
+            digit: The key that chooses this entry, or None where the template
+                is not `numbered`.
+
+        This takes a canvas and a row number rather than a `RowWriter` because
+        a mosaic picture is positioned by cell and may be several rows tall. A
+        row writer runs along a single row from left to right, which suits
+        everything except a picture, and `RowTemplate` provides it.
         """
 
     def destination(self, entry: E) -> PageAddress | None:
-        """Where choosing this entry leads. Nowhere, unless a shape says so."""
+        """The address choosing `entry` leads to, or None where it leads nowhere.
+
+        Returns None for every entry unless a subclass overrides this.
+        """
         del entry
         return None
 
     def prompt(self, *, selecting: bool, back: bool, on: bool) -> str:
-        """Name every key that does something here, and no key that does not.
+        """Compose the footer, naming every key that works on this frame.
 
-        Composed as items rather than as a string, so a frame with room says
-        what its keys do and only a crowded one falls back to the letters.
+        Args:
+            selecting: Whether the digits `1-9` choose an entry here.
+            back: Whether a previous frame exists to go back to.
+            on: Whether a further frame exists to go on to.
+
+        Returns:
+            The footer text, fitted to the room a frame has for it.
+
+        The keys are assembled as `FooterItem` values rather than as a string,
+        so that a frame with room can spell out what each key does and only a
+        crowded one falls back to bare letters.
         """
         items = []
         if selecting and self.selecting_hint is not None:
@@ -243,7 +326,17 @@ class Template[E](ABC):
     # -- what the template does ---------------------------------------------
 
     def build(self, address: PageAddress) -> Page:
-        """Deal the entries into frames and draw them."""
+        """Divide the entries between frames and draw each frame.
+
+        Args:
+            address: The address this page answers to, from which each frame
+                takes the page number it displays.
+
+        Returns:
+            The finished page: one `PageFrame` for each frame, in order, each
+            carrying the keys that work while it is showing. A page with no
+            entries at all is one empty frame rather than none.
+        """
         batches = self._deal()
         frames = []
         for index, batch in enumerate(batches):
@@ -285,7 +378,7 @@ class Template[E](ABC):
         return Page(frames=tuple(frames))
 
     def _draw_preamble(self, canvas: Canvas) -> int:
-        """Draw the lead-in, and say which row the entries start on."""
+        """Draw the preamble, returning the row the entries begin on."""
         row = CONTENT_FIRST_ROW
         for line in self.preamble:
             if isinstance(line, Block):
@@ -296,19 +389,24 @@ class Template[E](ABC):
             else:
                 canvas.row(row).runs(line)
             row += _rows_of(line)
-        #  A blank row between the lead-in and the entries, so the two read as
-        #  two things.
+        #  A blank row between the preamble and the entries, so that the two
+        #  read as two things.
         return row + 1 if self.preamble else row
 
     @property
     def preamble_rows(self) -> int:
-        """Rows the lead-in occupies, the blank after it included."""
+        """Rows the preamble occupies, including the blank row after it."""
         if not self.preamble:
             return 0
         return sum(_rows_of(line) for line in self.preamble) + 1
 
     def _deal(self) -> list[Sequence[E]]:
-        """Entries, frame by frame. The first frame is the short one."""
+        """The entries, grouped a frame at a time.
+
+        The first group is the smaller, the preamble having taken rows from it,
+        and it is empty where the preamble took the whole frame. There is
+        always at least one group, empty if there are no entries.
+        """
         #  Headings cost their row on every frame, not only the first: counting
         #  them once would write the last entry of every later frame over the
         #  rule at the foot of it.
@@ -320,7 +418,7 @@ class Template[E](ABC):
         while start < len(self.entries):
             room = first if not batches else rest
             if room == 0:
-                #  A lead-in that fills the frame. The entries begin on the
+                #  A preamble that fills the frame. The entries begin on the
                 #  next one rather than being squeezed on to this.
                 batches.append(())
                 continue
@@ -329,15 +427,20 @@ class Template[E](ABC):
         return batches or [()]
 
     def _capacity(self, spent: int) -> int:
-        """How many entries fit once ``spent`` rows have gone on other things.
+        """How many entries fit in a frame once `spent` rows have gone elsewhere.
 
-        The separation goes between entries and not after the last, so what is
-        left over is one separation more than it looks: five three-row entries
-        with a blank between them take nineteen rows and not twenty.
+        Args:
+            spent: Rows already given to the preamble and the headings.
 
-        Nought is a real answer, where a lead-in has taken the frame. Only the
-        first frame can be in that position, and `_deal` gives it an empty
-        batch and starts the entries on the next.
+        Returns:
+            The number of entries that will fit, never more than
+            `CHOICES_PER_FRAME` where the template is `numbered`. Nought is a
+            real answer, meaning the preamble has taken the whole frame.
+
+        The separation falls between entries and not after the last of them, so
+        there is one separation more room than there appears to be: five
+        three-row entries with a blank between them occupy nineteen rows rather
+        than twenty.
         """
         left = CONTENT_ROWS - spent + self.separation
         room = max(left // (self.rows_per_entry + self.separation), 0)
@@ -345,23 +448,37 @@ class Template[E](ABC):
 
 
 class RowTemplate[E](Template[E]):
-    """A template whose entries are written along their rows.
+    """Abstract base for templates whose entries are written along their rows.
 
-    The shape most pages take: a subclass writes an entry's first row in
-    `draw` and its second in `draw_detail`, and this walks the rows. A shape
-    placed by cell -- a picture several rows tall -- subclasses `Template`
-    and writes `draw_entry` itself, rather than writing a `draw` that does
-    nothing.
+    Implements `draw_entry` by calling `draw` for an entry's first row and
+    `draw_detail` for its second, each with a `RowWriter` that runs from left
+    to right. This is what most pages want. A template positioning its entries
+    by cell, a picture several rows tall among them, should subclass `Template`
+    and implement `draw_entry` itself rather than leave `draw` empty.
     """
 
     @abstractmethod
     def draw(self, row: RowWriter, entry: E, digit: str | None) -> None:
-        """Draw one entry's first row. Later rows are `draw_detail`'s."""
+        """Write an entry's first row.
 
-    #  Empty on purpose, and not abstract: a shape one row tall has no second
-    #  row to draw.
+        Args:
+            row: A writer positioned at the start of the entry's first row.
+            entry: The value to write.
+            digit: The key that chooses this entry, or None where the template
+                is not `numbered`.
+        """
+
+    #  Empty on purpose, and not abstract: an entry one row tall has no second
+    #  row to write.
     def draw_detail(self, row: RowWriter, entry: E) -> None:  # noqa: B027
-        """Draw an entry's second row, where the shape has one."""
+        """Write an entry's second row, where `rows_per_entry` allows one.
+
+        Args:
+            row: A writer positioned at the start of the entry's second row.
+            entry: The value to write.
+
+        Does nothing unless a subclass overrides it.
+        """
 
     def draw_entry(
         self, canvas: Canvas, row: int, entry: E, digit: str | None
@@ -372,10 +489,15 @@ class RowTemplate[E](Template[E]):
 
 
 class Menu(RowTemplate[Entry]):
-    """Nine choices to a frame, each with a line of detail beneath it.
+    """Up to nine numbered choices a frame, each with a line of detail beneath.
 
-    The shape most viewdata pages take: a reader selects with one keypress, so
-    nine is the most a frame can offer and the rest go on the next.
+    The shape most viewdata pages take. A reader chooses with a single
+    keypress, so nine entries are the most one frame can offer and the rest go
+    on the frames after it.
+
+    Example::
+
+        Menu(title="INDEX", entries=items, home=INDEX).build(address)
     """
 
     rows_per_entry = 2
@@ -396,30 +518,40 @@ class Menu(RowTemplate[Entry]):
 
 
 class Listing(RowTemplate[Entry]):
-    """Two columns, twenty to a frame, nothing to select.
+    """Two columns, twenty entries a frame, none of them selectable.
 
-    For a page that is a reference rather than a menu -- what a service is made
-    of, which words it answers to. The left column is set to the widest entry,
-    so the page reads as a table.
+    For a page that is a reference rather than a menu: what a service is made
+    of, which words it answers to. The left column is set to the width of the
+    widest entry, so that the page reads as a table.
+
+    A detail too long for the room left over is carried on to a further row
+    with an empty left column, rather than being cut.
+
+    Example::
+
+        Listing(title="PAGES", entries=items, home=INDEX).build(address)
     """
 
     rows_per_entry = 1
     numbered = False
 
-    #: Never wider than half the row: a truncated left column would be a page
-    #: number that fetches the wrong page.
+    #  Never wider than half the row: a truncated left column here would be a
+    #  page number that fetches the wrong page.
     _WIDEST: Final = COLUMNS // 2
 
-    #: A cell for the colour of each column.
+    #: One cell for the colour attribute of each column.
     ATTRIBUTES: Final = 2
 
     @classmethod
     def widest(cls) -> int:
-        """The most the left column may take, for a caller sizing the right.
+        """The greatest width the left column can take, in cells.
 
-        A page that has to know how much room the second column will have --
-        to wrap a long title into it rather than have it cut -- would otherwise
-        work the arithmetic out again and get it slightly different.
+        Returns:
+            The width, whatever the entries; the column may come out narrower.
+
+        For a caller sizing the right-hand column, which has whatever is left
+        over. Without this, a page wrapping a long title into that column would
+        work the same arithmetic out again and get it slightly different.
         """
         return cls._WIDEST
 
@@ -430,16 +562,24 @@ class Listing(RowTemplate[Entry]):
         self.entries = self._wrapped(self.entries)
 
     def _wrapped(self, entries: Sequence[Entry]) -> list[Entry]:
-        """The entries, with a second column too long for its room carried on.
+        """The entries, with any detail too long for its column carried on.
 
-        A listing's second column gets what is left after the first, which is
-        enough for `One day` and not for `Forecast by lat/lon position`. Cut,
-        it reads as a fault rather than as a shortage of room; carried on to a
-        row of its own with nothing in the first column, it reads as what it
-        is. Which column a thing is in is what tells the two apart.
+        Args:
+            entries: The entries as the caller gave them.
 
-        Two rows at most. A third is a second column that wants rewriting, and
-        a listing is a table rather than a place for prose.
+        Returns:
+            The entries in order, each followed by a further entry holding the
+            rest of its detail where the detail did not fit on one row. A
+            carried row has empty text, so nothing appears in the left column
+            and the destination stays with the first row. Two rows at most: a
+            detail needing a third wants rewriting, a listing being a table
+            rather than a place for prose.
+
+        The right-hand column gets whatever the left leaves, which is enough
+        for `One day` and not for `Forecast by lat/lon position`. Cut, such a
+        detail reads as a fault rather than as a shortage of room; carried on
+        to a row with an empty left column, it reads as what it is, because
+        which column a thing is in is what tells the two apart.
         """
         room = COLUMNS - self.column - self.ATTRIBUTES
         carried: list[Entry] = []
@@ -459,17 +599,19 @@ class Listing(RowTemplate[Entry]):
 
 
 class Prose(RowTemplate[Row]):
-    """Running text, wrapped and dealt into frames.
+    """Running text, wrapped and divided between as many frames as it takes.
 
-    The third shape, and the one every notice page was writing out by hand --
-    string literals broken at forty columns with blank strings for the gaps
-    between paragraphs, which has to be redone by hand whenever a word changes
-    and cannot survive a change of column width at all.
+    Its entries are rendered `Row` values rather than `Entry` values, which is
+    what the base class is generic for. Use `Prose.of` to make a page from
+    plain paragraphs, or construct it directly with rows from
+    `viewdata.layout`.
 
-    What it deals is rendered rows rather than entries, which is what the base
-    class is generic for. The rendering itself is `viewdata.layout`'s, so a
-    notice gets the same treatment as a forum post: quotations in cyan, listings
-    in green, nesting indented, over-long words split rather than dropped.
+    Laying the text out through `viewdata.layout` gives a notice the same
+    treatment as a forum post: quotations in cyan, listings in green, nesting
+    indented, and over-long words broken rather than dropped. Before this,
+    notice pages held string literals hand-broken at forty columns, with empty
+    strings for the gaps between paragraphs, which had to be redone by hand
+    whenever a word changed and could not survive a change of column width.
     """
 
     rows_per_entry = 1
@@ -485,7 +627,31 @@ class Prose(RowTemplate[Row]):
         empty: str = "",
         shortcuts: Sequence[Shortcut] = (),
     ) -> "Prose":
-        """A page of plain paragraphs, wrapped here rather than by the caller."""
+        """Build a template from plain paragraphs, wrapping them on the way.
+
+        Args:
+            *paragraphs: The text, one string a paragraph, in the order it is
+                to be read. Empty strings are dropped; the gaps between
+                paragraphs come from the layout.
+            title: The heading drawn at the top of every frame.
+            home: Where `0` leads from every frame, or None to offer no way
+                home.
+            preamble: Lines drawn above the text on the first frame only.
+            empty: Text drawn in place of the paragraphs when there are none.
+            shortcuts: Keys offered on every frame, besides `0`.
+
+        Returns:
+            A template ready for `build`.
+
+        Example::
+
+            Prose.of(
+                "The board is read-only here.",
+                "Posting is done from the web.",
+                title="ABOUT",
+                home=INDEX,
+            ).build(address)
+        """
         return cls(
             title=title,
             entries=rows_for(
@@ -507,17 +673,23 @@ class Prose(RowTemplate[Row]):
 
 
 def farewell_page(title: str, *lines: str, hang_up: bool = True) -> Page:
-    """The last thing a caller sees: no chrome, and room beneath to type.
+    """Build the page a caller sees last: no chrome, and room beneath to type.
+
+    Args:
+        title: The heading, drawn in cyan on the first row.
+        *lines: What to say, one string a row, beginning two rows below the
+            title. Empty strings leave a blank row.
+        hang_up: Whether the line drops once this page has been shown. Pass
+            False for the involuntary parting, an idle caller being released,
+            where the session drops the line itself.
+
+    Returns:
+        A page of a single frame, offering no keys.
 
     A footer offering the index would be a lie on a page there is no coming
-    back from, and the rows it and the rules would occupy are exactly the
-    ones to leave blank: the reader is about to be talking to their modem,
-    and the framework puts the cursor below the last thing said. Every
-    service was drawing this frame for itself, and three copies of a
-    farewell drift like any others.
-
-    `hang_up=False` is for the involuntary parting -- an idle caller being
-    released -- where the session drops the line itself.
+    back from, and the rows it and the rules would take up are exactly the ones
+    worth leaving blank: the reader is about to be talking to their modem, and
+    the cursor sits below the last thing said.
     """
     canvas = Canvas()
     canvas.row(0).text(title, Colour.CYAN)
@@ -528,7 +700,7 @@ def farewell_page(title: str, *lines: str, hang_up: bool = True) -> Page:
 
 
 def _rows_of(line: PreambleLine) -> int:
-    """Rows one lead-in item occupies. Everything but a block is one."""
+    """Rows one preamble line occupies. Everything but a `Block` occupies one."""
     return line.rows if isinstance(line, Block) else 1
 
 

@@ -386,21 +386,20 @@ which way is which, and `#` belongs in a list of things to key.
 ## Pages that come with the framework
 
 Three pages are built for you and registered nowhere, so that a service maps
-them into its own numbering or does without:
+them into its own numbering or does without. They are handlers already, so
+the mapping is one line apiece:
 
 ```python
-@page("92", name="history", title="Where you have been", keywords=("HISTORY",))
-async def _history(self, request: PageRequest) -> Page:
-    return await self.history(request)
+from sextile import pages
 
-@page("93", name="contents", title="Every page", keywords=("PAGES",))
-async def _contents(self, request: PageRequest) -> Page:
-    return await self.contents(request)
-
-@page("94", name="names", title="Words you can key", keywords=("KEYWORDS",))
-async def _names(self, request: PageRequest) -> Page:
-    return await self.names(request)
+PageRoute("92", pages.history, title="Where you have been", keywords=("HISTORY",))
+PageRoute("93", pages.contents, title="Every page", keywords=("PAGES",))
+PageRoute("94", pages.names, title="Words you can key", keywords=("KEYWORDS",))
 ```
+
+Each answers by calling the application's method of the same name, so a
+service wanting to change what one shows overrides the method and keeps the
+route.
 
 Each is generated from what the framework already knows — where a caller has
 been, which patterns are registered, which words are aliased — so none can drift

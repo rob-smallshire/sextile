@@ -39,6 +39,7 @@ from sextile import (
     PageRoute,
     Sextile,
     keys,
+    pages,
 )
 from sextile.addressing import keyed
 from sextile.keys import arrows_lead_where
@@ -216,21 +217,6 @@ async def goodbye(request: PageRequest) -> Page:
     return Page(frames=(PageFrame(frame=canvas.frame),), hang_up=True)
 
 
-async def history(request: PageRequest) -> Page:
-    """The framework's page, at this service's number."""
-    return await Sextile.of(request).history(request)
-
-
-async def contents(request: PageRequest) -> Page:
-    """The framework's page, at this service's number."""
-    return await Sextile.of(request).contents(request)
-
-
-async def keywords(request: PageRequest) -> Page:
-    """The framework's page, at this service's number."""
-    return await Sextile.of(request).names(request)
-
-
 #: What the service is made of. Everything about a page is on one line of it:
 #: where it is in the numbering, what builds it, what it is called where it is
 #: listed rather than shown, and the words that reach it.
@@ -251,14 +237,14 @@ PAGES: Final = (
     #  and a reader looking for how to ring off should find it there.
     PageRoute("90", goodbye, name="goodbye", title="Log off",
               keywords=("BYE",)),
-    #  Three the framework builds, mapped into this service's numbering. They
-    #  are here as much to show what a service gets for nothing as to be
-    #  useful: the calendar wrote none of them.
-    PageRoute("92", history, name="history", title="Where you have been",
+    #  Three the framework builds and hands over as handlers, mapped into this
+    #  service's numbering. They are here as much to show what a service gets
+    #  for nothing as to be useful: the calendar wrote none of them.
+    PageRoute("92", pages.history, title="Where you have been",
               detail="this call, newest first", keywords=("HISTORY",)),
-    PageRoute("93", contents, name="contents", title="Every page",
+    PageRoute("93", pages.contents, title="Every page",
               detail="and the number that fetches it", keywords=("PAGES",)),
-    PageRoute("94", keywords, name="names", title="Words you can key",
+    PageRoute("94", pages.names, title="Words you can key",
               detail="instead of a page number", keywords=("KEYWORDS", "WORDS")),
 )
 

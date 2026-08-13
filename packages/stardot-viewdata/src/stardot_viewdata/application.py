@@ -33,7 +33,7 @@ from datetime import date, datetime
 from pathlib import Path
 from typing import Final
 
-from sextile import Held, keys
+from sextile import Held, keys, pages
 from sextile.addressing import PageAddress, keyed
 from sextile.application import Arrival, PageRequest, PageRoute, Parting, Sextile
 from sextile.guidance import Key
@@ -489,22 +489,6 @@ async def _help(request: PageRequest) -> Page:
     )
 
 
-async def _history(request: PageRequest) -> Page:
-    """The framework's page, at this service's number."""
-    return await Sextile.of(request).history(request)
-
-
-async def _names(request: PageRequest) -> Page:
-    """The framework's page, at this service's number."""
-    app = Sextile.of(request)
-    return await app.names(request)
-
-
-async def _contents(request: PageRequest) -> Page:
-    """The framework's page, at this service's number."""
-    return await Sextile.of(request).contents(request)
-
-
 async def _about(request: PageRequest) -> Page:
     app = Sextile.of(request)
     held = await _read(request, lambda repository: repository.count_posts())
@@ -658,13 +642,14 @@ PAGES: Final = (
     PageRoute("91", _help, name="help", title="How to get about",
               detail="the keys, and what they do",
               keywords=("HELP", "GUIDE", "KEYS")),
-    #  Three the framework builds, mapped into this service's numbering.
-    PageRoute("92", _history, name="history", title="Where you have been",
+    #  Three the framework builds and hands over as handlers, mapped into this
+    #  service's numbering.
+    PageRoute("92", pages.history, title="Where you have been",
               detail="this call, newest first", keywords=("HISTORY", "BEEN")),
-    PageRoute("93", _contents, name="contents", title="Every page",
+    PageRoute("93", pages.contents, title="Every page",
               detail="and the number that fetches it",
               keywords=("PAGES", "CONTENTS")),
-    PageRoute("94", _names, name="names", title="Words you can key",
+    PageRoute("94", pages.names, title="Words you can key",
               detail="instead of a page number", keywords=("KEYWORDS", "WORDS")),
 )
 

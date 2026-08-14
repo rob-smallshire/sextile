@@ -26,8 +26,9 @@ from collections.abc import Callable, Sequence
 from typing import Final
 
 from sextile.addressing import PageAddress, keyed
+from sextile.formatting import Menu, MenuItem
+from sextile.layout import Flowing, PageLayout
 from sextile.page import Page
-from sextile.templates import Menu, MenuItem
 
 TITLE: Final = "WHERE YOU HAVE BEEN"
 
@@ -62,7 +63,9 @@ def history_page(
             (where for where in reversed(been) if where != address), start=1
         )
     ]
-    return Menu(title=title, entries=entries, home=home, empty=_NOWHERE).build(address)
+    return PageLayout(
+        title=title, home=home, parts=[Flowing(Menu(entries=entries, empty=_NOWHERE))]
+    ).build(address)
 
 
 def _how_far(steps: int) -> str:

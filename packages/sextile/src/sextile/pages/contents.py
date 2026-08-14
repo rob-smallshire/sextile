@@ -28,8 +28,9 @@ from collections.abc import Sequence
 from typing import TYPE_CHECKING, Final
 
 from sextile.addressing import PageAddress, keyed
+from sextile.formatting import Listing, MenuItem
+from sextile.layout import Flowing, PageLayout
 from sextile.page import Page
-from sextile.templates import Listing, MenuItem
 
 if TYPE_CHECKING:
     from sextile.application import PageInfo
@@ -60,6 +61,6 @@ def contents_page(
         MenuItem(text=keyed(page.keyed), detail=page.title)
         for page in sorted(pages, key=lambda page: page.keyed)
     ]
-    return Listing(
-        title=title, entries=entries, home=home, empty=_NOTHING
+    return PageLayout(
+        title=title, home=home, parts=[Flowing(Listing(entries=entries, empty=_NOTHING))]
     ).build(address)

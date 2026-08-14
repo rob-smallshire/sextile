@@ -26,8 +26,9 @@ from collections.abc import Callable, Mapping
 from typing import Final
 
 from sextile.addressing import PageAddress, keyed
+from sextile.formatting import Listing, MenuItem
+from sextile.layout import Flowing, PageLayout
 from sextile.page import Page
-from sextile.templates import Listing, MenuItem
 
 TITLE: Final = "WORDS YOU CAN KEY"
 
@@ -46,6 +47,6 @@ def names_page(
     entries = [
         MenuItem(text=keyed(word), detail=describe(named[word])) for word in sorted(named)
     ]
-    return Listing(
-        title=title, entries=entries, home=home, empty=_NOTHING
+    return PageLayout(
+        title=title, home=home, parts=[Flowing(Listing(entries=entries, empty=_NOTHING))]
     ).build(address)

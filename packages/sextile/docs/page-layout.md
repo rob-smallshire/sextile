@@ -166,7 +166,11 @@ second case falls out of concatenation.
 
 **`every` parts are placed against the frame, not the stream.** Those before
 the first flowing part are drawn where they stand; those after it have their
-rows kept back at the foot. What lies between is what the flowing parts
+rows kept back from the foot, so that a flowing part cannot take them, and are
+then drawn where the content ended rather than at the foot itself. On a full
+frame those are the same row. On a short one they are not, and a note that
+explains a table of four figures belongs under the table rather than thirteen
+rows beneath it. What lies between is what the flowing parts
 divide.
 
 The line falls at the first flowing part rather than at the end of the list

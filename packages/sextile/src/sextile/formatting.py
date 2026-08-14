@@ -254,10 +254,14 @@ class Lines(Formatter[str]):
     Attributes:
         said: The lines, in the order they are to appear. An empty one leaves a
             blank row.
+        colour: What they are drawn in. White for a notice, which is the page
+            talking; green for a note beneath a table, which is the page
+            explaining what is above it.
     """
 
     entries: Sequence[str] = ()
     said: Sequence[str] = ()
+    colour: Colour = Colour.WHITE
 
     def __post_init__(self) -> None:
         #  `said` is what a caller writes, `entries` what a formatter divides.
@@ -272,7 +276,7 @@ class Lines(Formatter[str]):
     ) -> None:
         del digit  # a notice numbers nothing
         if entry:
-            canvas.row(row).text(fitted(entry, COLUMNS - 1), Colour.WHITE)
+            canvas.row(row).text(fitted(entry, COLUMNS - 1), self.colour)
 
 
 @dataclass(frozen=True, kw_only=True)

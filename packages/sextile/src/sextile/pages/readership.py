@@ -20,8 +20,12 @@ from datetime import UTC, datetime, timedelta
 from typing import Final
 
 from sextile.addressing import PageAddress, keyed
+from sextile.formatting import Figures, Lines, Menu, MenuItem
+from sextile.layout import Every, Flowing, PageLayout
 from sextile.page import Page
-from sextile.templates import Figures, Menu, MenuItem
+from sextile.viewdata.controls import Colour
+from sextile.viewdata.frame import COLUMNS
+from sextile.viewdata.wrapping import wrap_text
 from sextile.visits import Visit
 
 #  Shouted, as every heading is: `Sextile.heading` upper-cases the title a
@@ -113,19 +117,25 @@ def _menu(
     entries: Sequence[tuple[Visit, str]],
     describe: Callable[[PageAddress], str],
 ) -> Page:
-    return Menu(
+    return PageLayout(
         title=title,
-        entries=[
-            MenuItem(
-                text=named,
-                detail=f"{keyed(visit.page)}  {said}",
-                destination=visit.page,
-            )
-            for visit, said in entries
-            if (named := describe(visit.page))
-        ],
         home=home,
-        empty=empty,
+        parts=[
+            Flowing(
+                Menu(
+                    entries=[
+                        MenuItem(
+                            text=named,
+                            detail=f"{keyed(visit.page)}  {said}",
+                            destination=visit.page,
+                        )
+                        for visit, said in entries
+                        if (named := describe(visit.page))
+                    ],
+                    empty=empty,
+                )
+            )
+        ],
     ).build(address)
 
 
@@ -163,12 +173,27 @@ def callers_page(
     #  Nought against every period reads as a fault rather than as a service
     #  that has only just been switched on, so it is the empty case too.
     reporting = counts if any(count for _, count in counts) else ()
-    return Figures(
+    return PageLayout(
         title=title,
-        entries=[
-            MenuItem(text=said, detail=str(count)) for said, count in reporting
-        ],
         home=home,
-        empty=_NOTHING_CALLED,
-        footnote=_WHAT_A_CALLER_IS,
+        parts=[
+            Flowing(
+                Figures(
+                    entries=[
+                        MenuItem(text=said, detail=str(count))
+                        for said, count in reporting
+                    ],
+                    empty=_NOTHING_CALLED,
+                )
+            ),
+            #  Beneath the figures on every frame, a blank row above it: a
+            #  figure about readers that does not say what it counts invites
+            #  the worst guess.
+            Every(
+                Lines(
+                    said=("", *wrap_text(_WHAT_A_CALLER_IS, COLUMNS - 1)),
+                    colour=Colour.GREEN,
+                )
+            ),
+        ],
     ).build(address)

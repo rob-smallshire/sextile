@@ -359,7 +359,7 @@ def _frame(state: _State, rows: range) -> Filled:
             state.pending[index] = placed.rest
             break
 
-    _draw_at_foot(state, filled, rows, reserved)
+    _draw_kept_back(state, filled, at)
     return filled
 
 
@@ -376,13 +376,16 @@ def _reserved(state: _State, rows: range) -> int:
     return total
 
 
-def _draw_at_foot(
-    state: _State, filled: Filled, rows: range, reserved: int
-) -> None:
-    """Draw the parts at the foot, in the rows kept back for them."""
-    at = rows.stop - reserved
+def _draw_kept_back(state: _State, filled: Filled, at: int) -> None:
+    """Draw the parts whose rows were kept back, under what they follow.
+
+    Kept back from the foot so that a flowing part cannot take them, but drawn
+    where the content ended rather than at the foot itself. On a full frame the
+    two are the same row; on a short one, a note that explains a table of four
+    figures belongs under the table and not thirteen rows beneath it.
+    """
     for part in state.at_foot.values():
-        placed = part.place(filled.canvas, Room(at, rows.stop - at, CHOICES_PER_FRAME))
+        placed = part.place(filled.canvas, Room(at, ROWS - at, CHOICES_PER_FRAME))
         filled.offer = filled.offer.and_then(placed.offer)
         at += placed.rows
 

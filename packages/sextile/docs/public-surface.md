@@ -138,6 +138,15 @@ handlers or through the `Sextile` methods they call.
 framework. A service keeping its log elsewhere writes its own and the pages do
 not notice.
 
+### `sextile.testing` — driving a service the way a caller does
+
+    calling  Caller
+
+A service's own tests want to press keys and read the screen, which nothing
+else stands in for: whether `*3#` reaches a handler, whether a field kept what
+was typed, and what `0` does from three pages in are questions about the
+session rather than about any one page.
+
 ### `sextile.cli` — building a service's command line
 
     run_service  render_page  add_listening_arguments  add_form_arguments
@@ -161,9 +170,8 @@ Everything else, and specifically:
 
 ## Where the line is crossed
 
-Two places, as of 2026-08-14. Both are the framework failing to offer
-something and the application reaching in for it; the four crossings that were
-merely applications reaching past an open front door are closed.
+One place, as of 2026-08-14. It is the framework failing to offer something
+and the applications reaching in for it; the five others are closed.
 
 *Closed on 2026-08-14, and kept here because a surface document that shows only
 its present state says nothing about which way it is moving:* `PageAddress`,
@@ -176,9 +184,11 @@ public, which settles `Field` and `Fields`. `NoSuchRouteError` and
 `RouteError` are exported, a service's own converter being what raises the
 first of them. `guidance.Key` is `GuideRow` and is
 exported from `sextile`: it describes a service's own row in a table, and the
-word `key` was already spoken for by the thing a reader presses.
+word `key` was already spoken for by the thing a reader presses. And
+`sextile.testing` is that, above: weather was driving `Session` directly for
+want of any other way to press a key at a service.
 
-**1. Chrome and footers drawn by hand.** All three services import
+**Chrome and footers drawn by hand.** All three services import
 `viewdata.chrome` and `viewdata.footer`; Stardot imports `viewdata.layout` as
 well. Two different things are going on, and they want different answers:
 
@@ -194,12 +204,6 @@ well. Two different things are going on, and they want different answers:
   calendar's notices are a heading and some lines. Closing this closes most of
   the crossings by itself.
 
-**2. No blessed way to drive a session in a test.**
-`weather-viewdata/tests/test_weather_application.py` imports
-`sextile.session.session.Session` to play keys at a service end to end. That is
-a reasonable thing for a service's tests to want and there is no public path to
-it.
-
 ## How it is checked
 
 `test_public_surface.py` reads the three services' syntax trees and asserts
@@ -207,4 +211,5 @@ that every `from sextile...` import names a module listed here — in the spirit
 of the rest of this workspace, where what must not drift is pinned by a test
 rather than by a rule somebody remembers. The two crossings above are named in
 that test as known exceptions, so closing one means deleting a line from it and
-watching the suite stay green.
+watching the suite stay green. A second assertion fails if a line outlives the
+defect it names: an exception left lying about reads as permission.

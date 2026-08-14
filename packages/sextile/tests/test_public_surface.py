@@ -31,6 +31,7 @@ PUBLIC: Final = frozenset(
         "sextile.middleware",
         "sextile.visits",
         "sextile.cli",
+        "sextile.testing",
         "sextile.viewdata",
         "sextile.viewdata.blocks",
         "sextile.viewdata.canvas",
@@ -58,9 +59,6 @@ CROSSINGS: Final = frozenset(
         "sextile.viewdata.chrome",
         "sextile.viewdata.footer",
         "sextile.viewdata.layout",
-        #  Driving a session end to end, which a service's own tests want and
-        #  have no public way to do.
-        "sextile.session.session",
     }
 )
 

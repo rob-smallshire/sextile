@@ -17,6 +17,9 @@ each one is drawn:
 A service needing a shape that is not here subclasses `Formatter` or
 `RowFormatter` and says how tall an entry is and how to draw one.
 
+`farewell_page` is here too, being a page of lines and no furniture, and the
+one page every service draws the same way.
+
 Example:
     Twelve entries, nine on the first frame and three on the second::
 
@@ -34,7 +37,8 @@ from typing import TYPE_CHECKING, ClassVar, Protocol, runtime_checkable
 
 from sextile.addressing import PageAddress
 from sextile.content.blocks import Document, Paragraph
-from sextile.layout import Offer, Placement, Room
+from sextile.layout import Offer, Once, PageLayout, Placement, Room
+from sextile.page import Page
 from sextile.viewdata.canvas import Canvas, RowWriter
 from sextile.viewdata.controls import Colour
 from sextile.viewdata.drawing import key_row
@@ -468,3 +472,32 @@ class Prose(Formatter[Row]):
             #  a row has, colour attribute and indent included. Cutting again
             #  would take a character off every line it had filled exactly.
             canvas.row(row).skip(entry.indent).text(entry.text, entry.colour)
+
+
+def farewell_page(title: str, *lines: str, hang_up: bool = True) -> Page:
+    """The page a caller sees last: no furniture, and room beneath to type.
+
+    Args:
+        title: The heading, drawn in cyan on the first row.
+        *lines: What to say, one string a row, beginning two rows below the
+            title. Empty strings leave a blank row.
+        hang_up: Whether the line drops once this page has been shown. Pass
+            False for the involuntary parting, an idle caller being released,
+            where the session drops the line itself.
+
+    Returns:
+        A page of a single frame, offering no keys.
+
+    A footer offering the index would be a lie on a page there is no coming
+    back from, and the rows it and the rules would take up are exactly the ones
+    worth leaving blank: the reader is about to be talking to their modem, and
+    the cursor sits below the last thing said.
+    """
+    return PageLayout(
+        furniture=(),
+        hang_up=hang_up,
+        parts=[
+            Once(Lines(said=(title,), colour=Colour.CYAN)),
+            Once(Lines(said=("", *lines))),
+        ],
+    ).build(None)

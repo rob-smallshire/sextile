@@ -23,11 +23,11 @@ from sextile.layout import (
     Placement,
     Prompt,
     Room,
+    Shortcut,
     content_rows,
     fill,
 )
 from sextile.page import Page
-from sextile.templates import Shortcut
 from sextile.viewdata.canvas import Canvas
 from sextile.viewdata.controls import Colour
 from sextile.viewdata.footer import FooterItem, Priority

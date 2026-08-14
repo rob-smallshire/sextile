@@ -15,7 +15,7 @@ Example:
 
         fill(
             [Once(preamble), Every(headings), Flowing(Menu(items))],
-            range(CONTENT_FIRST_ROW, CONTENT_FIRST_ROW + CONTENT_ROWS),
+            content_rows(DEFAULT_FURNITURE),
         )
 """
 
@@ -33,7 +33,6 @@ from sextile.keys import (
     moving,
 )
 from sextile.page import Page, PageFrame
-from sextile.templates import HOME_KEY, Shortcut
 from sextile.viewdata.canvas import Canvas
 from sextile.viewdata.controls import Colour
 from sextile.viewdata.drawing import rule
@@ -143,6 +142,43 @@ class Part(Protocol):
             split.
         """
         ...
+
+
+#: The key that leads home, on every frame of every page that offers one.
+HOME_KEY: Final = "0"
+
+
+@dataclass(frozen=True)
+class Shortcut:
+    """A key offered on every frame of a page, always leading to one address.
+
+    Attributes:
+        key: The character the reader presses, such as `*` or `R`.
+        destination: The address that key leads to, from every frame.
+        says: How the footer names the key. Put the short form first: the
+            footer sheds words from the end when a row is tight, so
+            `"index, or key another page"` degrades to `"index"` and then to
+            the bare key.
+        arrow: Whether the matching cursor key leads there as well. Only `W`,
+            `A`, `S` and `D` have one; asking on any other key adds nothing
+            rather than raising.
+        priority: How hard the footer tries to keep it. A key that is the
+            point of the page outranks one that is a convenience.
+
+    A page's digits belong to its entries and change from frame to frame, but a
+    shortcut is fixed. It is for the way out that is not the way home: a
+    forecast returning to the search that found it, a post returning to the
+    board it was on.
+    """
+
+    key: str
+    destination: PageAddress
+    says: str = ""
+    #  Not assumed, because whether an arrow means what its letter means
+    #  depends on what is on the frame: on a page with a coordinate field it
+    #  does not, `W` being West and `S` South.
+    arrow: bool = False
+    priority: Priority = Priority.PRIMARY
 
 
 @dataclass(frozen=True)
@@ -675,7 +711,7 @@ class PageLayout:
         #  hand describe the same key the same way.
         moves = {one.key for one in self.shortcuts if one.key in _MOVEMENT_LETTERS}
         items += [
-            FooterItem(one.key, one.says, Priority.PRIMARY)
+            FooterItem(one.key, one.says, one.priority)
             for one in self.shortcuts
             if one.key not in moves
         ]
@@ -690,3 +726,4 @@ class PageLayout:
                 )
             )
         return items
+

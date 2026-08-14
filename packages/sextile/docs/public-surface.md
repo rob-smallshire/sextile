@@ -2,11 +2,10 @@
 
 What an application may import from `sextile`, and what it may not.
 
-**This document states the intended surface, which is not yet the actual one.**
-Every place the two disagree is listed under [Where the line is
-crossed](#where-the-line-is-crossed), with what has to happen before the entry
-can be deleted. Until that list is empty this is a design being worked towards,
-and it says so rather than pretending otherwise.
+**This document states the surface, and as of 2026-08-14 it is also the actual
+one.** Nothing in the three services reaches past it, and
+`test_public_surface.py` reads them and says so. [Where the line is
+crossed](#where-the-line-is-crossed) records what it took to get there.
 
 ## The rule
 
@@ -57,19 +56,13 @@ rest of [`sextile.keys`](#sextilekeys--the-keys-a-reader-presses).
     Menu  Listing  Figures  Lines  Prose  the shapes
     Entry  MenuItem                       what a shape is given
 
-### `sextile.templates` — the shapes a page takes
+### `sextile.viewdata.typesetting` — a document as rows
 
-The first place to look when a page is being written. A service that finds no
-shape here fitting should subclass `Template` or `RowTemplate` rather than draw
-a frame by hand; a frame drawn by hand is a frame that has to keep up with the
-chrome on its own, and they do not.
+    Row  rows_for  TRUNCATION_NOTICE
 
-    Template  RowTemplate           to subclass
-    Menu  Listing  Figures  Prose   the shapes
-    Entry  MenuItem                 what a shape is given
-    Shortcut  Block  PreambleLine   what goes round the entries
-    farewell_page                   the last frame of a call
-    CHOICES_PER_FRAME  HOME_KEY     the two numbers a page may need
+For a page made of something richer than strings. `rows_for` wraps a
+`Document`, colours quotations and listings, indents nesting, and breaks
+over-long words rather than dropping them.
 
 ### `sextile.viewdata` — the drawing toolkit
 
@@ -185,52 +178,32 @@ Everything else, and specifically:
 
 ## Where the line is crossed
 
-One place, as of 2026-08-14. It is the framework failing to offer something
-and the applications reaching in for it; the five others are closed.
+Nowhere, as of 2026-08-14.
 
-*Closed on 2026-08-14, and kept here because a surface document that shows only
-its present state says nothing about which way it is moving:* `PageAddress`,
-`Page`, `PageFrame`, `Sextile`, `Arrival`, `Parting` and `Converter` were being
-imported by module path though all seven were top-level exports already, and
-now come through `sextile`. `keyed`, `keys`, `Handler`, `routes_on` and
-`GuideRow` have been added to `__all__`, which had been half of the declaring
-vocabulary and none of the addressing. `sextile.forms` is listed above as
-public, which settles `Field` and `Fields`. `NoSuchRouteError` and
-`RouteError` are exported, a service's own converter being what raises the
-first of them. `guidance.Key` is `GuideRow` and is
-exported from `sextile`: it describes a service's own row in a table, and the
-word `key` was already spoken for by the thing a reader presses. And
-`sextile.testing` is that, above: weather was driving `Session` directly for
-want of any other way to press a key at a service.
+The last three crossings were `viewdata.chrome`, `viewdata.footer` and
+`viewdata.typesetting`, all reached because a page had to draw its own
+furniture. Splitting a page into furniture and parts closed them: `chrome` has
+no reader outside the framework, and `footer` and `typesetting` turned out to
+be public rather than crossed. A part says which keys to name, so a service
+writing one needs `FooterItem`; a page made of a document needs `rows_for`.
+Both are listed above.
 
-**Chrome and footers drawn by hand.** Stardot and weather import
-`viewdata.chrome` and `viewdata.footer`; Stardot imports `viewdata.typesetting` as
-well. The calendar is done and imports none of them. Three sites are left, and
-they are three different shapes rather than one:
-
-- *A heading and a body.* `stardot_viewdata/post_page.py` paginates a document
-  and draws its own chrome and footer. A post's subject and byline repeat on
-  every frame, where a template's preamble is drawn on the first only, so this
-  wants either a repeating heading or a shape of its own.
-- *A form on a frame.* `weather_viewdata/handlers.py` draws two frames whose
-  content is a field to type into and a footer naming TAB and DEL. No template
-  covers a form at all, `PageFrame.form` being something a page sets for
-  itself.
-- *Geometry as a coordinate.* `weather_viewdata/search.py` uses
-  `CONTENT_FIRST_ROW` to say which row its field sits on. That is not drawing
-  and is not a missing shape: it is a legitimate need for the frame's
-  geometry, and wants a public home of its own.
-
-The calendar closed with `Lines` for its notices, a preamble `Block` for the
-month grid, and `Shortcut(arrow=True)` with `item="month"` for the keys either
-side. Its two pages render byte for byte as they did before.
+*Kept as a record of what the surface was for, since a document showing only
+its present state says nothing about which way it is moving.* Six crossings
+were found when this was first written. Three were applications reaching past a
+front door that was already open, and closed the same day. One was a name that
+should have been exported and was not. One was API behind an internal path,
+`guidance.Key`, now `GuideRow` and exported. The last was the interesting one
+and took the longest: three services drawing chrome and composing footers by
+hand, for want of any way to obtain the furniture of a page without also being
+a formatter of a homogeneous sequence.
 
 ## How it is checked
 
 `test_public_surface.py` reads the three services' syntax trees and asserts
 that every `from sextile...` import names a module listed here — in the spirit
 of the rest of this workspace, where what must not drift is pinned by a test
-rather than by a rule somebody remembers. The two crossings above are named in
-that test as known exceptions, so closing one means deleting a line from it and
-watching the suite stay green. A second assertion fails if a line outlives the
-defect it names: an exception left lying about reads as permission.
+rather than by a rule somebody remembers. Its list of known crossings is empty,
+and a second assertion fails if a line outlives the defect it names -- an
+exception left lying about reads as permission, so an empty list is the only
+one that needs no watching.

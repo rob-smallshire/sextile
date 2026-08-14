@@ -41,9 +41,8 @@ from sextile import (
     keyed,
     keys,
 )
-from sextile.formatting import Lines, Menu, MenuItem, Prose
-from sextile.layout import Drawn, Flowing, Once, PageLayout
-from sextile.templates import Shortcut, farewell_page
+from sextile.formatting import Lines, Menu, MenuItem, Prose, farewell_page
+from sextile.layout import Drawn, Flowing, Once, PageLayout, Shortcut
 from sextile.viewdata.canvas import Canvas
 from sextile.viewdata.controls import Colour
 

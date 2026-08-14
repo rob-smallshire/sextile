@@ -22,7 +22,6 @@ import pytest
 PUBLIC: Final = frozenset(
     {
         "sextile",
-        "sextile.templates",
         "sextile.formatting",
         "sextile.layout",
         "sextile.keys",
@@ -44,25 +43,20 @@ PUBLIC: Final = frozenset(
         "sextile.viewdata.drawing",
         "sextile.viewdata.encoding",
         "sextile.viewdata.font",
+        "sextile.viewdata.footer",
         "sextile.viewdata.frame",
         "sextile.viewdata.lettering",
+        "sextile.viewdata.typesetting",
         "sextile.viewdata.wrapping",
     }
 )
 
 #: Machinery a service reaches for because the framework offers it no other
 #: way, each written up under "Where the line is crossed" in
-#: `docs/public-surface.md`. Every line here is a framework defect, not a
-#: permission.
-CROSSINGS: Final = frozenset(
-    {
-        #  Chrome, footers and pagination drawn by hand, for want of a template
-        #  whose shape is a heading and a body.
-        "sextile.viewdata.chrome",
-        "sextile.viewdata.footer",
-        "sextile.viewdata.typesetting",
-    }
-)
+#: `docs/public-surface.md`. Every line here would be a framework defect rather
+#: than a permission, and there are none: splitting a page into its furniture
+#: and the parts between closed the last of them.
+CROSSINGS: Final[frozenset[str]] = frozenset()
 
 SERVICES: Final = ("stardot-viewdata", "weather-viewdata", "calendar-viewdata")
 

@@ -7,22 +7,35 @@ can be read, and that the service is opened and closed around the call.
 """
 
 from sextile import Page, PageAddress, PageRequest, PageRoute, Sextile
-from sextile.templates import Lines, Menu, MenuItem
+from sextile.formatting import Lines, Menu, MenuItem
+from sextile.layout import Flowing, PageLayout
 from sextile.testing import calling
 
 
 async def index(request: PageRequest) -> Page:
     app = Sextile.of(request)
-    return Menu(
+    return PageLayout(
         title="INDEX",
-        entries=[MenuItem(text="The weather", destination=app.address_for("weather"))],
         home=app.index,
+        parts=[
+            Flowing(
+                Menu(
+                    entries=[
+                        MenuItem(
+                            text="The weather", destination=app.address_for("weather")
+                        )
+                    ]
+                )
+            )
+        ],
     ).build(request.address)
 
 
 async def weather(request: PageRequest) -> Page:
-    return Lines(
-        title="WEATHER", entries=["Rain, mostly."], home=PageAddress("1")
+    return PageLayout(
+        title="WEATHER",
+        home=PageAddress("1"),
+        parts=[Flowing(Lines(said=("Rain, mostly.",)))],
     ).build(request.address)
 
 

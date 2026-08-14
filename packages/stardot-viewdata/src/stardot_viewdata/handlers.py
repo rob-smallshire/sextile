@@ -39,9 +39,8 @@ from sextile import (
     keyed,
     page,
 )
-from sextile.formatting import Lines, Menu, MenuItem, Prose
-from sextile.layout import Flowing, Once, PageLayout
-from sextile.templates import HOME_KEY, Shortcut, farewell_page
+from sextile.formatting import Lines, Menu, MenuItem, Prose, farewell_page
+from sextile.layout import HOME_KEY, Flowing, Once, PageLayout, Shortcut
 from sextile.viewdata.canvas import Canvas
 from sextile.viewdata.controls import Colour
 from stardot_viewdata.model import Post

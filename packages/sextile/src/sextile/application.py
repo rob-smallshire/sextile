@@ -43,6 +43,7 @@ from sextile.declarations import (
     routes_in,
     routes_on,
 )
+from sextile.layout import CHOICES_PER_FRAME, HOME_KEY
 from sextile.page import Page, PageFrame
 from sextile.pages import contents, guidance, history, names, readership
 from sextile.pages.contents import contents_page
@@ -50,7 +51,6 @@ from sextile.pages.history import history_page
 from sextile.pages.names import names_page
 from sextile.requests import Arrival, PageRequest, Parting
 from sextile.routing import Converter, ConverterFactory, Match, Router
-from sextile.templates import CHOICES_PER_FRAME, HOME_KEY
 from sextile.viewdata.canvas import Canvas
 from sextile.viewdata.controls import Colour
 from sextile.visits import Visits

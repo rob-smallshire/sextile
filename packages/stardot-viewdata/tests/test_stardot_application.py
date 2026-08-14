@@ -25,7 +25,7 @@ from sextile import (
     keyed,
     keys,
 )
-from sextile.templates import MenuItem
+from sextile.formatting import MenuItem
 from sextile.viewdata import lettering
 from sextile.viewdata.blocks import BLOCKS_ACROSS, BLOCKS_DOWN
 from sextile.viewdata.charset import mosaic_pattern

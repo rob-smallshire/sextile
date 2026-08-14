@@ -31,6 +31,9 @@ might be about.
             |  PageRoute, Middleware, Lifespan           what a service is made of
             |  middleware  log_pages                     what wraps every page
             |
+   layout      PageLayout, parts, furniture             a page as its pieces
+            |  formatting  Menu, Listing, Prose         a sequence as a part
+            |
    pages/      contents, names, history                 pages the framework
             |  guidance, readership                     builds from what it knows
             |  handlers                                  the routes that name them

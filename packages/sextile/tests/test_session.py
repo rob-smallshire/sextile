@@ -19,9 +19,10 @@ from exemplar import Board
 from sextile import keys
 from sextile.addressing import PageAddress
 from sextile.application import PageRequest, PageRoute, Sextile
+from sextile.formatting import Listing, MenuItem
+from sextile.layout import Flowing, PageLayout
 from sextile.page import Page
 from sextile.session.session import Session
-from sextile.templates import Listing, MenuItem
 from sextile.viewdata.frame import FRAME_PREAMBLE
 
 
@@ -984,10 +985,12 @@ async def _paged() -> Session:
     """A session showing a page of three frames."""
 
     async def long(request: PageRequest) -> Page:
-        return Listing(
+        return PageLayout(
             title="LONG",
-            entries=[MenuItem(f"{n}", "row") for n in range(50)],
             home=PageAddress("1"),
+            parts=[
+                Flowing(Listing(entries=[MenuItem(f"{n}", "row") for n in range(50)]))
+            ],
         ).build(request.address)
 
     app = Sextile(pages=[PageRoute("1", long, name="long")])

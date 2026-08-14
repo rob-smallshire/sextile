@@ -17,9 +17,9 @@ from collections.abc import Sequence
 import pytest
 
 from sextile import Page, PageAddress, PageFrame, PageRequest, PageRoute, Sextile
+from sextile.formatting import Entry, MenuItem
 from sextile.forms import Suggest, draw_form
 from sextile.session.session import Session
-from sextile.templates import Entry, MenuItem
 from sextile.viewdata.canvas import Canvas
 from sextile.viewdata.encoding import ScreenControl
 from sextile.viewdata.frame import COLUMNS

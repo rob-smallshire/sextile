@@ -10,11 +10,28 @@ from dataclasses import dataclass
 
 import pytest
 
-from sextile.addressing import PageAddress
-from sextile.layout import Break, Every, Flowing, Offer, Once, Placement, Room, fill
+from sextile.addressing import FRAMES_PER_PAGE, PageAddress
+from sextile.keys import CONVENTIONAL_NEXT_FRAME, NEXT_FRAME
+from sextile.layout import (
+    DEFAULT_FURNITURE,
+    Break,
+    Every,
+    Flowing,
+    Offer,
+    Once,
+    PageLayout,
+    Placement,
+    Prompt,
+    Room,
+    content_rows,
+    fill,
+)
+from sextile.page import Page
+from sextile.templates import Shortcut
 from sextile.viewdata.canvas import Canvas
 from sextile.viewdata.controls import Colour
 from sextile.viewdata.footer import FooterItem, Priority
+from sextile.viewdata.typesetting import TRUNCATION_NOTICE
 
 CONTENT = range(2, 22)
 
@@ -71,6 +88,17 @@ class Recites:
             canvas.row(room.first_row + offset).text(line, Colour.WHITE)
         rest = self.lines[taken:]
         return Placement(rows=taken, rest=Recites(rest) if rest else None)
+
+
+def at(digits: str) -> PageAddress:
+    return PageAddress(digits)
+
+
+def rows_of(page: Page, index: int = 0) -> list[str]:
+    found = page.frame(index)
+    assert found is not None
+    characters, _ = found.frame.to_grid()
+    return characters
 
 
 def said_on(frames: list[Canvas], index: int) -> list[str]:
@@ -222,3 +250,95 @@ class TestSeveralPartsOnEveryFrame:
         assert len(filled) > 1
         for index in range(len(filled)):
             assert "throughout" in said_on([one.canvas for one in filled], index)
+
+
+class TestTheFurniture:
+    """The second pass: what goes round the content once the count is known."""
+
+    def test_the_default_leaves_the_content_rows_it_always_had(self) -> None:
+        assert content_rows(DEFAULT_FURNITURE) == range(2, 22)
+
+    def test_and_no_furniture_leaves_the_whole_frame(self) -> None:
+        assert content_rows(()) == range(0, 24)
+
+    def test_a_two_row_footer_costs_a_content_row(self) -> None:
+        #  The arithmetic says so, rather than a constant needing to be edited.
+        assert content_rows([*DEFAULT_FURNITURE, Prompt()]) == range(2, 21)
+
+    def test_the_header_carries_the_title_and_the_page_number(self) -> None:
+        shown = rows_of(PageLayout(title="ITEMS", parts=[Once(Says("x"))]).build(at("8")))
+        assert shown[0].strip().startswith("ITEMS")
+        assert shown[0].strip().endswith("8a")
+
+    def test_a_page_with_no_number_gives_the_title_the_row(self) -> None:
+        shown = rows_of(PageLayout(title="UNKNOWN PAGE").build(None))
+        assert shown[0].strip() == "UNKNOWN PAGE"
+
+    def test_a_page_may_do_without_furniture_altogether(self) -> None:
+        shown = rows_of(
+            PageLayout(title="STARDOT", furniture=(), parts=[Once(Says("masthead"))])
+            .build(None)
+        )
+        assert shown[0].strip() == "masthead"
+        assert all("STARDOT" not in row for row in shown)
+
+
+class TestWhatAFrameAnswers:
+    def test_the_parts_claims_and_the_way_home_together(self) -> None:
+        page = PageLayout(
+            title="ITEMS", home=at("1"), parts=[Flowing(items(3))]
+        ).build(at("8"))
+        found = page.frame(0)
+        assert found is not None
+        assert found.destination("1") == PageAddress("80")
+        assert found.destination("0") == at("1")
+
+    def test_a_shortcut_leads_from_every_frame(self) -> None:
+        page = PageLayout(
+            title="POSTS",
+            home=at("1"),
+            shortcuts=[Shortcut(key="R", destination=at("7"), says="reply")],
+            parts=[Flowing(items(12))],
+        ).build(at("8"))
+        for index in range(len(page.frames)):
+            found = page.frame(index)
+            assert found is not None
+            assert found.destination("R") == at("7")
+
+    def test_the_prompt_names_the_keys_that_work_here(self) -> None:
+        page = PageLayout(
+            title="ITEMS", home=at("1"), parts=[Flowing(items(12))]
+        ).build(at("8"))
+        first = rows_of(page, 0)[-1]
+        second = rows_of(page, 1)[-1]
+        assert "1-9 select" in first
+        assert "S page down" in first and "W page up" not in first
+        assert "W page up" in second and "S page down" not in second
+
+    def test_and_a_page_of_one_frame_names_no_movement(self) -> None:
+        page = PageLayout(title="ITEMS", home=at("1"), parts=[Flowing(items(3))]).build(at("8"))
+        assert "page down" not in rows_of(page, 0)[-1]
+
+
+class TestWhereAPageLeads:
+    def test_follows_brings_the_key_that_reaches_it(self) -> None:
+        #  The session tries the next frame and falls through to `follows`, so
+        #  the key has to be answered for that to happen at all.
+        page = PageLayout(
+            title="STARDOT", furniture=(), parts=[Once(Says("masthead"))], follows=at("1")
+        ).build(None)
+        found = page.frame(0)
+        assert found is not None
+        assert page.follows == at("1")
+        assert NEXT_FRAME in found.moves
+        assert CONVENTIONAL_NEXT_FRAME in found.moves
+
+    def test_ringing_off_is_said_by_the_page(self) -> None:
+        assert PageLayout(title="GOODBYE", hang_up=True).build(None).hang_up
+
+
+class TestAPageTooLongForItsFrames:
+    def test_it_stops_and_says_so(self) -> None:
+        page = PageLayout(title="PAGES", parts=[Flowing(lines(1000))]).build(at("9"))
+        assert len(page.frames) == FRAMES_PER_PAGE
+        assert TRUNCATION_NOTICE in rows_of(page, FRAMES_PER_PAGE - 1)[-3]

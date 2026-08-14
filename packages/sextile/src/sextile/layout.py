@@ -21,12 +21,29 @@ Example:
 
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
-from typing import Protocol, runtime_checkable
+from enum import Enum, auto
+from typing import TYPE_CHECKING, Final, Protocol, runtime_checkable
 
 from sextile.addressing import FRAMES_PER_PAGE, PageAddress
-from sextile.forms import Form
+from sextile.keys import (
+    ARROW_FOR,
+    NEXT_FRAME,
+    PREVIOUS_FRAME,
+    arrows_lead_where,
+    moving,
+)
+from sextile.page import Page, PageFrame
+from sextile.templates import HOME_KEY, Shortcut
 from sextile.viewdata.canvas import Canvas
-from sextile.viewdata.footer import FooterItem
+from sextile.viewdata.controls import Colour
+from sextile.viewdata.drawing import rule
+from sextile.viewdata.encoding import cell_count, fitted
+from sextile.viewdata.footer import ROOM, FooterItem, Priority, movement, render_footer
+from sextile.viewdata.frame import COLUMNS, ROWS
+from sextile.viewdata.typesetting import TRUNCATION_NOTICE
+
+if TYPE_CHECKING:
+    from sextile.forms import Form
 
 
 @dataclass(frozen=True)
@@ -60,7 +77,7 @@ class Offer:
 
     choices: Mapping[str, PageAddress] = field(default_factory=dict)
     named: Sequence[FooterItem] = ()
-    form: Form | None = None
+    form: "Form | None" = None
 
     def and_then(self, other: "Offer") -> "Offer":
         """This offer and another, as one.
@@ -192,6 +209,9 @@ class Filled:
     offer: Offer = field(default_factory=Offer)
 
 
+#: The four letters that move about, which are the ones an arrow stands for.
+_MOVEMENT_LETTERS: Final = frozenset(ARROW_FOR)
+
 #: The digits a frame can offer, a reader choosing with one keypress. Held here
 #: rather than in the templates because it is a fact about the keypad and the
 #: whole frame shares it, however many parts divide it up.
@@ -209,7 +229,8 @@ def fill(parts: Sequence[Laid], rows: range) -> list[Filled]:
     Returns:
         One `Filled` a frame, in order, and never none: a page that answered
         with no frames could not be shown. Stops at `FRAMES_PER_PAGE`, a page
-        having frames `a` to `z` and no more.
+        having frames `a` to `z` and no more, and says so on the last row of
+        the last of them rather than ending without explanation.
 
     Raises:
         ValueError: If a part can never be placed, being taller than a whole
@@ -219,7 +240,13 @@ def fill(parts: Sequence[Laid], rows: range) -> list[Filled]:
     frames: list[Filled] = []
     while True:
         frames.append(_frame(state, rows))
-        if state.finished or len(frames) == FRAMES_PER_PAGE:
+        if state.finished:
+            return frames
+        if len(frames) == FRAMES_PER_PAGE:
+            #  A page has frames a to z and no more. A reader who has reached
+            #  the end of what there is should not be left wondering whether
+            #  that was all of it, so the last row says what happened.
+            frames[-1].canvas.row(rows.stop - 1).text(TRUNCATION_NOTICE, Colour.RED)
             return frames
 
 
@@ -358,3 +385,278 @@ def _draw_at_foot(
         placed = part.place(filled.canvas, Room(at, rows.stop - at, CHOICES_PER_FRAME))
         filled.offer = filled.offer.and_then(placed.offer)
         at += placed.rows
+
+
+class Edge(Enum):
+    """Which end of a frame a furnishing is docked to."""
+
+    TOP = auto()
+    FOOT = auto()
+
+
+@dataclass(frozen=True)
+class Summary:
+    """What a furnishing is told about the frame it is drawing on.
+
+    Attributes:
+        title: What the page is called.
+        address: The address the page answers to, or None where it has no
+            number of its own to show.
+        index: Which frame this is, counting from nought.
+        frames: How many frames the page came to.
+        offered: Every key that works on this frame, in the order the prompt
+            should try to name them: what the parts claimed, then the
+            shortcuts, the movement keys, and the way home.
+    """
+
+    title: str
+    address: PageAddress | None
+    index: int
+    frames: int
+    offered: Sequence[FooterItem]
+
+    @property
+    def page_number(self) -> str:
+        """The page number as this frame displays it, or empty for none."""
+        return self.address.frame_number(self.index) if self.address else ""
+
+
+@runtime_checkable
+class Furnishing(Protocol):
+    """A band docked to the top or the foot of every frame.
+
+    A furnishing claims no keys. What it names belongs to the layout or to the
+    parts, and it is handed the assembled list rather than composing one.
+    """
+
+    @property
+    def edge(self) -> Edge:
+        """Which end of the frame this is docked to."""
+        ...
+
+    @property
+    def rows(self) -> int:
+        """How many rows it takes, on every frame."""
+        ...
+
+    def draw(self, canvas: Canvas, at: int, page: Summary) -> None:
+        """Draw this band in the rows the layout has reserved for it."""
+        ...
+
+
+@dataclass(frozen=True)
+class Header:
+    """The page title, and the page number at the right of the same row."""
+
+    colour: Colour = Colour.CYAN
+    numbered: Colour = Colour.WHITE
+    edge: Edge = Edge.TOP
+    rows: int = 1
+
+    #: A colour attribute costs a cell, and this row carries two runs.
+    _ATTRIBUTES: Final = 2
+    _GAP: Final = 1
+
+    def draw(self, canvas: Canvas, at: int, page: Summary) -> None:
+        #  Not everything drawn is a page a reader could have keyed. A notice
+        #  answering a number that names nothing has none to show, and the
+        #  title may have the whole row.
+        if not page.page_number:
+            canvas.row(at).text(fitted(page.title, COLUMNS - 1), self.colour)
+            return
+        spare = COLUMNS - cell_count(page.page_number) - self._ATTRIBUTES - self._GAP
+        canvas.row(at).text(fitted(page.title, spare), self.colour)
+        canvas.right(at, page.page_number, self.numbered)
+
+
+@dataclass(frozen=True)
+class Rule:
+    """A rule across the middle of a row, dividing the content from the rest."""
+
+    edge: Edge = Edge.TOP
+    colour: Colour = Colour.BLUE
+    rows: int = 1
+
+    def draw(self, canvas: Canvas, at: int, page: Summary) -> None:
+        del page  # a rule says nothing about the page it is on
+        rule(canvas, at, self.colour)
+
+
+@dataclass(frozen=True)
+class Prompt:
+    """Every key that works on this frame, and what each of them does."""
+
+    colour: Colour = Colour.YELLOW
+    edge: Edge = Edge.FOOT
+    rows: int = 1
+
+    def draw(self, canvas: Canvas, at: int, page: Summary) -> None:
+        said = render_footer(page.offered, ROOM)
+        if said:
+            canvas.row(at).text(fitted(said, COLUMNS - 1), self.colour)
+
+
+#: What a page is furnished with unless a service or a page says otherwise: a
+#: title above a rule, and a rule above the keys. Two levels of override, and
+#: no cascade -- a site is one thing and a page that does something
+#: irreversible may say so, but a reader learns where the page number sits once.
+DEFAULT_FURNITURE: Final[tuple[Furnishing, ...]] = (
+    Header(),
+    Rule(edge=Edge.TOP),
+    Rule(edge=Edge.FOOT),
+    Prompt(),
+)
+
+
+def content_rows(furniture: Sequence[Furnishing]) -> range:
+    """Which rows of a frame are left for the content.
+
+    Args:
+        furniture: The bands docked to the frame, in the order they are drawn
+            down it.
+
+    Returns:
+        The rows between them, which is the whole frame where there is no
+        furniture at all.
+    """
+    above = sum(one.rows for one in furniture if one.edge is Edge.TOP)
+    below = sum(one.rows for one in furniture if one.edge is Edge.FOOT)
+    return range(above, ROWS - below)
+
+
+@dataclass(kw_only=True)
+class PageLayout:
+    """A page as its furniture and the parts laid out between it.
+
+    Construct one and call `build` with the address the page answers to.
+
+    Attributes:
+        title: What the header calls the page.
+        parts: The content, in the order it appears down the frames.
+        home: Where `0` leads from every frame, or None for no way home. A
+            `Shortcut` where the footer should call it something other than
+            "index", or where another key should do it.
+        shortcuts: Keys offered on every frame, besides the digits and `0`.
+        item: What `A` and `D` move between, as the footer says it.
+        furniture: The bands round the content. Empty for a page that wants
+            none, such as a masthead.
+        follows: Where `#` leads once the frames have run out. Setting it
+            answers the next-frame keys, the session trying the next frame
+            before falling through to this.
+        hang_up: Whether the line drops once the page has been shown.
+
+    Example:
+        A menu, with a lead-in on its first frame::
+
+            PageLayout(
+                title="LATEST POSTS",
+                home=app.index,
+                parts=[Once(preamble), Flowing(Menu(entries=posts))],
+            ).build(address)
+    """
+
+    title: str = ""
+    parts: Sequence[Laid] = ()
+    home: "PageAddress | Shortcut | None" = None
+    shortcuts: Sequence[Shortcut] = ()
+    item: str = "item"
+    furniture: Sequence[Furnishing] = DEFAULT_FURNITURE
+    follows: PageAddress | None = None
+    hang_up: bool = False
+
+    @property
+    def way_home(self) -> Shortcut | None:
+        """The way home as a shortcut, whichever way the page gave it."""
+        if self.home is None or isinstance(self.home, Shortcut):
+            return self.home
+        return Shortcut(key=HOME_KEY, destination=self.home, says="index")
+
+    def build(self, address: PageAddress | None) -> Page:
+        """Fill the frames with the parts, then furnish them.
+
+        Args:
+            address: The address this page answers to, from which each frame
+                takes the page number it displays. None where the page has no
+                number of its own.
+
+        Returns:
+            The finished page: one frame for each the parts needed, each
+            carrying the keys that work while it is showing.
+        """
+        filled = fill(self.parts, content_rows(self.furniture))
+        return Page(
+            frames=tuple(
+                self._frame(one, index, len(filled), address)
+                for index, one in enumerate(filled)
+            ),
+            follows=self.follows,
+            hang_up=self.hang_up,
+        )
+
+    def _frame(
+        self, filled: Filled, index: int, frames: int, address: PageAddress | None
+    ) -> PageFrame:
+        """One frame, furnished, with the keys it answers gathered onto it."""
+        back, on = index > 0, index + 1 < frames or self.follows is not None
+        page = Summary(
+            title=self.title,
+            address=address,
+            index=index,
+            frames=frames,
+            offered=self._offered(filled, back=back, on=on),
+        )
+        self._furnish(filled.canvas, page)
+        return PageFrame(
+            frame=filled.canvas.frame,
+            choices=self._choices(filled),
+            moves=moving(back=back, on=on),
+            form=filled.offer.form,
+        )
+
+    def _furnish(self, canvas: Canvas, page: Summary) -> None:
+        """Draw the bands, downwards from the top and upwards from the foot."""
+        at = 0
+        for one in self.furniture:
+            if one.edge is Edge.TOP:
+                one.draw(canvas, at, page)
+                at += one.rows
+        at = ROWS - sum(one.rows for one in self.furniture if one.edge is Edge.FOOT)
+        for one in self.furniture:
+            if one.edge is Edge.FOOT:
+                one.draw(canvas, at, page)
+                at += one.rows
+
+    def _choices(self, filled: Filled) -> dict[str, PageAddress]:
+        """Every key on this frame that leads somewhere else."""
+        choices = dict(filled.offer.choices)
+        choices |= {one.key: one.destination for one in self.shortcuts}
+        choices |= arrows_lead_where(
+            {one.key: one.destination for one in self.shortcuts if one.arrow}
+        )
+        if (way := self.way_home) is not None:
+            choices[way.key] = way.destination
+        return choices
+
+    def _offered(self, filled: Filled, *, back: bool, on: bool) -> list[FooterItem]:
+        """What the prompt should try to name, most worth saying last off."""
+        items = list(filled.offer.named)
+        #  A shortcut on one of the movement letters is named by `movement`
+        #  rather than by itself, so that a page built here and a page drawn by
+        #  hand describe the same key the same way.
+        moves = {one.key for one in self.shortcuts if one.key in _MOVEMENT_LETTERS}
+        items += [
+            FooterItem(one.key, one.says, Priority.PRIMARY)
+            for one in self.shortcuts
+            if one.key not in moves
+        ]
+        items += movement(
+            moves | {key for key, yes in ((PREVIOUS_FRAME, back), (NEXT_FRAME, on)) if yes},
+            item=self.item,
+        )
+        if (way := self.way_home) is not None:
+            items.append(
+                FooterItem(
+                    way.key, way.says, Priority.ESSENTIAL, brief=way.says.split(",")[0]
+                )
+            )
+        return items

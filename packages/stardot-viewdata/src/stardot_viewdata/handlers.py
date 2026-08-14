@@ -32,7 +32,6 @@ from sextile import (
     Held,
     Page,
     PageAddress,
-    PageFrame,
     PageRequest,
     Parting,
     Sextile,
@@ -40,13 +39,20 @@ from sextile import (
     page,
 )
 from sextile.formatting import Lines, Menu, MenuItem, Prose, farewell_page
-from sextile.layout import HOME_KEY, Flowing, Once, PageLayout, Shortcut
+from sextile.layout import (
+    HOME_KEY,
+    Drawn,
+    Flowing,
+    Once,
+    PageLayout,
+    Shortcut,
+)
 from sextile.viewdata.canvas import Canvas
 from sextile.viewdata.controls import Colour
+from sextile.viewdata.frame import ROWS
 from stardot_viewdata.model import Post
 from stardot_viewdata.post_page import (
     CONVENTIONAL_NEXT_FRAME_KEY,
-    NEXT_FRAME_KEY,
     post_page,
     time_of,
 )
@@ -80,39 +86,37 @@ async def title(request: PageRequest) -> Page:
     """
     app = Sextile.of(request)
     held = await _read(request, lambda repository: repository.count_posts())
-    canvas = Canvas()
-    draw_masthead(canvas, SERVICE_NAME)
-    canvas.row(12).text("The Stardot forum for users of Acorn", Colour.WHITE)
-    canvas.row(13).text("computers and emulators.", Colour.WHITE)
-    canvas.row(15).text(f"{held} posts held.", Colour.GREEN)
-    #  Both instructions are built from the pages they name and the keys
-    #  this frame actually answers, so neither can come to say something
-    #  the service no longer does. The words are the ones the pages were
-    #  registered with, the numbers are the ones the router would build,
-    #  and the key is the one in `moves` below.
+    #  Both instructions are built from the pages they name and the keys this
+    #  frame actually answers, so neither can come to say something the service
+    #  no longer does. The words are the ones the pages were registered with,
+    #  and the numbers are the ones the router would build.
     index, guide_item = MenuItem.for_page(app, "main"), MenuItem.for_page(app, "help")
     main_page, about = app.address_for("main"), app.address_for("help")
-    moves = frozenset({NEXT_FRAME_KEY, CONVENTIONAL_NEXT_FRAME_KEY})
-    #  Each colour change costs a cell, which shows as a space -- so the
-    #  attribute is the space, rather than being paid for on top of one.
-    canvas.row(17).text("Key", Colour.WHITE).text(
-        CONVENTIONAL_NEXT_FRAME_KEY, Colour.YELLOW
-    ).text(f"for the {index.text.lower()}.", Colour.WHITE)
-    canvas.row(19).text("Key", Colour.WHITE).text(
-        keyed(about), Colour.YELLOW
-    ).text(f"for {guide_item.text.lower()}.", Colour.WHITE)
-    return Page(
-        frames=(
-            PageFrame(
-                frame=canvas.frame,
-                choices={"1": main_page},
-                moves=moves,
-            ),
-        ),
-        #  `#` is the one key a viewdata reader tries without being told, and
-        #  a title frame is nothing but an invitation to press it.
+
+    def draw(canvas: Canvas, row: int) -> None:
+        draw_masthead(canvas, SERVICE_NAME)
+        canvas.row(row + 12).text("The Stardot forum for users of Acorn", Colour.WHITE)
+        canvas.row(row + 13).text("computers and emulators.", Colour.WHITE)
+        canvas.row(row + 15).text(f"{held} posts held.", Colour.GREEN)
+        #  Each colour change costs a cell, which shows as a space -- so the
+        #  attribute is the space, rather than being paid for on top of one.
+        canvas.row(row + 17).text("Key", Colour.WHITE).text(
+            CONVENTIONAL_NEXT_FRAME_KEY, Colour.YELLOW
+        ).text(f"for the {index.text.lower()}.", Colour.WHITE)
+        canvas.row(row + 19).text("Key", Colour.WHITE).text(
+            keyed(about), Colour.YELLOW
+        ).text(f"for {guide_item.text.lower()}.", Colour.WHITE)
+
+    return PageLayout(
+        #  None at all: a masthead is the whole frame.
+        furniture=(),
+        #  `#` is the one key a viewdata reader tries without being told, and a
+        #  title frame is nothing but an invitation to press it. Setting this
+        #  answers that key as well as saying where it leads.
         follows=main_page,
-    )
+        shortcuts=[Shortcut(key="1", destination=main_page)],
+        parts=[Once(Drawn(rows=ROWS, draw=draw))],
+    ).build(None)
 
 
 @page("1", name="main", title="Main index", keywords=("MAIN", "INDEX", "HOME"))

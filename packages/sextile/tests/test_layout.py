@@ -182,3 +182,43 @@ class TestAPartTooTallForWhatIsLeft:
     def test_a_part_taller_than_a_frame_is_refused(self) -> None:
         with pytest.raises(ValueError, match="never be placed"):
             fill([Once(Says("far too tall", rows=30))], CONTENT)
+
+
+class TestSeveralPartsOnEveryFrame:
+    """They follow one another in the order the list gives them.
+
+    Two bands, and which one a part falls in is settled by the flowing parts:
+    what comes before the first of them is drawn where it stands, and what
+    comes after has its rows kept back at the foot, because a flowing part
+    would otherwise take them.
+    """
+
+    def test_two_at_the_top_are_drawn_in_order(self) -> None:
+        filled = fill(
+            [Every(Says("first")), Every(Says("second")), Flowing(items(12))],
+            CONTENT,
+        )
+        for index in range(len(filled)):
+            said = said_on([one.canvas for one in filled], index)
+            assert said[:2] == ["first", "second"]
+
+    def test_two_at_the_foot_are_drawn_in_order(self) -> None:
+        filled = fill(
+            [Flowing(lines(30)), Every(Says("penultimate")), Every(Says("last"))],
+            CONTENT,
+        )
+        for index in range(len(filled)):
+            said = said_on([one.canvas for one in filled], index)
+            assert said[-2:] == ["penultimate", "last"]
+
+    def test_one_between_two_flows_is_still_drawn_on_every_frame(self) -> None:
+        #  It falls in the band at the foot: anything after a flowing part has
+        #  to have its rows kept back, or the flow takes them and it is never
+        #  drawn at all.
+        filled = fill(
+            [Flowing(lines(30)), Every(Says("throughout")), Flowing(lines(4))],
+            CONTENT,
+        )
+        assert len(filled) > 1
+        for index in range(len(filled)):
+            assert "throughout" in said_on([one.canvas for one in filled], index)

@@ -165,8 +165,19 @@ flowing part lands on whichever frame that flow finished on. One rule, and the
 second case falls out of concatenation.
 
 **`every` parts are placed against the frame, not the stream.** Those before
-the flowing parts reserve rows at the top of every frame; those after reserve
-rows at the foot. What lies between is what the flowing parts divide.
+the first flowing part are drawn where they stand; those after it have their
+rows kept back at the foot. What lies between is what the flowing parts
+divide.
+
+The line falls at the first flowing part rather than at the end of the list
+because a flowing part takes the rows left to it: anything after one that
+waited its turn would not merely be pushed down the frame but never drawn at
+all, the frame ending as soon as a flowing part still has more to give.
+
+**Several of either follow one another**, in the order the list gives them. No
+rule of their own, which is the point: two headings above the entries and two
+notes beneath them are the same arrangement written twice, not a new
+arrangement.
 
 ### A break divides where a page means to
 

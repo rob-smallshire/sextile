@@ -143,9 +143,11 @@ class Once:
 class Every:
     """A part drawn on every frame, at its place in the order.
 
-    Where it comes after everything else in the list, its rows are charged to
-    every frame before the flowing parts are asked, so that a footnote is not
-    written over by the entries above it.
+    Where it comes after any flowing part, its rows are kept back at the foot
+    of every frame before that part is asked for its, since a flowing part
+    takes the rows left to it and nothing after one would be drawn at all.
+    Where it comes before them all, it is drawn where it stands. Several of
+    either follow one another in the order the list gives them.
     """
 
     part: Part
@@ -233,7 +235,7 @@ class _State:
     parts: Sequence[Laid]
     pending: dict[int, Part] = field(default_factory=dict)
     broken: set[int] = field(default_factory=set)
-    trailing: dict[int, Part] = field(default_factory=dict)
+    at_foot: dict[int, Part] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
         self.pending = {
@@ -241,7 +243,7 @@ class _State:
             for index, laid in enumerate(self.parts)
             if not isinstance(laid, Break)
         }
-        self.trailing = _trailing(self.parts)
+        self.at_foot = _at_foot(self.parts)
 
     @property
     def finished(self) -> bool:
@@ -253,20 +255,27 @@ class _State:
         )
 
 
-def _trailing(parts: Sequence[Laid]) -> dict[int, Part]:
-    """Which parts are drawn on every frame and come after all the others.
+def _at_foot(parts: Sequence[Laid]) -> dict[int, Part]:
+    """Which parts drawn on every frame have their rows kept back at the foot.
 
-    The rows of these are charged to a frame before anything else is asked for
-    its, since a footnote that waited its turn would find the entries above it
-    had taken the rows it needed and written over it.
+    Those that come after the first flowing part, in the order the list gives
+    them. A flowing part takes the rows left to it, so anything after one that
+    waited its turn would find them gone -- and would not merely be pushed
+    down, but never drawn at all, since the frame ends when a flowing part
+    still has more to give.
+
+    Those before the first flowing part need none of this. Nothing above them
+    can take their rows, so they are drawn where they stand.
     """
-    found: dict[int, Part] = {}
-    for index in reversed(range(len(parts))):
-        laid = parts[index]
-        if not isinstance(laid, Every):
-            break
-        found[index] = laid.part
-    return dict(sorted(found.items()))
+    flowing = next(
+        (index for index, laid in enumerate(parts) if isinstance(laid, Flowing)),
+        len(parts),
+    )
+    return {
+        index: laid.part
+        for index, laid in enumerate(parts)
+        if index > flowing and isinstance(laid, Every)
+    }
 
 
 def _height(part: Part, rows: range) -> int:
@@ -301,7 +310,7 @@ def _frame(state: _State, rows: range) -> Filled:
                 state.broken.add(index)
                 break
             continue
-        if index in state.trailing:
+        if index in state.at_foot:
             continue
         part = state.pending.get(index)
         if part is None:
@@ -323,14 +332,14 @@ def _frame(state: _State, rows: range) -> Filled:
             state.pending[index] = placed.rest
             break
 
-    _draw_trailing(state, filled, rows, reserved)
+    _draw_at_foot(state, filled, rows, reserved)
     return filled
 
 
 def _reserved(state: _State, rows: range) -> int:
-    """Rows charged to every frame by the parts at the end of the list."""
+    """Rows kept back on every frame for the parts drawn at its foot."""
     total = 0
-    for part in state.trailing.values():
+    for part in state.at_foot.values():
         rows_wanted = _height(part, rows)
         if rows_wanted == 0:
             #  It would decline a whole frame, so it would decline every frame,
@@ -340,12 +349,12 @@ def _reserved(state: _State, rows: range) -> int:
     return total
 
 
-def _draw_trailing(
+def _draw_at_foot(
     state: _State, filled: Filled, rows: range, reserved: int
 ) -> None:
-    """Draw the parts at the end of the list, in the rows kept back for them."""
+    """Draw the parts at the foot, in the rows kept back for them."""
     at = rows.stop - reserved
-    for part in state.trailing.values():
+    for part in state.at_foot.values():
         placed = part.place(filled.canvas, Room(at, rows.stop - at, CHOICES_PER_FRAME))
         filled.offer = filled.offer.and_then(placed.offer)
         at += placed.rows

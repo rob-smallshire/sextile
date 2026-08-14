@@ -7,7 +7,7 @@ what five hand-written copies had each got slightly differently.
 
 
 from sextile.addressing import PageAddress
-from sextile.keys import with_arrows
+from sextile.keys import DOWN, LEFT, RIGHT, UP, with_arrows
 from sextile.page import Page
 from sextile.templates import (
     CHOICES_PER_FRAME,
@@ -670,3 +670,57 @@ class TestWhatTheWayHomeIsCalled:
         )
         assert "or key another page" not in shown
         assert shown.splitlines()[-1].rstrip().endswith("0")
+
+
+class TestAShortcutThatAnswersAnArrowToo:
+    """`A` and `D` move between items, and so do the left and right arrows.
+
+    Whether an arrow means what its letter means is the page's business: on a
+    page with a coordinate field it does not, `W` being West. So a shortcut
+    answers its arrow only where the page has said it should.
+    """
+
+    def a_page(self, **wanted: bool) -> Page:
+        return Menu(
+            title="ONE DAY",
+            entries=items(1),
+            home=at("1"),
+            shortcuts=[
+                Shortcut(key="A", destination=at("31"), says="prev", **wanted),
+                Shortcut(key="D", destination=at("33"), says="next", **wanted),
+            ],
+        ).build(at("32"))
+
+    def test_the_letter_leads_where_it_always_did(self) -> None:
+        found = self.a_page().frame(0)
+        assert found is not None
+        assert found.destination("A") == at("31")
+        assert found.destination("D") == at("33")
+
+    def test_and_the_arrow_does_not_unless_it_was_asked_for(self) -> None:
+        found = self.a_page().frame(0)
+        assert found is not None
+        assert found.destination(LEFT) is None
+        assert found.destination(RIGHT) is None
+
+    def test_asked_for_the_arrow_leads_where_the_letter_does(self) -> None:
+        found = self.a_page(arrow=True).frame(0)
+        assert found is not None
+        assert found.destination(LEFT) == at("31")
+        assert found.destination(RIGHT) == at("33")
+
+    def test_a_key_with_no_arrow_is_unmoved_by_asking(self) -> None:
+        #  Only the four movement letters have arrows. Asking on any other key
+        #  is answered by there being nothing to add, rather than by an error:
+        #  a page listing its shortcuts should not have to know which of them
+        #  happen to be W, A, S or D.
+        page = Menu(
+            title="POST",
+            entries=items(1),
+            home=at("1"),
+            shortcuts=[Shortcut(key="R", destination=at("7"), says="reply", arrow=True)],
+        ).build(at("8"))
+        found = page.frame(0)
+        assert found is not None
+        assert found.destination("R") == at("7")
+        assert len([key for key in (LEFT, RIGHT, UP, DOWN) if found.destination(key)]) == 0

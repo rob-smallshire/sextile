@@ -32,7 +32,7 @@ from typing import TYPE_CHECKING, ClassVar, Final, Protocol, runtime_checkable
 
 from sextile.addressing import PageAddress
 from sextile.content.blocks import Document, Paragraph
-from sextile.keys import NEXT_FRAME, PREVIOUS_FRAME, moving
+from sextile.keys import NEXT_FRAME, PREVIOUS_FRAME, arrows_lead_where, moving
 from sextile.page import Page, PageFrame
 from sextile.viewdata.canvas import Canvas, RowWriter, Run
 from sextile.viewdata.chrome import CONTENT_FIRST_ROW, CONTENT_ROWS, draw_chrome
@@ -56,6 +56,10 @@ class Shortcut:
         destination: The address that key leads to, from every frame.
         says: How the footer names the key, where there is room to name it at
             all. Empty leaves it to the footer's abbreviation.
+        arrow: Whether the matching cursor key leads there as well. Only `W`,
+            `A`, `S` and `D` have one; asking on any other key adds nothing
+            rather than raising, so a page listing its shortcuts need not know
+            which of them happen to be movement letters.
 
     A page's digits belong to its entries and change from frame to frame, but a
     shortcut is fixed. It is for the way out that is not the way home: a
@@ -68,6 +72,11 @@ class Shortcut:
     key: str
     destination: PageAddress
     says: str = ""
+    #  Not assumed, because whether an arrow means what its letter means
+    #  depends on what is on the frame: on a page with a coordinate field it
+    #  does not, `W` being West and `S` South, and a reader reaching for the
+    #  up arrow would silently type a letter into a coordinate.
+    arrow: bool = False
 
 
 @dataclass(frozen=True)
@@ -377,7 +386,13 @@ class Template[E](ABC):
                 row += 1
             choices: dict[str, PageAddress] = {
                 shortcut.key: shortcut.destination for shortcut in self.shortcuts
-            }
+            } | arrows_lead_where(
+                {
+                    shortcut.key: shortcut.destination
+                    for shortcut in self.shortcuts
+                    if shortcut.arrow
+                }
+            )
             if self.home is not None:
                 choices[HOME_KEY] = self.home
             if not batch and self.empty:

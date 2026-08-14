@@ -195,6 +195,115 @@ there write over the bottom rule.
 what the per-frame return value is called. `Container` is serviceable and
 generic; `Filling` is a placeholder.
 
+## Parts laid out down a frame
+
+The seam above splits furniture from content and leaves content as one thing.
+It does not have to be. The content of a page is a short list of parts arranged
+down the frame, and giving each part a rule about which frames it appears on
+covers every case in the workspace.
+
+Three rules are enough:
+
+    once      drawn on the first frame and no other
+    every     drawn on every frame, at the position the list gives it
+    flowing   broken across as many frames as it takes
+
+List order settles what sits above what. That is the whole vocabulary.
+
+### It removes the fields rather than adding to them
+
+`preamble`, `headings` and `footnote` are the same idea spelled three times:
+rows around the entries, differing in whether they sit above or below and
+whether they appear once or on every frame. As parts, the difference is
+position in the list and one word:
+
+    [ Once(preamble), Every(headings), Flowing(Menu(items)), Every(footnote) ]
+
+Above-versus-below falls out of the ordering. First-frame-versus-every falls
+out of the rule. Three fields, and the knob-counting problem they represent,
+stop existing.
+
+### The five pages
+
+| Page | Parts |
+|---|---|
+| Latest posts | `[Once(preamble), Flowing(Menu(posts))]` |
+| Forecast | `[Once(preamble), Every(headings), Flowing(days)]` |
+| One post | `[Every(heading), Flowing(document)]` |
+| Month grid | `[Once(grid)]` |
+| Place search | `[Once(instructions), Once(form)]` |
+
+Two of those are the pages that have no answer today. The post's subject and
+byline repeat on every frame, which is why it draws its own furniture; as a
+part with the `every` rule it stops being a special case. The month grid needs
+no flowing part at all, so it no longer has to be a sequence of nothing to
+obtain a title and a way home.
+
+### At most one flowing part
+
+Every page above has one flowing part or none, and that is worth fixing as a
+rule rather than leaving as an observation.
+
+Two flowing parts on one page raise a question with no obvious answer: when the
+first runs past the foot of a frame, does the second begin below what is left
+of the first on the next frame, or wait until the first has finished
+altogether? Typesetting systems that allow it -- InDesign's threaded frames,
+LaTeX's floats -- need a body of rules to say, and those rules are most of
+their complexity. Nothing in the workspace needs two, so the answer here is to
+forbid it: one part may break across frames, the rest are drawn whole or not at
+all.
+
+### What this is not
+
+**Not a widget toolkit.** A frame is a still picture plus a mapping from keys
+to addresses, computed once and sent down a 1200-baud line. There is nothing
+for per-widget event handling to attach to, and the session already owns what
+happens when a key arrives.
+
+**Not a second placement engine.** `viewdata/composition.py` places things
+*within* a frame and knows what attributes cost in cells. Parts are stacked
+down the frame and nothing here arranges anything side by side.
+
+**Not borrowed from terminal UI frameworks.** Textual and its relatives lay out
+into one continuous viewport and scroll it. The problem here is the opposite:
+break into discrete frames of twenty rows, each carrying its own furniture and
+its own keys, with no scrolling anywhere. What does transfer is one idea --
+docking a header and a footer and giving the rest to content -- which is the
+furniture-and-content split already.
+
+The nearer prior art is paged media: CSS `@page` with running heads,
+InDesign's threaded text frames, LaTeX's output routine. All of them answer the
+same question, which is how a stream of material breaks across pages and what
+repeats on each.
+
+One constraint none of them has: **a menu holds nine items to a frame because a
+reader chooses with one keypress**, not because of how tall an item is. So a
+flowing part is asked how many of itself fit in the rows available, rather than
+being measured and divided by a parent.
+
+### What it would replace
+
+`viewdata/typesetting.py` breaks rendered rows into frames; `Template` breaks
+entries into frames. Both are the flowing rule, written twice, and they had
+diverged: one stopped at twenty-six frames and said so, the other built a
+twenty-seventh and raised `ValueError` out of `frame_letter`. That is fixed,
+but two implementations of one idea will diverge again.
+
+### Risks
+
+**A layout engine is a large thing to build for twenty-five pages.** The
+version worth having is the smallest one this evidence demands: three rules,
+one flowing part, no side-by-side arrangement, no styling language, no units.
+If it grows a second axis or a way of expressing proportions, it has gone
+wrong.
+
+**Capacity becomes shared knowledge.** Today `_capacity` and `_deal` hold the
+arithmetic in one place. Split across parts, an off-by-one writes over the rule
+at the foot of the frame.
+
+**`Flowing`, `Once` and `Every` are placeholder names**, as are `Container` and
+`Filling`.
+
 ## What is settled and what is not
 
 Settled by this note: the bottom row is the **footer**, and the prompt, the
@@ -203,4 +312,6 @@ and the content are separable, and the evidence is four pages that either draw
 their own furniture or pretend to be sequences.
 
 Not settled: the exact content protocol, whether the call sites change, what
-the container is called, and whether the footer may ever be more than one row.
+the container is called, whether the footer may ever be more than one row, and
+five names -- the container, the per-frame return value, and the three rules
+about which frames a part appears on.

@@ -11,6 +11,7 @@ from sextile.keys import DOWN, LEFT, RIGHT, UP, with_arrows
 from sextile.page import Page
 from sextile.templates import (
     CHOICES_PER_FRAME,
+    HOME_KEY,
     Entry,
     Figures,
     Lines,
@@ -645,8 +646,9 @@ class TestWhatTheWayHomeIsCalled:
             Lines(
                 title="UNKNOWN PAGE",
                 entries=["*99# is NOT a page here."],
-                home=at("1"),
-                home_says="index, or key another page",
+                home=Shortcut(
+                    key=HOME_KEY, destination=at("1"), says="index, or key another page"
+                ),
             ).build(at("2"))
         )
         assert "0 index, or key another page" in shown
@@ -660,8 +662,9 @@ class TestWhatTheWayHomeIsCalled:
             Menu(
                 title="ITEMS",
                 entries=items(12),
-                home=at("1"),
-                home_says="index, or key another page",
+                home=Shortcut(
+                    key=HOME_KEY, destination=at("1"), says="index, or key another page"
+                ),
                 shortcuts=[
                     Shortcut(key="R", destination=at("7"), says="reply"),
                     Shortcut(key="F", destination=at("6"), says="forum"),
@@ -781,3 +784,51 @@ class TestWhatTheItemsAreCalled:
         ).splitlines()[-1]
         assert "page down" in footer
         assert "day" not in footer
+
+
+class TestTheWayHomeIsAShortcutLikeAnyOther:
+    """An address for the usual case, a `Shortcut` where a page wants more.
+
+    `home` and `shortcuts` are the same idea -- a key on every frame leading
+    to a fixed address -- so a page that wants the footer to call the way home
+    something else says it the way it would for any other key, rather than
+    through a field of its own.
+    """
+
+    def test_an_address_puts_it_on_nought_and_calls_it_the_index(self) -> None:
+        page = Lines(title="NOTICE", entries=["Said."], home=at("1")).build(at("2"))
+        found = page.frame(0)
+        assert found is not None
+        assert found.destination(HOME_KEY) == at("1")
+        assert "0 index" in text_of(page)
+
+    def test_a_shortcut_is_taken_as_given(self) -> None:
+        page = Lines(
+            title="NOTICE",
+            entries=["Said."],
+            home=Shortcut(key="9", destination=at("1"), says="back to the top"),
+        ).build(at("2"))
+        found = page.frame(0)
+        assert found is not None
+        assert found.destination("9") == at("1")
+        assert found.destination(HOME_KEY) is None
+        assert "9 back to the top" in text_of(page)
+
+    def test_the_short_form_is_what_stands_before_the_comma(self) -> None:
+        #  Rather than a second field saying it twice. A page with a long way
+        #  of naming the key puts the short one first and the footer sheds the
+        #  rest when the row is tight.
+        way = Lines(
+            title="NOTICE",
+            entries=["Said."],
+            home=Shortcut(HOME_KEY, at("1"), says="index, or key another page"),
+        ).way_home
+        assert way is not None
+        assert way.says.split(",")[0] == "index"
+
+    def test_no_way_home_at_all_names_no_key(self) -> None:
+        page = Lines(title="NOTICE", entries=["Said."]).build(at("2"))
+        found = page.frame(0)
+        assert found is not None
+        assert found.destination(HOME_KEY) is None
+        assert "index" not in text_of(page)

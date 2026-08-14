@@ -111,6 +111,26 @@ code is worse than none, because it is believed.
   but is not. There are many such choices here.
 - Commit at each working increment. Do not push; that is the user's call.
 
+**A new field on `Template` needs a second caller, or it wants to be a
+subclass.** The shapes are configured rather than composed, which is right for
+a small closed vocabulary and turns into twenty knobs if nobody counts. Three
+fields were added in a day, each for one page; one of them, `home_says`, would
+have failed this test and was folded back into `home` the day after.
+
+Before adding one, look for the field it is a special case of. `home` and
+`shortcuts` were the same idea — a key on every frame leading to a fixed
+address — spelled two ways, so the second way went. And check what a page
+needing this could do instead: a service can subclass `Template` or
+`RowTemplate` and supply its own drawing, which is what `weather-viewdata` does
+for a forecast day four rows tall.
+
+Note also that `preamble`, `headings` and `footnote` are one idea spelled three
+times — rows around the entries, differing in whether they sit above or below
+and whether they appear on the first frame or on all of them. They are left
+alone deliberately: with one or two callers each there is not yet enough
+evidence to say what the single field would look like. A third caller for any
+of them is the moment to unify them, not to add a fourth.
+
 ## Writing the documentation
 
 Docstrings here have drifted into essay: fluent, metaphorical, and about the

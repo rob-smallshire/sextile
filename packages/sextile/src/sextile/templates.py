@@ -60,8 +60,10 @@ class Shortcut:
     Attributes:
         key: The character the reader presses, such as `*` or `R`.
         destination: The address that key leads to, from every frame.
-        says: How the footer names the key, where there is room to name it at
-            all. Empty leaves it to the footer's abbreviation.
+        says: How the footer names the key. Put the short form first: the
+            footer sheds words from the end when a row is tight, so
+            `"index, or key another page"` degrades to `"index"` and then to
+            the bare key. Empty leaves it at the bare key throughout.
         arrow: Whether the matching cursor key leads there as well. Only `W`,
             `A`, `S` and `D` have one; asking on any other key adds nothing
             rather than raising, so a page listing its shortcuts need not know
@@ -213,11 +215,12 @@ class Template[E](ABC):
         title: The heading drawn at the top of every frame.
         entries: The values to draw, in the order they are to appear.
         home: Where `0` leads from every frame, or None to offer no way home.
+            A `Shortcut` instead of an address where the page wants the footer
+            to call it something other than "index", or to put it on another
+            key.
         preamble: Lines drawn above the entries on the first frame only.
         empty: Text drawn in place of the entries when there are none.
         headings: A row labelling the columns, drawn on every frame.
-        home_says: What the footer calls the way home, where there is room for
-            it. It falls back to `index` on a crowded row.
         shortcuts: Keys offered on every frame, besides the digits and `0`.
         item: What `A` and `D` move between, as the footer says it: "previous
             day", "next post". Only the noun; the framework has the rest.
@@ -264,7 +267,7 @@ class Template[E](ABC):
 
     entries: Sequence[E]
 
-    home: PageAddress | None = None
+    home: "PageAddress | Shortcut | None" = None
 
     preamble: Sequence[PreambleLine] = ()
 
@@ -286,11 +289,6 @@ class Template[E](ABC):
     #  supplies is the noun. Not what `W` and `S` move between, which is always
     #  the frames of the one thing.
     item: str = "item"
-
-    #  What the footer calls the way home. `index` unless a page has a better
-    #  word for it: the page that says a number was not found has room to
-    #  advise keying another, and the same key does both.
-    home_says: str = "index"
 
     #  Beneath the entries on every frame, for the same reason the headings sit
     #  above them on every frame: a reader on frame c looking at a column of
@@ -322,6 +320,19 @@ class Template[E](ABC):
         row writer runs along a single row from left to right, which suits
         everything except a picture, and `RowTemplate` provides it.
         """
+
+    @property
+    def way_home(self) -> "Shortcut | None":
+        """The way home as a shortcut, whichever way the page gave it.
+
+        Returns:
+            `0` leading to the address given, called "index", where `home` is
+            an address; the shortcut itself where the page supplied one; None
+            where the page offers no way home at all.
+        """
+        if self.home is None or isinstance(self.home, Shortcut):
+            return self.home
+        return Shortcut(key=HOME_KEY, destination=self.home, says="index")
 
     def destination(self, entry: E) -> PageAddress | None:
         """The address choosing `entry` leads to, or None where it leads nowhere.
@@ -371,10 +382,13 @@ class Template[E](ABC):
             },
             item=self.item,
         )
-        if self.home is not None:
+        if (way := self.way_home) is not None:
             items.append(
                 FooterItem(
-                    HOME_KEY, self.home_says, Priority.ESSENTIAL, brief="index"
+                    way.key,
+                    way.says,
+                    Priority.ESSENTIAL,
+                    brief=way.says.split(",")[0],
                 )
             )
         return render_footer(items, ROOM)
@@ -421,8 +435,8 @@ class Template[E](ABC):
                     if shortcut.arrow
                 }
             )
-            if self.home is not None:
-                choices[HOME_KEY] = self.home
+            if (way := self.way_home) is not None:
+                choices[way.key] = way.destination
             if not batch and self.empty:
                 canvas.row(row).text(fitted(self.empty, COLUMNS - 1), Colour.WHITE)
                 row += 1
@@ -754,8 +768,7 @@ class Lines(RowTemplate[str]):
         Lines(
             title="UNKNOWN PAGE",
             entries=[f"*{target}# is NOT a page here.", "", "Try *1# for the index."],
-            home=INDEX,
-            home_says="index, or key another page",
+            home=Shortcut(HOME_KEY, INDEX, says="index, or key another page"),
         ).build(address)
     """
 

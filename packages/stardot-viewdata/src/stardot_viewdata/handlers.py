@@ -39,7 +39,15 @@ from sextile import (
     keyed,
     page,
 )
-from sextile.templates import Lines, Menu, MenuItem, Prose, farewell_page
+from sextile.templates import (
+    HOME_KEY,
+    Lines,
+    Menu,
+    MenuItem,
+    Prose,
+    Shortcut,
+    farewell_page,
+)
 from sextile.viewdata.canvas import Canvas
 from sextile.viewdata.controls import Colour
 from stardot_viewdata.model import Post
@@ -373,10 +381,14 @@ def unknown_page(app: Sextile, target: str) -> Page:
     return Lines(
         title="UNKNOWN PAGE",
         entries=[f"*{target[:30]}# is NOT a page here.", "", "Try *1# for the main index."],
-        home=app.address_for("main"),
         #  The advice rides in the label: there is no key for "another page",
-        #  only the command line.
-        home_says="index, or key another page",
+        #  only the command line. Shortened to "index" where the row is tight,
+        #  the short form being first.
+        home=Shortcut(
+            key=HOME_KEY,
+            destination=app.address_for("main"),
+            says="index, or key another page",
+        ),
     ).build(None)
 
 

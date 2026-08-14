@@ -23,7 +23,7 @@ Each is written up as built, and those are the documents to read:
 | [calendar-viewdata/docs/design.md](../packages/calendar-viewdata/docs/design.md) | the second application, and what it was for |
 | [weather-viewdata/docs/design.md](../packages/weather-viewdata/docs/design.md) | the third: place search, met.no, drawing the weather, and the twenty-odd things it asked of the framework |
 | [sextile/docs/public-surface.md](../packages/sextile/docs/public-surface.md) | which of the framework an application may import, and where that line is currently crossed |
-| [sextile/docs/page-layout.md](../packages/sextile/docs/page-layout.md) | a design note, not built: a page as furniture and a list of parts laid out down its frames |
+| [sextile/docs/page-layout.md](../packages/sextile/docs/page-layout.md) | a page as its furniture and a list of parts laid out down its frames, and why it is built that way |
 
 [target-architecture.md](target-architecture.md) says where all this is going
 and why — the phpBB extension, and the phases between here and it.

@@ -1,10 +1,14 @@
 # A page layout: its furniture, and the parts between
 
-A design note. Nothing here is built.
+**Built, as of 2026-08-14.** `sextile/layout.py` and `sextile/formatting.py`
+are what this describes, `sextile/templates.py` is gone, and every page in the
+three services is a `PageLayout` of parts. What follows is the design and the
+reasoning, kept because the reasoning is the part that does not survive in the
+code — and marked where what was built differs from what was proposed.
 
-It proposes splitting `Template` into two pieces — the furniture around a
-frame, and the parts drawn between the rules — and works the proposal against
-every page in the three services to find out whether it holds.
+It splits a page into two pieces — the furniture around a frame, and the parts
+drawn between the rules — and was worked against every page in the three
+services before any of it was written.
 
 ## The frame, and what each part is called
 
@@ -540,8 +544,8 @@ still crossed -- has nothing left to check.
 What remains of the file is the sequence formatters themselves: how tall an
 entry is, how to draw one, and whether it can be chosen.
 
-**From `viewdata/typesetting.py`**, which is 185 lines: `paginate` and its
-`_divide`, `BODY_ROWS`, `MAX_FRAMES` and `draw_rows`. Dividing rows between
+**From `viewdata/typesetting.py`**, which was 185 lines and is 133: `paginate`
+and its `_divide`, `BODY_ROWS`, `MAX_FRAMES`, `draw_rows` and `lay_out`. Dividing rows between
 frames is the flowing rule written a second time, and the two had already
 diverged -- one stopped at twenty-six frames and said so, the other built a
 twenty-seventh and raised `ValueError` out of `frame_letter`. That is fixed,

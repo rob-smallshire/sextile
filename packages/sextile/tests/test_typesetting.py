@@ -20,10 +20,46 @@ from sextile.content.blocks import (
     Paragraph,
     Quote,
 )
+from sextile.formatting import Prose
+from sextile.layout import Flowing, fill
 from sextile.viewdata.canvas import Canvas
 from sextile.viewdata.encoding import cell_count
-from sextile.viewdata.frame import COLUMNS, FRAME_PREAMBLE, Frame
-from sextile.viewdata.typesetting import BODY_ROWS, draw_rows, lay_out, paginate
+from sextile.viewdata.frame import COLUMNS, FRAME_PREAMBLE, ROWS, Frame
+from sextile.viewdata.typesetting import Row, rows_for
+
+#: A whole frame, this module being about typesetting rather than furniture.
+WHOLE = range(0, ROWS)
+
+
+def lay_out(content: Document) -> list[Frame]:
+    """The document as bare frames, with nothing round it.
+
+    `typesetting` used to divide rows between frames itself, which was the
+    flowing rule written a second time. It renders, and the layout divides.
+    """
+    return [
+        one.canvas.frame for one in fill([Flowing(Prose(entries=rows_for(content)))], WHOLE)
+    ]
+
+
+#: Rows a frame gives the content, when there is no furniture round it.
+BODY_ROWS = ROWS
+
+
+def paginate(content: Document, rows_per_frame: int = BODY_ROWS) -> list[list[Row]]:
+    """The document as rows, divided between frames of a given height."""
+    rendered = rows_for(content)
+    return [
+        rendered[start : start + rows_per_frame]
+        for start in range(0, len(rendered), rows_per_frame)
+    ] or [[]]
+
+
+def draw_rows(canvas: Canvas, first_row: int, rows: list[Row]) -> None:
+    """Draw rendered rows onto a canvas, for a test that wants only that."""
+    for offset, row in enumerate(rows):
+        if row.text:
+            canvas.row(first_row + offset).skip(row.indent).text(row.text, row.colour)
 
 
 def text_of(frame: Frame) -> str:
@@ -33,7 +69,7 @@ def text_of(frame: Frame) -> str:
 
 def body_of(frame: Frame) -> list[str]:
     characters, _ = frame.to_grid()
-    return [line.rstrip() for line in characters[:BODY_ROWS] if line.strip()]
+    return [line.rstrip() for line in characters if line.strip()]
 
 
 class TestFittingOnOneFrame:

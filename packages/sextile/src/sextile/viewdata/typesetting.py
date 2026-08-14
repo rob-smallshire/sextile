@@ -9,14 +9,15 @@ someone reading in colour can tell at a glance whose words they are looking at.
 A quotation is cyan, a listing green, an image or attachment magenta, and the
 author's own words white.
 
-A page has frames a-z and no more, so a document long enough to exhaust them says so
-rather than ending mid-sentence with nothing to explain it.
+A document long enough to exhaust a page's frames says so rather than ending
+mid-sentence with nothing to explain it, and `TRUNCATION_NOTICE` is the
+sentence it says -- used here and by the layout, so that a reader who meets it
+on a long document and again on a long list meets the same words.
 """
 
 from dataclasses import dataclass
 from typing import Final
 
-from sextile.addressing import FRAMES_PER_PAGE
 from sextile.content.blocks import (
     Attachment,
     Block,
@@ -27,16 +28,9 @@ from sextile.content.blocks import (
     Paragraph,
     Quote,
 )
-from sextile.viewdata.canvas import Canvas
 from sextile.viewdata.controls import Colour
-from sextile.viewdata.frame import COLUMNS, ROWS, Frame
+from sextile.viewdata.frame import COLUMNS
 from sextile.viewdata.wrapping import wrap_text
-
-#: Rows a frame gives to the content itself, the rest being chrome.
-BODY_ROWS: Final = ROWS - 3
-
-#: A page's frames are lettered a-z.
-MAX_FRAMES: Final = FRAMES_PER_PAGE
 
 _QUOTE_INDENT: Final = 2
 
@@ -68,30 +62,6 @@ def rows_for(content: Document) -> list[Row]:
     rows = list(_rows_for(content.blocks, depth=0))
     rows.extend(_link_rows(content))
     return rows
-
-
-def paginate(content: Document, rows_per_frame: int = BODY_ROWS) -> list[list[Row]]:
-    """Render a document and divide it into frame-sized groups of rows.
-
-    Stops short of drawing, so a page builder can place these rows beneath its
-    own chrome and title block without this module knowing either exists.
-    """
-    return _divide(rows_for(content), rows_per_frame)
-
-
-def draw_rows(canvas: Canvas, first_row: int, rows: list[Row]) -> None:
-    """Draw rendered rows onto a canvas, starting at a row."""
-    for offset, row in enumerate(rows):
-        if row.text:
-            canvas.row(first_row + offset).skip(row.indent).text(row.text, row.colour)
-
-
-def lay_out(content: Document) -> list[Frame]:
-    """Render a document as bare frames, with no chrome.
-
-    For where the content is the only thing of interest.
-    """
-    return [_frame_for(page) for page in paginate(content)]
 
 
 def _rows_for(blocks: tuple[Block, ...], depth: int) -> list[Row]:
@@ -154,28 +124,6 @@ def _link_rows(content: Document) -> list[Row]:
             marker = f"[{link.number}] " if index == 0 else "    "
             rows.append(Row(f"{marker}{piece}", Colour.YELLOW))
     return rows
-
-
-def _divide(rows: list[Row], rows_per_frame: int) -> list[list[Row]]:
-    """Divide rendered rows into frame-sized groups."""
-    pages = [
-        rows[start : start + rows_per_frame] for start in range(0, len(rows), rows_per_frame)
-    ] or [[]]
-
-    if len(pages) > MAX_FRAMES:
-        #  A page has frames a-z and no more. Running out must be said, not
-        #  silently swallowed.
-        pages = pages[:MAX_FRAMES]
-        pages[-1] = pages[-1][: rows_per_frame - 1]
-        pages[-1].append(Row(TRUNCATION_NOTICE, Colour.RED))
-
-    return pages
-
-
-def _frame_for(rows: list[Row]) -> Frame:
-    canvas = Canvas()
-    draw_rows(canvas, 0, rows)
-    return canvas.frame
 
 
 def _without_leading_blanks(rows: list[Row]) -> list[Row]:

@@ -13,15 +13,18 @@ from sextile.templates import (
     CHOICES_PER_FRAME,
     Entry,
     Figures,
+    Lines,
     Listing,
     Menu,
     MenuItem,
     Prose,
+    Shortcut,
     farewell_page,
 )
 from sextile.viewdata.canvas import Run
 from sextile.viewdata.chrome import CONTENT_FIRST_ROW, CONTENT_ROWS
 from sextile.viewdata.controls import Colour, Control
+from sextile.viewdata.frame import COLUMNS
 
 
 def at(digits: str) -> PageAddress:
@@ -565,3 +568,105 @@ class TestAFootnote:
         )
         assert "Nothing yet." in shown
         assert "A caller is one" in shown
+
+
+class TestLines:
+    """Lines drawn as given, for a page that simply says something.
+
+    Not `Prose`, which wraps paragraphs and puts a blank row between them: a
+    notice that has arranged its own blank rows means them where they are.
+    """
+
+    SAID = ["Wednesday 13 August", "", "12:04:31", "BST"]
+
+    def test_every_line_is_drawn_where_it_was_put(self) -> None:
+        rows = text_of(
+            Lines(title="THE TIME NOW", entries=self.SAID, home=at("1")).build(at("2"))
+        ).splitlines()
+        assert rows[CONTENT_FIRST_ROW].strip() == "Wednesday 13 August"
+        assert rows[CONTENT_FIRST_ROW + 1].strip() == ""
+        assert rows[CONTENT_FIRST_ROW + 2].strip() == "12:04:31"
+        assert rows[CONTENT_FIRST_ROW + 3].strip() == "BST"
+
+    def test_a_line_too_long_for_the_row_is_cut_rather_than_wrapped(self) -> None:
+        #  A notice writes its own lines and knows the width; carrying one on
+        #  would push the rest of an arranged page down a row.
+        shown = text_of(
+            Lines(title="NOTICE", entries=["x" * 60], home=at("1")).build(at("2"))
+        ).splitlines()[CONTENT_FIRST_ROW]
+        assert shown.strip() == "x" * (COLUMNS - 1)
+
+    def test_more_lines_than_a_frame_holds_go_on_to_the_next(self) -> None:
+        page = Lines(
+            title="NOTICE", entries=[f"line {n}" for n in range(30)], home=at("1")
+        ).build(at("2"))
+        assert len(page.frames) == 2
+
+    def test_nothing_is_chosen_on_a_notice(self) -> None:
+        page = Lines(title="NOTICE", entries=["Said."], home=at("1")).build(at("2"))
+        found = page.frame(0)
+        assert found is not None
+        assert found.destination("1") is None
+        assert found.destination("0") == at("1")
+
+
+class TestAPageWithNoNumberOfItsOwn:
+    """Not everything drawn is a page a reader could have keyed.
+
+    A notice given in reply to a number that answers nothing has no number to
+    put in its header, and `draw_chrome` gives the whole row to the title. The
+    template says so by having no address to build against.
+    """
+
+    def test_the_header_carries_no_number(self) -> None:
+        rows = text_of(
+            Lines(title="UNKNOWN PAGE", entries=["*99# is NOT a page here."]).build(None)
+        ).splitlines()
+        assert rows[0].strip() == "UNKNOWN PAGE"
+
+    def test_and_the_page_is_still_a_page(self) -> None:
+        page = Lines(
+            title="UNKNOWN PAGE", entries=["Said."], home=at("1")
+        ).build(None)
+        found = page.frame(0)
+        assert found is not None
+        assert found.destination("0") == at("1")
+
+
+class TestWhatTheWayHomeIsCalled:
+    """The footer says `0 index` unless a page has a better word for it."""
+
+    def test_the_index_by_default(self) -> None:
+        shown = text_of(Menu(title="ITEMS", entries=items(1), home=at("1")).build(at("8")))
+        assert "0 index" in shown
+
+    def test_or_whatever_the_page_calls_it(self) -> None:
+        shown = text_of(
+            Lines(
+                title="UNKNOWN PAGE",
+                entries=["*99# is NOT a page here."],
+                home=at("1"),
+                home_says="index, or key another page",
+            ).build(at("2"))
+        )
+        assert "0 index, or key another page" in shown
+
+    def test_and_the_words_come_off_first_on_a_crowded_row(self) -> None:
+        #  A long way of saying it is worth having where there is room and is
+        #  the first thing shed where there is not. The key itself stays: a
+        #  frame that stopped naming `0` would be a frame with no way home
+        #  that a reader could see.
+        shown = text_of(
+            Menu(
+                title="ITEMS",
+                entries=items(12),
+                home=at("1"),
+                home_says="index, or key another page",
+                shortcuts=[
+                    Shortcut(key="R", destination=at("7"), says="reply"),
+                    Shortcut(key="F", destination=at("6"), says="forum"),
+                ],
+            ).build(at("8"))
+        )
+        assert "or key another page" not in shown
+        assert shown.splitlines()[-1].rstrip().endswith("0")

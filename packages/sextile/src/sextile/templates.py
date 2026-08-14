@@ -6,6 +6,7 @@ each one is drawn:
     Menu       nine entries a frame, each numbered, a line of detail beneath
     Listing    twenty entries a frame, none numbered, detail in a second column
     Figures    a label and a figure a row, the figures aligned in one column
+    Lines      lines drawn as given, for a page that simply says something
     Prose      running text, wrapped, in as many rows as it takes
 
 `Template` performs the part they have in common: dividing the entries between
@@ -200,6 +201,8 @@ class Template[E](ABC):
         preamble: Lines drawn above the entries on the first frame only.
         empty: Text drawn in place of the entries when there are none.
         headings: A row labelling the columns, drawn on every frame.
+        home_says: What the footer calls the way home, where there is room for
+            it. It falls back to `index` on a crowded row.
         shortcuts: Keys offered on every frame, besides the digits and `0`.
         footnote: Said beneath the entries on every frame, wrapped to the room
             a row has.
@@ -259,6 +262,11 @@ class Template[E](ABC):
 
     #  Named in the prompt, so that a page cannot offer a key silently.
     shortcuts: Sequence[Shortcut] = ()
+
+    #  What the footer calls the way home. `index` unless a page has a better
+    #  word for it: the page that says a number was not found has room to
+    #  advise keying another, and the same key does both.
+    home_says: str = "index"
 
     #  Beneath the entries on every frame, for the same reason the headings sit
     #  above them on every frame: a reader on frame c looking at a column of
@@ -327,17 +335,23 @@ class Template[E](ABC):
             if answered
         )
         if self.home is not None:
-            items.append(FooterItem(HOME_KEY, "index", Priority.ESSENTIAL))
+            items.append(
+                FooterItem(
+                    HOME_KEY, self.home_says, Priority.ESSENTIAL, brief="index"
+                )
+            )
         return render_footer(items, ROOM)
 
     # -- what the template does ---------------------------------------------
 
-    def build(self, address: PageAddress) -> Page:
+    def build(self, address: PageAddress | None) -> Page:
         """Divide the entries between frames and draw each frame.
 
         Args:
             address: The address this page answers to, from which each frame
-                takes the page number it displays.
+                takes the page number it displays. None where the page has no
+                number of its own -- a notice given in reply to a number that
+                answers nothing -- and the title then has the header to itself.
 
         Returns:
             The finished page: one `PageFrame` for each frame, in order, each
@@ -352,7 +366,7 @@ class Template[E](ABC):
             draw_chrome(
                 canvas,
                 title=self.title,
-                page_number=address.frame_number(index),
+                page_number=address.frame_number(index) if address else "",
                 prompt=self.prompt(selecting=self.numbered and bool(batch), back=back, on=on),
             )
             row = self._draw_preamble(canvas) if index == 0 else CONTENT_FIRST_ROW
@@ -680,6 +694,35 @@ class Figures(RowTemplate[Entry]):
         #  ends up under a label.
         row.text(fitted(entry.text, self.label).ljust(self.label), Colour.WHITE)
         row.text(entry.detail.rjust(self.figure), Colour.CYAN)
+
+
+class Lines(RowTemplate[str]):
+    """Lines drawn as given, one to a row, for a page that says something.
+
+    Not `Prose`, which wraps running text and puts a blank row between one
+    paragraph and the next. A notice that has arranged its own lines and its
+    own blanks means them where they are, so nothing is wrapped and nothing is
+    moved: a line too long for the row is cut. There are more lines than a
+    frame holds only when a page has said a great deal, and they go on to the
+    next frame like any other entries.
+
+    Example::
+
+        Lines(
+            title="UNKNOWN PAGE",
+            entries=[f"*{target}# is NOT a page here.", "", "Try *1# for the index."],
+            home=INDEX,
+            home_says="index, or key another page",
+        ).build(address)
+    """
+
+    rows_per_entry = 1
+    numbered = False
+
+    def draw(self, row: RowWriter, entry: str, digit: str | None) -> None:
+        del digit  # a notice numbers nothing
+        if entry:
+            row.text(fitted(entry, COLUMNS - 1), Colour.WHITE)
 
 
 class Prose(RowTemplate[Row]):

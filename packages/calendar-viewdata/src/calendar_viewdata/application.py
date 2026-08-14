@@ -43,7 +43,7 @@ from sextile import (
     keys,
 )
 from sextile.keys import arrows_lead_where
-from sextile.templates import HOME_KEY, Menu, MenuItem, Prose, farewell_page
+from sextile.templates import HOME_KEY, Lines, Menu, MenuItem, Prose, farewell_page
 from sextile.viewdata.canvas import Canvas
 from sextile.viewdata.chrome import CONTENT_FIRST_ROW, CONTENT_ROWS, draw_chrome
 from sextile.viewdata.controls import Colour
@@ -320,19 +320,11 @@ def _notice(
     app: Sextile, address: PageAddress, title: str | None, lines: list[str]
 ) -> Page:
     """A page that simply says something, with no choices but the way back."""
-    return Page(
-        frames=(
-            PageFrame(
-                frame=_notice_frame(
-                    address,
-                    title if title is not None else app.heading_for(address),
-                    lines,
-                    prompt=_prompt(set(), selecting=False),
-                ),
-                choices={"0": app.address_for("main")},
-            ),
-        )
-    )
+    return Lines(
+        title=title if title is not None else app.heading_for(address),
+        entries=lines,
+        home=app.address_for("main"),
+    ).build(address)
 
 
 def _notice_frame(

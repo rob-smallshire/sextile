@@ -39,19 +39,14 @@ from sextile import (
     keyed,
     page,
 )
-from sextile.templates import Menu, MenuItem, Prose, farewell_page
+from sextile.templates import Lines, Menu, MenuItem, Prose, farewell_page
 from sextile.viewdata.canvas import Canvas
-from sextile.viewdata.chrome import CONTENT_FIRST_ROW, CONTENT_ROWS, draw_chrome
 from sextile.viewdata.controls import Colour
-from sextile.viewdata.encoding import fitted
-from sextile.viewdata.footer import ROOM, FooterItem, Priority, render_footer
-from sextile.viewdata.frame import COLUMNS
 from stardot_viewdata.model import Post
 from stardot_viewdata.post_page import (
     CONVENTIONAL_NEXT_FRAME_KEY,
     NEXT_FRAME_KEY,
     post_page,
-    prompt,
     time_of,
 )
 from stardot_viewdata.store.repository import Repository
@@ -375,24 +370,14 @@ def ringing_off(app: Sextile, parting: Parting) -> Page:
 
 def unknown_page(app: Sextile, target: str) -> Page:
     """Say so, in the service's own furniture, and leave the way back open."""
-    canvas = Canvas()
-    draw_chrome(
-        canvas,
+    return Lines(
         title="UNKNOWN PAGE",
-        page_number="",
-        #  Through the renderer like every other prompt, so the key named here
-        #  is the same constant the choices answer. The advice rides in the
-        #  label: there is no key for "another page", only the command line.
-        prompt=render_footer(
-            [FooterItem("0", "index, or key another page", Priority.ESSENTIAL, brief="index")],
-            ROOM,
-        ),
-    )
-    canvas.row(CONTENT_FIRST_ROW).text(f"*{target[:30]}# is NOT a page here.", Colour.WHITE)
-    canvas.row(CONTENT_FIRST_ROW + 2).text("Try *1# for the main index.", Colour.WHITE)
-    return Page(
-        frames=(PageFrame(frame=canvas.frame, choices={"0": app.address_for("main")}),)
-    )
+        entries=[f"*{target[:30]}# is NOT a page here.", "", "Try *1# for the main index."],
+        home=app.address_for("main"),
+        #  The advice rides in the label: there is no key for "another page",
+        #  only the command line.
+        home_says="index, or key another page",
+    ).build(None)
 
 
 # -- the shapes the pages above share -----------------------------------------
@@ -440,25 +425,11 @@ def _notice(
     lines: list[str],
 ) -> Page:
     """A page that simply says something, with no choices but the way back."""
-    canvas = Canvas()
-    #  Through the same renderer as every other page, so a notice says what
-    #  everything else says and degrades the same way.
-    draw_chrome(
-        canvas,
+    return Lines(
         title=title if title is not None else app.heading_for(address),
-        page_number=address.frame_number(0),
-        prompt=prompt({}, selecting=False),
-    )
-    for offset, line in enumerate(lines[:CONTENT_ROWS]):
-        if line:
-            canvas.row(CONTENT_FIRST_ROW + offset).text(
-                fitted(line, COLUMNS - 1), Colour.WHITE
-            )
-    return Page(
-        frames=(
-            PageFrame(frame=canvas.frame, choices={"0": app.address_for("main")}),
-        )
-    )
+        entries=lines,
+        home=app.address_for("main"),
+    ).build(address)
 
 
 def day_title(day: date) -> str:

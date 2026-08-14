@@ -41,15 +41,9 @@ from sextile import (
     keyed,
     keys,
 )
-from sextile.templates import (
-    Block,
-    Lines,
-    Menu,
-    MenuItem,
-    Prose,
-    Shortcut,
-    farewell_page,
-)
+from sextile.formatting import Lines, Menu, MenuItem, Prose
+from sextile.layout import Drawn, Flowing, Once, PageLayout
+from sextile.templates import Shortcut, farewell_page
 from sextile.viewdata.canvas import Canvas
 from sextile.viewdata.controls import Colour
 
@@ -177,26 +171,32 @@ async def one_day(request: PageRequest, day: date) -> Page:
         shortcuts.append(
             Shortcut(key=keys.NEXT_ITEM, destination=request.arrival.following, arrow=True)
         )
-    return Lines(
+    return PageLayout(
         title=_month_name(day),
-        entries=lines,
         home=app.address_for("main"),
         shortcuts=shortcuts,
         item="day",
+        parts=[Flowing(Lines(said=lines))],
     ).build(request.address)
 
 
 async def about(request: PageRequest) -> Page:
     """What the service is, and why a calendar was chosen for it."""
     app = Sextile.of(request)
-    return Prose.of(
-        "A calendar, served as Viewdata frames.",
-        "It exists to demonstrate that Sextile is a framework and not one "
-        "service: nothing here knows about forums, and nothing in the "
-        "framework knows about calendars.",
-        "Everything it shows comes from the standard library.",
+    return PageLayout(
         title=app.heading_for(request.address),
         home=app.index,
+        parts=[
+            Flowing(
+                Prose.of(
+                    "A calendar, served as Viewdata frames.",
+                    "It exists to demonstrate that Sextile is a framework and "
+                    "not one service: nothing here knows about forums, and "
+                    "nothing in the framework knows about calendars.",
+                    "Everything it shows comes from the standard library.",
+                )
+            )
+        ],
     ).build(request.address)
 
 
@@ -259,17 +259,17 @@ def build_application(now: Callable[[], datetime] | None = None) -> Sextile:
 def _month_page(app: Sextile, address: PageAddress, day: date) -> Page:
     weeks = calendar.Calendar().monthdayscalendar(day.year, day.month)
     previous, following = _months_either_side(day)
-    return Lines(
+    return PageLayout(
         title=_month_name(day).upper(),
-        entries=[],
         home=app.address_for("main"),
-        #  A grid is placed by cell rather than written along its rows, which
-        #  is what a preamble block is for. The page has nothing else on it, so
-        #  there are no entries under the block.
-        preamble=[
-            Block(
-                rows=1 + len(weeks),
-                draw=lambda canvas, row: _draw_month(canvas, row, day, weeks),
+        #  A grid is placed by cell rather than written along its rows. It is
+        #  the whole of the page's content, and needs no flowing part at all.
+        parts=[
+            Once(
+                Drawn(
+                    rows=1 + len(weeks),
+                    draw=lambda canvas, row: _draw_month(canvas, row, day, weeks),
+                )
             )
         ],
         shortcuts=[
@@ -310,15 +310,21 @@ def _menu(
     items: list[tuple[str, str, PageAddress]],
     preamble: list[str] | None = None,
 ) -> Page:
-    """A menu, nine to a frame, divided by the framework's template."""
-    return Menu(
+    """A menu, nine to a frame, divided by the framework's layout."""
+    return PageLayout(
         title=title if title is not None else app.heading_for(address),
-        entries=[
-            MenuItem(text=text, detail=detail, destination=where)
-            for text, detail, where in items
-        ],
         home=app.index,
-        preamble=preamble or (),
+        parts=[
+            *([Once(Lines(said=(*preamble, "")))] if preamble else []),
+            Flowing(
+                Menu(
+                    entries=[
+                        MenuItem(text=text, detail=detail, destination=where)
+                        for text, detail, where in items
+                    ]
+                )
+            ),
+        ],
     ).build(address)
 
 
@@ -326,10 +332,10 @@ def _notice(
     app: Sextile, address: PageAddress, title: str | None, lines: list[str]
 ) -> Page:
     """A page that simply says something, with no choices but the way back."""
-    return Lines(
+    return PageLayout(
         title=title if title is not None else app.heading_for(address),
-        entries=lines,
         home=app.address_for("main"),
+        parts=[Flowing(Lines(said=lines))],
     ).build(address)
 
 

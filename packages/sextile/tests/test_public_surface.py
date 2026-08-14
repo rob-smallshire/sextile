@@ -23,6 +23,8 @@ PUBLIC: Final = frozenset(
     {
         "sextile",
         "sextile.templates",
+        "sextile.formatting",
+        "sextile.layout",
         "sextile.keys",
         "sextile.content",
         "sextile.content.blocks",

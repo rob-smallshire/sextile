@@ -30,7 +30,7 @@ Example:
 from abc import ABC, abstractmethod
 from collections.abc import Sequence
 from dataclasses import dataclass, replace
-from typing import ClassVar, Protocol, runtime_checkable
+from typing import TYPE_CHECKING, ClassVar, Protocol, runtime_checkable
 
 from sextile.addressing import PageAddress
 from sextile.content.blocks import Document, Paragraph
@@ -43,6 +43,9 @@ from sextile.viewdata.footer import FooterItem, Priority
 from sextile.viewdata.frame import COLUMNS
 from sextile.viewdata.typesetting import Row, rows_for
 from sextile.viewdata.wrapping import wrap_within
+
+if TYPE_CHECKING:
+    from sextile.application import Sextile
 
 
 @runtime_checkable
@@ -82,6 +85,31 @@ class MenuItem:
     text: str = ""
     detail: str = ""
     destination: PageAddress | None = None
+
+    @classmethod
+    def for_page(cls, app: "Sextile", name: str) -> "MenuItem":
+        """Build an item from what a page recorded about itself at registration.
+
+        Args:
+            app: The application the page is registered with.
+            name: The name the page was registered under.
+
+        Returns:
+            An item carrying the page's title and detail, leading to its
+            address.
+
+        Raises:
+            ValueError: If no page is registered under `name`.
+
+        The words come from the registration, so a menu offering a page and a
+        listing naming it cannot drift apart: they are the same words.
+        """
+        about = app.page_info(name)
+        if about is None:
+            raise ValueError(f"{name!r} is not a page that says what it is")
+        return cls(
+            text=about.title, detail=about.detail, destination=app.address_for(name)
+        )
 
 
 @dataclass(frozen=True, kw_only=True)

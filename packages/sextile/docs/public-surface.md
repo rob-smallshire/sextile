@@ -42,6 +42,21 @@ application in its first few lines.
 `keys` is the module, re-exported: `keys.BACK`, `keys.with_arrows`, and the
 rest of [`sextile.keys`](#sextilekeys--the-keys-a-reader-presses).
 
+### `sextile.layout` — a page as furniture and parts
+
+    PageLayout  build                     what a service constructs
+    Once  Every  Flowing  Break  Drawn    the kinds of part
+    Part  Room  Offer  Placement          what a part of its own must satisfy
+    Edge  Summary  Furnishing             what furniture must satisfy
+    Header  Rule  Prompt  DEFAULT_FURNITURE
+    content_rows  CHOICES_PER_FRAME
+
+### `sextile.formatting` — sequences laid out as parts
+
+    Formatter  RowFormatter              to subclass
+    Menu  Listing  Figures  Lines  Prose  the shapes
+    Entry  MenuItem                       what a shape is given
+
 ### `sextile.templates` — the shapes a page takes
 
 The first place to look when a page is being written. A service that finds no

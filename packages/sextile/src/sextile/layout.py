@@ -19,7 +19,7 @@ Example:
         )
 """
 
-from collections.abc import Mapping, Sequence
+from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass, field
 from enum import Enum, auto
 from typing import TYPE_CHECKING, Final, Protocol, runtime_checkable
@@ -143,6 +143,33 @@ class Part(Protocol):
             split.
         """
         ...
+
+
+@dataclass(frozen=True)
+class Drawn:
+    """A part of a stated height, drawn cell by cell by the page itself.
+
+    A picture is positioned at a cell and may be several rows tall, which suits
+    a strip of mosaics or a grid of figures and does not suit a line of text.
+
+    Attributes:
+        rows: How many rows of the frame it occupies.
+        draw: Called with the canvas and the row it begins on.
+
+    Example:
+        A month as a grid of weeks, which is the whole of a page's content::
+
+            Once(Drawn(rows=1 + len(weeks), draw=lambda canvas, row: ...))
+    """
+
+    rows: int
+    draw: "Callable[[Canvas, int], None]"
+
+    def place(self, canvas: Canvas, room: Room) -> Placement:
+        if room.rows < self.rows:
+            return Placement(rows=0, rest=self)
+        self.draw(canvas, room.first_row)
+        return Placement(rows=self.rows)
 
 
 @dataclass(frozen=True)

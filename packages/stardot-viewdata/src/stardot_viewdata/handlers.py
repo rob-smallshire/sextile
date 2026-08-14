@@ -39,15 +39,9 @@ from sextile import (
     keyed,
     page,
 )
-from sextile.templates import (
-    HOME_KEY,
-    Lines,
-    Menu,
-    MenuItem,
-    Prose,
-    Shortcut,
-    farewell_page,
-)
+from sextile.formatting import Lines, Menu, MenuItem, Prose
+from sextile.layout import Flowing, Once, PageLayout
+from sextile.templates import HOME_KEY, Shortcut, farewell_page
 from sextile.viewdata.canvas import Canvas
 from sextile.viewdata.controls import Colour
 from stardot_viewdata.model import Post
@@ -248,12 +242,18 @@ async def topics_index(request: PageRequest) -> Page:
     app = Sextile.of(request)
     topics = await _read(request, lambda repository: repository.topics(limit=60))
     if not topics:
-        return Prose.of(
-            "NO TOPICS held yet.",
-            "Topics are known only for posts seen since the board's feed "
-            "began carrying them. Older posts have none.",
+        return PageLayout(
             title=app.heading_for(request.address),
             home=app.index,
+            parts=[
+                Flowing(
+                    Prose.of(
+                        "NO TOPICS held yet.",
+                        "Topics are known only for posts seen since the board's "
+                        "feed began carrying them. Older posts have none.",
+                    )
+                )
+            ],
         ).build(request.address)
     items = [
         MenuItem(
@@ -290,12 +290,18 @@ async def one_post(request: PageRequest, post_id: int) -> Page:
     app = Sextile.of(request)
     post = await _read(request, lambda repository: repository.post(post_id))
     if post is None:
-        return Prose.of(
-            f"Post {post_id} is NOT in the archive.",
-            "This service holds what it has seen in the board's feed, "
-            "which reaches back only a little way.",
+        return PageLayout(
             title="POST",
             home=app.index,
+            parts=[
+                Flowing(
+                    Prose.of(
+                        f"Post {post_id} is NOT in the archive.",
+                        "This service holds what it has seen in the board's feed, "
+                        "which reaches back only a little way.",
+                    )
+                )
+            ],
         ).build(request.address)
     return post_page(
         app, request.address, post, request.arrival, untitled=SERVICE_NAME
@@ -307,15 +313,22 @@ async def about(request: PageRequest) -> Page:
     """What the service is, how much it holds, and how its numbering works."""
     app = Sextile.of(request)
     held = await _read(request, lambda repository: repository.count_posts())
-    return Prose.of(
-        "A Viewdata service carrying posts from stardot.org.uk, for users "
-        "of Acorn computers and emulators.",
-        f"{held} posts held.",
-        "Page numbers follow the board's own identifiers, so *82489493# "
-        "here is post 489493 there.",
-        "Served by Sextile, named after the star key on a viewdata keypad.",
+    return PageLayout(
         title=f"ABOUT {app.name.upper()}",
         home=app.index,
+        parts=[
+            Flowing(
+                Prose.of(
+                    "A Viewdata service carrying posts from stardot.org.uk, for "
+                    "users of Acorn computers and emulators.",
+                    f"{held} posts held.",
+                    "Page numbers follow the board's own identifiers, so "
+                    "*82489493# here is post 489493 there.",
+                    "Served by Sextile, named after the star key on a viewdata "
+                    "keypad.",
+                )
+            )
+        ],
     ).build(request.address)
 
 
@@ -378,9 +391,19 @@ def ringing_off(app: Sextile, parting: Parting) -> Page:
 
 def unknown_page(app: Sextile, target: str) -> Page:
     """Say so, in the service's own furniture, and leave the way back open."""
-    return Lines(
+    return PageLayout(
         title="UNKNOWN PAGE",
-        entries=[f"*{target[:30]}# is NOT a page here.", "", "Try *1# for the main index."],
+        parts=[
+            Flowing(
+                Lines(
+                    said=(
+                        f"*{target[:30]}# is NOT a page here.",
+                        "",
+                        "Try *1# for the main index.",
+                    )
+                )
+            )
+        ],
         #  The advice rides in the label: there is no key for "another page",
         #  only the command line. Shortened to "index" where the row is tight,
         #  the short form being first.
@@ -421,12 +444,13 @@ def _menu(
     empty: str = "",
 ) -> Page:
     """A menu, dealt nine to a frame by the framework's template."""
-    return Menu(
+    return PageLayout(
         title=title if title is not None else app.heading_for(address),
-        entries=items,
         home=app.index,
-        preamble=preamble or (),
-        empty=empty,
+        parts=[
+            *([Once(Lines(said=(*preamble, "")))] if preamble else []),
+            Flowing(Menu(entries=items, empty=empty)),
+        ],
     ).build(address)
 
 
@@ -437,10 +461,10 @@ def _notice(
     lines: list[str],
 ) -> Page:
     """A page that simply says something, with no choices but the way back."""
-    return Lines(
+    return PageLayout(
         title=title if title is not None else app.heading_for(address),
-        entries=lines,
         home=app.address_for("main"),
+        parts=[Flowing(Lines(said=lines))],
     ).build(address)
 
 

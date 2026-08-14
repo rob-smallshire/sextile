@@ -259,7 +259,6 @@ class Summary:
     address: PageAddress | None
     index: int
     frames: int
-    filled: range
     offered: Sequence[FooterItem]
 
 
@@ -274,10 +273,6 @@ class Furnishing(Protocol):
 `offered` is assembled by the layout: what the parts named, then the shortcuts,
 the movement keys and the way home. A prompt furnishing hands that to
 `render_footer` and nothing else has to know the order.
-
-`filled` is the rows the content actually used on this frame, which is what
-lets a furnishing sit under the content rather than at a fixed row — see the
-compass, below.
 
 A furnishing returns nothing. It claims no keys, because the keys it names
 belong to the layout or to the parts.
@@ -325,29 +320,41 @@ The test of the design is not the four pages that prompted it but all of them.
 | A grid drawn by cell | the calendar's month | `[Once(grid)]` |
 | A heading on every frame | one post | `[Every(heading), Flowing(document)]` |
 | A field typed into | search by name, search by position | `[Once(instructions), Once(form)]` |
-| Two lists divided on purpose | the guide | `[Flowing(moving), Break(), Flowing(asking)]` |
+| Two lists divided on purpose | the guide | `[Flowing(moving), Once(compass), Break(), Flowing(asking)]` |
 | A masthead and nothing else | the title frames of Stardot and weather | `furniture=(), [Once(masthead), Once(words)]` |
 | A farewell | all three | stays `farewell_page` |
 
-Nine of the twelve are the model exactly as described. The guide, the title
-frames and the farewell each needed something settled: the first two are below,
-and the farewell stays a helper for a reason that has nothing to do with
-layout.
+Ten of the twelve are the model exactly as described. The title frames needed
+something settled and the farewell stays a helper, both below; the guide is the
+model too, at the cost of a deliberate change to where its compass sits.
 
-### The compass is furniture, not a part
+### The compass is a part, and is never split
 
 The guide draws a compass at the *foot* of its first frame, where the rows
-above leave room for it. A part placed after the first flowing part would be
-drawn immediately under the last key row instead.
+above leave room. As a part it is drawn where it lands, immediately under the
+keys above it:
 
-It is furniture: a band docked to the foot, on the guide alone, which is what
-the per-page override is for. `Summary` carries `index` and `filled`, so the
-compass draws itself only on the first frame and only where the content left it
-room — which is what the hand-written page does today, in the same two
-conditions.
+    [ Flowing(moving_keys), Once(compass), Break(), Flowing(asking_keys) ]
 
-That answer costs nothing new. Without it, foot-anchoring would have been a
-fifth kind of part.
+That changes what the page looks like, and the change is meant. A compass held
+to the foot of the frame is a rule about where a thing sits, and a rule about
+where one particular thing sits is the beginning of a layout language. The
+compass is a few rows of graphics; it can be included in content like any other
+few rows of graphics.
+
+What the compass does need is already there. **A part that does not flow is
+drawn whole or moved on**, so four rows of compass either fit where they land
+or begin the next frame, and are never divided between two. That rule was
+stated for parts too tall for what is left; the compass is what makes it worth
+stating, because a compass split across a frame boundary would be four rows of
+meaningless blocks.
+
+**Keeping a part with the one after it is a different thing, and is not
+wanted.** A heading drawn at the foot of a frame with its list beginning
+overleaf is the case that would need it, and the framework already prefers the
+opposite: `_capacity` lets a lead-in have a frame to itself and starts the
+entries on the next, deliberately, rather than squeezing one entry in beneath
+it. Nothing in the workspace asks for keep-with-next, so it is not here.
 
 ### A masthead is a page with no furniture
 
@@ -461,10 +468,11 @@ the rule at the foot of the frame.
 **A layout engine is a large thing to build for twenty-five pages.** The
 version worth having is the smallest the evidence demands: four kinds of part,
 concatenation where they flow, furniture docked at two edges, no side-by-side
-arrangement, no styling language, no units. If it grows a second axis, a way of
-expressing proportions, or a parameter deciding how much of a frame one part
-may take, it has gone wrong — that last is where LaTeX's float parameters came
-from.
+arrangement, no styling language, no units. Three things would say it had gone
+wrong: a second axis, a way of expressing proportions, or a rule about where
+one particular part must sit. The last of those was nearly added for the
+guide's compass and was refused; the first two are where LaTeX's float
+parameters came from.
 
 **Names.** `Part`, `Placing`, `Room`, `Offer`, `Summary`, `Furnishing`, `Edge`,
 and the four kinds of part are all proposals.
@@ -482,10 +490,11 @@ edges, set once for a service and overridden by a page, which makes the
 content's row range derived rather than constant. Content parts claim and
 furniture parts report, which is why they are two protocols.
 
-Every shape in the three services is expressible, including the three that
-needed something settling: the compass is per-page furniture, a masthead is a
-page with no furniture, and `follows` belongs on the layout and brings the
-next-frame keys with it.
+Every shape in the three services is expressible. A masthead is a page with no
+furniture, `follows` belongs on the layout and brings the next-frame keys with
+it, and the guide's compass is an ordinary part, drawn where it lands rather
+than held to the foot of the frame -- a change to that page's appearance,
+accepted so that no rule about where one particular thing sits has to exist.
 
 Not settled: the names above; whether the 23 call sites change or keep a
 convenience form; and whether `Placing` should be an iterator in fact as well

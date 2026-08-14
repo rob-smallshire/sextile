@@ -134,7 +134,7 @@ class Filling:
     form: Form | None = None
 ```
 
-`Filling` is a placeholder name and wants a better one.
+`Filling` became `Offer`; see [how the frames come out](#how-the-frames-come-out).
 
 ## This protocol already exists, in part
 
@@ -190,7 +190,7 @@ One line longer, and it says which half is which: the title and the way home
 are the frame's, the menu is what goes between the rules. `Menu` keeps only
 what it needs to format a sequence.
 
-Nothing about the dealing changes. Sixteen items are still nine on the first
+Nothing about the division changes. Sixteen items are still nine on the first
 frame and seven on the second, the digits still restart at 1 so that no entry
 is shown which cannot be chosen, and nine is still the limit because a reader
 chooses with one keypress rather than because ten rows of two will not fit.
@@ -215,8 +215,8 @@ knows how much it needs. The arithmetic that currently lives in one place
 (`_capacity`, `_deal`) would be split across the seam, and off-by-one errors
 there write over the bottom rule.
 
-**One name is still open**: the per-frame return value, sketched above as
-`Filling`, which is a placeholder.
+**Names.** `Offer`, `fill` and `furnish` are proposed above; `Once`, `Every`,
+`Flowing` and `Break` are still placeholders.
 
 ## Parts laid out down a frame
 
@@ -273,7 +273,7 @@ finished, on whatever frame that is. Concatenation, and nothing more.
 
 That is the same decision `typesetting.rows_for` already made: a post's body and
 its list of links are two streams, and it joins them into one before anything
-is dealt into frames.
+is divided between frames.
 
     rows = list(_rows_for(content.blocks, depth=0))
     rows.extend(_link_rows(content))
@@ -349,7 +349,7 @@ A break says so directly, and the objection goes.
 
 It also removes a silent cap. The guide draws `rows[:CONTENT_ROWS]`, so a
 service with more than twenty keys of its own loses the surplus without being
-told. As flowing parts they would be dealt onto a third frame, which is what
+told. As flowing parts they would go on to a third frame, which is what
 the reader asked for and what the rest of the framework does.
 
 **A break that would divide nothing is not a break.** One at the start or the
@@ -412,8 +412,109 @@ wrong -- that last is where LaTeX's float parameters came from.
 arithmetic in one place. Split across parts, an off-by-one writes over the rule
 at the foot of the frame.
 
-**`Flowing`, `Once`, `Every` and `Break` are placeholder names**, as is
-`Filling`.
+**`Flowing`, `Once`, `Every` and `Break` are placeholder names.**
+
+## How the frames come out
+
+The footer of a frame names `S page down` only where there is a frame to page
+down to, so the prompt of frame *i* depends on whether frame *i+1* exists. That
+looks as though frames cannot be produced one at a time. The geometry says
+otherwise: the content occupies rows 2 to 21 and the furniture rows 0, 1, 22
+and 23, and the two never touch. So the work divides into two passes, in this
+order and for that reason:
+
+**Fill.** Walk the parts, drawing content onto canvases, starting a new one
+whenever a frame runs out of rows or a `Break()` says so. Nothing in this pass
+needs to know how many frames there will be, so it can produce them one at a
+time.
+
+**Furnish.** Once the count is known, draw the header, the rules and the prompt
+on each, and assemble the `Page`. This is the only pass that needs the total.
+
+`Template` does the reverse today -- divide first, then draw content and
+furniture together -- which is why it has to know the count before it can draw
+anything.
+
+    PageLayout.build(address) -> Page   what a service calls
+    fill                               the content pass
+    furnish                            the furniture pass
+    Offer                              what a part hands back for one frame
+
+`Offer` rather than `Filling`, because that is the verb the framework already
+uses for this: *keys offered on every frame*, *a page cannot offer a key
+silently*. What a part returns is what it offers on that frame -- the keys that
+lead somewhere, what to name in the prompt, and a form where it has one.
+
+    def draw(self, canvas: Canvas, first_row: int, rows: int, choices: int) -> Offer
+
+`choices` is the budget: how many of the nine digits are still unclaimed on
+this frame.
+
+## Where the furniture comes from
+
+Furniture is fixed today. `draw_chrome` writes a cyan title with the page
+number at the right, two blue rules in separated mosaics, and a yellow prompt,
+and `CONTENT_FIRST_ROW` and `CONTENT_ROWS` are constants that follow from it. A
+service cannot have a different colour, a page cannot say it is dangerous, and
+nothing can move the page number to the foot or do without the rules.
+
+**Two levels, and no more.** A service sets its furniture once, which is what
+gives a site its character; a page overrides it where it has a reason -- red
+rules on a page that does something irreversible. An application already holds
+what a service settles once, so the default belongs there and the override on
+`PageLayout`. Two levels is the right number: a cascade of several would make
+the question "why is this page that colour" hard to answer, and the answer
+matters more than the flexibility.
+
+**Furniture is parts too, docked rather than stacked.** Each occupies rows at
+the top or the foot of every frame. That makes `CONTENT_FIRST_ROW` and
+`CONTENT_ROWS` derived rather than constant -- the content gets what the
+furniture leaves -- and settles the question left open above about whether the
+footer may be more than one row. It can, at the cost of a content row, and the
+arithmetic says so rather than a constant needing changing.
+
+It also removes a reason to reach into the framework. `weather_viewdata/search.py`
+imports `CONTENT_FIRST_ROW` to say which row its field sits on, which is one of
+the crossings in [public-surface.md](public-surface.md). A part is told where
+it begins and does not need the constant at all.
+
+**Furniture and content are two protocols, not one.** A content part is given
+rows and returns what it offers. A furniture part is given the page's summary
+-- the title, the address, which frame this is, how many there are, and the
+offers the content parts made -- and draws. The prompt is the reason: it names
+the keys the whole page offers, so it cannot be assembled until every content
+part has spoken. That is the same division as the two passes, seen from the
+other side.
+
+**A page with no furniture is a page with no furniture parts**, which is one
+line rather than a special case. Whether `farewell_page` should be written that
+way is a separate question, and the answer is probably not: what makes a
+farewell frame what it is has little to do with the furniture it lacks and
+everything to do with the cursor being left below the last thing said, which no
+furniture describes. Keep it as the helper it is.
+
+**A caution.** A reader learns where the page number sits and what the rules
+mean, and learns it once. Furniture that varies page to page costs them that.
+The framework should make the site-wide setting easy, the per-page override
+possible and deliberate, and the defaults worth keeping -- the page number at
+the top right is where Prestel put it, and a service that moves it is making
+its readers wrong about every other service they have used.
+
+## What is still unconsidered
+
+**`Page.hang_up` and `Page.follows`.** Neither appears above. `follows` says
+where `#` leads once a page's frames have run out, which is what makes a title
+frame more than a dead end; `hang_up` drops the line after the page is shown.
+Both are page-level and belong on `PageLayout`, and neither has been thought
+about here.
+
+**Twenty-six frames, in one place.** The limit is enforced in `typesetting` and
+again in `Template`. Under fill-and-furnish exactly one pass counts frames, so
+it can only be written once.
+
+**A page where every part is empty** still needs one frame with furniture on
+it. `Template` guarantees that with `batches or [()]`; parts would need to say
+so.
 
 ## What is settled and what is not
 
@@ -426,7 +527,12 @@ Also settled: where several parts flow, they follow one another and nothing
 arbitrates between them. The models that do arbitrate were examined and are not
 worth inheriting for a frame of twenty rows.
 
-Not settled: the exact content protocol, whether the call sites change, whether
-the footer may ever be more than one row, how a part is anchored to the foot of
-a frame, and five names -- the per-frame return value, and the four kinds of
-part.
+Also settled: the frames are filled and then furnished, in that order and
+because only the furniture needs to know how many there turned out to be.
+Furniture is set once for a service and overridden by a page, and is made of
+parts docked to the top and foot of a frame, which makes the content's row
+range something derived rather than a pair of constants.
+
+Not settled: the exact protocols on either side of the seam, whether the call
+sites change, how a part is anchored to the foot of a frame, `Page.follows` and
+`Page.hang_up`, and the names of the four kinds of part.

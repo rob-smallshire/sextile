@@ -38,7 +38,7 @@ the frame can list it afterwards.
 
 ## Blocks to rows
 
-`viewdata/typesetting.py` flattens blocks into rows and then deals them onto frames.
+`viewdata/typesetting.py` flattens blocks into rows and then divides them between frames.
 Doing it in that order keeps two hard things apart: deciding what a quotation
 four deep should look like, and deciding where a screen ends.
 

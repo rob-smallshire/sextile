@@ -149,7 +149,7 @@ Menu(
 ).build(request.address)
 ```
 
-`Menu` numbers its entries 1–9 and deals them nine to a frame, each with a line
+`Menu` numbers its entries 1–9 and puts nine on a frame, each with a line
 of detail beneath. `Listing` is the same mechanism for a reference page: twenty
 to a frame, nothing selectable, the detail in a second column. Both draw the
 chrome, build the prompt from what the frame actually offers, wire up `W`/`S`/`#`
@@ -703,7 +703,7 @@ leaving twenty rows. It is a convenience, not a requirement; a service that
 wants the whole screen simply does not call it.
 
 For long text, hand `sextile.viewdata.typesetting` a `Document` of blocks and it will
-wrap it, colour quotations and listings distinctly, and deal the result into
+wrap it, colour quotations and listings distinctly, and divide the result into
 frame-sized pages of rows.
 
 ## Seeing it

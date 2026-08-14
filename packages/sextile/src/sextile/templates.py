@@ -409,7 +409,7 @@ class Template[E](ABC):
             carrying the keys that work while it is showing. A page with no
             entries at all is one empty frame rather than none.
         """
-        batches, truncated = self._deal()
+        batches, truncated = self._divide()
         frames = []
         for index, batch in enumerate(batches):
             canvas = Canvas()
@@ -499,7 +499,7 @@ class Template[E](ABC):
             return 0
         return sum(_rows_of(line) for line in self.preamble) + 1
 
-    def _deal(self) -> tuple[list[Sequence[E]], bool]:
+    def _divide(self) -> tuple[list[Sequence[E]], bool]:
         """The entries, grouped a frame at a time.
 
         Returns:

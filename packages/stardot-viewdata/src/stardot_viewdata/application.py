@@ -6,7 +6,8 @@ connections, sessions, frames, control codes and routing belongs to the
 framework, and everything about forums belongs here.
 
 The handlers are in `handlers`, each declared beside its function;
-`title_frame` draws the masthead and `post_page` deals one post into frames.
+`title_frame` draws the masthead and `post_page` divides one post between
+frames.
 This module is the assembly alone: the archive the service holds, the pages
 mapped into the numbering, and the words it uses for a page it has not got.
 """

@@ -1,4 +1,4 @@
-"""Pages made of rows, dealt into frames.
+"""Pages made of rows, divided between frames.
 
 Two shapes over one mechanism. What is worth testing is the mechanism -- the
 pagination, the keys, the arithmetic that says how much fits -- since that is
@@ -338,7 +338,7 @@ class TestProse:
 
 
 class TestColumnHeadings:
-    """A table dealt across frames needs its headings on each of them.
+    """A table divided between frames needs its headings on each of them.
 
     A preamble is a lead-in and belongs on the first frame only. Headings are
     not a lead-in: they say what the columns beneath them mean, and a reader on

@@ -508,7 +508,8 @@ that works out where the attributes go, and the plan for large lettering.
 ## Templates
 
 Five places had grown their own version of the same six steps — take a list,
-deal it into frames, draw the chrome, write the rows, wire up the keys, return a
+divide it between frames, draw the chrome, write the rows, wire up the keys,
+return a
 `Page`. About 275 lines, and they had drifted: two disagreed about how much room
 a preamble costs, and one advertised a `1-9 select` on a frame with nothing to
 select.
@@ -524,7 +525,8 @@ one, and whether entries take a digit. Two come with the framework:
 
 An application wanting a fourth shape subclasses `Template` rather than starting
 again — which is the point of it being a class rather than three functions. The
-base is generic in *what* it deals: menus and listings deal entries, prose deals
+base is generic in *what* it divides: menus and listings divide entries, prose
+divides
 rendered rows.
 
 **A shape that is not written along a row overrides `draw_entry` instead.**

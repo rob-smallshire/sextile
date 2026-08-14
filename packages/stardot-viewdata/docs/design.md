@@ -84,7 +84,7 @@ app.address_for("post", post_id=post.post_id)
 ```
 
 `handlers.py` holds those declarations and `application.py` gathers them with
-`routes_in`; `title_frame.py` draws the masthead, and `post_page.py` deals one
+`routes_in`; `title_frame.py` draws the masthead, and `post_page.py` divides one
 post into frames.
 
 Seventeen keywords — `*MAIN#`, `*LATEST#`, `*HELP#`, `*BYE#` and the rest — are
@@ -110,7 +110,7 @@ aliases onto those same routes rather than onto literal numbers.
 
 A post page offers its forum, its author, its day and its topic on `1`–`4`, and
 the posts either side of it on the horizontal keys when the reader arrived
-through a menu. Menus deal nine to a frame with a line of detail beneath each.
+through a menu. Menus put nine on a frame with a line of detail beneath each.
 
 **Pages with nothing to show say why.** An empty menu with no explanation looks
 like a fault, and on a service that answers slowly by design a reader cannot

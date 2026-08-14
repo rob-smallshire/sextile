@@ -310,7 +310,7 @@ def _menu(
     items: list[tuple[str, str, PageAddress]],
     preamble: list[str] | None = None,
 ) -> Page:
-    """A menu, dealt nine to a frame by the framework's template."""
+    """A menu, nine to a frame, divided by the framework's template."""
     return Menu(
         title=title if title is not None else app.heading_for(address),
         entries=[

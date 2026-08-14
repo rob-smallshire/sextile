@@ -175,7 +175,7 @@ class Application(ABC):
             self.page("92", name="history")(self.history)
             self.alias("HISTORY", self.address_for("history"))
 
-        GuideRow 1 for the page before this one -- the same as `*0#` -- 2 for the one
+        Key 1 for the page before this one -- the same as `*0#` -- 2 for the one
         before that, and so on.
         """
         return history_page(
@@ -236,7 +236,7 @@ class Application(ABC):
             request: The request for this page.
             visits: The log to read.
             limit: How many to show, defaulting to the nine a frame holds. More
-                than that is dealt into further frames rather than dropped.
+                than that goes on to further frames rather than being dropped.
             prefix: Narrows it to a namespace, which is what a first digit
                 already means: a weather service can ask for the forecasts
                 alone.
@@ -269,7 +269,7 @@ class Application(ABC):
             request: The request for this page.
             visits: The log to read.
             limit: How many to show, defaulting to the nine a frame holds. More
-                than that is dealt into further frames rather than dropped.
+                than that goes on to further frames rather than being dropped.
             prefix: Narrows it to a namespace of the numbering.
             since: Counts only what has been read since then, where the service
                 wants "most read lately" rather than most read ever.

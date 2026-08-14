@@ -1,7 +1,7 @@
 """Laying blocks out as frames.
 
-Blocks are flattened into a stream of rendered rows first, then dealt onto
-frames. Doing it in that order keeps the two hard parts apart: deciding what a
+Blocks are flattened into a stream of rendered rows first, then divided
+between frames. Doing it in that order keeps the two hard parts apart: deciding what a
 quotation four deep should look like, and deciding where a screen ends.
 
 Colour carries structure. Someone reading in monochrome still follows the text;
@@ -60,7 +60,7 @@ class Row:
 
 
 def rows_for(content: Document) -> list[Row]:
-    """Render a document into rows, without dealing them into frames.
+    """Render a document into rows, without dividing them between frames.
 
     For a caller that wants to do its own pagination -- a template that has a
     lead-in on the first frame, say, and so cannot use a fixed frame size.
@@ -71,12 +71,12 @@ def rows_for(content: Document) -> list[Row]:
 
 
 def paginate(content: Document, rows_per_frame: int = BODY_ROWS) -> list[list[Row]]:
-    """Render a document and deal it into frame-sized pages of rows.
+    """Render a document and divide it into frame-sized groups of rows.
 
     Stops short of drawing, so a page builder can place these rows beneath its
     own chrome and title block without this module knowing either exists.
     """
-    return _deal(rows_for(content), rows_per_frame)
+    return _divide(rows_for(content), rows_per_frame)
 
 
 def draw_rows(canvas: Canvas, first_row: int, rows: list[Row]) -> None:
@@ -156,8 +156,8 @@ def _link_rows(content: Document) -> list[Row]:
     return rows
 
 
-def _deal(rows: list[Row], rows_per_frame: int) -> list[list[Row]]:
-    """Deal rendered rows into frame-sized pages."""
+def _divide(rows: list[Row], rows_per_frame: int) -> list[list[Row]]:
+    """Divide rendered rows into frame-sized groups."""
     pages = [
         rows[start : start + rows_per_frame] for start in range(0, len(rows), rows_per_frame)
     ] or [[]]

@@ -160,7 +160,7 @@ class Suggest(Form):
 
     The shape a viewdata reader already knows -- a short numbered list, chosen
     with one keypress -- with the list changing as they type instead of being
-    dealt a page at a time.
+    given a page at a time.
 
     Letters type. Digits choose. That means a place whose name contains a digit
     cannot be keyed, which is a real limitation and the right trade: a service

@@ -26,7 +26,7 @@ from sextile.viewdata.canvas import Run
 from sextile.viewdata.chrome import CONTENT_FIRST_ROW, CONTENT_ROWS
 from sextile.viewdata.controls import Colour, Control
 from sextile.viewdata.frame import COLUMNS
-from sextile.viewdata.layout import TRUNCATION_NOTICE
+from sextile.viewdata.typesetting import TRUNCATION_NOTICE
 
 
 def at(digits: str) -> PageAddress:
@@ -327,7 +327,7 @@ class TestProse:
         #  Which is what lets a notice have a quotation or a listing in it,
         #  rendered exactly as a post's would be.
         from sextile.content.blocks import Code, Document
-        from sextile.viewdata.layout import rows_for
+        from sextile.viewdata.typesetting import rows_for
 
         page = Prose(
             title="ABOUT",

@@ -17,7 +17,7 @@ from sextile.viewdata.controls import Colour
 from sextile.viewdata.encoding import fitted
 from sextile.viewdata.footer import ROOM, FooterItem, Priority, movement, render_footer
 from sextile.viewdata.frame import COLUMNS
-from sextile.viewdata.layout import draw_rows, paginate
+from sextile.viewdata.typesetting import draw_rows, paginate
 from stardot_viewdata.html import parse_post_body
 from stardot_viewdata.model import Post
 from stardot_viewdata.store.repository import BOARD_TIMEZONE

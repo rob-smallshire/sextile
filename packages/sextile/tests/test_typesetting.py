@@ -23,7 +23,7 @@ from sextile.content.blocks import (
 from sextile.viewdata.canvas import Canvas
 from sextile.viewdata.encoding import cell_count
 from sextile.viewdata.frame import COLUMNS, FRAME_PREAMBLE, Frame
-from sextile.viewdata.layout import BODY_ROWS, draw_rows, lay_out, paginate
+from sextile.viewdata.typesetting import BODY_ROWS, draw_rows, lay_out, paginate
 
 
 def text_of(frame: Frame) -> str:

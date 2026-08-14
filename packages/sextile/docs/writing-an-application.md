@@ -702,7 +702,7 @@ fitted(title, COLUMNS - 4)                         # shortened to the cells free
 leaving twenty rows. It is a convenience, not a requirement; a service that
 wants the whole screen simply does not call it.
 
-For long text, hand `sextile.viewdata.layout` a `Document` of blocks and it will
+For long text, hand `sextile.viewdata.typesetting` a `Document` of blocks and it will
 wrap it, colour quotations and listings distinctly, and deal the result into
 frame-sized pages of rows.
 

@@ -189,7 +189,7 @@ word `key` was already spoken for by the thing a reader presses. And
 want of any other way to press a key at a service.
 
 **Chrome and footers drawn by hand.** Stardot and weather import
-`viewdata.chrome` and `viewdata.footer`; Stardot imports `viewdata.layout` as
+`viewdata.chrome` and `viewdata.footer`; Stardot imports `viewdata.typesetting` as
 well. The calendar is done and imports none of them. Three sites are left, and
 they are three different shapes rather than one:
 

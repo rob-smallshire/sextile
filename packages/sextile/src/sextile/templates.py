@@ -47,7 +47,7 @@ from sextile.viewdata.drawing import key_row
 from sextile.viewdata.encoding import cell_count, fitted
 from sextile.viewdata.footer import ROOM, FooterItem, Priority, movement, render_footer
 from sextile.viewdata.frame import COLUMNS
-from sextile.viewdata.layout import TRUNCATION_NOTICE, Row, rows_for
+from sextile.viewdata.typesetting import TRUNCATION_NOTICE, Row, rows_for
 from sextile.viewdata.wrapping import wrap_text, wrap_within
 
 if TYPE_CHECKING:
@@ -799,9 +799,9 @@ class Prose(RowTemplate[Row]):
     Its entries are rendered `Row` values rather than `Entry` values, which is
     what the base class is generic for. Use `Prose.of` to make a page from
     plain paragraphs, or construct it directly with rows from
-    `viewdata.layout`.
+    `viewdata.typesetting`.
 
-    Laying the text out through `viewdata.layout` gives a notice the same
+    Laying the text out through `viewdata.typesetting` gives a notice the same
     treatment as a forum post: quotations in cyan, listings in green, nesting
     indented, and over-long words broken rather than dropped. Before this,
     notice pages held string literals hand-broken at forty columns, with empty

@@ -5,7 +5,7 @@ values, which is why nearly all of it is testable without a BBC Micro.
 
 ```
 Document            Paragraph(("lda &b5fe",))       what is to be said
-        |  viewdata/layout.py
+        |  viewdata/typesetting.py
         v
 rows                Row("lda &b5fe", GREEN, 2)      text, colour, indent
         |  viewdata/canvas.py, chrome.py, footer.py
@@ -38,7 +38,7 @@ the frame can list it afterwards.
 
 ## Blocks to rows
 
-`viewdata/layout.py` flattens blocks into rows and then deals them onto frames.
+`viewdata/typesetting.py` flattens blocks into rows and then deals them onto frames.
 Doing it in that order keeps two hard things apart: deciding what a quotation
 four deep should look like, and deciding where a screen ends.
 

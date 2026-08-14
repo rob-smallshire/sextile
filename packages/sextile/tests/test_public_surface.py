@@ -58,7 +58,7 @@ CROSSINGS: Final = frozenset(
         #  whose shape is a heading and a body.
         "sextile.viewdata.chrome",
         "sextile.viewdata.footer",
-        "sextile.viewdata.layout",
+        "sextile.viewdata.typesetting",
     }
 )
 

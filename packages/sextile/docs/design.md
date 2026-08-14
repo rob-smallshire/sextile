@@ -12,7 +12,7 @@ might be about.
 
 ```
    viewdata/   charset, controls, encoding, frame       a screen
-            |  canvas, wrapping, layout                 putting things on one
+            |  canvas, wrapping, typesetting            putting things on one
             |  chrome, footer, command_line             its furniture
             |  repaint                                  redrawing part of one
             |  ansi                                     seeing it without a Beeb
@@ -719,7 +719,7 @@ told apart by colour because a label would cost four cells to repeat what the
 row above said. The rows it costs are counted the same either way.
 
 **`Prose` is the one that already had its machinery.** `wrap_text`,
-`Canvas.paragraph`, the `Document` block model and `viewdata/layout.py` were all
+`Canvas.paragraph`, the `Document` block model and `viewdata/typesetting.py` were all
 there — nested quotations in cyan, listings in green, over-long words split
 rather than dropped — and only two pages in the whole workspace used any of it.
 Every notice wrote its own lines out pre-broken at forty columns, with empty
@@ -858,7 +858,7 @@ separates what was verified from what was inferred; the scripts are in
 - **An attribute occupies a character cell.** A row that changes colour twice
   has thirty-eight columns for text. `Canvas` does that arithmetic so nothing
   above it has to — and it is why colour could not have been deferred, since the
-  layout engine would have had to be rewritten around it.
+  typesetting would have had to be rewritten around it.
 - **Attributes reset at the start of every row**, so rows are written
   independently and white text needs no attribute at all. Read from Beebium's
   `Saa5050::start_of_line()` rather than guessed.
@@ -901,7 +901,7 @@ the screen still needs to leave it. See
 ## Testing
 
 The awkward parts are nearly all pure functions over values — transliteration,
-routing, wrapping, layout, command parsing — and the two impure edges, the
+routing, wrapping, typesetting, command parsing — and the two impure edges, the
 socket and any application's I/O, sit behind narrow interfaces.
 
 The framework's own tests drive **a made-up service** (`tests/exemplar.py`): a

@@ -46,8 +46,16 @@ They are the point of the whole arrangement, and both are checkable.
    down what it was, rather than working around it in the application.
 
 2. **Nothing in an application may reach into the framework's internals.** The
-   surface is `sextile`'s top-level exports plus `sextile.viewdata` for drawing.
-   Both are stated in the packaging, so an import in the wrong direction fails.
+   surface is a stated set of public submodules, each with a stated set of
+   public names, written down in
+   [public-surface.md](packages/sextile/docs/public-surface.md). A module not
+   listed there is machinery.
+
+   That document also lists the places where the line is currently crossed, and
+   what has to happen before each can be deleted — nothing checks the surface
+   yet, which is how it came to be crossed in six places unnoticed. Read it
+   before adding an import to an application or moving a module in the
+   framework.
 
 ## How this project is built
 

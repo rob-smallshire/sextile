@@ -22,6 +22,7 @@ Each is written up as built, and those are the documents to read:
 | [stardot-viewdata/docs/design.md](../packages/stardot-viewdata/docs/design.md) | the numbering, the archive, the polite ingest, phpBB's HTML |
 | [calendar-viewdata/docs/design.md](../packages/calendar-viewdata/docs/design.md) | the second application, and what it was for |
 | [weather-viewdata/docs/design.md](../packages/weather-viewdata/docs/design.md) | the third: place search, met.no, drawing the weather, and the twenty-odd things it asked of the framework |
+| [sextile/docs/public-surface.md](../packages/sextile/docs/public-surface.md) | which of the framework an application may import, and where that line is currently crossed |
 
 [target-architecture.md](target-architecture.md) says where all this is going
 and why — the phpBB extension, and the phases between here and it.

@@ -164,15 +164,39 @@ layout.
 
 ## What it would cost
 
-Two types where there is one. The 23 construction sites would change shape:
+Two types where there is one, and 23 construction sites that change shape. A
+menu today:
+
+```python
+Menu(
+    title=SERVICE_NAME,
+    entries=items,
+    home=app.index,
+    empty="Nothing yet.",
+).build(address)
+```
+
+and the same menu as a layout of parts:
 
 ```python
 PageLayout(
     title=SERVICE_NAME,
     home=app.index,
-    content=Menu(entries=items, empty="Nothing yet."),
+    parts=[Flowing(Menu(entries=items, empty="Nothing yet."))],
 ).build(address)
 ```
+
+One line longer, and it says which half is which: the title and the way home
+are the frame's, the menu is what goes between the rules. `Menu` keeps only
+what it needs to format a sequence.
+
+Nothing about the dealing changes. Sixteen items are still nine on the first
+frame and seven on the second, the digits still restart at 1 so that no entry
+is shown which cannot be chosen, and nine is still the limit because a reader
+chooses with one keypress rather than because ten rows of two will not fit.
+What moves is where that limit is applied: `CHOICES_PER_FRAME` is a fact about
+the keypad, so the layout hands it down with the rows rather than each shape
+assuming it has all nine.
 
 The alternative is to keep `Menu(title=..., entries=..., home=...)` as it is
 and have it construct both halves. That leaves the call sites alone and hides

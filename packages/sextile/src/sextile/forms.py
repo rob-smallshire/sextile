@@ -31,10 +31,12 @@ from typing import Final
 
 from sextile import keys
 from sextile.addressing import PageAddress
-from sextile.templates import Entry
+from sextile.formatting import Entry
+from sextile.layout import Offer, Placement, Room
 from sextile.viewdata.canvas import Canvas, RowWriter
 from sextile.viewdata.controls import Colour
 from sextile.viewdata.encoding import fitted
+from sextile.viewdata.footer import FooterItem, Priority
 from sextile.viewdata.frame import COLUMNS, Frame
 
 #: What a form asks to find out what to offer. Given what has been typed so
@@ -88,12 +90,45 @@ NOTE_COLOUR: Final = Colour.CYAN
 
 
 class Form(ABC):
-    """Rows of a frame that answer keypresses by redrawing themselves."""
+    """Rows of a frame that answer keypresses by redrawing themselves.
+
+    A form is a `layout.Part`, and the one part that is not a description: it
+    holds what has been typed, so a layout carrying one is built for the
+    request it answers rather than kept and built again.
+
+    A subclass numbers its rows from nought, and `at` is where the layout put
+    it. Everything a form draws or reports is offset by that, so a form needs
+    to know nothing about where the content of a frame begins.
+    """
+
+    #: The row this form was placed on. Nought until it has been.
+    at: int = 0
+
+    def place(self, canvas: "Canvas", room: "Room") -> "Placement":
+        """Draw this form where the layout has put it, and claim its keys.
+
+        Args:
+            canvas: The frame being filled.
+            room: What the frame has left to give.
+
+        Returns:
+            The rows it took, the digits its suggestions answer to, and itself
+            as the frame's form. A form is drawn whole or not at all, so a
+            frame without room for it is asked to begin another.
+        """
+        self.at = room.first_row
+        if len(self.rows) > room.rows:
+            return Placement(rows=0, rest=self)
+        self.draw(canvas)
+        return Placement(
+            rows=len(self.rows),
+            offer=Offer(choices=self.choices(), named=self.named(), form=self),
+        )
 
     @property
     @abstractmethod
     def rows(self) -> range:
-        """Which rows of the frame this form owns.
+        """Which rows of the frame this form owns, once it has been placed.
 
         Only these are compared and redrawn, so a form cannot disturb the page
         around it however wrong it is about its own contents.
@@ -138,6 +173,14 @@ class Form(ABC):
         """
         return {}
 
+    def named(self) -> Sequence[FooterItem]:
+        """What the prompt should say about the keys this form answers.
+
+        Empty unless a form says otherwise. A form is the only part that
+        answers letters, so it is the only one that has to explain them.
+        """
+        return ()
+
     def submit(self) -> PageAddress | None:
         """Where RETURN leads, or None if there is nowhere to send the reader.
 
@@ -172,8 +215,8 @@ class Suggest(Form):
         self,
         *,
         look_up: Lookup,
-        field_row: int,
-        first_row: int,
+        field_row: int = 0,
+        first_row: int = 2,
         label: str = "",
         limit: int = SUGGESTIONS,
         empty: str = "",
@@ -218,7 +261,7 @@ class Suggest(Form):
 
     @property
     def rows(self) -> range:
-        return range(self._field_row, self._first_row + self._limit)
+        return range(self.at + self._field_row, self.at + self._first_row + self._limit)
 
     @property
     def caret(self) -> tuple[int, int]:
@@ -227,7 +270,7 @@ class Suggest(Form):
         #  cells to the left of where the next letter actually lands, which on
         #  the one row of a service where the cursor means anything is exactly
         #  the wrong place for it.
-        return self._field_row, self._field_column + len(self._value)
+        return self.at + self._field_row, self._field_column + len(self._value)
 
     @property
     def _field_column(self) -> int:
@@ -264,6 +307,17 @@ class Suggest(Form):
         #  nothing has asked nothing.
         self._found = await self._look_up(self._value) if self._value else ()
 
+    def named(self) -> Sequence[FooterItem]:
+        #  What `#` does is marked against the suggestion it would take, which
+        #  is where a reader is looking anyway, so the row has the room to say
+        #  the rest in words. A range rather than a count, as it always was:
+        #  with one match on offer, `1-3` named two keys that did nothing, and
+        #  the list numbers itself where the reader is looking.
+        return (
+            FooterItem("A-Z", "type a name", Priority.PRIMARY),
+            FooterItem("1-9", "choose one", Priority.PRIMARY),
+        )
+
     def choices(self) -> Mapping[str, PageAddress]:
         return {
             str(_FIRST_DIGIT + offset): entry.destination
@@ -272,7 +326,7 @@ class Suggest(Form):
         }
 
     def draw(self, canvas: Canvas) -> None:
-        field = canvas.row(self._field_row)
+        field = canvas.row(self.at + self._field_row)
         if self._label:
             field.text(self._label, Colour.CYAN)
         #  A bar of colour to the end of the row, so a reader can see where
@@ -285,7 +339,7 @@ class Suggest(Form):
         field.background(self._field, text=self._typing)
         field.text(fitted(self._value, field.remaining), self._typing)
         for offset in range(self._limit):
-            row = canvas.row(self._first_row + offset)
+            row = canvas.row(self.at + self._first_row + offset)
             if offset < len(self._found):
                 self._draw_one(row, offset, self._found[offset])
             elif offset == 0 and self._value and self._empty:
@@ -415,11 +469,17 @@ class Fields(Form):
         note: Note | None = None,
         note_row: int | None = None,
         sends: str = "",
+        advice: Sequence[FooterItem] = (),
         field: Colour = FIELD_BACKGROUND,
         typing: Colour = FIELD_COLOUR,
     ) -> None:
         if not fields:
             raise ValueError("a form needs a field to type into")
+        #: What else the prompt should say, over and above the keys this form
+        #: answers. A page whose fields take digits cannot offer `0` for the
+        #: index -- a nought keyed into a coordinate is a nought -- so it says
+        #: how to leave some other way.
+        self._advice = tuple(advice)
         self._fields = list(fields)
         self._complete = complete
         self._note = note
@@ -431,6 +491,17 @@ class Fields(Form):
         self._typing = typing
         self._live = 0
         self._said = ""
+
+    def named(self) -> Sequence[FooterItem]:
+        #  Not `#`. It moves to the next field from every field but the last,
+        #  so a footer saying "# go there" is false wherever the reader most
+        #  likely is. What it does on the last field is marked against that
+        #  field, where the reader is looking.
+        return (
+            FooterItem("TAB", "next field", Priority.PRIMARY),
+            FooterItem("DEL", "rub out", Priority.SECONDARY),
+            *self._advice,
+        )
 
     @property
     def values(self) -> Mapping[str, str]:
@@ -448,11 +519,11 @@ class Fields(Form):
         rows += [field.hint_row for field in self._fields if field.hint_row is not None]
         if self._note_row is not None:
             rows.append(self._note_row)
-        return range(min(rows), max(rows) + 1)
+        return range(self.at + min(rows), self.at + max(rows) + 1)
 
     @property
     def caret(self) -> tuple[int, int]:
-        return self.live.row, self._column_of(self.live) + len(self.live.value)
+        return self.at + self.live.row, self._column_of(self.live) + len(self.live.value)
 
     def accepts(self, key: str) -> bool:
         return (
@@ -495,7 +566,7 @@ class Fields(Form):
 
     def draw(self, canvas: Canvas) -> None:
         for offset, field in enumerate(self._fields):
-            row = canvas.row(field.row)
+            row = canvas.row(self.at + field.row)
             #  Labels padded to the widest, so the values line up as a column
             #  rather than each starting wherever its own label happened to end.
             row.text(field.label.ljust(self._widest), Colour.CYAN)
@@ -518,11 +589,11 @@ class Fields(Form):
                 row.text(f"  {fitted(field.value, field.width)}", Colour.WHITE)
             self._mark_sending(row, offset)
             if field.hint_row is not None and field.hint:
-                canvas.row(field.hint_row).text(
+                canvas.row(self.at + field.hint_row).text(
                     fitted(field.hint, COLUMNS - 1), HINT_COLOUR
                 )
         if self._note_row is not None and self._said:
-            canvas.row(self._note_row).text(
+            canvas.row(self.at + self._note_row).text(
                 fitted(self._said, COLUMNS - 1), NOTE_COLOUR
             )
 

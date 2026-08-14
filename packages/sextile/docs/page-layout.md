@@ -1,4 +1,4 @@
-# A container, its furniture, and its content
+# A page layout: its furniture, and the parts between
 
 A design note. Nothing here is built. It proposes splitting `Template` into two
 pieces, and exists to find out whether the seam holds before anything moves.
@@ -88,7 +88,7 @@ with titles, rules or keys.
 
 ## The seam
 
-A **container** holds furniture and content. It knows the title, the way home,
+A **page layout** holds the furniture and the content. It knows the title, the way home,
 the shortcuts and what the items are called; it draws the header, the rules and
 the prompt, wires the frame-movement keys, and returns a `Page`.
 
@@ -108,9 +108,9 @@ This is the part to get right, and it is more than "draw some rows". Per frame,
 content contributes three things upward:
 
 - **choices** — keys that lead somewhere. A menu's digits are content's, not
-  the container's, and they differ from frame to frame.
+  the layout's, and they differ from frame to frame.
 - **footer items** — what to name in the prompt. `1-9 select` on a menu,
-  `A-Z type a name` and `TAB next field` on a form. The container adds the
+  `A-Z type a name` and `TAB next field` on a form. The layout adds the
   shortcuts, the movement keys and the way home, and `render_footer` sheds
   what will not fit across the whole set.
 - **a form**, where the frame has one, since `PageFrame.form` is what makes a
@@ -160,14 +160,14 @@ The post page is the one that stresses the design: its heading repeats on every
 frame while a sequence formatter's preamble appears only on the first. Under
 the split that stops being a special case — the content decides what it puts on
 each frame, and repeating a heading is its business rather than a field on the
-container.
+layout.
 
 ## What it would cost
 
 Two types where there is one. The 23 construction sites would change shape:
 
 ```python
-Container(
+PageLayout(
     title=SERVICE_NAME,
     home=app.index,
     content=Menu(entries=items, empty="Nothing yet."),
@@ -186,14 +186,13 @@ things content contributes upward are known from the four cases above; a fifth
 case may want a fourth, and each addition is a change to every implementation
 rather than a default on one class.
 
-**Capacity is shared knowledge.** The container knows the row range; content
+**Capacity is shared knowledge.** The layout knows the row range; content
 knows how much it needs. The arithmetic that currently lives in one place
 (`_capacity`, `_deal`) would be split across the seam, and off-by-one errors
 there write over the bottom rule.
 
-**Two of the five names are still open**: what the container is called, and
-what the per-frame return value is called. `Container` is serviceable and
-generic; `Filling` is a placeholder.
+**One name is still open**: the per-frame return value, sketched above as
+`Filling`, which is a placeholder.
 
 ## Parts laid out down a frame
 
@@ -202,11 +201,12 @@ It does not have to be. The content of a page is a short list of parts arranged
 down the frame, and giving each part a rule about which frames it appears on
 covers every case in the workspace.
 
-Three rules are enough:
+Four kinds of part are enough:
 
-    once      drawn on the first frame and no other
+    once      drawn one time, at its place in the order
     every     drawn on every frame, at the position the list gives it
     flowing   broken across as many frames as it takes
+    break     whatever follows begins on a new frame
 
 List order settles what sits above what. That is the whole vocabulary.
 
@@ -223,7 +223,7 @@ Above-versus-below falls out of the ordering. First-frame-versus-every falls
 out of the rule. Three fields, and the knob-counting problem they represent,
 stop existing.
 
-### The five pages
+### The six pages
 
 | Page | Parts |
 |---|---|
@@ -232,12 +232,14 @@ stop existing.
 | One post | `[Every(heading), Flowing(document)]` |
 | Month grid | `[Once(grid)]` |
 | Place search | `[Once(instructions), Once(form)]` |
+| The guide | `[Flowing(moving_keys), Break(), Flowing(asking_keys)]` |
 
-Two of those are the pages that have no answer today. The post's subject and
+Three of those are the pages with no answer today. The post's subject and
 byline repeat on every frame, which is why it draws its own furniture; as a
 part with the `every` rule it stops being a special case. The month grid needs
 no flowing part at all, so it no longer has to be a sequence of nothing to
-obtain a title and a way home.
+obtain a title and a way home. The guide divides where it means to rather than
+where the rows run out, which is what a break says.
 
 ### Several flowing parts simply follow one another
 
@@ -303,6 +305,40 @@ the flowing parts reserve rows at the top of every frame; those after reserve
 rows at the bottom. What is left between them is what the flowing parts
 divide.
 
+### A break where a page divides for a reason of its own
+
+Concatenation answers what happens when one flowing part runs out and another
+follows. A page may want the opposite: a division that has nothing to do with
+what fits.
+
+    [ Flowing(moving_keys), Break(), Flowing(asking_keys) ]
+
+That is the guide. `pages/guidance.py` builds two lists -- the keys for moving
+about, and the keys for asking for something -- and renders exactly two frames.
+Its docstring gives that as the reason it cannot be a template:
+
+> A template divides one list between as many frames as it takes; these two
+> frames are two different lists, split by what a reader is doing rather than
+> by what will fit.
+
+A break says so directly, and the objection goes.
+
+It also removes a silent cap. The guide draws `rows[:CONTENT_ROWS]`, so a
+service with more than twenty keys of its own loses the surplus without being
+told. As flowing parts they would be dealt onto a third frame, which is what
+the reader asked for and what the rest of the framework does.
+
+**A break that would divide nothing is not a break.** One at the start or the
+end of the parts, two together, or one on a frame with nothing drawn on it yet:
+each is ignored. Otherwise a stray break produces a frame carrying furniture
+and no content.
+
+**What a break does not settle** is the rest of the guide. Its compass is drawn
+at the *foot* of the first frame where the rows above leave room for it. A part
+placed after the first flowing part would be drawn immediately below the last
+key row instead. Anchoring a part to the foot of its frame is a separate
+question, and a smaller one than the division was.
+
 ### What this is not
 
 **Not a widget toolkit.** A frame is a still picture plus a mapping from keys
@@ -352,7 +388,7 @@ wrong -- that last is where LaTeX's float parameters came from.
 arithmetic in one place. Split across parts, an off-by-one writes over the rule
 at the foot of the frame.
 
-**`Flowing`, `Once` and `Every` are placeholder names**, as are `Container` and
+**`Flowing`, `Once`, `Every` and `Break` are placeholder names**, as is
 `Filling`.
 
 ## What is settled and what is not
@@ -366,7 +402,7 @@ Also settled: where several parts flow, they follow one another and nothing
 arbitrates between them. The models that do arbitrate were examined and are not
 worth inheriting for a frame of twenty rows.
 
-Not settled: the exact content protocol, whether the call sites change, what
-the container is called, whether the footer may ever be more than one row, and
-five names -- the container, the per-frame return value, and the three rules
-about which frames a part appears on.
+Not settled: the exact content protocol, whether the call sites change, whether
+the footer may ever be more than one row, how a part is anchored to the foot of
+a frame, and five names -- the per-frame return value, and the four kinds of
+part.

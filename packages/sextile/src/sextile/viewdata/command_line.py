@@ -19,10 +19,9 @@ black for the reminder that `*` cancels.
 from typing import Final
 
 from sextile.viewdata.canvas import Canvas
-from sextile.viewdata.chrome import FOOTER_ROW
 from sextile.viewdata.controls import Colour, Control, alpha_colour
 from sextile.viewdata.encoding import ScreenControl, encode_text
-from sextile.viewdata.frame import COLUMNS, Frame
+from sextile.viewdata.frame import COLUMNS, FOOTER_ROW, Frame
 
 CANCEL_HINT: Final = "* cancels"
 

@@ -30,11 +30,10 @@ quantity at a glance from across a room, which `======----` does not.
 from typing import Final
 
 from sextile.viewdata.canvas import Canvas
-from sextile.viewdata.chrome import FOOTER_ROW
 from sextile.viewdata.controls import Colour, alpha_colour
 from sextile.viewdata.drawing import bar
 from sextile.viewdata.encoding import ScreenControl
-from sextile.viewdata.frame import COLUMNS, Frame
+from sextile.viewdata.frame import COLUMNS, FOOTER_ROW, Frame
 
 #: What a reader has to do about it. Deliberately not naming a particular key:
 #: while this is showing, the first key does this and nothing else.

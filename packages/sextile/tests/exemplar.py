@@ -15,8 +15,29 @@ from sextile.addressing import PageAddress
 from sextile.application import PageRequest, Sextile
 from sextile.page import Page, PageFrame
 from sextile.viewdata.canvas import Canvas
-from sextile.viewdata.chrome import CONTENT_FIRST_ROW, draw_chrome
 from sextile.viewdata.controls import Colour
+from sextile.viewdata.drawing import rule
+from sextile.viewdata.encoding import fitted
+from sextile.viewdata.frame import COLUMNS, ROWS
+
+#: This service draws its own frames rather than using the framework's layout,
+#: so that a session test failing says the session is wrong and not the layout.
+#: Four rows of furniture, arranged as every viewdata page here arranges them.
+HEADER_ROW = 0
+CONTENT_FIRST_ROW = 2
+CONTENT_ROWS = ROWS - 4
+FOOTER_ROW = ROWS - 1
+
+
+def _furnished(title: str, page_number: str, prompt: str) -> Canvas:
+    """A frame with this service's own furniture on it."""
+    canvas = Canvas()
+    canvas.row(HEADER_ROW).text(fitted(title, COLUMNS - len(page_number) - 3), Colour.CYAN)
+    canvas.right(HEADER_ROW, page_number, Colour.WHITE)
+    rule(canvas, HEADER_ROW + 1)
+    rule(canvas, FOOTER_ROW - 1)
+    canvas.row(FOOTER_ROW).text(fitted(prompt, COLUMNS - 1), Colour.YELLOW)
+    return canvas
 
 #: Nine choices to a frame, as a viewdata menu has.
 PER_FRAME: Final = 9
@@ -58,13 +79,7 @@ class Board(Sextile):
         )
 
     async def item(self, request: PageRequest, item_id: int) -> Page:
-        canvas = Canvas()
-        draw_chrome(
-            canvas,
-            title=f"ITEM {item_id}",
-            page_number=request.address.frame_number(0),
-            prompt="0 menu",
-        )
+        canvas = _furnished(f"ITEM {item_id}", request.address.frame_number(0), "0 menu")
         canvas.row(CONTENT_FIRST_ROW).text(f"Item {item_id}.", Colour.WHITE)
         choices = {"0": self.address_for("main")}
         #  Offered only to a reader who arrived through a menu, which is the one
@@ -89,12 +104,8 @@ class Board(Sextile):
         ] or [[]]
         frames = []
         for index, batch in enumerate(batches):
-            canvas = Canvas()
-            draw_chrome(
-                canvas,
-                title=title,
-                page_number=address.frame_number(index),
-                prompt="1-9 select, 0 menu",
+            canvas = _furnished(
+                title, address.frame_number(index), "1-9 select, 0 menu"
             )
             choices = {"0": self.address_for("main")}
             for offset, destination in enumerate(batch):

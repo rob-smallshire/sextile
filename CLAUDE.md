@@ -111,6 +111,24 @@ code is worse than none, because it is believed.
   but is not. There are many such choices here.
 - Commit at each working increment. Do not push; that is the user's call.
 
+**When code goes, its tests are sorted rather than rescued.** Each test that
+fails belongs in one of three piles: it tests something that survives, it
+duplicates a test somewhere else, or it tested only the thing being deleted.
+The first is repointed, the second and third are deleted with the code.
+
+Never reimplement deleted code in a test module to keep the suite green. A test
+that verifies a copy verifies the copy, and the suite goes green while the
+guarantee it stood for is gone. This has happened here: `typesetting` lost its
+pagination and the two functions reappeared in `test_typesetting.py`, with a
+justification in the commit message.
+
+The failure mode either way is treating green as the goal rather than as
+evidence. Deleting a test module wholesale with the module it tested is the
+same mistake facing the other way: `test_templates.py` went with
+`templates.py`, and took with it the only tests of `farewell_page`, of a
+shortcut answering its arrow, and of what the footer calls the way home -- all
+three of which survived the deletion under another name.
+
 **A new field on `Template` needs a second caller, or it wants to be a
 subclass.** The shapes are configured rather than composed, which is right for
 a small closed vocabulary and turns into twenty knobs if nobody counts. Three

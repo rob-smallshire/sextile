@@ -9,7 +9,6 @@ explained -- there being nowhere in the ordinary footer to say so.
 import pytest
 
 from sextile.viewdata.canvas import Canvas
-from sextile.viewdata.chrome import FOOTER_ROW
 from sextile.viewdata.command_line import (
     BUFFER_CELLS,
     CANCEL_HINT,
@@ -17,7 +16,7 @@ from sextile.viewdata.command_line import (
     draw_command_line,
 )
 from sextile.viewdata.encoding import ScreenControl
-from sextile.viewdata.frame import COLUMNS
+from sextile.viewdata.frame import COLUMNS, FOOTER_ROW
 
 
 def drawn(entry: str) -> tuple[str, str]:

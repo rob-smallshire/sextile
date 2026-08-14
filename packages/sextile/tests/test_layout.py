@@ -11,9 +11,10 @@ from dataclasses import dataclass
 import pytest
 
 from sextile.addressing import FRAMES_PER_PAGE, PageAddress
-from sextile.keys import CONVENTIONAL_NEXT_FRAME, NEXT_FRAME
+from sextile.keys import CONVENTIONAL_NEXT_FRAME, DOWN, LEFT, NEXT_FRAME, RIGHT, UP
 from sextile.layout import (
     DEFAULT_FURNITURE,
+    HOME_KEY,
     Break,
     Every,
     Flowing,
@@ -31,6 +32,7 @@ from sextile.page import Page
 from sextile.viewdata.canvas import Canvas
 from sextile.viewdata.controls import Colour
 from sextile.viewdata.footer import FooterItem, Priority
+from sextile.viewdata.frame import COLUMNS
 from sextile.viewdata.typesetting import TRUNCATION_NOTICE
 
 CONTENT = range(2, 22)
@@ -342,3 +344,220 @@ class TestAPageTooLongForItsFrames:
         page = PageLayout(title="PAGES", parts=[Flowing(lines(1000))]).build(at("9"))
         assert len(page.frames) == FRAMES_PER_PAGE
         assert TRUNCATION_NOTICE in rows_of(page, FRAMES_PER_PAGE - 1)[-3]
+
+
+class TestTheWayHomeIsAShortcutLikeAnyOther:
+    """An address for the usual case, a `Shortcut` where a page wants more.
+
+    `home` and `shortcuts` are the same idea -- a key on every frame leading to
+    a fixed address -- so a page that wants the footer to call the way home
+    something else says it the way it would for any other key.
+    """
+
+    def a_page(self, home: PageAddress | Shortcut | None = None) -> Page:
+        return PageLayout(
+            title="NOTICE", home=home, parts=[Once(Says("Said."))]
+        ).build(at("2"))
+
+    def test_an_address_puts_it_on_nought_and_calls_it_the_index(self) -> None:
+        page = self.a_page(at("1"))
+        found = page.frame(0)
+        assert found is not None
+        assert found.destination(HOME_KEY) == at("1")
+        assert "0 index" in rows_of(page)[-1]
+
+    def test_a_shortcut_is_taken_as_given(self) -> None:
+        page = self.a_page(Shortcut(key="9", destination=at("1"), says="back to the top"))
+        found = page.frame(0)
+        assert found is not None
+        assert found.destination("9") == at("1")
+        assert found.destination(HOME_KEY) is None
+        assert "9 back to the top" in rows_of(page)[-1]
+
+    def test_the_short_form_is_what_stands_before_the_comma(self) -> None:
+        #  Rather than a second field saying it twice. The footer sheds words
+        #  from the end when the row is tight.
+        page = self.a_page(Shortcut(HOME_KEY, at("1"), says="index, or key another page"))
+        assert "0 index, or key another page" in rows_of(page)[-1]
+
+    def test_no_way_home_at_all_names_no_key(self) -> None:
+        page = self.a_page()
+        found = page.frame(0)
+        assert found is not None
+        assert found.destination(HOME_KEY) is None
+        assert "index" not in rows_of(page)[-1]
+
+
+class TestAShortcutThatAnswersAnArrowToo:
+    """`A` and `D` move between items, and so do the left and right arrows.
+
+    Whether an arrow means what its letter means is the page's business: on a
+    page with a coordinate field it does not, `W` being West. So a shortcut
+    answers its arrow only where the page has said it should.
+    """
+
+    def a_page(self, *, arrow: bool = False) -> Page:
+        return PageLayout(
+            title="ONE DAY",
+            home=at("1"),
+            parts=[Once(Says("Saturday."))],
+            shortcuts=[
+                Shortcut(key="A", destination=at("41"), says="prev", arrow=arrow),
+                Shortcut(key="D", destination=at("43"), says="next", arrow=arrow),
+            ],
+        ).build(at("42"))
+
+    def test_the_letter_leads_where_it_always_did(self) -> None:
+        found = self.a_page().frame(0)
+        assert found is not None
+        assert (found.destination("A"), found.destination("D")) == (at("41"), at("43"))
+
+    def test_and_the_arrow_does_not_unless_it_was_asked_for(self) -> None:
+        found = self.a_page().frame(0)
+        assert found is not None
+        assert found.destination(LEFT) is None
+        assert found.destination(RIGHT) is None
+
+    def test_asked_for_the_arrow_leads_where_the_letter_does(self) -> None:
+        found = self.a_page(arrow=True).frame(0)
+        assert found is not None
+        assert found.destination(LEFT) == at("41")
+        assert found.destination(RIGHT) == at("43")
+
+    def test_a_key_with_no_arrow_is_unmoved_by_asking(self) -> None:
+        #  Only the four movement letters have arrows. Asking on any other is
+        #  answered by there being nothing to add, rather than by an error.
+        page = PageLayout(
+            title="POST",
+            home=at("1"),
+            parts=[Once(Says("A post."))],
+            shortcuts=[Shortcut(key="R", destination=at("7"), says="reply", arrow=True)],
+        ).build(at("8"))
+        found = page.frame(0)
+        assert found is not None
+        assert found.destination("R") == at("7")
+        assert not [key for key in (LEFT, RIGHT, UP, DOWN) if found.destination(key)]
+
+
+class TestWhatTheItemsAreCalled:
+    """The movement keys name what they move between, and the page says what.
+
+    The words come from `viewdata.footer` either way, so a page built here and
+    a page drawn by hand describe the same key the same way. What the page
+    supplies is the noun.
+    """
+
+    def footer_of(self, item: str = "item") -> str:
+        return rows_of(
+            PageLayout(
+                title="ONE DAY",
+                home=at("1"),
+                item=item,
+                parts=[Once(Says("Saturday."))],
+                shortcuts=[
+                    Shortcut(key="A", destination=at("41"), arrow=True),
+                    Shortcut(key="D", destination=at("43"), arrow=True),
+                ],
+            ).build(at("42"))
+        )[-1]
+
+    def test_an_item_by_default(self) -> None:
+        assert "previous item" in self.footer_of()
+
+    def test_or_whatever_the_page_moves_between(self) -> None:
+        footer = self.footer_of("day")
+        assert "previous day" in footer
+        assert "next day" in footer
+
+    def test_a_shortcut_that_is_not_a_movement_key_says_its_own_words(self) -> None:
+        footer = rows_of(
+            PageLayout(
+                title="ONE DAY",
+                home=at("1"),
+                item="day",
+                parts=[Once(Says("Saturday."))],
+                shortcuts=[Shortcut(key="1", destination=at("32"), says="month")],
+            ).build(at("42"))
+        )[-1]
+        assert "1 month" in footer
+
+    def test_the_frame_keys_are_not_named_for_the_item(self) -> None:
+        #  `W` and `S` move between the frames of one item, and a page of many
+        #  frames is still one day.
+        footer = rows_of(
+            PageLayout(
+                title="A LONG NOTICE",
+                home=at("1"),
+                item="day",
+                parts=[Flowing(lines(30))],
+            ).build(at("42"))
+        )[-1]
+        assert "page down" in footer
+        assert "day" not in footer
+
+
+class TestTheHeader:
+    """The title, and the page number at the right of the same row."""
+
+    def a_frame(self, title: str, address: PageAddress | None = None) -> Page:
+        return PageLayout(title=title, parts=[Once(Says("x"))]).build(address)
+
+    def test_the_title_appears(self) -> None:
+        assert "PROGRAMMING" in rows_of(self.a_frame("PROGRAMMING", at("4254")))[0]
+
+    def test_the_page_number_is_at_the_right(self) -> None:
+        header = rows_of(self.a_frame("PROGRAMMING", at("4254")))[0]
+        assert header.rstrip().endswith("4254a")
+
+    def test_a_long_title_is_cut_rather_than_pushing_out_the_number(self) -> None:
+        #  Forum names on Stardot run to forty characters on their own.
+        header = rows_of(
+            self.a_frame("8-bit acorn software: games - high scores", at("82489493"))
+        )[0]
+        assert header.rstrip().endswith("82489493a")
+        assert len(header) == COLUMNS
+
+    def test_the_title_and_the_number_never_collide(self) -> None:
+        header = rows_of(self.a_frame("X" * 60, at("123456789012")))[0]
+        assert "X123456789012" not in header
+
+    def test_a_page_with_no_title_of_its_own_gets_none(self) -> None:
+        #  The framework does not name the service. A title across the top of
+        #  somebody else's service would be naming the machinery.
+        assert rows_of(self.a_frame("", at("4254")))[0].strip() == "4254a"
+
+    def test_every_byte_survives_a_seven_bit_line(self) -> None:
+        for title, number in [("", "1"), ("PROGRAMMING", "4254"), ("£ ½ café", "82489493")]:
+            page = self.a_frame(title, at(number))
+            found = page.frame(0)
+            assert found is not None
+            assert all(byte < 0x80 for byte in found.frame.to_bytes())
+
+
+class TestTheRulesAndThePrompt:
+    def a_frame(self, prompt_from: str = "reply") -> Page:
+        return PageLayout(
+            title="T",
+            home=at("1"),
+            shortcuts=[Shortcut(key="R", destination=at("7"), says=prompt_from)],
+            parts=[Once(Says("x"))],
+        ).build(at("1"))
+
+    def test_the_rules_are_drawn_in_mosaic_graphics(self) -> None:
+        found = self.a_frame().frame(0)
+        assert found is not None
+        _, attributes = found.frame.to_grid()
+        #  Graphics colours travel as Q-W.
+        assert any(cell in "QRSTUVW" for cell in attributes[1])
+        assert any(cell in "QRSTUVW" for cell in attributes[22])
+
+    def test_the_prompt_names_the_keys(self) -> None:
+        assert "R reply" in rows_of(self.a_frame())[-1]
+
+    def test_an_over_long_prompt_is_cut_to_the_row(self) -> None:
+        assert len(rows_of(self.a_frame("p" * 100))[-1]) == COLUMNS
+
+    def test_the_furniture_writes_nothing_into_the_content_rows(self) -> None:
+        page = PageLayout(title="T", home=at("1")).build(at("1"))
+        content = rows_of(page)[2:22]
+        assert all(not row.strip() for row in content)

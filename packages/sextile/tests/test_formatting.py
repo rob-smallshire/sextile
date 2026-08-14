@@ -6,10 +6,24 @@ which of them can be chosen, and what is left for the next frame.
 See docs/page-layout.md.
 """
 
+from dataclasses import dataclass
+from typing import ClassVar
+
 from sextile.addressing import PageAddress
-from sextile.formatting import Figures, Lines, Listing, Menu, MenuItem, Prose
+from sextile.formatting import (
+    Entry,
+    Figures,
+    Formatter,
+    Lines,
+    Listing,
+    Menu,
+    MenuItem,
+    Prose,
+    farewell_page,
+)
 from sextile.layout import CHOICES_PER_FRAME, Flowing, Once, PageLayout, Room
 from sextile.viewdata.canvas import Canvas
+from sextile.viewdata.controls import Colour
 from sextile.viewdata.frame import COLUMNS
 
 CONTENT = range(2, 22)
@@ -202,3 +216,107 @@ class TestProse:
         long = Prose.of(*(f"Paragraph {n} of some length." for n in range(20)))
         placed = long.place(Canvas(), whole_frame())
         assert isinstance(placed.rest, Prose)
+
+
+class TestAFarewell:
+    """The last thing a caller sees, drawn the same way by every service.
+
+    No furniture, and the lower rows left blank: the reader is about to be
+    talking to their modem, and the cursor needs somewhere to be left.
+    """
+
+    def test_the_title_heads_the_frame_and_the_lines_follow(self) -> None:
+        page = farewell_page("GOODBYE", "Thank you for calling.", "", "Ring off.")
+        found = page.frame(0)
+        assert found is not None
+        rows, _ = found.frame.to_grid()
+        assert rows[0].strip() == "GOODBYE"
+        assert "Thank you for calling." in rows[2]
+        assert rows[3].strip() == ""
+        assert "Ring off." in rows[4]
+
+    def test_it_offers_no_keys_at_all(self) -> None:
+        #  A footer naming the index would be a lie on a page there is no
+        #  coming back from.
+        found = farewell_page("GOODBYE", "Thank you.").frame(0)
+        assert found is not None
+        assert not found.choices
+        assert not found.moves
+
+    def test_it_ends_the_call(self) -> None:
+        assert farewell_page("GOODBYE").hang_up
+
+    def test_but_may_be_shown_without_dropping_the_line(self) -> None:
+        #  The involuntary parting: the session drops the line itself, so the
+        #  page need not insist.
+        assert not farewell_page("RINGING OFF", hang_up=False).hang_up
+
+
+class TestAServiceWithItsOwnIdeaOfAnEntry:
+    """`Entry` is a protocol, so a service passes what it already has.
+
+    A menu carrying a post, a place or a timestamp hands that value over
+    rather than copying it into a dataclass belonging to the framework, and
+    gets it back where it draws one.
+    """
+
+    @dataclass(frozen=True)
+    class Post:
+        post_id: int
+
+        @property
+        def text(self) -> str:
+            return f"Post {self.post_id}"
+
+        @property
+        def detail(self) -> str:
+            return "a post of its own"
+
+        @property
+        def destination(self) -> PageAddress:
+            return PageAddress(f"82{self.post_id}")
+
+    def test_it_needs_no_conversion(self) -> None:
+        canvas = Canvas()
+        placed = Menu(entries=[self.Post(489493)]).place(canvas, whole_frame())
+        assert placed.offer.choices == {"1": at("82489493")}
+        assert "Post 489493" in said(canvas)[0]
+
+    def test_and_satisfies_the_protocol_at_runtime(self) -> None:
+        assert isinstance(self.Post(1), Entry)
+
+
+class TestAServiceWithItsOwnShape:
+    """A formatter of its own, for content no shape here fits.
+
+    What `weather-viewdata` does for a forecast day four rows tall with a
+    picture in it: say how tall an entry is, and how to draw one.
+    """
+
+    @dataclass(frozen=True, kw_only=True)
+    class Blocks(Formatter[str]):
+        rows_per_entry: ClassVar[int] = 3
+        separation: ClassVar[int] = 1
+
+        def draw_entry(
+            self, canvas: Canvas, row: int, entry: str, digit: str | None
+        ) -> None:
+            del digit
+            for offset in range(self.rows_per_entry):
+                canvas.row(row + offset).text(f"{entry}{offset}", Colour.WHITE)
+
+    def test_the_rows_it_asks_for_are_the_rows_it_gets(self) -> None:
+        canvas = Canvas()
+        placed = self.Blocks(entries=["a", "b"]).place(canvas, whole_frame())
+        #  Three rows each and a blank between, and none after the last.
+        assert placed.rows == 7
+        assert said(canvas) == ["a0", "a1", "a2", "b0", "b1", "b2"]
+
+    def test_and_what_will_not_fit_is_handed_back(self) -> None:
+        placed = self.Blocks(entries=list("abcdefg")).place(
+            Canvas(), Room(first_row=2, rows=10, choices=CHOICES_PER_FRAME)
+        )
+        #  Ten rows holds two whole entries and the blank between them.
+        assert placed.rows == 7
+        assert isinstance(placed.rest, self.Blocks)
+        assert list(placed.rest.entries) == list("cdefg")

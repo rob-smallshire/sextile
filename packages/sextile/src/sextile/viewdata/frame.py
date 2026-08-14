@@ -24,6 +24,11 @@ from sextile.viewdata.encoding import ScreenControl, encode_control, encode_text
 ROWS: Final = 24
 COLUMNS: Final = 40
 
+#: The last row, which the session draws on directly: the command line while a
+#: request is being keyed, and the countdown before a silent line is released.
+#: A page reaches it through its furniture rather than through this.
+FOOTER_ROW: Final = ROWS - 1
+
 _BLANK: Final = 0x20
 
 #: What every frame begins with: hide the cursor so it does not trail across the

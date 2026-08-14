@@ -724,3 +724,60 @@ class TestAShortcutThatAnswersAnArrowToo:
         assert found is not None
         assert found.destination("R") == at("7")
         assert len([key for key in (LEFT, RIGHT, UP, DOWN) if found.destination(key)]) == 0
+
+
+class TestWhatTheItemsAreCalled:
+    """The movement keys name what they move between, and the page says what.
+
+    The words come from `viewdata.footer` either way, so a page built here and
+    a page drawn by hand describe the same key the same way. What the page
+    supplies is the noun.
+    """
+
+    def a_page(self, **named: str) -> str:
+        return text_of(
+            Lines(
+                title="ONE DAY",
+                entries=["Saturday."],
+                home=at("1"),
+                shortcuts=[
+                    Shortcut(key="A", destination=at("41"), arrow=True),
+                    Shortcut(key="D", destination=at("43"), arrow=True),
+                ],
+                **named,
+            ).build(at("42"))
+        ).splitlines()[-1]
+
+    def test_an_item_by_default(self) -> None:
+        assert "previous item" in self.a_page()
+
+    def test_or_whatever_the_page_moves_between(self) -> None:
+        footer = self.a_page(item="day")
+        assert "previous day" in footer
+        assert "next day" in footer
+
+    def test_a_shortcut_that_is_not_a_movement_key_says_its_own_words(self) -> None:
+        footer = text_of(
+            Lines(
+                title="ONE DAY",
+                entries=["Saturday."],
+                home=at("1"),
+                item="day",
+                shortcuts=[Shortcut(key="1", destination=at("32"), says="month")],
+            ).build(at("42"))
+        ).splitlines()[-1]
+        assert "1 month" in footer
+
+    def test_the_frame_keys_are_named_from_the_same_words(self) -> None:
+        #  `W` and `S` move between the frames of one item and are not the
+        #  item's own name: a page of many frames is still one day.
+        footer = text_of(
+            Lines(
+                title="A LONG NOTICE",
+                entries=[f"line {n}" for n in range(30)],
+                home=at("1"),
+                item="day",
+            ).build(at("42"))
+        ).splitlines()[-1]
+        assert "page down" in footer
+        assert "day" not in footer

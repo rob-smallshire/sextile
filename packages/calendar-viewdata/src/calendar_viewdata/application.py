@@ -34,7 +34,6 @@ from sextile import (
     Held,
     Page,
     PageAddress,
-    PageFrame,
     PageRequest,
     PageRoute,
     Sextile,
@@ -42,20 +41,17 @@ from sextile import (
     keyed,
     keys,
 )
-from sextile.keys import arrows_lead_where
-from sextile.templates import HOME_KEY, Lines, Menu, MenuItem, Prose, farewell_page
-from sextile.viewdata.canvas import Canvas
-from sextile.viewdata.chrome import CONTENT_FIRST_ROW, CONTENT_ROWS, draw_chrome
-from sextile.viewdata.controls import Colour
-from sextile.viewdata.encoding import fitted
-from sextile.viewdata.footer import (
-    ROOM,
-    FooterItem,
-    Priority,
-    movement,
-    render_footer,
+from sextile.templates import (
+    Block,
+    Lines,
+    Menu,
+    MenuItem,
+    Prose,
+    Shortcut,
+    farewell_page,
 )
-from sextile.viewdata.frame import COLUMNS, Frame
+from sextile.viewdata.canvas import Canvas
+from sextile.viewdata.controls import Colour
 
 SERVICE_NAME: Final = "CALENDAR"
 
@@ -165,34 +161,29 @@ async def one_day(request: PageRequest, day: date) -> Page:
     ]
     #  Whichever menu the reader came through decides what "next" means, and a
     #  day reached by keying its number came through none. A frame names only
-    #  the keys that do something on it, so the prompt is built from the same
-    #  description as the choices.
-    choices = {"0": app.address_for("main"), "1": app.address_for("month", day=day)}
+    #  the keys that do something on it, so a key with nowhere to lead is not
+    #  offered and not named.
+    shortcuts = [
+        Shortcut(key="1", destination=app.address_for("month", day=day), says="month")
+    ]
+    #  `arrow=True` because a reader may reach for the cursor keys instead, and
+    #  on this page they mean what the letters mean. Said here rather than
+    #  assumed by the framework: what an arrow means is the page's business.
     if request.arrival.preceding is not None:
-        choices["A"] = request.arrival.preceding
-    if request.arrival.following is not None:
-        choices["D"] = request.arrival.following
-    return Page(
-        frames=(
-            PageFrame(
-                frame=_notice_frame(
-                    request.address,
-                    _month_name(day),
-                    lines,
-                    prompt=_prompt(
-                        set(choices),
-                        selecting=False,
-                        item="day",
-                        offering=[FooterItem("1", "month", Priority.PRIMARY)],
-                    ),
-                ),
-                #  And under the arrows a reader might press instead. Said
-                #  here rather than assumed by the framework: what an arrow
-                #  means is this page's business.
-                choices=arrows_lead_where(choices),
-            ),
+        shortcuts.append(
+            Shortcut(key=keys.PREVIOUS_ITEM, destination=request.arrival.preceding, arrow=True)
         )
-    )
+    if request.arrival.following is not None:
+        shortcuts.append(
+            Shortcut(key=keys.NEXT_ITEM, destination=request.arrival.following, arrow=True)
+        )
+    return Lines(
+        title=_month_name(day),
+        entries=lines,
+        home=app.address_for("main"),
+        shortcuts=shortcuts,
+        item="day",
+    ).build(request.address)
 
 
 async def about(request: PageRequest) -> Page:
@@ -266,34 +257,49 @@ def build_application(now: Callable[[], datetime] | None = None) -> Sextile:
 
 
 def _month_page(app: Sextile, address: PageAddress, day: date) -> Page:
-    canvas = Canvas()
-    draw_chrome(
-        canvas,
-        title=_month_name(day).upper(),
-        page_number=address.frame_number(0),
-        prompt=_prompt({"A", "D"}, selecting=False, item="month"),
-    )
-    canvas.row(CONTENT_FIRST_ROW).text(
-        "  ".join(weekday[:2] for weekday in _WEEKDAYS), Colour.CYAN
-    )
     weeks = calendar.Calendar().monthdayscalendar(day.year, day.month)
+    previous, following = _months_either_side(day)
+    return Lines(
+        title=_month_name(day).upper(),
+        entries=[],
+        home=app.address_for("main"),
+        #  A grid is placed by cell rather than written along its rows, which
+        #  is what a preamble block is for. The page has nothing else on it, so
+        #  there are no entries under the block.
+        preamble=[
+            Block(
+                rows=1 + len(weeks),
+                draw=lambda canvas, row: _draw_month(canvas, row, day, weeks),
+            )
+        ],
+        shortcuts=[
+            Shortcut(
+                key=keys.PREVIOUS_ITEM,
+                destination=app.address_for("month", day=previous),
+                arrow=True,
+            ),
+            Shortcut(
+                key=keys.NEXT_ITEM,
+                destination=app.address_for("month", day=following),
+                arrow=True,
+            ),
+        ],
+        item="month",
+    ).build(address)
+
+
+def _draw_month(
+    canvas: Canvas, row: int, day: date, weeks: Sequence[Sequence[int]]
+) -> None:
+    """The weekday headings and the weeks beneath them, from `row` down."""
+    canvas.row(row).text("  ".join(weekday[:2] for weekday in _WEEKDAYS), Colour.CYAN)
     for offset, week in enumerate(weeks):
         cells = " ".join(f"{number:>3}" if number else "   " for number in week)
         #  The week the day falls in, rather than the day itself: a colour
         #  attribute occupies a cell, and there is no spare cell inside a row
         #  of seven three-column figures to put one in.
         colour = Colour.YELLOW if day.day in week else Colour.WHITE
-        canvas.row(CONTENT_FIRST_ROW + 1 + offset).text(cells.rstrip(), colour)
-
-    previous, following = _months_either_side(day)
-    choices = {
-        "0": app.address_for("main"),
-        "A": app.address_for("month", day=previous),
-        "D": app.address_for("month", day=following),
-    }
-    return Page(
-        frames=(PageFrame(frame=canvas.frame, choices=arrows_lead_where(choices)),)
-    )
+        canvas.row(row + 1 + offset).text(cells.rstrip(), colour)
 
 
 def _menu(
@@ -327,21 +333,6 @@ def _notice(
     ).build(address)
 
 
-def _notice_frame(
-    address: PageAddress, title: str, lines: list[str], *, prompt: str
-) -> Frame:
-    canvas = Canvas()
-    draw_chrome(
-        canvas, title=title, page_number=address.frame_number(0), prompt=prompt
-    )
-    for offset, line in enumerate(lines[:CONTENT_ROWS]):
-        if line:
-            canvas.row(CONTENT_FIRST_ROW + offset).text(
-                fitted(line, COLUMNS - 1), Colour.WHITE
-            )
-    return canvas.frame
-
-
 # -- helpers -----------------------------------------------------------------
 
 
@@ -373,23 +364,3 @@ def _in_words(gap: timedelta) -> str:
     return f"{-days} days ago"
 
 
-def _prompt(
-    moves: set[str],
-    *,
-    selecting: bool,
-    item: str = "item",
-    offering: Sequence[FooterItem] = (),
-) -> str:
-    """Name every key that does something here, and no key that does not.
-
-    The framework has the words -- the same ones the templates use -- so a page
-    built by hand and a page built by a template say the same thing about the
-    same key, and a frame with room to spare says it in full.
-    """
-    items = []
-    if selecting:
-        items.append(FooterItem("1-9", "select", Priority.PRIMARY))
-    items += offering
-    items += movement(moves, item=item)
-    items.append(FooterItem(HOME_KEY, "index", Priority.ESSENTIAL))
-    return render_footer(items, ROOM)

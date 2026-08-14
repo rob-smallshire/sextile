@@ -32,7 +32,13 @@ from typing import TYPE_CHECKING, ClassVar, Final, Protocol, runtime_checkable
 
 from sextile.addressing import PageAddress
 from sextile.content.blocks import Document, Paragraph
-from sextile.keys import NEXT_FRAME, PREVIOUS_FRAME, arrows_lead_where, moving
+from sextile.keys import (
+    ARROW_FOR,
+    NEXT_FRAME,
+    PREVIOUS_FRAME,
+    arrows_lead_where,
+    moving,
+)
 from sextile.page import Page, PageFrame
 from sextile.viewdata.canvas import Canvas, RowWriter, Run
 from sextile.viewdata.chrome import CONTENT_FIRST_ROW, CONTENT_ROWS, draw_chrome
@@ -213,6 +219,8 @@ class Template[E](ABC):
         home_says: What the footer calls the way home, where there is room for
             it. It falls back to `index` on a crowded row.
         shortcuts: Keys offered on every frame, besides the digits and `0`.
+        item: What `A` and `D` move between, as the footer says it: "previous
+            day", "next post". Only the noun; the framework has the rest.
         footnote: Said beneath the entries on every frame, wrapped to the room
             a row has.
 
@@ -271,6 +279,13 @@ class Template[E](ABC):
 
     #  Named in the prompt, so that a page cannot offer a key silently.
     shortcuts: Sequence[Shortcut] = ()
+
+    #  What `A` and `D` move between, for the footer to say: a day, a post, a
+    #  place. The words round it are the framework's, so a page built here and
+    #  a page drawn by hand describe the same key the same way; what the page
+    #  supplies is the noun. Not what `W` and `S` move between, which is always
+    #  the frames of the one thing.
+    item: str = "item"
 
     #  What the footer calls the way home. `index` unless a page has a better
     #  word for it: the page that says a number was not found has room to
@@ -334,14 +349,27 @@ class Template[E](ABC):
         items = []
         if selecting and self.selecting_hint is not None:
             items.append(self.selecting_hint)
+        #  A shortcut on one of the movement letters is named by `movement`
+        #  rather than by itself. Naming it twice is how two pages of one
+        #  service come to describe the same key differently, which is what
+        #  `movement` was extracted to stop; `ARROW_FOR` is the four letters,
+        #  those being exactly the ones an arrow stands for.
+        moves = {
+            shortcut.key for shortcut in self.shortcuts if shortcut.key in ARROW_FOR
+        }
         items += [
             FooterItem(shortcut.key, shortcut.says, Priority.PRIMARY)
             for shortcut in self.shortcuts
+            if shortcut.key not in moves
         ]
         items += movement(
-            key
-            for key, answered in ((PREVIOUS_FRAME, back), (NEXT_FRAME, on))
-            if answered
+            moves
+            | {
+                key
+                for key, answered in ((PREVIOUS_FRAME, back), (NEXT_FRAME, on))
+                if answered
+            },
+            item=self.item,
         )
         if self.home is not None:
             items.append(

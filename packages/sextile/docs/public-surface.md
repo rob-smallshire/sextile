@@ -188,21 +188,27 @@ word `key` was already spoken for by the thing a reader presses. And
 `sextile.testing` is that, above: weather was driving `Session` directly for
 want of any other way to press a key at a service.
 
-**Chrome and footers drawn by hand.** All three services import
+**Chrome and footers drawn by hand.** Stardot and weather import
 `viewdata.chrome` and `viewdata.footer`; Stardot imports `viewdata.layout` as
-well. Two different things are going on, and they want different answers:
+well. The calendar is done and imports none of them. Three sites are left, and
+they are three different shapes rather than one:
 
+- *A heading and a body.* `stardot_viewdata/post_page.py` paginates a document
+  and draws its own chrome and footer. A post's subject and byline repeat on
+  every frame, where a template's preamble is drawn on the first only, so this
+  wants either a repeating heading or a shape of its own.
+- *A form on a frame.* `weather_viewdata/handlers.py` draws two frames whose
+  content is a field to type into and a footer naming TAB and DEL. No template
+  covers a form at all, `PageFrame.form` being something a page sets for
+  itself.
 - *Geometry as a coordinate.* `weather_viewdata/search.py` uses
-  `CONTENT_FIRST_ROW` to say where its field sits. That is a legitimate need
-  and wants a public home — the frame's geometry, without the drawing.
-- *Rebuilding the template layer.* `stardot_viewdata/post_page.py` paginates a
-  document and draws its own chrome and footer;
-  `stardot_viewdata/handlers.py` and `calendar_viewdata/application.py` draw
-  chrome and compose footers for notice frames. This is the arrangement
-  `Template` was extracted to end, and it is a missing shape rather than a
-  missing export. A post is a heading and a body dealt into frames; the
-  calendar's notices are a heading and some lines. Closing this closes most of
-  the crossings by itself.
+  `CONTENT_FIRST_ROW` to say which row its field sits on. That is not drawing
+  and is not a missing shape: it is a legitimate need for the frame's
+  geometry, and wants a public home of its own.
+
+The calendar closed with `Lines` for its notices, a preamble `Block` for the
+month grid, and `Shortcut(arrow=True)` with `item="month"` for the keys either
+side. Its two pages render byte for byte as they did before.
 
 ## How it is checked
 

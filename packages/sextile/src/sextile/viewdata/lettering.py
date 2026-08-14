@@ -302,19 +302,41 @@ def boxed(
     limit: int = _LIMIT,
     trim: bool = True,
 ) -> Panel:
-    """Lettering in a coloured box fitted around it. Returns the box.
+    """Set lettering in a coloured box fitted around it.
+
+    Args:
+        composition: The composition to add the box and the letters to.
+        row: The top row of the box, or an alignment to centre it down the
+            frame.
+        text: The word to set.
+        font: The face to set it in.
+        colour: The letters.
+        background: The field they sit in.
+        where: Where the box goes across the frame.
+        padding: Cells of colour either side of the letters.
+        rows: How tall the box is, in rows. The height of the letters unless
+            given.
+        spacing: How far apart the letters go.
+        gap: Blocks that must stay clear between two letters when kerning.
+        limit: The most a kerned pair may close up by.
+        trim: Whether to cut the face to its own ink rather than keeping its
+            full height.
+
+    Returns:
+        The box, so that a caller may place something else against it.
+
+    Raises:
+        DoesNotFit: If `rows` is fewer than the letters need. A box shorter
+            than its letters is a stripe behind them rather than a box, and is
+            drawn as two things: a panel from `Composition.panel` and the
+            letters from `place`, both centred, the composition working out
+            that the row they share is coloured.
 
     The Ceefax effect: a word in a field of colour, cyan on blue or red on
-    yellow. `padding` is the cells of colour either side of the letters, and
-    the box takes one more cell on its left for the attribute that colours it
-    -- which is why the box is fitted here, where the letters can be measured,
-    rather than by a caller counting them.
-
-    The letters are centred in it both ways, to the block. A box **shorter**
-    than its letters is not a box at all but a stripe behind them, and it is
-    not this function's business: draw the stripe with `Composition.panel` and
-    the letters with `place`, both centred, and the composition will work out
-    that the row they share is coloured. Two things, drawn separately.
+    yellow. The box is fitted here, where the letters can be measured, rather
+    than by a caller counting them -- it takes one cell on its left for the
+    attribute that colours it, which is the sort of arithmetic a caller gets
+    wrong. The letters are centred in it both ways, to the block.
     """
     if rows is not None and rows < len(cells(text, font, spacing=spacing, trim=trim)):
         raise DoesNotFit(
@@ -358,7 +380,20 @@ def cells_for(
     limit: int = _LIMIT,
     padding: int = 0,
 ) -> int:
-    """How many cells across a line would take, for sizing something round it.
+    """Measure how many cells a line of lettering would take across.
+
+    Args:
+        text: The line to measure. It is not set, only measured.
+        font: The face it would be set in.
+        spacing: How far apart the letters would go.
+        gap: Blocks that must stay clear between two letters when kerning.
+        limit: The most a kerned pair may close up by.
+        padding: Cells of margin to count either side of the letters, for a
+            caller sizing a box round them rather than the letters alone.
+
+    Returns:
+        The width in cells, rounded up: a line ending part way into a cell
+        still occupies the whole of it.
 
     The companion of `rows_for`, and what a page needs to draw a stripe behind
     a word without drawing the word first: a panel of this width and the

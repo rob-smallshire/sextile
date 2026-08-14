@@ -47,10 +47,27 @@ BLOCKS_DOWN: Final = 3
 
 
 def read_bitmap(rows: Sequence[str], lit: str = "#") -> list[list[bool]]:
-    """A picture written out as characters, one per block.
+    """Read a picture written out as characters, one character to a block.
 
-    Anything matching ``lit`` is a block that is on. Rows need not be the same
-    length; the short ones are taken as ending in blanks.
+    Args:
+        rows: The picture, a string a row. They need not be the same length:
+            a short one is taken as ending in blanks.
+        lit: Which characters mean a block that is on. Any character in this
+            string counts, so a picture may be drawn in more than one mark
+            where that makes it easier to read.
+
+    Returns:
+        The picture as rows of blocks, for `block_runs` to pack into the
+        six-bit cell patterns a frame carries.
+
+    Example:
+        A picture is legible in the source it is written in::
+
+            read_bitmap([
+                "  ##  ",
+                " #### ",
+                "######",
+            ])
     """
     return [[character in lit for character in row] for row in rows]
 

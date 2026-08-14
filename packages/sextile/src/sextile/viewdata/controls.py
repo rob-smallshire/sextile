@@ -67,7 +67,17 @@ _GRAPHICS_COLOUR_BASE: Final = 0x10
 
 
 def is_control_code(code: int) -> bool:
-    """Whether a code position is a spacing attribute rather than a displayed character."""
+    """Say whether a code position holds a spacing attribute.
+
+    Args:
+        code: A code position from a frame, between 0 and 127.
+
+    Returns:
+        True where the position is one of the attributes that select a colour
+        or a character set, and False where it is a character the SAA5050
+        displays. An attribute occupies a cell and shows as a blank, so a
+        caller counting what a row says has to tell the two apart.
+    """
     return FIRST_CONTROL <= code <= LAST_CONTROL
 
 

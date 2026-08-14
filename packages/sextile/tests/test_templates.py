@@ -6,7 +6,7 @@ what five hand-written copies had each got slightly differently.
 """
 
 
-from sextile.addressing import PageAddress
+from sextile.addressing import FRAMES_PER_PAGE, PageAddress
 from sextile.keys import DOWN, LEFT, RIGHT, UP, with_arrows
 from sextile.page import Page
 from sextile.templates import (
@@ -26,6 +26,7 @@ from sextile.viewdata.canvas import Run
 from sextile.viewdata.chrome import CONTENT_FIRST_ROW, CONTENT_ROWS
 from sextile.viewdata.controls import Colour, Control
 from sextile.viewdata.frame import COLUMNS
+from sextile.viewdata.layout import TRUNCATION_NOTICE
 
 
 def at(digits: str) -> PageAddress:
@@ -832,3 +833,31 @@ class TestTheWayHomeIsAShortcutLikeAnyOther:
         assert found is not None
         assert found.destination(HOME_KEY) is None
         assert "index" not in text_of(page)
+
+
+class TestAPageTooLongForItsFrames:
+    """A page has frames a to z and no more, so a long one has to stop.
+
+    `viewdata.typesetting` has said so for a document since it was written; a
+    template with more entries than twenty-six frames hold used to build a
+    twenty-seventh and raise `ValueError` from `frame_letter`.
+    """
+
+    def test_it_stops_at_the_last_frame_there_is(self) -> None:
+        page = Listing(
+            title="PAGES", entries=items(600), home=at("1")
+        ).build(at("9"))
+        assert len(page.frames) == FRAMES_PER_PAGE
+
+    def test_and_says_it_has_rather_than_stopping_quietly(self) -> None:
+        page = Listing(
+            title="PAGES", entries=items(600), home=at("1")
+        ).build(at("9"))
+        assert TRUNCATION_NOTICE in text_of(page, FRAMES_PER_PAGE - 1)
+
+    def test_a_page_that_fits_says_nothing_of_the_kind(self) -> None:
+        page = Listing(title="PAGES", entries=items(30), home=at("1")).build(at("9"))
+        assert all(
+            TRUNCATION_NOTICE not in text_of(page, index)
+            for index in range(len(page.frames))
+        )

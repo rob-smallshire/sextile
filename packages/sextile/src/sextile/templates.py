@@ -30,7 +30,7 @@ from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, ClassVar, Final, Protocol, runtime_checkable
 
-from sextile.addressing import PageAddress
+from sextile.addressing import FRAMES_PER_PAGE, PageAddress
 from sextile.content.blocks import Document, Paragraph
 from sextile.keys import (
     ARROW_FOR,
@@ -47,7 +47,7 @@ from sextile.viewdata.drawing import key_row
 from sextile.viewdata.encoding import cell_count, fitted
 from sextile.viewdata.footer import ROOM, FooterItem, Priority, movement, render_footer
 from sextile.viewdata.frame import COLUMNS
-from sextile.viewdata.layout import Row, rows_for
+from sextile.viewdata.layout import TRUNCATION_NOTICE, Row, rows_for
 from sextile.viewdata.wrapping import wrap_text, wrap_within
 
 if TYPE_CHECKING:
@@ -409,7 +409,7 @@ class Template[E](ABC):
             carrying the keys that work while it is showing. A page with no
             entries at all is one empty frame rather than none.
         """
-        batches = self._deal()
+        batches, truncated = self._deal()
         frames = []
         for index, batch in enumerate(batches):
             canvas = Canvas()
@@ -447,6 +447,9 @@ class Template[E](ABC):
                     choices[digit] = where
                 self.draw_entry(canvas, row, entry, digit)
                 row += self.rows_per_entry + self.separation
+            if truncated and index + 1 == len(batches):
+                canvas.row(row).text(TRUNCATION_NOTICE, Colour.RED)
+                row += 1
             self._draw_footnote(canvas, row)
             frames.append(
                 PageFrame(
@@ -496,12 +499,14 @@ class Template[E](ABC):
             return 0
         return sum(_rows_of(line) for line in self.preamble) + 1
 
-    def _deal(self) -> list[Sequence[E]]:
+    def _deal(self) -> tuple[list[Sequence[E]], bool]:
         """The entries, grouped a frame at a time.
 
-        The first group is the smaller, the preamble having taken rows from it,
-        and it is empty where the preamble took the whole frame. There is
-        always at least one group, empty if there are no entries.
+        Returns:
+            The groups, and whether entries were left over. The first group is
+            the smaller, the preamble having taken rows from it, and it is
+            empty where the preamble took the whole frame. There is always at
+            least one group, empty if there are no entries.
         """
         #  Headings cost their row on every frame, not only the first: counting
         #  them once would write the last entry of every later frame over the
@@ -521,7 +526,14 @@ class Template[E](ABC):
                 continue
             batches.append(self.entries[start : start + room])
             start += room
-        return batches or [()]
+        #  A page has frames a to z and no more, so a list long enough to
+        #  exhaust them stops rather than building a frame that cannot be
+        #  numbered. One entry comes off the last frame to leave room to say so.
+        if len(batches) > FRAMES_PER_PAGE:
+            batches = batches[:FRAMES_PER_PAGE]
+            batches[-1] = batches[-1][:-1]
+            return batches, True
+        return batches or [()], False
 
     def _capacity(self, spent: int) -> int:
         """How many entries fit in a frame once `spent` rows have gone elsewhere.

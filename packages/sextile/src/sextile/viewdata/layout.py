@@ -16,6 +16,7 @@ rather than ending mid-sentence with nothing to explain it.
 from dataclasses import dataclass
 from typing import Final
 
+from sextile.addressing import FRAMES_PER_PAGE
 from sextile.content.blocks import (
     Attachment,
     Block,
@@ -35,7 +36,7 @@ from sextile.viewdata.wrapping import wrap_text
 BODY_ROWS: Final = ROWS - 3
 
 #: A page's frames are lettered a-z.
-MAX_FRAMES: Final = 26
+MAX_FRAMES: Final = FRAMES_PER_PAGE
 
 _QUOTE_INDENT: Final = 2
 
@@ -43,7 +44,10 @@ _QUOTE_INDENT: Final = 2
 #  moving right and rely on colour alone.
 _MAX_QUOTE_DEPTH: Final = 4
 
-_TRUNCATION_NOTICE: Final = "... TRUNCATED, TOO LONG TO SHOW"
+#: Said on the last frame of anything too long to show in full, by a
+#: document and by a template alike: a reader who has reached the end of
+#: what there is should not have to wonder whether that was all of it.
+TRUNCATION_NOTICE: Final = "... TRUNCATED, TOO LONG TO SHOW"
 
 
 @dataclass(frozen=True)
@@ -163,7 +167,7 @@ def _deal(rows: list[Row], rows_per_frame: int) -> list[list[Row]]:
         #  silently swallowed.
         pages = pages[:MAX_FRAMES]
         pages[-1] = pages[-1][: rows_per_frame - 1]
-        pages[-1].append(Row(_TRUNCATION_NOTICE, Colour.RED))
+        pages[-1].append(Row(TRUNCATION_NOTICE, Colour.RED))
 
     return pages
 

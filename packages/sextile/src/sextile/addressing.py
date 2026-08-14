@@ -20,7 +20,9 @@ from dataclasses import dataclass
 from typing import Final
 
 #: Frames are lettered, so a page cannot have more than there are letters.
-_FRAMES_PER_PAGE: Final = 26
+#: Frames to a page, `a` to `z`. A page is numbered, its frames are
+#: lettered, and there are no more letters.
+FRAMES_PER_PAGE: Final = 26
 
 
 class UnknownPageError(ValueError):
@@ -60,8 +62,8 @@ def frame_letter(index: int) -> str:
     A reader never keys this: it identifies a continuation of a page too long
     for one screen, and appears only in the page number a frame displays.
     """
-    if not 0 <= index < _FRAMES_PER_PAGE:
-        raise ValueError(f"a page has at most {_FRAMES_PER_PAGE} frames, not frame {index}")
+    if not 0 <= index < FRAMES_PER_PAGE:
+        raise ValueError(f"a page has at most {FRAMES_PER_PAGE} frames, not frame {index}")
     return chr(ord("a") + index)
 
 

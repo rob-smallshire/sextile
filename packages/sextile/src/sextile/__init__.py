@@ -30,7 +30,7 @@ from sextile.held import Held
 from sextile.page import Page, PageFrame
 from sextile.pages.guidance import GuideRow
 from sextile.requests import Arrival, PageRequest, Parting
-from sextile.routing import Converter
+from sextile.routing import Converter, NoSuchRouteError, RouteError
 
 __version__ = version("sextile")
 
@@ -48,6 +48,7 @@ __all__ = [
     "Held",
     "Middleware",
     "Next",
+    "NoSuchRouteError",
     "Page",
     "PageAddress",
     "PageFrame",
@@ -55,6 +56,7 @@ __all__ = [
     "PageRequest",
     "PageRoute",
     "Parting",
+    "RouteError",
     "Sextile",
     "Suggest",
     "UnknownPageError",

@@ -15,10 +15,16 @@ from pathlib import Path
 
 import pytest
 
-from sextile import keys
-from sextile.addressing import PageAddress, UnknownPageError, keyed
-from sextile.application import Arrival, PageRoute, Sextile
-from sextile.page import Page
+from sextile import (
+    Arrival,
+    Page,
+    PageAddress,
+    PageRoute,
+    Sextile,
+    UnknownPageError,
+    keyed,
+    keys,
+)
 from sextile.templates import MenuItem
 from sextile.viewdata import lettering
 from sextile.viewdata.blocks import BLOCKS_ACROSS, BLOCKS_DOWN

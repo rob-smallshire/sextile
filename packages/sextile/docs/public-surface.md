@@ -31,9 +31,10 @@ What a service is made of, and the types it hands about. Imported by every
 application in its first few lines.
 
     Application  Sextile  PageRoute  PageInfo  Handler
-    Page  PageFrame  PageAddress  keyed  UnknownPageError
-    PageRequest  Arrival  Parting  Held
-    Middleware  Next  Converter
+    Page  PageFrame  PageAddress  keyed
+    PageRequest  Arrival  Parting  Held  GuideRow
+    Middleware  Next
+    Converter  UnknownPageError  NoSuchRouteError  RouteError
     Form  Suggest  draw_form
     page  routes_in  routes_on  transliterate
     keys  __version__
@@ -150,7 +151,7 @@ Everything else, and specifically:
 |---|---|
 | `application`, `requests`, `declarations`, `held` | their public names are re-exported by `sextile` |
 | `addressing`, `page` | likewise: `PageAddress`, `keyed`, `Page`, `PageFrame` |
-| `routing` | a service declares routes; the router matches them. `Converter` is the extension point and is at the top level |
+| `routing` | a service declares routes; the router matches them. `Converter` is the extension point, and it and the two errors it raises are at the top level |
 | `pages` | reached through `sextile.handlers` or the `Sextile` methods |
 | `session`, `server` | how a call is answered, which no page is party to |
 | `compass`, `demo` | drawn by the framework's own pages |
@@ -171,7 +172,9 @@ imported by module path though all seven were top-level exports already, and
 now come through `sextile`. `keyed`, `keys`, `Handler`, `routes_on` and
 `GuideRow` have been added to `__all__`, which had been half of the declaring
 vocabulary and none of the addressing. `sextile.forms` is listed above as
-public, which settles `Field` and `Fields`. `guidance.Key` is `GuideRow` and is
+public, which settles `Field` and `Fields`. `NoSuchRouteError` and
+`RouteError` are exported, a service's own converter being what raises the
+first of them. `guidance.Key` is `GuideRow` and is
 exported from `sextile`: it describes a service's own row in a table, and the
 word `key` was already spoken for by the thing a reader presses.
 

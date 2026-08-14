@@ -20,39 +20,50 @@ Named after the star key on a viewdata keypad.
 
 from importlib.metadata import version
 
-from sextile.addressing import PageAddress, UnknownPageError
+from sextile import keys
+from sextile.addressing import PageAddress, UnknownPageError, keyed
 from sextile.application import Application, Middleware, Next, Sextile
 from sextile.content.transliterate import transliterate
-from sextile.declarations import PageInfo, PageRoute, page, routes_in
+from sextile.declarations import Handler, PageInfo, PageRoute, page, routes_in, routes_on
 from sextile.forms import Form, Suggest, draw_form
 from sextile.held import Held
 from sextile.page import Page, PageFrame
+from sextile.pages.guidance import GuideRow
 from sextile.requests import Arrival, PageRequest, Parting
 from sextile.routing import Converter
 
 __version__ = version("sextile")
 
+#  The whole of it, and stated in one place: what is not named here is the
+#  framework's own machinery. See docs/public-surface.md, which lists the
+#  public submodules as well -- `templates`, `viewdata` and the rest are too
+#  large to flatten into this list and are public as modules.
 __all__ = [
     "Application",
     "Arrival",
     "Converter",
     "Form",
+    "GuideRow",
+    "Handler",
     "Held",
-    "Suggest",
-    "draw_form",
     "Middleware",
     "Next",
-    "PageInfo",
-    "Parting",
     "Page",
     "PageAddress",
     "PageFrame",
+    "PageInfo",
     "PageRequest",
     "PageRoute",
+    "Parting",
     "Sextile",
+    "Suggest",
     "UnknownPageError",
     "__version__",
-    "transliterate",
+    "draw_form",
+    "keyed",
+    "keys",
     "page",
     "routes_in",
+    "routes_on",
+    "transliterate",
 ]

@@ -18,11 +18,8 @@ from datetime import date
 from pathlib import Path
 from typing import Final
 
-from sextile import PageRoute, Sextile, routes_in
-from sextile.addressing import PageAddress
-from sextile.application import Parting
+from sextile import Page, PageAddress, PageRoute, Parting, Sextile, routes_in
 from sextile.handlers import contents, history, names
-from sextile.page import Page
 from stardot_viewdata import handlers
 from stardot_viewdata.handlers import ARCHIVE, SERVICE_NAME, day_title, ringing_off, unknown_page
 from stardot_viewdata.store.repository import Repository

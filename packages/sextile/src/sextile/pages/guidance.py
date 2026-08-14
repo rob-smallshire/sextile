@@ -62,12 +62,19 @@ _GAP: Final = 1
 
 
 @dataclass(frozen=True)
-class Key:
-    """One key a reader may press, and what pressing it does.
+class GuideRow:
+    """One row of the guide: a key a reader may press, and what it does.
 
-    An empty key is a continuation: a second line of words for the row above,
-    which is how a meaning too long for the column gets said. An empty pair is
-    a blank row, for grouping.
+    Attributes:
+        key: What the reader presses, as the guide writes it: `1-9`, `*95#`,
+            `A-Z`. Empty continues the row above, which is how a meaning too
+            long for the column is carried on to a second line.
+        does: What pressing it does, in the framework's own words. Empty
+            alongside an empty `key` leaves a blank row, for grouping.
+
+    A row rather than a key, because a service passing these to
+    `Sextile.guide` is describing its own additions to a table and not naming
+    a keypress the session will answer.
     """
 
     key: str = ""
@@ -80,8 +87,8 @@ def guide_page(
     title: str = TITLE,
     home: PageAddress | None = None,
     home_called: str = "index",
-    moving: Sequence[Key] = (),
-    asking: Sequence[Key] = (),
+    moving: Sequence[GuideRow] = (),
+    asking: Sequence[GuideRow] = (),
     items: bool = True,
 ) -> Page:
     """The guide, as two frames of keys.
@@ -93,7 +100,7 @@ def guide_page(
     own title rather than settled here.
     """
     first = [*_moving(home_called), *moving]
-    second = [*_ASKING, Key(), *asking]
+    second = [*_ASKING, GuideRow(), *asking]
     column = max(cell_count(row.key) for row in [*first, *second]) + _GAP
     frames = [
         _frame(
@@ -105,31 +112,31 @@ def guide_page(
     return Page(frames=tuple(frames))
 
 
-def _moving(home_called: str) -> list[Key]:
+def _moving(home_called: str) -> list[GuideRow]:
     return [
-        Key(f"1-{_CHOICES}", "choose from a menu"),
-        Key(keys.BACK, f"back to the {home_called}"),
-        Key(keyed("<number>"), "go straight to a page"),
-        Key(keyed("<keyword>"), "go to a named page"),
-        Key(keys.CONVENTIONAL_NEXT_FRAME, "next frame of a page"),
-        Key(_RUB_OUT, "rub out a character"),
+        GuideRow(f"1-{_CHOICES}", "choose from a menu"),
+        GuideRow(keys.BACK, f"back to the {home_called}"),
+        GuideRow(keyed("<number>"), "go straight to a page"),
+        GuideRow(keyed("<keyword>"), "go to a named page"),
+        GuideRow(keys.CONVENTIONAL_NEXT_FRAME, "next frame of a page"),
+        GuideRow(_RUB_OUT, "rub out a character"),
     ]
 
 
 _ASKING: Final = (
     #  A meaning too long for the column, said on two rows rather than
     #  shortened into something that reads like a different instruction.
-    Key(keyed(keys.BACK), "back, through where you"),
-    Key("", "have been"),
-    Key(keyed(keys.REDISPLAY), "show this frame again"),
-    Key(keyed(keys.REFRESH), "fetch it afresh"),
+    GuideRow(keyed(keys.BACK), "back, through where you"),
+    GuideRow("", "have been"),
+    GuideRow(keyed(keys.REDISPLAY), "show this frame again"),
+    GuideRow(keyed(keys.REFRESH), "fetch it afresh"),
 )
 
 
 def _frame(
     address: PageAddress,
     index: int,
-    rows: Sequence[Key],
+    rows: Sequence[GuideRow],
     title: str,
     home: PageAddress | None,
     column: int,

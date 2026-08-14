@@ -9,10 +9,7 @@ the one page that uses all of it; the handler that fetches the post is in
 
 from typing import Final
 
-from sextile import keys
-from sextile.addressing import PageAddress
-from sextile.application import Arrival, Sextile
-from sextile.page import Page, PageFrame
+from sextile import Arrival, Page, PageAddress, PageFrame, Sextile, keys
 from sextile.templates import HOME_KEY
 from sextile.viewdata.canvas import Canvas
 from sextile.viewdata.chrome import CONTENT_FIRST_ROW, CONTENT_ROWS, draw_chrome

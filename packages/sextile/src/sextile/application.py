@@ -175,7 +175,7 @@ class Application(ABC):
             self.page("92", name="history")(self.history)
             self.alias("HISTORY", self.address_for("history"))
 
-        Key 1 for the page before this one -- the same as `*0#` -- 2 for the one
+        GuideRow 1 for the page before this one -- the same as `*0#` -- 2 for the one
         before that, and so on.
         """
         return history_page(
@@ -190,8 +190,8 @@ class Application(ABC):
         self,
         request: PageRequest,
         *,
-        moving: "Sequence[guidance.Key]" = (),
-        asking: "Sequence[guidance.Key]" = (),
+        moving: "Sequence[guidance.GuideRow]" = (),
+        asking: "Sequence[guidance.GuideRow]" = (),
         items: bool = True,
     ) -> Page:
         """How to get about, as a table of the keys this service answers.

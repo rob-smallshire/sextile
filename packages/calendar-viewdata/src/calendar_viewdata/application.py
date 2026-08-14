@@ -39,9 +39,9 @@ from sextile import (
     PageRoute,
     Sextile,
     handlers,
+    keyed,
     keys,
 )
-from sextile.addressing import keyed
 from sextile.keys import arrows_lead_where
 from sextile.templates import HOME_KEY, Menu, MenuItem, Prose, farewell_page
 from sextile.viewdata.canvas import Canvas

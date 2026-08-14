@@ -160,34 +160,22 @@ Everything else, and specifically:
 
 ## Where the line is crossed
 
-Six places, as of 2026-08-14. Each is either an application reaching past the
-front door, or the framework failing to offer something and the application
-reaching in.
+Two places, as of 2026-08-14. Both are the framework failing to offer
+something and the application reaching in for it; the four crossings that were
+merely applications reaching past an open front door are closed.
 
-**1. Names that are already public, reached by module path.** Stardot imports
-`PageAddress` from `sextile.addressing`, `Page` and `PageFrame` from
-`sextile.page`, `Sextile`, `Arrival` and `Parting` from `sextile.application`;
-weather imports `Converter` from `sextile.routing`. All five are top-level
-exports already. Mechanical to fix, and it removes four modules from the list
-of what the applications touch.
+*Closed on 2026-08-14, and kept here because a surface document that shows only
+its present state says nothing about which way it is moving:* `PageAddress`,
+`Page`, `PageFrame`, `Sextile`, `Arrival`, `Parting` and `Converter` were being
+imported by module path though all seven were top-level exports already, and
+now come through `sextile`. `keyed`, `keys`, `Handler`, `routes_on` and
+`GuideRow` have been added to `__all__`, which had been half of the declaring
+vocabulary and none of the addressing. `sextile.forms` is listed above as
+public, which settles `Field` and `Fields`. `guidance.Key` is `GuideRow` and is
+exported from `sextile`: it describes a service's own row in a table, and the
+word `key` was already spoken for by the thing a reader presses.
 
-**2. Four names above are not in `__all__`.** `keyed`, which all three services
-use — formatting an address as `*123#` is core vocabulary. `keys`, which works
-only because a submodule can be imported from its package whether or not
-anybody meant it to be. And `Handler` and `routes_on`, which are the vocabulary
-for declaring a page and are half-exported: `PageRoute`, `page` and `routes_in`
-are listed, their two companions are not.
-
-**3. Half of `forms` is exported and half is not.** `Form`, `Suggest` and
-`draw_form` are top-level; `Field`, `Fields` and `SUGGESTIONS` are reached
-through the module. Listing `sextile.forms` as public settles it.
-
-**4. `sextile.pages.guidance.Key` is public API behind an internal path.**
-Stardot and weather both use it to add their own rows to the guide. It needs a
-public home and, probably, a better name than `Key` for one — the word is doing
-two jobs already.
-
-**5. Chrome and footers drawn by hand.** All three services import
+**1. Chrome and footers drawn by hand.** All three services import
 `viewdata.chrome` and `viewdata.footer`; Stardot imports `viewdata.layout` as
 well. Two different things are going on, and they want different answers:
 
@@ -203,7 +191,7 @@ well. Two different things are going on, and they want different answers:
   calendar's notices are a heading and some lines. Closing this closes most of
   the crossings by itself.
 
-**6. No blessed way to drive a session in a test.**
+**2. No blessed way to drive a session in a test.**
 `weather-viewdata/tests/test_weather_application.py` imports
 `sextile.session.session.Session` to play keys at a service end to end. That is
 a reasonable thing for a service's tests to want and there is no public path to
@@ -211,8 +199,9 @@ it.
 
 ## How it is checked
 
-Nothing checks it yet, which is how it came to be crossed in six places without
-anyone noticing. The intended check is a test over the three services'
-syntax trees, asserting that every `from sextile...` import names a module
-listed here — in the spirit of the rest of this workspace, where what must not
-drift is pinned by a test rather than by a rule somebody remembers.
+`test_public_surface.py` reads the three services' syntax trees and asserts
+that every `from sextile...` import names a module listed here — in the spirit
+of the rest of this workspace, where what must not drift is pinned by a test
+rather than by a rule somebody remembers. The two crossings above are named in
+that test as known exceptions, so closing one means deleting a line from it and
+watching the suite stay green.

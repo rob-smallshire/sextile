@@ -27,11 +27,18 @@ from collections.abc import Callable
 from datetime import date
 from typing import Final
 
-from sextile import Held, PageRequest, Sextile, page
-from sextile.addressing import PageAddress, keyed
-from sextile.application import Parting
-from sextile.page import Page, PageFrame
-from sextile.pages.guidance import Key
+from sextile import (
+    GuideRow,
+    Held,
+    Page,
+    PageAddress,
+    PageFrame,
+    PageRequest,
+    Parting,
+    Sextile,
+    keyed,
+    page,
+)
 from sextile.templates import Menu, MenuItem, Prose, farewell_page
 from sextile.viewdata.canvas import Canvas
 from sextile.viewdata.chrome import CONTENT_FIRST_ROW, CONTENT_ROWS, draw_chrome
@@ -337,10 +344,10 @@ async def guide(request: PageRequest) -> Page:
     return await app.guide(
         request,
         asking=[
-            Key(keyed(app.address_for("logoff")), "log off"),
-            Key(),
-            Key(keyed(app.address_for("contents")), "every page and its number"),
-            Key(keyed(app.address_for("names")), "every word you can key"),
+            GuideRow(keyed(app.address_for("logoff")), "log off"),
+            GuideRow(),
+            GuideRow(keyed(app.address_for("contents")), "every page and its number"),
+            GuideRow(keyed(app.address_for("names")), "every word you can key"),
         ],
     )
 

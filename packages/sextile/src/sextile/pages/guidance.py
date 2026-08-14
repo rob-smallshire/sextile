@@ -20,14 +20,12 @@ The words are the framework's own and not taken from the routes. A description
 in a table of keys is a paraphrase and cannot come to be untrue; a *number* can,
 and did, which is why every number here is asked of the router instead.
 
-**Drawn here rather than by a template**, which is the one page of the five for
-which that is true. A template divides one list between as many frames as it
-takes; these two frames are two different lists, split by what a reader is
-doing rather than by what will fit, and the compass hangs off the foot of the
-first when the words above it have left the room. Neither is something a
-template could be given without becoming a second thing wearing the same name.
-What it does share with them -- the keys that turn a frame -- it shares
-properly, through `keys.moving`.
+**The division is a `Break`, not a shortage of rows.** These two frames are two
+different lists, split by what a reader is doing rather than by what will fit,
+and that is what a break says. The compass follows the first list as an
+ordinary part, drawn under the words rather than held to the foot of the frame:
+a rule about where one particular thing sits is the beginning of a layout
+language, and a compass is a few rows of graphics like any other few.
 """
 
 from collections.abc import Sequence
@@ -38,13 +36,13 @@ from sextile import keys
 from sextile.addressing import PageAddress, keyed
 from sextile.compass import ROWS as COMPASS_ROWS
 from sextile.compass import compass
-from sextile.page import Page, PageFrame
-from sextile.viewdata.canvas import Canvas
-from sextile.viewdata.chrome import CONTENT_FIRST_ROW, CONTENT_ROWS, draw_chrome
+from sextile.formatting import RowFormatter
+from sextile.layout import Break, Drawn, Flowing, Once, PageLayout
+from sextile.page import Page
+from sextile.viewdata.canvas import RowWriter
 from sextile.viewdata.composition import Composition
 from sextile.viewdata.drawing import key_row
 from sextile.viewdata.encoding import cell_count
-from sextile.viewdata.footer import ROOM, FooterItem, Priority, movement, render_footer
 
 TITLE: Final = "HOW TO GET ABOUT"
 
@@ -81,6 +79,22 @@ class GuideRow:
     does: str = ""
 
 
+@dataclass(frozen=True, kw_only=True)
+class _Keys(RowFormatter[GuideRow]):
+    """The rows of the guide: a key on the left, what it does on the right.
+
+    The column is given rather than worked out, because both frames of the
+    guide share it: a table whose two halves set their own would step sideways
+    at the division.
+    """
+
+    column: int
+
+    def draw(self, row: RowWriter, entry: GuideRow, digit: str | None) -> None:
+        del digit  # a guide numbers nothing
+        key_row(row, entry.key, entry.does, column=self.column)
+
+
 def guide_page(
     *,
     address: PageAddress,
@@ -93,23 +107,47 @@ def guide_page(
 ) -> Page:
     """The guide, as two frames of keys.
 
-    `moving` and `asking` are the service's own rows, appended to the
-    framework's. `home_called` is what the service calls its first page, so
-    that the row for `0` says "back to the main menu" on a service with a menu
-    and "back to the main index" on one with an index -- taken from the page's
-    own title rather than settled here.
+    Args:
+        address: The address the page answers to.
+        title: What the header calls it.
+        home: Where `0` leads, or None to offer no way home.
+        home_called: What the service calls its first page, so that the row for
+            `0` says "back to the main menu" on a service with a menu and
+            "back to the main index" on one with an index.
+        moving: The service's own rows about moving about, appended to the
+            framework's.
+        asking: The service's own rows about asking for something.
+        items: Whether the compass shows the keys that move between items.
+
+    Returns:
+        Two frames, divided where the guide means to divide rather than where
+        the rows run out: the first is about moving about and carries the
+        compass, the second about asking for something.
     """
     first = [*_moving(home_called), *moving]
     second = [*_ASKING, GuideRow(), *asking]
     column = max(cell_count(row.key) for row in [*first, *second]) + _GAP
-    frames = [
-        _frame(
-            address, index, rows, title, home, column,
-            drawn=index == 0, items=items,
-        )
-        for index, rows in enumerate((first, second))
-    ]
-    return Page(frames=tuple(frames))
+    return PageLayout(
+        title=title,
+        home=home,
+        parts=[
+            Flowing(_Keys(entries=first, column=column)),
+            #  Under the words rather than at the foot of the frame. A rule
+            #  about where one particular part sits is the beginning of a
+            #  layout language, and this is a few rows of graphics like any
+            #  other few rows of graphics.
+            Once(
+                Drawn(
+                    rows=COMPASS_ROWS,
+                    draw=lambda canvas, row: compass(
+                        Composition(), row, items=items
+                    ).draw(canvas),
+                )
+            ),
+            Break(),
+            Flowing(_Keys(entries=second, column=column)),
+        ],
+    ).build(address)
 
 
 def _moving(home_called: str) -> list[GuideRow]:
@@ -131,51 +169,3 @@ _ASKING: Final = (
     GuideRow(keyed(keys.REDISPLAY), "show this frame again"),
     GuideRow(keyed(keys.REFRESH), "fetch it afresh"),
 )
-
-
-def _frame(
-    address: PageAddress,
-    index: int,
-    rows: Sequence[GuideRow],
-    title: str,
-    home: PageAddress | None,
-    column: int,
-    *,
-    drawn: bool,
-    items: bool,
-) -> PageFrame:
-    canvas = Canvas()
-    back, on = index > 0, index == 0
-    draw_chrome(
-        canvas,
-        title=title,
-        page_number=address.frame_number(index),
-        prompt=_prompt(back=back, on=on, home=home),
-    )
-    for offset, row in enumerate(rows[:CONTENT_ROWS]):
-        key_row(canvas.row(CONTENT_FIRST_ROW + offset), row.key, row.does, column=column)
-    #  The compass goes at the foot of the frame, under whatever it says in
-    #  words -- and only where the words have left room for it. A service with
-    #  a great many keys of its own gets the keys, which are what it asked for.
-    if drawn and CONTENT_ROWS - len(rows) >= COMPASS_ROWS:
-        compass(
-            Composition(),
-            CONTENT_FIRST_ROW + CONTENT_ROWS - COMPASS_ROWS,
-            items=items,
-        ).draw(canvas)
-    return PageFrame(
-        frame=canvas.frame,
-        choices={keys.BACK: home} if home is not None else {},
-        moves=keys.moving(back=back, on=on),
-    )
-
-
-def _prompt(*, back: bool, on: bool, home: PageAddress | None) -> str:
-    items = movement(
-        key
-        for key, answered in ((keys.PREVIOUS_FRAME, back), (keys.NEXT_FRAME, on))
-        if answered
-    )
-    if home is not None:
-        items.append(FooterItem(keys.BACK, "index", Priority.ESSENTIAL))
-    return render_footer(items, ROOM)

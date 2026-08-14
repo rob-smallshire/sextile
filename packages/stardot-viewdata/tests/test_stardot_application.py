@@ -29,7 +29,6 @@ from sextile.templates import MenuItem
 from sextile.viewdata import lettering
 from sextile.viewdata.blocks import BLOCKS_ACROSS, BLOCKS_DOWN
 from sextile.viewdata.charset import mosaic_pattern
-from sextile.viewdata.chrome import CONTENT_FIRST_ROW, CONTENT_ROWS
 from sextile.viewdata.controls import Control
 from sextile.viewdata.font import load_font
 from sextile.viewdata.frame import COLUMNS, Frame
@@ -552,10 +551,10 @@ class TestHowToGetAbout:
         assert any("choose from a menu" in row for row in rows)
         spoken = max(index for index, row in enumerate(rows) if "rub out" in row)
         drawn = min(index for index, row in enumerate(rows) if "page up" in row)
-        assert spoken < drawn
-        #  And it reaches the foot of the frame: the two of them together fill
-        #  the content rows exactly, which is why they fit on one.
-        assert "arrow keys" in rows[CONTENT_FIRST_ROW + CONTENT_ROWS - 1]
+        #  Directly under them, rather than held to the foot of the frame. The
+        #  compass is a part like any other now, and a rule about where one
+        #  particular part sits is the beginning of a layout language.
+        assert drawn == spoken + 1
 
     @pytest.mark.parametrize(
         "keys",

@@ -78,23 +78,35 @@ Public submodules:
 |---|---|
 | `canvas` | `Canvas`, `RowWriter`, `Run` — writing on a frame |
 | `frame` | `Frame`, `ROWS`, `COLUMNS` — what a frame is |
-| `controls` | `Colour`, `Control`, and the two colour encoders |
+| `controls` | `Colour`, `Control`, `is_control_code`, and the two colour encoders |
 | `encoding` | `cell_count`, `fitted` — what fits in how many cells |
 | `charset` | the G0 set, `mosaic_code`, `is_representable` |
 | `drawing` | `rule`, `thin_rule`, `centred`, `key_row`, `bar` |
-| `blocks` | mosaic pictures: `Icon`, `icon`, `block_runs` |
+| `blocks` | mosaic pictures: `Icon`, `icon`, `block_runs`, `read_bitmap` |
 | `charting` | `curve`, `bars` |
 | `composition` | `Composition`, `Panel`, `Align` — placing things relative to each other |
-| `lettering` | double-height and outsized letters |
+| `lettering` | outsized letters: `place`, `boxed`, `cells_for`, `width`, `rows_for` |
 | `font` | `Font`, `load_font`, `font_names` |
 | `wrapping` | `wrap_text`, `wrap_within` |
 
-Internal to the framework, and not to be imported: `chrome`, `footer`,
-`layout`, `command_line`, `countdown`, `parting`, `repaint`, `ansi`. These are
-what the templates and the session are built from. The frame geometry a page
-legitimately needs to position something — `CONTENT_FIRST_ROW`, `CONTENT_ROWS`
-— is the one part of `chrome` an application has a reason to know, and it is
-listed as a gap below rather than blessed where it stands.
+Internal to the framework, and not to be imported: `command_line`,
+`countdown`, `parting`, `repaint`, `ansi`. These are what the session is built
+from, and it draws on a frame after a page has been built rather than while it
+is being.
+
+**Some of this is offered rather than used.** `read_bitmap`, `boxed`,
+`cells_for` and `is_control_code` have no caller among the three services here,
+and that is not an argument against them. A framework's surface is justified by
+being useful to a service, not by being used by the services that happen to
+share a repository with it: a fourth service drawing its own icons wants
+`read_bitmap`, and one setting a masthead in a box wants `boxed` and
+`cells_for`. They are listed here so that a sweep for uncalled code finds the
+reason rather than the absence.
+
+That is a different thing from a duplicate implementation, which is what
+`viewdata/chrome.py` turned out to be. It was deleted because `Header`, `Rule`
+and `Prompt` do the job it did, and two implementations of one thing diverge —
+not because nothing called it.
 
 ### `sextile.keys` — the keys a reader presses
 

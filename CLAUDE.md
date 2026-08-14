@@ -122,6 +122,17 @@ guarantee it stood for is gone. This has happened here: `typesetting` lost its
 pagination and the two functions reappeared in `test_typesetting.py`, with a
 justification in the commit message.
 
+**"Nothing calls it" is not a reason to delete framework code.** That is an
+application's test applied to a framework. `sextile`'s surface is justified by
+being useful to a service, not by being used by the three that share this
+repository: `read_bitmap`, `boxed`, `cells_for` and `is_control_code` are all
+offered and all uncalled here, and are listed in public-surface.md so a sweep
+finds the reason rather than the absence.
+
+The reason to delete is a *duplicate* implementation, which is what
+`viewdata/chrome.py` was — `Header`, `Rule` and `Prompt` do what `draw_chrome`
+did, and two implementations of one idea diverge, as the two paginations had.
+
 The failure mode either way is treating green as the goal rather than as
 evidence. Deleting a test module wholesale with the module it tested is the
 same mistake facing the other way: `test_templates.py` went with

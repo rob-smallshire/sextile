@@ -430,19 +430,73 @@ frame and seven on the second, the digits still restart at 1 so that no entry
 is shown which cannot be chosen, and nine is still the limit because a reader
 chooses with one keypress rather than because ten rows of two will not fit.
 
-The alternative is to keep `Menu(title=..., entries=..., home=...)` as it is and
-have it construct both halves. That leaves the call sites alone and hides the
-split, which defeats the purpose for anyone whose content is not a sequence.
+Every call site changes. The alternative was to keep `Menu(title=...,
+entries=..., home=...)` working as it is and have it construct both halves,
+which leaves the call sites alone and hides the split -- and hiding the split
+defeats the purpose for anyone whose content is not a sequence. A convenience
+form that only the commonest shape can use is the thing being removed, not a
+thing to keep.
 
-## What it replaces
+## What can be deleted afterwards
 
-`viewdata/typesetting.py` divides rendered rows between frames; `Template`
-divides entries between frames. Both are the flowing rule written twice, and
-they had diverged: one stopped at twenty-six frames and said so, the other
-built a twenty-seventh and raised `ValueError` out of `frame_letter`. That is
-fixed, but two implementations of one idea will diverge again. Under
-fill-and-furnish exactly one pass counts frames, so the limit can only be
-written once.
+The work is worth doing only if it takes more away than it adds. What follows
+is what should be gone when it is finished, and it is the list to check the
+result against.
+
+**The crossings empty.** `viewdata.chrome`, `viewdata.footer` and
+`viewdata.typesetting` are the three entries left in
+[public-surface.md](public-surface.md), and all three are there because a page
+had to draw its own furniture. `CROSSINGS` in `test_public_surface.py` becomes
+an empty set, and the second assertion in that test -- that a known crossing is
+still crossed -- has nothing left to check.
+
+**From `templates.py`**, which is 907 lines:
+
+- `title`, `home`, `shortcuts`, `item` and the `prompt` that composes them,
+  which are the layout's;
+- `preamble`, `headings`, `footnote` and the six methods that serve them --
+  `_draw_preamble`, `preamble_rows`, `_draw_footnote`, `_footnote_lines`,
+  `footnote_rows` -- which become the order of a list;
+- `PreambleLine` and `Block`, which are a part protocol written for one field.
+  A `Block` is rows and a way to draw them, which is what a part is;
+- `_divide` and `_capacity`, which become the fill pass;
+- `build`, which becomes `PageLayout.build`.
+
+What remains of the file is the sequence formatters themselves: how tall an
+entry is, how to draw one, and whether it can be chosen.
+
+**From `viewdata/typesetting.py`**, which is 185 lines: `paginate` and its
+`_divide`, `BODY_ROWS`, `MAX_FRAMES` and `draw_rows`. Dividing rows between
+frames is the flowing rule written a second time, and the two had already
+diverged -- one stopped at twenty-six frames and said so, the other built a
+twenty-seventh and raised `ValueError` out of `frame_letter`. That is fixed,
+but two implementations of one idea will diverge again, and after this there is
+one of them. `rows_for` stays, that being typesetting rather than layout. `lay_out`
+should go now whatever happens here -- nothing but its own tests has ever
+called it.
+
+**From `viewdata/chrome.py`**: `draw_chrome` becomes the default furniture, and
+`CONTENT_FIRST_ROW` and `CONTENT_ROWS` stop existing, being what the furniture
+leaves. Nine files import one or both today.
+
+**From the services:**
+
+- `stardot_viewdata/post_page.py` loses its frame loop, `prompt`, `_moves`,
+  `frame_moves` and `post_moves` -- most of 172 lines. What survives is
+  `neighbour_choices` and `time_of`, which are about posts rather than about
+  frames.
+- `weather_viewdata/handlers.py` loses the two hand-drawn frames a reader types
+  into, and `search.py` its knowledge of which row a field sits on.
+- `pages/guidance.py` loses `_frame`, `_prompt` and the `rows[:CONTENT_ROWS]`
+  that silently drops a service's surplus keys -- most of 181 lines, leaving
+  the rows themselves and the words on them.
+
+**What is not removed, and should be watched.** `Menu`, `Listing`, `Figures`,
+`Lines` and `Prose` all stay, as does `RowTemplate` under whatever name. The
+work moves the furniture out of them; it does not reduce their number, and a
+sixth shape is as likely after this as before.
+
+## `Form` is already most of a part
 
 `Form` is already most of the part protocol, and now that the protocol is
 written down the claim can be checked rather than asserted. A form has `rows`,
@@ -511,8 +565,9 @@ parameters came from.
 Settled: the bottom row is the footer, and the prompt, the command line and the
 countdown are three things that appear on it. Furniture and content are
 separable, and the evidence is six pages: five that draw their own furniture,
-and one that pretends to be a sequence to obtain it. Frames are filled and then furnished, in that order,
-because only the furniture needs to know how many there turned out to be.
+and one that pretends to be a sequence to obtain it. Frames are filled and then
+furnished, in that order, because only the furniture needs to know how many
+there turned out to be.
 Content is a list of parts of four kinds; where several flow they follow one
 another and nothing arbitrates between them. Furniture is bands docked at two
 edges, set once for a service and overridden by a page, which makes the
@@ -525,7 +580,9 @@ it, and the guide's compass is an ordinary part, drawn where it lands rather
 than held to the foot of the frame -- a change to that page's appearance,
 accepted so that no rule about where one particular thing sits has to exist.
 
-Not settled: the names above; whether the 23 call sites change or keep a
-convenience form. Placing a part returns what is left of it rather than
-advancing through it, so there is no second type to name and nothing that
-needs to be an iterator.
+Also settled: every call site changes. A convenience form that only the
+commonest shape could use is the thing being removed, not a thing to keep. And
+what should be gone when the work is finished is written down above, the
+crossings emptying being the test of it.
+
+Not settled: the names above.

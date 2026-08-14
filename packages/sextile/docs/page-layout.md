@@ -207,41 +207,56 @@ class Room:
 
 @dataclass(frozen=True)
 class Offer:
-    """What a part gives the frame it has drawn on."""
+    """What a part claims on the frame it has drawn on."""
 
     choices: Mapping[str, PageAddress] = ...
     named: Sequence[FooterItem] = ()
     form: Form | None = None
+
+
+@dataclass(frozen=True)
+class Placement:
+    """What placing a part on one frame came to."""
+
+    rows: int
+    offer: Offer
+    rest: "Part | None"
+
+
+class Part(Protocol):
+    def place(self, canvas: Canvas, room: Room) -> Placement:
+        """Draw as much as `room` allows, and say what is left over."""
 ```
 
 `Offer` rather than anything more inventive, because that is the verb the
 framework already uses: *keys offered on every frame*, *a page cannot offer a
 key silently*.
 
-A part is a description and may be built into several pages, so placing one
-must not change it. A part is to its placing as an iterable is to an iterator:
+One method, and no separate step to ask what would fit. A part takes what it
+can and reports three things: the rows it used, what it claims on this frame,
+and what is left of it for the next.
 
-```python
-class Part(Protocol):
-    def placing(self) -> "Placing":
-        """Begin placing this part. The result carries the position."""
+**A part that will not begin here returns nought rows and itself.** That is how
+a fixed part too tall for the room left asks for a new frame, and it needs no
+`fits` of its own. A part that answers that way on a frame with nothing else on
+it can never be placed anywhere, which is the build-time error called for
+above, detectable in one place.
 
+**A flowing part takes as much as the rows *and* the choices allow**, which is
+where a menu's nine to a frame now comes from, and returns the rest of itself:
+a `Menu` of seven entries where sixteen went in and nine came out.
 
-class Placing(Protocol):
-    def fits(self, room: Room) -> int:
-        """Rows this will take of `room`, or nought where it cannot begin here."""
+**Parts are not consumed.** Placing returns what is left rather than advancing
+a cursor, so a part is a description that may be built into several pages and a
+`PageLayout` can be built twice without the second attempt finding its parts
+half spent. `Template._divide` already works this way, slicing lists rather
+than holding a position.
 
-    def draw(self, canvas: Canvas, room: Room) -> Offer:
-        """Draw what `fits` said would fit, and advance past it."""
-
-    @property
-    def finished(self) -> bool:
-        """Whether there is nothing left of this part to draw."""
-```
-
-`fits` returning nought is how a fixed part too tall for what is left asks to
-begin the next frame. A flowing part answers with as much as the rows *and* the
-choices allow, which is where a menu's nine-to-a-frame now comes from.
+`rest` is meaningless for a part drawn on every frame, and correctly so: the
+four kinds are wrappers the layout understands, and only `Flowing` threads
+`rest` from one frame to the next. `Once` places and discards it, `Every`
+places the same part afresh on each frame. The part itself only ever answers
+what it took and what is left.
 
 ### What the furniture is given
 
@@ -429,13 +444,27 @@ fixed, but two implementations of one idea will diverge again. Under
 fill-and-furnish exactly one pass counts frames, so the limit can only be
 written once.
 
-`Form` is already most of the part protocol. It has `rows`, `draw(canvas)`,
-`choices()` and `accepts(key)`: it occupies a row range, draws itself,
-contributes keys that lead somewhere, and answers keypresses. It reached that
-shape independently, for a page that types rather than a page that lists, which
-is the strongest evidence the seam is real — and it shows the join in the wrong
-place today, a form hanging off `PageFrame` as a special case when it is one
-kind of part among several.
+`Form` is already most of the part protocol, and now that the protocol is
+written down the claim can be checked rather than asserted. A form has `rows`,
+`draw(canvas)` and `choices()`, which is a `place` in three pieces:
+
+```python
+def place(self, canvas: Canvas, room: Room) -> Placement:
+    self.draw(canvas)
+    return Placement(
+        rows=len(self.rows),
+        offer=Offer(choices=self.choices(), form=self),
+        rest=None,
+    )
+```
+
+It reached that shape independently, for a page that types rather than a page
+that lists, which is the strongest evidence the seam is real. It also shows the
+join in the wrong place today: a form hangs off `PageFrame` as a special case
+when it is one kind of part among several. What is left over is `accepts(key)`,
+and it needs nothing new: a part that answers keypresses is the session's
+business after the page is built, and it travels there on the form that `Offer`
+already carries.
 
 ## What this is not
 
@@ -474,8 +503,8 @@ one particular part must sit. The last of those was nearly added for the
 guide's compass and was refused; the first two are where LaTeX's float
 parameters came from.
 
-**Names.** `Part`, `Placing`, `Room`, `Offer`, `Summary`, `Furnishing`, `Edge`,
-and the four kinds of part are all proposals.
+**Names.** `Part`, `Room`, `Placement`, `Offer`, `Summary`, `Furnishing`,
+`Edge` and the four kinds of part are all proposals.
 
 ## What is settled and what is not
 
@@ -497,6 +526,6 @@ than held to the foot of the frame -- a change to that page's appearance,
 accepted so that no rule about where one particular thing sits has to exist.
 
 Not settled: the names above; whether the 23 call sites change or keep a
-convenience form; and whether `Placing` should be an iterator in fact as well
-as in shape, which is a question about how a part that has been half drawn is
-represented rather than about what the design does.
+convenience form. Placing a part returns what is left of it rather than
+advancing through it, so there is no second type to name and nothing that
+needs to be an iterator.

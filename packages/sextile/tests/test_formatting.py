@@ -7,9 +7,10 @@ See docs/page-layout.md.
 """
 
 from sextile.addressing import PageAddress
-from sextile.formatting import Lines, Menu, MenuItem
+from sextile.formatting import Figures, Lines, Listing, Menu, MenuItem, Prose
 from sextile.layout import CHOICES_PER_FRAME, Flowing, Once, PageLayout, Room
 from sextile.viewdata.canvas import Canvas
+from sextile.viewdata.frame import COLUMNS
 
 CONTENT = range(2, 22)
 
@@ -126,3 +127,78 @@ class TestLinesAsAPart:
         assert placed.rows == 20
         assert isinstance(placed.rest, Lines)
         assert len(placed.rest.said) == 10
+
+
+class TestAListing:
+    WIDE = [
+        MenuItem(text="*3#", detail="Forecast by name"),
+        MenuItem(text="*321<geoname-id>#", detail="One place"),
+    ]
+
+    def test_two_columns_and_nothing_to_choose(self) -> None:
+        canvas = Canvas()
+        placed = Listing(entries=self.WIDE).place(canvas, whole_frame())
+        assert not placed.offer.choices
+        assert "*3#" in said(canvas)[0]
+        assert "Forecast by name" in said(canvas)[0]
+
+    def test_the_column_is_set_once_and_carried(self) -> None:
+        #  Or the second frame would set its own from the entries left on it,
+        #  and a table would step sideways part way down.
+        listing = Listing(entries=self.WIDE * 15)
+        placed = listing.place(Canvas(), whole_frame())
+        assert isinstance(placed.rest, Listing)
+        assert placed.rest.column == listing.column
+
+    def test_a_detail_too_long_for_its_room_is_carried_on(self) -> None:
+        canvas = Canvas()
+        Listing(
+            entries=[MenuItem(text="*321<geoname-id>#", detail="Forecast by lat/lon position")]
+        ).place(canvas, whole_frame())
+        assert len(said(canvas)) == 2
+
+    def test_and_the_widest_the_left_column_may_be_is_said_once(self) -> None:
+        assert Listing.widest() == COLUMNS // 2
+
+
+class TestFigures:
+    def counts(self) -> list[MenuItem]:
+        return [
+            MenuItem(text="Last 24 hours", detail="4"),
+            MenuItem(text="Last 30 days", detail="1908"),
+        ]
+
+    def test_the_figures_end_in_the_same_column(self) -> None:
+        canvas = Canvas()
+        Figures(entries=self.counts()).place(canvas, whole_frame())
+        characters, _ = canvas.frame.to_grid()
+        written = [row for row in characters if row.strip()]
+        assert len({len(row.rstrip()) for row in written}) == 1
+
+    def test_the_columns_are_set_once_and_carried(self) -> None:
+        figures = Figures(entries=self.counts() * 15)
+        placed = figures.place(Canvas(), whole_frame())
+        assert isinstance(placed.rest, Figures)
+        assert (placed.rest.label, placed.rest.figure) == (figures.label, figures.figure)
+
+
+class TestProse:
+    def test_it_wraps_what_it_is_given(self) -> None:
+        canvas = Canvas()
+        Prose.of("A sentence long enough to need more than one row of forty cells.").place(
+            canvas, whole_frame()
+        )
+        assert len(said(canvas)) == 2
+
+    def test_a_blank_row_divides_one_paragraph_from_the_next(self) -> None:
+        canvas = Canvas()
+        Prose.of("First.", "Second.").place(canvas, whole_frame())
+        characters, _ = canvas.frame.to_grid()
+        assert characters[2].strip() == "First."
+        assert characters[3].strip() == ""
+        assert characters[4].strip() == "Second."
+
+    def test_it_goes_on_to_as_many_frames_as_it_takes(self) -> None:
+        long = Prose.of(*(f"Paragraph {n} of some length." for n in range(20)))
+        placed = long.place(Canvas(), whole_frame())
+        assert isinstance(placed.rest, Prose)

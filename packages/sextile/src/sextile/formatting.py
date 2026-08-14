@@ -9,7 +9,10 @@ The shapes ready to use, differing in how many entries a frame holds and how
 each one is drawn:
 
     Menu       numbered, a line of detail beneath each
+    Listing    two columns, nothing numbered, for a page that is a reference
+    Figures    a label and a figure a row, the figures aligned in one column
     Lines      lines drawn as given, for a page that simply says something
+    Prose      running text, wrapped, in as many rows as it takes
 
 A service needing a shape that is not here subclasses `Formatter` or
 `RowFormatter` and says how tall an entry is and how to draw one.
@@ -30,12 +33,16 @@ from dataclasses import dataclass, replace
 from typing import ClassVar, Protocol, runtime_checkable
 
 from sextile.addressing import PageAddress
+from sextile.content.blocks import Document, Paragraph
 from sextile.layout import Offer, Placement, Room
 from sextile.viewdata.canvas import Canvas, RowWriter
 from sextile.viewdata.controls import Colour
-from sextile.viewdata.encoding import fitted
+from sextile.viewdata.drawing import key_row
+from sextile.viewdata.encoding import cell_count, fitted
 from sextile.viewdata.footer import FooterItem, Priority
 from sextile.viewdata.frame import COLUMNS
+from sextile.viewdata.typesetting import Row, rows_for
+from sextile.viewdata.wrapping import wrap_within
 
 
 @runtime_checkable
@@ -266,3 +273,166 @@ class Lines(Formatter[str]):
         del digit  # a notice numbers nothing
         if entry:
             canvas.row(row).text(fitted(entry, COLUMNS - 1), Colour.WHITE)
+
+
+@dataclass(frozen=True, kw_only=True)
+class Listing(RowFormatter[Entry]):
+    """Two columns, nothing to choose, for a page that is a reference.
+
+    What a service is made of, which words it answers to. The left column is
+    set to the width of the widest entry, so that the page reads as a table,
+    and a detail too long for the room left over is carried on to a further row
+    rather than being cut.
+
+    Attributes:
+        column: How wide the left column is. Worked out from the entries when
+            the listing is first made, and carried from frame to frame
+            thereafter -- a table that set its column afresh on each frame
+            would step sideways part way down.
+    """
+
+    #  Never wider than half the row: a truncated left column here would be a
+    #  page number that fetches the wrong page.
+    _WIDEST: ClassVar[int] = COLUMNS // 2
+
+    #: One cell for the colour attribute of each column.
+    ATTRIBUTES: ClassVar[int] = 2
+
+    column: int | None = None
+
+    @classmethod
+    def widest(cls) -> int:
+        """The greatest width the left column can take, in cells.
+
+        For a caller sizing the right-hand column, which has whatever is left
+        over. Without this, a page wrapping a long title into that column would
+        work the same arithmetic out again and get it slightly different.
+        """
+        return cls._WIDEST
+
+    def __post_init__(self) -> None:
+        #  `column` set means this listing came from another by `replace`, so
+        #  its entries are wrapped already and its column is the one the frames
+        #  before it used. Only a listing made by a caller prepares itself.
+        if self.column is not None:
+            return
+        widest = max((cell_count(entry.text) for entry in self.entries), default=0)
+        object.__setattr__(self, "column", min(widest + 1, self._WIDEST))
+        object.__setattr__(self, "entries", self._carried(self.entries))
+
+    def _carried(self, entries: Sequence[Entry]) -> list[Entry]:
+        """The entries, with any detail too long for its column carried on.
+
+        The right-hand column gets whatever the left leaves, which is enough
+        for `One day` and not for `Forecast by lat/lon position`. Cut, such a
+        detail reads as a fault rather than as a shortage of room; carried on
+        to a row with an empty left column, it reads as what it is, because
+        which column a thing is in is what tells the two apart.
+
+        Two rows at most: a detail needing a third wants rewriting, a listing
+        being a table rather than a place for prose.
+        """
+        assert self.column is not None
+        room = COLUMNS - self.column - self.ATTRIBUTES
+        carried: list[Entry] = []
+        for entry in entries:
+            lines = wrap_within(entry.detail, cells=room, rows=2) or [""]
+            carried.append(entry)
+            carried += [MenuItem(text="", detail=line) for line in lines[1:]]
+            if len(lines) > 1:
+                carried[-2] = MenuItem(
+                    text=entry.text, detail=lines[0], destination=entry.destination
+                )
+        return carried
+
+    def draw(self, row: RowWriter, entry: Entry, digit: str | None) -> None:
+        del digit  # a listing numbers nothing
+        assert self.column is not None
+        key_row(row, entry.text, entry.detail, column=self.column)
+
+
+@dataclass(frozen=True, kw_only=True)
+class Figures(RowFormatter[Entry]):
+    """A label and a figure a row, the figures right-aligned in one column.
+
+    For a page that reports rather than offers: how many callers, how much is
+    held, how long since. The entry's `text` is the label and its `detail` the
+    figure, written out as the page wants it read.
+
+    Attributes:
+        label: How wide the labels' column is, and `figure` how wide the
+            figures'. Worked out once and carried, as a `Listing`'s is.
+        figure: See `label`.
+    """
+
+    #: Two cells of margin before the label. A table of figures reads as a
+    #: block rather than as a list, and a block wants a margin.
+    INDENT: ClassVar[int] = 2
+
+    #: A cell between the longest label and its figure, over and above the
+    #: attribute cell that colours the figure.
+    _GAP: ClassVar[int] = 1
+
+    #: One cell for the colour attribute of each column.
+    ATTRIBUTES: ClassVar[int] = 2
+
+    label: int | None = None
+    figure: int | None = None
+
+    def __post_init__(self) -> None:
+        if self.label is not None:
+            return
+        figure = max((cell_count(one.detail) for one in self.entries), default=0)
+        widest = max((cell_count(one.text) for one in self.entries), default=0)
+        room = COLUMNS - self.INDENT - figure - self.ATTRIBUTES
+        object.__setattr__(self, "figure", figure)
+        object.__setattr__(self, "label", min(widest + self._GAP, room))
+
+    def draw(self, row: RowWriter, entry: Entry, digit: str | None) -> None:
+        del digit  # a figure numbers nothing
+        assert self.label is not None and self.figure is not None
+        row.skip(self.INDENT)
+        #  The label is padded rather than the figure indented, so that one
+        #  long label pushes the whole column of figures right and no figure
+        #  ends up under a label.
+        row.text(fitted(entry.text, self.label).ljust(self.label), Colour.WHITE)
+        row.text(entry.detail.rjust(self.figure), Colour.CYAN)
+
+
+@dataclass(frozen=True, kw_only=True)
+class Prose(Formatter[Row]):
+    """Running text, wrapped, in as many rows as it takes.
+
+    Its entries are rendered `Row` values rather than `Entry` values. Laying
+    the text out through `viewdata.typesetting` gives a notice the same
+    treatment as a forum post: quotations in cyan, listings in green, nesting
+    indented, and over-long words broken rather than dropped.
+    """
+
+    @classmethod
+    def of(cls, *paragraphs: str) -> "Prose":
+        """Build prose from plain paragraphs, wrapping them on the way.
+
+        Args:
+            *paragraphs: The text, one string a paragraph, in the order it is
+                to be read. Empty strings are dropped; the gaps between
+                paragraphs come from the layout.
+
+        Returns:
+            The prose, ready to be laid out as a part.
+        """
+        return cls(
+            entries=rows_for(
+                Document(blocks=tuple(Paragraph((text,)) for text in paragraphs if text))
+            )
+        )
+
+    def draw_entry(
+        self, canvas: Canvas, row: int, entry: Row, digit: str | None
+    ) -> None:
+        del digit  # prose numbers nothing
+        if entry.text:
+            #  No truncation here: `typesetting` has already wrapped to the room
+            #  a row has, colour attribute and indent included. Cutting again
+            #  would take a character off every line it had filled exactly.
+            canvas.row(row).skip(entry.indent).text(entry.text, entry.colour)

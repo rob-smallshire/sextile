@@ -293,6 +293,65 @@ the movement keys and the way home. A prompt furnishing hands that to
 A furnishing returns nothing. It claims no keys, because the keys it names
 belong to the layout or to the parts.
 
+## A form is a part
+
+`Form` is already most of the part protocol, and now that the protocol is
+written down the claim can be checked rather than asserted. A form has `rows`,
+`draw(canvas)` and `choices()`, which is a `place` in three pieces:
+
+```python
+def place(self, canvas: Canvas, room: Room) -> Placement:
+    self.draw(canvas)
+    return Placement(
+        rows=len(self.rows),
+        offer=Offer(choices=self.choices(), form=self),
+        rest=None,
+    )
+```
+
+It reached that shape independently, for a page that types rather than a page
+that lists, which is the strongest evidence the seam is real. So a form should
+not merely resemble a part: it should be one, and `PageFrame.form` should stop
+being a slot on the frame for a thing the layout had no word for.
+
+**What that buys.** A form is told where it begins, like any other part. Today
+`weather_viewdata/search.py` computes `FIELD_ROW = CONTENT_FIRST_ROW + 2` and
+passes it in, which is the "geometry as a coordinate" crossing in
+[public-surface.md](public-surface.md); as a part it needs neither the constant
+nor the arithmetic, and `field_row` and `first_row` come out of `Suggest`'s
+constructor. A form can then sit beneath flowing content, or on a later frame,
+without anything being counted by hand.
+
+**Three things it needs settling.**
+
+**A form is the one part that is not a description.** It holds what has been
+typed, and `typed()` changes it. Everything above says a part may be built into
+several pages, and that is not true of a form: a layout carrying one must be
+built once for the request it answers. Every page is built that way already --
+weather constructs its `Suggest` inside the handler, closed over the request's
+index -- so this is a rule to state rather than a change to make. It is stated
+here because it is the one exception to a claim made above, and noted there as
+well.
+
+**`rows` and `caret` become relative.** The session redraws a form's rows and
+puts the cursor in them, and needs absolute rows to do it. The frame knows
+where the form was placed, so the form need not: it says which of its own rows
+changed, and the offset is added by whatever recorded the placement.
+
+**One form to a frame.** `PageFrame.form` is a single slot, and `Fields`
+already exists to compose several fields into one form. Two form parts landing
+on one frame should be refused when the page is built rather than silently
+resolved by keeping the last of them.
+
+What is left over is `accepts(key)`, and it needs nothing new: a part that
+answers keypresses is the session's business after the page is built, and it
+travels there on the form that `Offer` already carries.
+
+## Furniture
+
+The header, the rules and the footer, as bands docked to the top and the foot
+of every frame. What follows is where they come from and what they leave.
+
 ### The geometry stops being constant
 
 Furniture as bands docked to the top and foot means the content gets what they
@@ -301,9 +360,9 @@ which settles whether the footer may be more than one row — it may, at the cos
 of a content row, and the arithmetic says so rather than a constant needing to
 be edited.
 
-It also removes a reason to reach into the framework:
-`weather_viewdata/search.py` imports `CONTENT_FIRST_ROW` to say which row its
-field sits on, and a part is told where it begins.
+It also removes the last reason to reach into the framework for a row number,
+which is [a form being a part](#a-form-is-a-part): a part is told where it
+begins.
 
 ### Two levels of furniture
 
@@ -323,7 +382,7 @@ the per-page override deliberate, and the defaults worth keeping.
 
 ## Every page in the three services
 
-The test of the design is not the four pages that prompted it but all of them.
+The test of the design is not the six pages that prompted it but all of them.
 
 | Shape | Where it is used | As parts |
 |---|---|---|
@@ -480,6 +539,10 @@ called it.
 `CONTENT_FIRST_ROW` and `CONTENT_ROWS` stop existing, being what the furniture
 leaves. Nine files import one or both today.
 
+**From `page.py`**: `PageFrame.form` stops being a slot on the frame for a
+thing the layout had no word for, and becomes what an `Offer` carries like any
+other claim.
+
 **From the services:**
 
 - `stardot_viewdata/post_page.py` loses its frame loop, `prompt`, `_moves`,
@@ -490,8 +553,6 @@ leaves. Nine files import one or both today.
   into, and `search.py` its knowledge of which row a field sits on --
   `FIELD_ROW`, `FIRST_SUGGESTION_ROW`, `LATITUDE_ROW` and the rest, along with
   the `field_row` and `first_row` arguments they were computed for.
-- `PageFrame.form` stops being a slot on the frame for a thing the layout had
-  no word for, and becomes what an `Offer` carries like any other claim.
 - `pages/guidance.py` loses `_frame`, `_prompt` and the `rows[:CONTENT_ROWS]`
   that silently drops a service's surplus keys -- most of 181 lines, leaving
   the rows themselves and the words on them.
@@ -500,59 +561,6 @@ leaves. Nine files import one or both today.
 `Lines` and `Prose` all stay, as does `RowTemplate` under whatever name. The
 work moves the furniture out of them; it does not reduce their number, and a
 sixth shape is as likely after this as before.
-
-## A form is a part
-
-`Form` is already most of the part protocol, and now that the protocol is
-written down the claim can be checked rather than asserted. A form has `rows`,
-`draw(canvas)` and `choices()`, which is a `place` in three pieces:
-
-```python
-def place(self, canvas: Canvas, room: Room) -> Placement:
-    self.draw(canvas)
-    return Placement(
-        rows=len(self.rows),
-        offer=Offer(choices=self.choices(), form=self),
-        rest=None,
-    )
-```
-
-It reached that shape independently, for a page that types rather than a page
-that lists, which is the strongest evidence the seam is real. So a form should
-not merely resemble a part: it should be one, and `PageFrame.form` should stop
-being a slot on the frame for a thing the layout had no word for.
-
-**What that buys.** A form is told where it begins, like any other part. Today
-`weather_viewdata/search.py` computes `FIELD_ROW = CONTENT_FIRST_ROW + 2` and
-passes it in, which is the "geometry as a coordinate" crossing in
-[public-surface.md](public-surface.md); as a part it needs neither the constant
-nor the arithmetic, and `field_row` and `first_row` come out of `Suggest`'s
-constructor. A form can then sit beneath flowing content, or on a later frame,
-without anything being counted by hand.
-
-**Three things it needs settling.**
-
-**A form is the one part that is not a description.** It holds what has been
-typed, and `typed()` changes it. Everything above says a part may be built into
-several pages, and that is not true of a form: a layout carrying one must be
-built once for the request it answers. Every page is built that way already --
-weather constructs its `Suggest` inside the handler, closed over the request's
-index -- so this is a rule to state rather than a change to make. It is stated
-here because it is the one exception to a claim made twice above.
-
-**`rows` and `caret` become relative.** The session redraws a form's rows and
-puts the cursor in them, and needs absolute rows to do it. The frame knows
-where the form was placed, so the form need not: it says which of its own rows
-changed, and the offset is added by whatever recorded the placement.
-
-**One form to a frame.** `PageFrame.form` is a single slot, and `Fields`
-already exists to compose several fields into one form. Two form parts landing
-on one frame should be refused when the page is built rather than silently
-resolved by keeping the last of them.
-
-What is left over is `accepts(key)`, and it needs nothing new: a part that
-answers keypresses is the session's business after the page is built, and it
-travels there on the form that `Offer` already carries.
 
 ## What this is not
 
@@ -579,8 +587,9 @@ a fourth, and each addition is a change to every implementation rather than a
 default on one class.
 
 **Capacity becomes shared knowledge.** `_capacity` and `_divide` hold the
-arithmetic in one place today. Split across parts, an off-by-one writes over
-the rule at the foot of the frame.
+arithmetic between them today, and whatever else is wrong with having two
+implementations, each of them is whole. Split across the seam, an off-by-one
+writes over the rule at the foot of the frame.
 
 **A layout engine is a large thing to build for twenty-five pages.** The
 version worth having is the smallest the evidence demands: four kinds of part,
@@ -601,8 +610,7 @@ countdown are three things that appear on it. Furniture and content are
 separable, and the evidence is six pages: five that draw their own furniture,
 and one that pretends to be a sequence to obtain it. Frames are filled and then
 furnished, in that order, because only the furniture needs to know how many
-there turned out to be.
-Content is a list of parts of four kinds; where several flow they follow one
+there turned out to be. Content is a list of parts of four kinds; where several flow they follow one
 another and nothing arbitrates between them. Furniture is bands docked at two
 edges, set once for a service and overridden by a page, which makes the
 content's row range derived rather than constant. Content parts claim and
@@ -610,8 +618,8 @@ furniture parts report, which is why they are two protocols.
 
 A form is a part rather than a thing resembling one, which takes the last
 coordinate arithmetic out of a service. Every shape in the three services is
-expressible. A masthead is a page with no furniture, `follows` belongs on the layout and brings the next-frame keys with
-it, and the guide's compass is an ordinary part, drawn where it lands rather
+expressible. A masthead is a page with no furniture, `follows` belongs on the
+layout and brings the next-frame keys with it, and the guide's compass is an ordinary part, drawn where it lands rather
 than held to the foot of the frame -- a change to that page's appearance,
 accepted so that no rule about where one particular thing sits has to exist.
 

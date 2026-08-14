@@ -239,19 +239,69 @@ part with the `every` rule it stops being a special case. The month grid needs
 no flowing part at all, so it no longer has to be a sequence of nothing to
 obtain a title and a way home.
 
-### At most one flowing part
+### Several flowing parts simply follow one another
 
-Every page above has one flowing part or none, and that is worth fixing as a
-rule rather than leaving as an observation.
+A part that flows takes the rows left to it and continues on the next frame.
+Where a second flowing part follows, it begins in the row after the first has
+finished, on whatever frame that is. Concatenation, and nothing more.
 
-Two flowing parts on one page raise a question with no obvious answer: when the
-first runs past the foot of a frame, does the second begin below what is left
-of the first on the next frame, or wait until the first has finished
-altogether? Typesetting systems that allow it -- InDesign's threaded frames,
-LaTeX's floats -- need a body of rules to say, and those rules are most of
-their complexity. Nothing in the workspace needs two, so the answer here is to
-forbid it: one part may break across frames, the rest are drawn whole or not at
-all.
+That is the same decision `typesetting.rows_for` already made: a post's body and
+its list of links are two streams, and it joins them into one before anything
+is dealt into frames.
+
+    rows = list(_rows_for(content.blocks, depth=0))
+    rows.extend(_link_rows(content))
+
+The alternative is to let two streams compete for the space on a frame, which
+is what InDesign and LaTeX do, and neither is worth inheriting here.
+
+InDesign threads a story through a chain of frames a person has drawn and
+linked: a feature starting on page 12 and continuing on page 78 is two frames
+of one chain, and three articles on a newspaper page are three chains that
+cannot spill into each other. The placement question is answered by whoever
+draws the rectangles, not by the software.
+
+LaTeX has three streams competing for every page -- the running text, floats,
+and footnotes -- and a parameter set that exists to referee them:
+`\topfraction`, `\bottomfraction`, `\textfraction`, `\floatpagefraction`,
+`\topnumber`, `\bottomnumber`, `\totalnumber`. The familiar failures follow
+from allowing it at all. A footnote takes room on the page carrying its
+reference, so a footnote that will not fit moves the reference to the next
+page, which moves the footnote. Floats that cannot be placed are deferred, and
+deferred often enough they drift to the end of the chapter.
+
+CSS Regions offered the same thing for the web, shipped in Blink, and was
+removed. CSS Paged Media kept the safe parts: running heads, which are the
+`every` rule, and `break-inside: avoid`.
+
+A viewdata frame is twenty rows of forty cells with no floats, no columns and
+no images to place. Concatenation answers every case here, and it means there
+is no rule about how many parts may flow.
+
+### What concatenation still has to settle
+
+**A part that does not flow is drawn whole or moved on.** Where a fixed part
+does not fit in the rows left on a frame, it begins the next one rather than
+being split. A part taller than a whole frame can never be placed and is an
+error at build time rather than a silent truncation.
+
+**Choices are a frame's budget, not a part's.** A reader chooses with one
+keypress, so nine is the most any frame can offer whatever it is divided
+between. Two flowing menus on a frame might show five entries and four. So a
+flowing part is asked how much of itself fits in the rows *and* the choices
+that are left, and `CHOICES_PER_FRAME` stops being a fact about a template and
+becomes part of what the layout hands down.
+
+**`once` means once, not first.** A fixed part before any flowing part lands on
+the first frame, which is what `preamble` does today. A fixed part after a
+flowing part lands on whichever frame that flow finished on. Both are the same
+rule -- drawn exactly one time, at its place in the order -- and the second
+falls out of concatenation rather than needing its own definition.
+
+**`every` parts are placed against the frame, not the stream.** Those before
+the flowing parts reserve rows at the top of every frame; those after reserve
+rows at the bottom. What is left between them is what the flowing parts
+divide.
 
 ### What this is not
 
@@ -293,9 +343,10 @@ but two implementations of one idea will diverge again.
 
 **A layout engine is a large thing to build for twenty-five pages.** The
 version worth having is the smallest one this evidence demands: three rules,
-one flowing part, no side-by-side arrangement, no styling language, no units.
-If it grows a second axis or a way of expressing proportions, it has gone
-wrong.
+concatenation where parts flow, no side-by-side arrangement, no styling
+language, no units. If it grows a second axis, a way of expressing proportions,
+or a parameter deciding how much of a frame one part may take, it has gone
+wrong -- that last is where LaTeX's float parameters came from.
 
 **Capacity becomes shared knowledge.** Today `_capacity` and `_deal` hold the
 arithmetic in one place. Split across parts, an off-by-one writes over the rule
@@ -310,6 +361,10 @@ Settled by this note: the bottom row is the **footer**, and the prompt, the
 command line and the countdown are three things that appear on it. The furniture
 and the content are separable, and the evidence is four pages that either draw
 their own furniture or pretend to be sequences.
+
+Also settled: where several parts flow, they follow one another and nothing
+arbitrates between them. The models that do arbitrate were examined and are not
+worth inheriting for a frame of twenty rows.
 
 Not settled: the exact content protocol, whether the call sites change, what
 the container is called, whether the footer may ever be more than one row, and

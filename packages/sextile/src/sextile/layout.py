@@ -50,6 +50,8 @@ if TYPE_CHECKING:
 __all__ = [
     "CHOICES_PER_FRAME",
     "DEFAULT_FURNITURE",
+    "DEFAULT_HOME",
+    "DefaultHome",
     "FrameBreak",
     "Drawable",
     "Custom",
@@ -637,13 +639,13 @@ def content_rows(furniture: Sequence[Furnishing]) -> range:
     return range(above, ROWS - below)
 
 
-class _DefaultHome:
+class DefaultHome:
     """Sentinel for a `home` left unset, so the app's index stands in for it."""
 
 
 #: `home` was not given, so `build` takes the way home from `request.app.index`.
 #: Distinct from `None`, which is a page saying it offers no way home at all.
-_DEFAULT_HOME: Final = _DefaultHome()
+DEFAULT_HOME: Final = DefaultHome()
 
 
 def _way_home(home: "PageAddress | Shortcut | None") -> Shortcut | None:
@@ -696,7 +698,7 @@ class PageLayout:
 
     title: str | None = None
     parts: Sequence[Part] = ()
-    home: "PageAddress | Shortcut | None | _DefaultHome" = _DEFAULT_HOME
+    home: "PageAddress | Shortcut | None | DefaultHome" = DEFAULT_HOME
     numbered: bool = True
     shortcuts: Sequence[Shortcut] = ()
     neighbours: "Neighbours | None" = None
@@ -744,7 +746,7 @@ class PageLayout:
         else:
             registered = request.app.title_for(request.address)
             title = (registered or keyed(request.address)).upper()
-        home = request.app.index if isinstance(self.home, _DefaultHome) else self.home
+        home = request.app.index if isinstance(self.home, DefaultHome) else self.home
         return self._render(address=request.address, title=title, home=home)
 
     def _render(

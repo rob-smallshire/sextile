@@ -18,14 +18,14 @@ from collections.abc import Sequence
 from sextile.addressing import PageAddress
 from sextile.formatting import Entry, Lines, Menu, Prose
 from sextile.layout import (
-    _DEFAULT_HOME,
     DEFAULT_FURNITURE,
+    DEFAULT_HOME,
+    DefaultHome,
     Flow,
     Furnishing,
     OnFirstFrame,
     PageLayout,
     Shortcut,
-    _DefaultHome,
 )
 from sextile.page import Page
 from sextile.requests import Neighbours, PageRequest
@@ -41,14 +41,14 @@ __all__ = [
 #: What a page's `home` is when the caller leaves it unset: the app's index,
 #: filled in by `PageLayout.build`. The same sentinel the layout uses, so a
 #: page shape and a raw layout default the way home identically.
-type _Home = PageAddress | Shortcut | None | _DefaultHome
+type _Home = PageAddress | Shortcut | None | DefaultHome
 
 
 def notice_page(
     request: PageRequest,
     *lines: str,
     title: str | None = None,
-    home: _Home = _DEFAULT_HOME,
+    home: _Home = DEFAULT_HOME,
     numbered: bool = True,
     shortcuts: Sequence[Shortcut] = (),
     hang_up: bool = False,
@@ -101,7 +101,7 @@ def menu_page(
     *,
     items: Sequence[Entry],
     title: str | None = None,
-    home: _Home = _DEFAULT_HOME,
+    home: _Home = DEFAULT_HOME,
     preamble: Sequence[str] = (),
     empty: str | None = None,
     shortcuts: Sequence[Shortcut] = (),
@@ -146,7 +146,7 @@ def prose_page(
     request: PageRequest,
     *paragraphs: str,
     title: str | None = None,
-    home: _Home = _DEFAULT_HOME,
+    home: _Home = DEFAULT_HOME,
     shortcuts: Sequence[Shortcut] = (),
 ) -> Page:
     """A page of running text, the line breaks left to the framework.

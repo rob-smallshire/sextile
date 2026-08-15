@@ -54,6 +54,7 @@ application in its first few lines.
     Edge  FrameContext  Furnishing         what furniture must satisfy
     Header  Rule  Footer  DEFAULT_FURNITURE
     Shortcut  HOME_KEY                     a fixed key on every frame
+    DEFAULT_HOME  DefaultHome              home unset: the service's index
     content_rows  CHOICES_PER_FRAME
 
 ### `sextile.formatting` — sequences laid out as parts

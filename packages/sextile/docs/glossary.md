@@ -47,6 +47,10 @@ as "was X" so a reader coming from older code or docs can find it.
 - **shortcut** — a key present on every frame that leads to a fixed address.
   `layout.Shortcut`: `label` (was `says`) is how the footer names it,
   `with_arrow` (was `arrow`) whether the matching cursor key leads there too.
+- **DEFAULT_HOME** (was `_DEFAULT_HOME`) — the sentinel a `PageLayout` or a
+  one-call page uses for `home` when none is given: `0` leads to the service's
+  index. Distinct from `home=None`, which offers no way home. `DefaultHome` is
+  its type. Public because `sextile.pages` shares it with `sextile.layout`.
 - **home vs index** — home is where a caller arrives when the line opens
   (`Sextile(home=...)`, page 1 by default; a service opening on a title frame
   sets its own). Index is where the `0` key goes from every frame

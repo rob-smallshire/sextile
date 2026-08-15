@@ -577,7 +577,7 @@ return PageLayout(
     title="FIND A PLACE",
     parts=[
         OnOneFrame(Lines(("Key a place name.", ""))),
-        OnOneFrame(TypeAhead(look_up=places.matching, label="PLACE:")),
+        OnOneFrame(TypeAhead(lookup=places.matching, label="PLACE:")),
     ],
 ).build(request)
 ```

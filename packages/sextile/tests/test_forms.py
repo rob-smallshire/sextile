@@ -39,7 +39,7 @@ def _folded(text: str) -> str:
     return "".join(letter for letter in text.upper() if letter.isalpha())
 
 
-async def look_up(typed: str) -> Sequence[Entry]:
+async def lookup(typed: str) -> Sequence[Entry]:
     """A gazetteer small enough to reason about."""
     return [
         MenuItem(name.title(), country, PageAddress(f"32{1000 + n}"))
@@ -50,9 +50,9 @@ async def look_up(typed: str) -> Sequence[Entry]:
 
 def a_field(**wanted: object) -> TypeAhead:
     return TypeAhead(
-        look_up=look_up,
+        lookup=lookup,
         field_row=FIELD_ROW,
-        first_row=FIRST_ROW,
+        suggestions_row=FIRST_ROW,
         label="PLACE:",
         **wanted,  # type: ignore[arg-type]
     )
@@ -166,7 +166,7 @@ class TestDrawing:
 
     async def test_nothing_found_says_so(self) -> None:
         frame = Frame()
-        draw_form(frame, await typing(a_field(empty="No such place."), "ZZZ"))
+        draw_form(frame, await typing(a_field(no_match="No such place."), "ZZZ"))
         assert "No such place." in text_of(frame)
 
     async def test_the_caret_sits_where_the_next_letter_lands(self) -> None:
@@ -398,7 +398,7 @@ class TestMarkingWhatReturnWouldTake:
 
     async def test_nothing_on_offer_is_nothing_marked(self) -> None:
         frame = Frame()
-        draw_form(frame, await typing(a_field(empty="No such place."), "ZZZ"))
+        draw_form(frame, await typing(a_field(no_match="No such place."), "ZZZ"))
         assert SUBMIT_MARK not in text_of(frame)
 
 

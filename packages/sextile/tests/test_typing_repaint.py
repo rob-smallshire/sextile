@@ -34,7 +34,7 @@ def _folded(text: str) -> str:
     return "".join(letter for letter in text.upper() if letter.isalpha())
 
 
-async def look_up(typed: str) -> Sequence[Entry]:
+async def lookup(typed: str) -> Sequence[Entry]:
     return [
         MenuItem(name.title(), "XX", PageAddress(f"32{1000 + n}"))
         for n, name in enumerate(PLACES)
@@ -86,7 +86,7 @@ class Cursor:
 
 async def a_session() -> tuple[Session, TypeAhead, Cursor]:
     form = TypeAhead(
-        look_up=look_up, field_row=FIELD_ROW, first_row=FIRST_ROW, label="PLACE:"
+        lookup=lookup, field_row=FIELD_ROW, suggestions_row=FIRST_ROW, label="PLACE:"
     )
 
     async def search(request: PageRequest) -> Page:

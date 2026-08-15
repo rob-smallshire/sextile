@@ -222,38 +222,38 @@ class TypeAhead(Form):
     def __init__(
         self,
         *,
-        look_up: Lookup,
+        lookup: Lookup,
         field_row: int = 0,
-        first_row: int = 2,
+        suggestions_row: int = 2,
         label: str = "",
         limit: int = SUGGESTIONS,
-        empty: str = "",
-        field: Colour = FIELD_BACKGROUND,
-        typing: Colour = FIELD_COLOUR,
+        no_match: str = "",
+        field_colour: Colour = FIELD_BACKGROUND,
+        text_colour: Colour = FIELD_COLOUR,
     ) -> None:
         """Set up the field, its label, and the list of suggestions beneath it.
 
         Args:
-            look_up: Awaited with what has been typed, returning the entries to
+            lookup: Awaited with what has been typed, returning the entries to
                 suggest.
             field_row: The row the field itself occupies.
-            first_row: The row the suggestions begin on.
+            suggestions_row: The row the suggestions begin on.
             label: Drawn before the field. It should not end in a space: the
                 colour attribute that follows it occupies a cell and shows as
                 one already.
             limit: The most suggestions to offer at once.
-            empty: Said where something has been typed and nothing matched it.
-            field: The background colour of the field.
-            typing: The colour of what the reader has typed.
+            no_match: Said where something has been typed and nothing matched it.
+            field_colour: The background colour of the field.
+            text_colour: The colour of what the reader has typed.
         """
-        self._look_up = look_up
+        self._lookup = lookup
         self._field_row = field_row
-        self._first_row = first_row
+        self._suggestions_row = suggestions_row
         self._label = label
         self._limit = limit
-        self._empty = empty
-        self._field = field
-        self._typing = typing
+        self._no_match = no_match
+        self._field_colour = field_colour
+        self._text_colour = text_colour
         self._value = ""
         self._found: Sequence[Entry] = ()
 
@@ -269,7 +269,7 @@ class TypeAhead(Form):
 
     @property
     def rows(self) -> range:
-        return range(self.at + self._field_row, self.at + self._first_row + self._limit)
+        return range(self.at + self._field_row, self.at + self._suggestions_row + self._limit)
 
     @property
     def caret(self) -> tuple[int, int]:
@@ -312,7 +312,7 @@ class TypeAhead(Form):
         #  Nothing typed is nothing offered, rather than everything the index
         #  holds in whatever order it happens to hold it: a reader who has typed
         #  nothing has asked nothing.
-        self._found = await self._look_up(self._value) if self._value else ()
+        self._found = await self._lookup(self._value) if self._value else ()
 
     def named(self) -> Sequence[FooterItem]:
         #  What `#` does is marked against the suggestion it would take, which
@@ -343,16 +343,16 @@ class TypeAhead(Form):
         #
         #  No space is written between the label and the value either: the
         #  attributes occupy cells and show as spaces already.
-        field.background(self._field, text=self._typing)
-        field.text(fitted(self._value, field.remaining), self._typing)
+        field.background(self._field_colour, text=self._text_colour)
+        field.text(fitted(self._value, field.remaining), self._text_colour)
         for offset in range(self._limit):
-            row = canvas.row(self.at + self._first_row + offset)
+            row = canvas.row(self.at + self._suggestions_row + offset)
             if offset < len(self._found):
                 self._draw_one(row, offset, self._found[offset])
-            elif offset == 0 and self._value and self._empty:
+            elif offset == 0 and self._value and self._no_match:
                 #  Said rather than shown blank: on a service that answers
                 #  slowly a reader cannot tell nothing-found from not-answered.
-                row.text(fitted(self._empty, COLUMNS - 1), Colour.WHITE)
+                row.text(fitted(self._no_match, COLUMNS - 1), Colour.WHITE)
 
     #: Cells the name is given before the detail begins. A *fixed* column
     #: rather than one fitted to the widest name showing, for two reasons. A
@@ -475,8 +475,8 @@ class Fields(Form):
         note_row: int | None = None,
         sends: str = "",
         advice: Sequence[FooterItem] = (),
-        field: Colour = FIELD_BACKGROUND,
-        typing: Colour = FIELD_COLOUR,
+        field_colour: Colour = FIELD_BACKGROUND,
+        text_colour: Colour = FIELD_COLOUR,
     ) -> None:
         if not fields:
             raise ValueError("a form needs a field to type into")
@@ -492,8 +492,8 @@ class Fields(Form):
         #: What finishing the form does, in a word, shown against the key that
         #: does it. Empty for a form whose last field is self-explanatory.
         self._sends = sends
-        self._field = field
-        self._typing = typing
+        self._field_colour = field_colour
+        self._text_colour = text_colour
         self._live = 0
         self._said = ""
 
@@ -579,13 +579,13 @@ class Fields(Form):
                 #  The live field is marked out and the others are not. A caret
                 #  alone would say which, and a caret is one cell of nine
                 #  hundred.
-                row.background(self._field, text=self._typing)
+                row.background(self._field_colour, text=self._text_colour)
                 #  The bar is exactly the field's width, padded and then ended.
                 #  A background runs to the end of the row unless something
                 #  stops it, which would say there is room for thirty
                 #  characters in a field that takes six.
                 room = min(field.width, row.remaining - _END_CELLS)
-                row.text(fitted(field.value, room).ljust(room), self._typing)
+                row.text(fitted(field.value, room).ljust(room), self._text_colour)
                 row.plain()
             else:
                 #  Two spaces and the colour attribute before them come to the

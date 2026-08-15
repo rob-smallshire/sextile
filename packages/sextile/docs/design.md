@@ -5,7 +5,7 @@ how to *use* it, see [writing-an-application.md](writing-an-application.md).
 
 Sextile is a Viewdata application server. It owns the connection, the session,
 the routing and the bytes; an application owns the pages. The dividing line is
-`Application.respond`, and the framework has no vocabulary for what a service
+`Sextile.respond`, and the framework has no vocabulary for what a service
 might be about.
 
 ## The shape of the thing
@@ -27,7 +27,7 @@ might be about.
             |
    forms       Form, Suggest, Fields                    a page typed into
             |
-   application Application, Sextile, PageRequest        the seam
+   application Sextile, PageRequest                     the seam
             |  PageRoute, Middleware, Lifespan           what a service is made of
             |  middleware  log_pages                     what wraps every page
             |
@@ -153,7 +153,7 @@ be all digits, because digits name themselves.
 ## The application seam
 
 ```python
-class Application(ABC):
+class Sextile:
     async def respond(self, request: PageRequest) -> Page | None: ...
     async def ask(self, target: str | PageAddress, ...) -> Page | None: ...
     @property
@@ -166,10 +166,11 @@ class Application(ABC):
     async def shutdown(self) -> None: ...
 ```
 
-A base class rather than a `Protocol`, because the useful part is the defaults:
-resolving digits, saying so when a page is not here, and doing nothing on
-startup. Only `respond` must be written. `Sextile` is the routing implementation
-and is what nearly every service will subclass or instantiate.
+`Sextile` is the one application class. `respond` routes a page number to a
+handler; a service supplies the routes, the keywords and the lifespan, and
+overrides the notices through `@app.on_not_found`, `@app.on_failed` and
+`@app.on_timed_out` where it wants its own. Resolving digits, saying so when a
+page is not here, and doing nothing on startup are the defaults it comes with.
 
 **`respond` returns `None` rather than a notice** when there is no such page.
 The two are shown differently, and the session distinguishes them: a page that
@@ -191,7 +192,7 @@ each by whatever is running the application. The server does not call them: a
 server that opened an application's database would encode an assumption about
 what an application is. `sextile.cli.run_service` calls them instead.
 
-**`Application.ask`** assembles a request as a session would, with what the
+**`Sextile.ask`** assembles a request as a session would, with what the
 service holds and the service itself, so that a test, a renderer or a tool need
 not. Assembling it by hand at each call site is a step easily forgotten, and a
 page reached without it fails in a way unrelated to what was under test.
@@ -267,7 +268,7 @@ point: a service that names each page in its menu, again wherever one is
 listed, and again in its own guide has three copies which do not stay in step,
 and that is exactly what Stardot had.
 
-`Application.describe` reads them, `Sextile.pages()` lists them, and
+`Sextile.describe` reads them, `Sextile.pages()` lists them, and
 `Sextile.page_info(name)` fetches one. **A page given no title is not
 advertised** — which is how a title frame or a logoff page stays off the
 contents without a flag of its own.
@@ -299,7 +300,7 @@ one that opens on a title frame — arrived at once, and never to be sent back t
 distinction exists.
 
 **A page of keywords comes with the framework too**, generated from the aliases:
-`Application.names`, mapped in the same way. It exists because a service that
+`Sextile.names`, mapped in the same way. It exists because a service that
 offers keywords has to say so somewhere, and the somewhere was a hard-coded list
 in Stardot's help page — a list that goes stale the first time a keyword is
 added. Words are listed alphabetically, since a reader consulting it is looking
@@ -314,7 +315,7 @@ describe. A page that has to be kept in step by hand is a page that will not be.
 
 **A history page comes with the framework, unregistered.** The session already
 keeps a history so that `*0#` can retrace it one page at a time; showing the
-whole of it turns a stack into a map. `Application.history` is a handler a
+whole of it turns a stack into a map. `Sextile.history` is a handler a
 service maps into its own numbering — or does not offer at all:
 
 ```python
@@ -324,7 +325,7 @@ self.alias("HISTORY", self.address_for("history"))
 
 It can live in the framework because there is nothing service-specific about it.
 What it lists are addresses, and what it *calls* them comes from
-`Application.describe`, whose default reads the route's own name and fields —
+`Sextile.describe`, whose default reads the route's own name and fields —
 "post 489493" — so the labels come out in the application's vocabulary without
 the framework knowing what a service is about. A service wanting better words
 overrides `describe`, and `Sextile.route(address)` is the numbering read
@@ -387,7 +388,7 @@ half of one terminator — it has to be told apart from a bare `0x0A`, which is
 the BBC's cursor-down key.
 
 **A service has a name, and the framework has none to lend it.** `Sextile(name=
-"Stardot")`, read back as `Application.name`, is used in the few things the
+"Stardot")`, read back as `Sextile.name`, is used in the few things the
 framework says on a service's behalf. It defaults to empty and no default is
 invented: a page thanking a reader for calling *Sextile* would name the
 machinery rather than the service they called. For the same reason the `Header`
@@ -396,7 +397,7 @@ top of somebody else's service would repeat the mistake.
 
 **Ringing off is a page, both ways round.** A service that says goodbye does so
 on a page like any other, with `hang_up` set. The involuntary parting has one
-too — `Application.timed_out(parting)`, overridable with `@app.on_timed_out` —
+too — `Sextile.timed_out(parting)`, overridable with `@app.on_timed_out` —
 because no page number reaches it, so the framework calls the handler itself.
 
 That handler is given a `Parting`: the page the caller was on, the frame of it,
@@ -419,7 +420,7 @@ back from.
 used to end the caller's session, which on a service where a session is a
 telephone call means dialling back in and finding your way to where you were —
 minutes of a slow line for a fault that was ours. The session catches it, logs
-it with its traceback, and shows `Application.failed` without moving the reader.
+it with its traceback, and shows `Sextile.failed` without moving the reader.
 
 **That is a page of its own** — `@app.on_failed` to override — and deliberately
 not the not-found notice. One says the reader asked for something that is not

@@ -1,27 +1,30 @@
-"""Free functions for putting things on a frame.
+"""One-call conveniences for putting things on a frame.
 
-`Canvas` knows how to write a row and what an attribute costs. These are the
-next layer up: the small operations every page turns out to want, which had
-otherwise been written four times each -- fitting text to the room available,
-ruling a line, centring a heading.
+There are two writers a page draws through: `Composition`, the declarative one,
+which takes a whole row and works the attributes out at once; and `RowWriter`,
+the sequential one, which writes a row left to right. These functions are the
+small operations every page turns out to want -- centring a heading, ruling a
+line, drawing a gauge -- each built once on whichever of the two fits, so there
+is one way to do each rather than a twin on every writer.
 
-Free functions rather than methods, so that a service can write its own beside
-them and reach for either without minding which is which. They take a canvas
-and a row, and none of them knows what a page is.
+`centred` and `centred_double` and the rules go through `Composition`, since
+centring is accounting about attributes and that is what a composition is for.
+`bar` and `key_row` go through `RowWriter`, being a run laid down a cell at a
+time. All are free functions rather than methods, so a service can write its own
+beside them; they take a canvas and a row, and none of them knows what a page is.
 
-The block characters are how the rules and the countdown bar are drawn here:
-the G1 set gives each cell a 2x3 grid of blocks, so a frame is 80x72
-addressable points, and `bar` is the one-dimensional case of plotting into
-that. The two-dimensional case -- reading a bitmap into cells and placing it --
-is `blocks.py` and `composition.py`, with `lettering.py` on top for text.
+The block characters are how the rules and the gauge are drawn: the G1 set gives
+each cell a 2x3 grid of blocks, so a frame is 80x72 addressable points, and
+`bar` is the one-dimensional case of plotting into that. The two-dimensional
+case -- reading a bitmap into cells and placing it -- is `blocks.py` and
+`composition.py`, with `lettering.py` on top for text.
 """
 
 from typing import Final
 
 from sextile.viewdata.canvas import Canvas, RowWriter
-from sextile.viewdata.charset import mosaic_code
 from sextile.viewdata.composition import Align, Composition, Style
-from sextile.viewdata.controls import Attribute, Colour, graphics_colour
+from sextile.viewdata.controls import Colour
 from sextile.viewdata.frame import COLUMNS
 from sextile.viewdata.measure import cell_count, fitted
 
@@ -152,17 +155,14 @@ def bar(
     as spaces rather than left alone, so that a bar drawn over one already on
     screen shortens rather than merely failing to lengthen.
     """
-    frame = canvas.frame
     attributes = _SEPARATED_ATTRIBUTES if separated else _CONTIGUOUS_ATTRIBUTES
     room = (COLUMNS - column - attributes) if cells is None else cells
     if room <= 0:
         raise ValueError(f"no room for a bar at column {column} of row {row}")
-    frame.set_attribute(row, column, graphics_colour(colour))
-    if separated:
-        frame.set_attribute(row, column + 1, Attribute.SEPARATED_GRAPHICS)
     solid = room if lit is None else max(min(lit, room), 0)
-    #  By mosaic pattern -- the all-lit block and the empty one -- rather than by
-    #  writing a Unicode character and trusting it to encode to 0x7F.
+    #  Through the sequential mosaic writer, as the all-lit block and the empty
+    #  one -- by pattern rather than by writing a Unicode character and trusting
+    #  it to encode to 0x7F. The writer lays the graphics colour (and the
+    #  separated attribute if asked) before the blocks, the cells bar reserved.
     patterns = [SOLID_BLOCKS] * solid + [0] * (room - solid)
-    for offset, pattern in enumerate(patterns):
-        frame.set_cell(row, column + attributes + offset, mosaic_code(pattern))
+    canvas.row(row).at(column).mosaic(patterns, colour, separated=separated)

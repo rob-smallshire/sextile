@@ -13,6 +13,7 @@ from sextile.viewdata.canvas import Canvas
 from sextile.viewdata.controls import Colour
 from sextile.viewdata.drawing import rule
 from sextile.viewdata.frame import COLUMNS, FRAME_PREAMBLE, ROWS, Frame
+from sextile.viewdata.wrapping import wrap_text
 
 _NAME = "SEXTILE"
 _PAGE_NUMBER = PageAddress("82489493")
@@ -33,7 +34,8 @@ def _frame() -> Frame:
     rule(canvas, 1)
     canvas.row(3).text("NS32016 TIMING INVESTIGATION", Colour.YELLOW)
     canvas.row(5).text("RobertS", Colour.GREEN).at(30).text("21:20", Colour.GREEN)
-    canvas.paragraph(7, 12, _BODY, colour=Colour.WHITE)
+    for offset, line in enumerate(wrap_text(_BODY, COLUMNS)[:12]):
+        canvas.row(7 + offset).text(line, Colour.WHITE)
     rule(canvas, 21)
     canvas.row(22).text("Key ", Colour.WHITE).text("#", Colour.YELLOW).text(
         " for next frame", Colour.WHITE

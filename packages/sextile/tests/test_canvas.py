@@ -12,7 +12,7 @@ import pytest
 
 from sextile.viewdata.canvas import DEFAULT_COLOUR, Canvas
 from sextile.viewdata.controls import Attribute, Colour, alpha_colour
-from sextile.viewdata.frame import COLUMNS, ROWS
+from sextile.viewdata.frame import COLUMNS
 
 
 def rows_of(canvas: Canvas) -> list[str]:
@@ -143,25 +143,9 @@ class TestCapacity:
 
 
 class TestAlignment:
-    def test_centred_text(self) -> None:
-        canvas = Canvas()
-        canvas.centre(0, "STARDOT")
-        assert canvas.frame.text_at(0, 0, COLUMNS).strip() == "STARDOT"
-        assert canvas.frame.text_at(0, 16, 7) == "STARDOT"
-
-    def test_centred_text_with_colour_keeps_the_text_centred(self) -> None:
-        canvas = Canvas()
-        canvas.centre(0, "STARDOT", Colour.YELLOW)
-        assert canvas.frame.cell(0, 15) == Attribute.ALPHA_YELLOW
-        assert canvas.frame.text_at(0, 16, 7) == "STARDOT"
-
-    def test_centring_full_width_coloured_text_shifts_it_off_the_left_edge(self) -> None:
-        #  There is no column to the left of zero for the attribute, so the text
-        #  gives up its centring rather than the colour being silently dropped.
-        canvas = Canvas()
-        canvas.centre(0, "X" * (COLUMNS - 1), Colour.RED)
-        assert canvas.frame.cell(0, 0) == Attribute.ALPHA_RED
-        assert canvas.frame.text_at(0, 1, COLUMNS - 1) == "X" * (COLUMNS - 1)
+    #  Centring is `drawing.centred`, tested there: it goes through a
+    #  Composition, which is where the accounting about attributes belongs. Only
+    #  right-alignment is the canvas's own.
 
     def test_right_aligned_text(self) -> None:
         canvas = Canvas()
@@ -173,28 +157,6 @@ class TestAlignment:
         canvas.right(0, "8202608021", Colour.CYAN)
         assert canvas.frame.cell(0, COLUMNS - 11) == Attribute.ALPHA_CYAN
         assert canvas.frame.text_at(0, COLUMNS - 10, 10) == "8202608021"
-
-
-class TestParagraphs:
-    def test_wrapped_text_fills_consecutive_rows(self) -> None:
-        canvas = Canvas()
-        canvas.paragraph(0, 3, "the quick brown fox jumps over the lazy dog", width=20)
-        assert canvas.frame.text_at(0, 0, 20).strip() == "the quick brown fox"
-
-    def test_paragraphs_report_the_next_free_row(self) -> None:
-        canvas = Canvas()
-        next_row = canvas.paragraph(0, 10, "one two three", width=10)
-        assert next_row == 2
-
-    def test_text_beyond_the_available_rows_is_returned_rather_than_dropped(self) -> None:
-        canvas = Canvas()
-        _, overflow = canvas.paragraph_with_overflow(0, 1, "one two three four", width=10)
-        assert overflow == "three four"
-
-    def test_nothing_overflows_when_it_all_fits(self) -> None:
-        canvas = Canvas()
-        _, overflow = canvas.paragraph_with_overflow(0, 5, "one two", width=10)
-        assert overflow == ""
 
 
 class TestWritingAfterSomethingElse:
@@ -241,63 +203,6 @@ class TestWritingAfterSomethingElse:
         canvas.right(0, "1a", Colour.WHITE)
         _, attributes = canvas.frame.to_grid()
         assert attributes[0] == "." * COLUMNS
-
-
-class TestDoubleHeight:
-    """Twice the height, which costs the row below.
-
-    Settled from Beebium's SAA5050 and then seen on a real screen, and the
-    mechanism is not what a reasonable guess would say. A row carrying the
-    attribute is
-    drawn as the *top* halves of its characters; the row below is drawn as the
-    bottom halves -- but only if it carries the attribute too, since
-    `double_height_bottom` requires the shift to be set on that row as well.
-    So both rows hold the same text, which is exactly the old BBC BASIC idiom
-    of printing a double-height line twice.
-    """
-
-    def test_the_text_appears_on_the_row_asked_for(self) -> None:
-        canvas = Canvas()
-        canvas.double_height(4, "STARDOT")
-        assert "STARDOT" in rows_of(canvas)[4]
-
-    def test_and_again_on_the_row_below(self) -> None:
-        canvas = Canvas()
-        canvas.double_height(4, "STARDOT")
-        assert rows_of(canvas)[5] == rows_of(canvas)[4]
-
-    def test_both_rows_carry_the_attribute(self) -> None:
-        canvas = Canvas()
-        canvas.double_height(4, "STARDOT")
-        for row in (4, 5):
-            assert canvas.frame.cell(row, 0) == Attribute.DOUBLE_HEIGHT
-
-    def test_the_attribute_occupies_a_cell(self) -> None:
-        canvas = Canvas()
-        canvas.double_height(0, "X")
-        assert canvas.frame.is_attribute(0, 0)
-        assert rows_of(canvas)[0] == " X" + " " * (COLUMNS - 2)
-
-    def test_a_colour_costs_a_cell_of_its_own(self) -> None:
-        canvas = Canvas()
-        canvas.double_height(0, "X", Colour.YELLOW)
-        assert rows_of(canvas)[0] == "  X" + " " * (COLUMNS - 3)
-
-    def test_it_can_be_placed_along_the_row(self) -> None:
-        canvas = Canvas()
-        canvas.double_height(0, "X", column=10)
-        assert rows_of(canvas)[0][:12] == " " * 11 + "X"
-
-    def test_text_that_would_overrun_the_row_is_refused(self) -> None:
-        canvas = Canvas()
-        with pytest.raises(ValueError):
-            canvas.double_height(0, "X" * COLUMNS)
-
-    def test_the_last_row_cannot_be_doubled(self) -> None:
-        #  There is no row below it to draw the bottom halves on.
-        canvas = Canvas()
-        with pytest.raises(ValueError):
-            canvas.double_height(ROWS - 1, "X")
 
 
 class TestMosaicRuns:

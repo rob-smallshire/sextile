@@ -6,18 +6,18 @@ the session, the page numbering and the frames on the wire, and you write what
 the pages say.
 
 ```python
-from sextile import Page, PageFrame, PageRequest, Sextile
-from sextile.viewdata.canvas import Canvas
-from sextile.viewdata.chrome import CONTENT_FIRST_ROW, draw_chrome
+from sextile import Page, PageRequest, Sextile
+from sextile.formatting import Lines
+from sextile.layout import Flowing, PageLayout
 
-app = Sextile()
+app = Sextile(name="My service")
 
 @app.page("1", name="main")
 async def main(request: PageRequest) -> Page:
-    canvas = Canvas()
-    draw_chrome(canvas, title="MY SERVICE", page_number="1a", prompt="0 menu")
-    canvas.row(CONTENT_FIRST_ROW).text("Hello, 1981.")
-    return Page(frames=(PageFrame(frame=canvas.frame),))
+    return PageLayout(
+        title="MY SERVICE",
+        parts=[Flowing(Lines(said=("Hello, 1981.",)))],
+    ).build(request.address)
 
 app.alias("MAIN", "1")
 ```
@@ -37,9 +37,9 @@ the same pattern backwards, so a page linking to another does not respell the
 numbering. Keywords — `*MAIN#` for `*1#` — are `app.alias`.
 
 **Sessions that last as long as the line.** A Viewdata terminal is a display and
-nothing more: it holds the frame on screen and not one thing else. So the server
-holds where the reader is, what they have seen, and the menu they came through,
-and a handler is a function of a request rather than of a number.
+nothing more: it holds the frame on screen and nothing else. So the server holds
+where the reader is, what they have seen, and the menu they came through, and a
+handler is a function of a request rather than of a number.
 
 **The wire, measured rather than assumed.** Attributes travel as `ESC` + code +
 0x40, a frame is 24 rows of 40 that wraps at the bottom-right back to the top

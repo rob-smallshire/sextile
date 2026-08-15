@@ -43,7 +43,7 @@ Legend: `[ ]` not started · `[~]` in progress · `[x]` done
 
 Docs:
 - [x] docs/writing-an-application.md  (flagship; register sample for sign-off)
-- [ ] docs/design.md
+- [~] docs/design.md  (delegated to a fork; awaiting review)
 - [x] docs/layout.md
 - [ ] docs/page-layout.md
 - [x] docs/navigation.md  (also fixed stale "template" reference)
@@ -51,8 +51,8 @@ Docs:
 - [ ] docs/viewdata-encoding.md
 - [ ] docs/graphics.md
 - [ ] docs/mosaic-fonts.md
-- [ ] docs/public-surface.md
-- [ ] README.md
+- [x] docs/public-surface.md  (prose only; module-table drift recorded, not fixed)
+- [x] README.md  (fixed broken draw_chrome headline example)
 
 Source docstrings + comments (src/sextile):
 - [ ] __init__.py, __main__.py

@@ -66,11 +66,10 @@ over-long words rather than dropping them.
 
 ### `sextile.viewdata` — the drawing toolkit
 
-For a page drawing something no template has a shape for: a picture, a chart, a
-masthead, a form's furniture. **Prefer a template.** What is here is for
-drawing *within* a page, and a page that finds itself drawing chrome or
-composing a footer has gone past the toolkit and is rebuilding the template
-layer by hand.
+For a page drawing something no layout has a shape for: a picture, a chart, a
+masthead, a form's furniture. **Prefer a layout.** What is here is for drawing
+*within* a page. A page that finds itself drawing chrome or composing a footer
+has gone past the toolkit and is rebuilding the `sextile.layout` layer by hand.
 
 Public submodules:
 
@@ -92,7 +91,7 @@ Public submodules:
 Internal to the framework, and not to be imported: `command_line`,
 `countdown`, `parting`, `repaint`, `ansi`. These are what the session is built
 from, and it draws on a frame after a page has been built rather than while it
-is being.
+is being built.
 
 **Some of this is offered rather than used.** `read_bitmap`, `boxed`,
 `cells_for` and `is_control_code` have no caller among the three services here,
@@ -155,8 +154,8 @@ handlers or through the `Sextile` methods they call.
     Visits  Visit  SqliteVisits  KEPT
 
 `Visits` is the protocol, `SqliteVisits` the implementation that comes with the
-framework. A service keeping its log elsewhere writes its own and the pages do
-not notice.
+framework. A service keeping its log elsewhere writes its own, and the pages
+behave no differently.
 
 ### `sextile.testing` — driving a service the way a caller does
 
@@ -182,7 +181,7 @@ Everything else, and specifically:
 | `addressing`, `page` | likewise: `PageAddress`, `keyed`, `Page`, `PageFrame` |
 | `routing` | a service declares routes; the router matches them. `Converter` is the extension point, and it and the two errors it raises are at the top level |
 | `pages` | reached through `sextile.handlers` or the `Sextile` methods |
-| `session`, `server` | how a call is answered, which no page is party to |
+| `session`, `server` | how a call is answered, which no page takes part in |
 | `compass`, `demo` | drawn by the framework's own pages |
 | `viewdata.chrome`, `.footer`, `.layout` | what a template is built from |
 | `viewdata.command_line`, `.countdown`, `.parting`, `.repaint` | what the session is built from |
@@ -216,6 +215,6 @@ a formatter of a homogeneous sequence.
 that every `from sextile...` import names a module listed here — in the spirit
 of the rest of this workspace, where what must not drift is pinned by a test
 rather than by a rule somebody remembers. Its list of known crossings is empty,
-and a second assertion fails if a line outlives the defect it names -- an
-exception left lying about reads as permission, so an empty list is the only
-one that needs no watching.
+and a second assertion fails if a line outlives the defect it names: a
+known-crossing exception left in place reads as permission, so an empty list is
+the only state that needs no watching.

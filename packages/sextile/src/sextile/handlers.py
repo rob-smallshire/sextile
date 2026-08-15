@@ -18,6 +18,12 @@ know, so those keep their thin wrappers where they are used.
 from sextile.application import PageRequest
 from sextile.page import Page
 
+__all__ = [
+    "contents",
+    "history",
+    "names",
+]
+
 
 async def history(request: PageRequest) -> Page:
     """Where this caller has been, at whatever number the service gives it."""

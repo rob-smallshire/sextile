@@ -37,6 +37,18 @@ from sextile.viewdata.encoding import fitted
 from sextile.viewdata.footer import FooterItem, Priority
 from sextile.viewdata.frame import COLUMNS, Frame
 
+__all__ = [
+    "Complete",
+    "Field",
+    "Fields",
+    "Form",
+    "Lookup",
+    "Note",
+    "SUGGESTIONS",
+    "Suggest",
+    "draw_form",
+]
+
 #: What a form asks to find out what to offer. Given what has been typed so
 #: far, it answers whatever should be listed beneath the field.
 type Lookup = Callable[[str], Awaitable[Sequence[Entry]]]

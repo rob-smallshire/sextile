@@ -12,6 +12,18 @@ screen.
 
 from dataclasses import dataclass
 
+__all__ = [
+    "Attachment",
+    "Block",
+    "Code",
+    "Document",
+    "Image",
+    "Link",
+    "ListItem",
+    "Paragraph",
+    "Quote",
+]
+
 
 @dataclass(frozen=True)
 class Paragraph:

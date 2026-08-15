@@ -61,6 +61,7 @@ __all__ = [
     "UnknownPageError",
     "__version__",
     "draw_form",
+    "handlers",
     "keyed",
     "keys",
     "page",

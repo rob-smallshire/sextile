@@ -25,6 +25,13 @@ from sextile.held import Held
 from sextile.page import Page
 from sextile.visits import Visits
 
+__all__ = [
+    "Finder",
+    "held_in",
+    "log_pages",
+    "record_visits",
+]
+
 #: A way of finding the log, for a service that opens it after this is made.
 type Finder = Callable[[PageRequest], Visits | None]
 

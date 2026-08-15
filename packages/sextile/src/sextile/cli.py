@@ -23,6 +23,14 @@ from sextile.server import (
 from sextile.viewdata.ansi import render_ansi
 from sextile.viewdata.frame import Frame
 
+__all__ = [
+    "ApplicationSpecError",
+    "add_form_arguments",
+    "add_listening_arguments",
+    "render_page",
+    "run_service",
+]
+
 #: How a frame can be shown on a terminal that is not a BBC Micro.
 FORMS: Final = ("ansi", "grid", "bytes")
 

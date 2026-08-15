@@ -37,6 +37,13 @@ from typing import Final, Protocol, Self, runtime_checkable
 
 from sextile.addressing import PageAddress
 
+__all__ = [
+    "KEPT",
+    "SqliteVisits",
+    "Visit",
+    "Visits",
+]
+
 #: How long a visit is kept. Thirty days is what "lately" means; it is a setting
 #: rather than a rule, since a service with more readers may want less of it.
 KEPT: Final = timedelta(days=30)

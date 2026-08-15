@@ -7,8 +7,8 @@ than none.
 
 from sextile.addressing import PageAddress
 from sextile.application import Sextile
-from sextile.page import Page
 from sextile.builtin.guidance import GuideRow, guide_page
+from sextile.page import Page
 from sextile.testing import request_for
 
 _APP = Sextile()

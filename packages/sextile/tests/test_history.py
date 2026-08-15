@@ -12,9 +12,9 @@ import pytest
 
 from sextile.addressing import PageAddress
 from sextile.application import Sextile
+from sextile.builtin.history import TITLE, history_page
 from sextile.layout import CHOICES_PER_FRAME
 from sextile.page import Page
-from sextile.builtin.history import TITLE, history_page
 from sextile.testing import request_for
 
 _APP = Sextile()

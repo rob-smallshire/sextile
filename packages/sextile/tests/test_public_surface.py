@@ -30,6 +30,7 @@ PUBLIC: Final = frozenset(
         "sextile.content.blocks",
         "sextile.forms",
         "sextile.handlers",
+        "sextile.pages",
         "sextile.middleware",
         "sextile.visits",
         "sextile.cli",

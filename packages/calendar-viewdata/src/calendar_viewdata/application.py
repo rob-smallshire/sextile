@@ -40,6 +40,7 @@ from sextile import (
     handlers,
     keyed,
     keys,
+    notice_page,
 )
 from sextile.formatting import Lines, Menu, MenuItem, Prose, farewell_page
 from sextile.layout import Drawn, Flowing, Once, PageLayout, Shortcut
@@ -98,17 +99,14 @@ async def main(request: PageRequest) -> Page:
 async def now_page(request: PageRequest) -> Page:
     """The time now, to the second, with the key that asks again."""
     moment = _now(request)
-    return _notice(
+    return notice_page(
         request,
-        None,
-        [
-            _long_date(moment.date()),
-            "",
-            moment.strftime("%H:%M:%S"),
-            moment.tzname() or "",
-            "",
-            f"Key {keyed(keys.REFRESH)} to ask again.",
-        ],
+        _long_date(moment.date()),
+        "",
+        moment.strftime("%H:%M:%S"),
+        moment.tzname() or "",
+        "",
+        f"Key {keyed(keys.REFRESH)} to ask again.",
     )
 
 
@@ -318,12 +316,6 @@ def _menu(
     ).build(request)
 
 
-def _notice(request: PageRequest, title: str | None, lines: list[str]) -> Page:
-    """A page that simply says something, with no choices but the way back."""
-    return PageLayout(
-        title=title,
-        parts=[Flowing(Lines(said=lines))],
-    ).build(request)
 
 
 # -- helpers -----------------------------------------------------------------

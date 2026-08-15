@@ -35,6 +35,7 @@ from sextile import (
     Parting,
     Sextile,
     keyed,
+    notice_page,
     page,
 )
 from sextile.formatting import Lines, Menu, MenuItem, Prose, farewell_page
@@ -154,7 +155,7 @@ async def days_index(request: PageRequest) -> Page:
     app = request.app
     days = await _read(request, lambda repository: repository.days(limit=60))
     if not days:
-        return _notice(request, None, ["NO POSTS held yet."])
+        return notice_page(request, "NO POSTS held yet.")
     items = [
         MenuItem(
             day_title(day),
@@ -180,7 +181,7 @@ async def forums_index(request: PageRequest) -> Page:
     app = request.app
     forums = await _read(request, lambda repository: repository.forums())
     if not forums:
-        return _notice(request, None, ["NO POSTS held yet."])
+        return notice_page(request, "NO POSTS held yet.")
     items = [
         MenuItem(
             name,
@@ -212,7 +213,7 @@ async def contributors_index(request: PageRequest) -> Page:
     app = request.app
     contributors = await _read(request, lambda repository: repository.contributors())
     if not contributors:
-        return _notice(request, None, ["NO POSTS held yet."])
+        return notice_page(request, "NO POSTS held yet.")
     items = [
         MenuItem(
             name,
@@ -383,23 +384,17 @@ def ringing_off(app: Sextile, parting: Parting) -> Page:
 
 def unknown_page(app: Sextile, target: str) -> Page:
     """Say so, in the service's own furniture, and leave the way back open."""
-    return PageLayout(
+    return notice_page(
+        #  No request reaches here: on_not_found is handed the target alone, so
+        #  the app is captured in the closure and a request is built from it.
+        #  The address is only there because a page is built from one; the
+        #  notice answers no page of its own, so `numbered=False` hides it.
+        PageRequest(address=app.index, app=app),
+        f"*{target[:30]}# is NOT a page here.",
+        "",
+        "Try *1# for the main index.",
         title="UNKNOWN PAGE",
-        #  A notice answering a mistyped request has no page of its own, so the
-        #  header shows the title alone. `numbered=False` says so; the address
-        #  the request carries is only there because a page is built from one.
         numbered=False,
-        parts=[
-            Flowing(
-                Lines(
-                    said=(
-                        f"*{target[:30]}# is NOT a page here.",
-                        "",
-                        "Try *1# for the main index.",
-                    )
-                )
-            )
-        ],
         #  The advice rides in the label: there is no key for "another page",
         #  only the command line. Shortened to "index" where the row is tight,
         #  the short form being first.
@@ -408,7 +403,7 @@ def unknown_page(app: Sextile, target: str) -> Page:
             destination=app.address_for("main"),
             says="index, or key another page",
         ),
-    ).build(PageRequest(address=app.index, app=app))
+    )
 
 
 # -- the shapes the pages above share -----------------------------------------
@@ -418,7 +413,7 @@ def _posts_menu(
     request: PageRequest, posts: list[Post], title: str | None = None
 ) -> Page:
     if not posts:
-        return _notice(request, title, ["NO POSTS held for this page."])
+        return notice_page(request, "NO POSTS held for this page.", title=title)
     items = [
         MenuItem(
             post.subject,
@@ -448,16 +443,6 @@ def _menu(
     ).build(request)
 
 
-def _notice(
-    request: PageRequest,
-    title: str | None,
-    lines: list[str],
-) -> Page:
-    """A page that simply says something, with no choices but the way back."""
-    return PageLayout(
-        title=title,
-        parts=[Flowing(Lines(said=lines))],
-    ).build(request)
 
 
 def day_title(day: date) -> str:

@@ -144,6 +144,13 @@ what a page with one field needs.
 The colour constants are the defaults behind the parameters of the same name.
 Pass a parameter rather than reading a constant.
 
+### `sextile.pages` — the commonest pages, said in one call
+
+    notice_page
+
+The one-call shapes, each building a `PageLayout` from the request the page
+answers. Also at the top level, those being what most services reach for first.
+
 ### `sextile.handlers` — the framework's pages, as handlers
 
     history  contents  names

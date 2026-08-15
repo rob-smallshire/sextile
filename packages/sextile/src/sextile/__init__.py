@@ -28,6 +28,7 @@ from sextile.declarations import Handler, PageInfo, PageRoute, page, routes_in, 
 from sextile.forms import Form, Suggest, draw_form
 from sextile.held import Held
 from sextile.page import Page, PageFrame
+from sextile.pages import notice_page
 from sextile.requests import Arrival, PageRequest, Parting
 from sextile.routing import Converter, NoSuchRouteError, RouteError
 
@@ -63,6 +64,7 @@ __all__ = [
     "handlers",
     "keyed",
     "keys",
+    "notice_page",
     "page",
     "routes_in",
     "routes_on",

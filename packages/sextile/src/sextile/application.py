@@ -33,6 +33,10 @@ from typing import Final
 
 from sextile import keys
 from sextile.addressing import PageAddress, UnknownPageError, keyed
+from sextile.builtin import contents, guidance, history, names, readership
+from sextile.builtin.contents import contents_page
+from sextile.builtin.history import history_page
+from sextile.builtin.names import names_page
 from sextile.declarations import (
     Handler,
     PageInfo,
@@ -42,15 +46,10 @@ from sextile.declarations import (
     routes_on,
 )
 from sextile.layout import CHOICES_PER_FRAME, HOME_KEY
-from sextile.page import Page, PageFrame
-from sextile.builtin import contents, guidance, history, names, readership
-from sextile.builtin.contents import contents_page
-from sextile.builtin.history import history_page
-from sextile.builtin.names import names_page
+from sextile.page import Page
+from sextile.pages import notice_page
 from sextile.requests import Arrival, PageRequest, Parting
 from sextile.routing import Converter, ConverterFactory, Match, Router
-from sextile.viewdata.canvas import Canvas
-from sextile.viewdata.controls import Colour
 from sextile.visits import Visits
 
 __all__ = [
@@ -342,8 +341,8 @@ class Sextile:
         """
         if self._not_found is not None:
             return await self._not_found(target)
-        return _plain_notice(
-            "UNKNOWN PAGE", f"{keyed(target[:_QUOTED])} is NOT a page here."
+        return self._own_notice(
+            "UNKNOWN PAGE", f"{keyed(target[:_QUOTED])} is NOT a page here.", at=self.home
         )
 
     async def timed_out(self, parting: Parting) -> Page:
@@ -356,13 +355,14 @@ class Sextile:
         """
         if self._timed_out is not None:
             return await self._timed_out(parting)
-        return _plain_notice(
+        return self._own_notice(
             "RINGING OFF",
             "No reply for some time, so the line",
             "has been released.",
             "",
             f"You were reading *{parting.address}#.",
             *(["", f"Thank you for calling {self.name}."] if self.name else []),
+            at=parting.address,
             hang_up=True,
         )
 
@@ -376,7 +376,7 @@ class Sextile:
         """
         if self._failed is not None:
             return await self._failed(address)
-        return _plain_notice(
+        return self._own_notice(
             "SERVICE ERROR",
             f"{keyed(address)} could not be built.",
             "",
@@ -385,6 +385,27 @@ class Sextile:
             "",
             f"Key {HOME_KEY} for the index, or {keyed(keys.REFRESH)} to try it",
             "again.",
+            at=address,
+        )
+
+    def _own_notice(
+        self, title: str, *lines: str, at: PageAddress, hang_up: bool = False
+    ) -> Page:
+        """A notice the framework says for itself, having no request to answer.
+
+        `not_found`, `failed` and `timed_out` are handed a target, an address
+        or a parting rather than a request, so one is built from the app to
+        carry them to `notice_page`. `furniture=()` draws the plain, keyless
+        notice these want. When the hooks come to take the request, the built
+        request goes with them.
+        """
+        return notice_page(
+            PageRequest(address=at, app=self),
+            *lines,
+            title=title,
+            home=None,
+            furniture=(),
+            hang_up=hang_up,
         )
 
     def address_for(self, name: str, **params: object) -> PageAddress:
@@ -658,19 +679,3 @@ def _wrap(middleware: Middleware, build: Next) -> Next:
     return wrapped
 
 
-def _plain_notice(title: str, *lines: str, hang_up: bool = False) -> Page:
-    """The framework's own way of saying something for itself.
-
-    Deliberately plain, and drawn without the header-and-footer furniture that
-    `sextile.layout` provides (`Header`, `Rule`, `Prompt`). A service that has
-    furniture of its own should say these things in it, and one that has not
-    should still be legible.
-
-    Kept to the top few rows, which leaves somewhere for the cursor to go if
-    this turns out to be the last thing the reader sees.
-    """
-    canvas = Canvas()
-    canvas.row(0).text(title, Colour.CYAN)
-    for offset, line in enumerate(lines):
-        canvas.row(2 + offset).text(line, Colour.WHITE)
-    return Page(frames=(PageFrame(canvas.frame),), hang_up=hang_up)

@@ -20,7 +20,7 @@ from sextile import keys
 from sextile.addressing import PageAddress
 from sextile.application import PageRequest, PageRoute, Sextile
 from sextile.formatting import Listing, MenuItem
-from sextile.layout import Flowing, PageLayout
+from sextile.layout import Flow, PageLayout
 from sextile.page import Page
 from sextile.session.session import Session
 from sextile.viewdata.frame import FRAME_PREAMBLE
@@ -989,7 +989,7 @@ async def _paged() -> Session:
             title="LONG",
             home=PageAddress("1"),
             parts=[
-                Flowing(Listing(entries=[MenuItem(f"{n}", "row") for n in range(50)]))
+                Flow(Listing(entries=[MenuItem(f"{n}", "row") for n in range(50)]))
             ],
         ).build(request)
 

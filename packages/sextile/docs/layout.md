@@ -26,11 +26,11 @@ two-row prompt has 19.
 
 ```python
 from sextile.formatting import Menu, MenuItem
-from sextile.layout import Flowing, PageLayout
+from sextile.layout import Flow, PageLayout
 
 PageLayout(
     title="LATEST POSTS",
-    parts=[Flowing(Menu(entries=posts))],
+    parts=[Flow(Menu(entries=posts))],
 ).build(request)
 ```
 
@@ -59,33 +59,35 @@ above what:
 
 | | |
 |---|---|
-| `Once(part)` | Drawn one time, at its place in the order. |
-| `Every(part)` | Drawn on every frame. |
-| `Flowing(part)` | Broken across as many frames as it takes. |
-| `Break()` | Whatever follows begins on a new frame. |
+| `OnFirstFrame(part)` | Drawn one time, at its place in the order. |
+| `OnEveryFrame(part)` | Drawn on every frame. |
+| `Flow(part)` | Broken across as many frames as it takes. |
+| `FrameBreak()` | Whatever follows begins on a new frame. |
 
 ```python
 parts=[
-    Once(Lines(said=("Stardot, for users of Acorn computers.", ""))),
-    Every(Lines(said=("DAY   MAX   MIN",), colour=Colour.CYAN)),
-    Flowing(Menu(entries=posts)),
+    OnFirstFrame(Lines(said=("Stardot, for users of Acorn computers.", ""))),
+    OnEveryFrame(Lines(said=("DAY   MAX   MIN",), colour=Colour.CYAN)),
+    Flow(Menu(entries=posts)),
 ]
 ```
 
-`Once` means once, not first. A fixed part before any flowing part lands on the
-first frame; one after a flowing part lands on whichever frame that flow
-finished on.
+`OnFirstFrame` draws once, at its place in the order rather than always on
+frame `a`: a fixed part before any flowing part lands on the first frame, but
+one after a flowing part lands on whichever frame that flow finished on. The
+name is the common case; the order is what settles it.
 
-`Every` parts before the first flowing part are drawn where they stand. Those
-after it have their rows reserved at the foot before the flowing part is placed,
-and are then drawn under the content. A flowing part takes whatever rows are
-left to it, so an `Every` part after one would otherwise never be drawn.
+`OnEveryFrame` parts before the first flowing part are drawn where they stand.
+Those after it have their rows reserved at the foot before the flowing part is
+placed, and are then drawn under the content. A flowing part takes whatever rows
+are left to it, so an `OnEveryFrame` part after one would otherwise never be
+drawn.
 
 Several flowing parts follow one another: the second begins in the row after
 the first has finished, on whatever frame that is.
 
-A `Break` that would divide nothing is ignored — one at either end of the list,
-two together, or one on a frame with nothing yet drawn on it.
+A `FrameBreak` that would divide nothing is ignored — one at either end of the
+list, two together, or one on a frame with nothing yet drawn on it.
 
 ## The shapes ready to use
 
@@ -150,7 +152,7 @@ service sets its own once and a page overrides it where it has reason — red
 rules on a page that does something irreversible:
 
 ```python
-PageLayout(furniture=(), parts=[Once(Drawn(rows=ROWS, draw=masthead))])
+PageLayout(furniture=(), parts=[OnFirstFrame(Drawn(rows=ROWS, draw=masthead))])
 ```
 
 Two levels, and no cascade. A reader learns where the page number sits once, so
@@ -158,7 +160,7 @@ the site-wide setting is the one to set, and a per-page override needs a reason.
 
 ## Writing a part of your own
 
-The content inside a `Once`, `Every` or `Flowing` is a `Drawable`: it draws as
+The content inside a `OnFirstFrame`, `OnEveryFrame` or `Flow` is a `Drawable`: it draws as
 much as the room allows and says what is left over.
 
 ```python

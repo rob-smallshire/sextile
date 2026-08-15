@@ -8,7 +8,7 @@ can be read, and that the service is opened and closed around the call.
 
 from sextile import Page, PageAddress, PageRequest, PageRoute, Sextile
 from sextile.formatting import Lines, Menu, MenuItem
-from sextile.layout import Flowing, PageLayout
+from sextile.layout import Flow, PageLayout
 from sextile.testing import calling
 
 
@@ -18,7 +18,7 @@ async def index(request: PageRequest) -> Page:
         title="INDEX",
         home=app.index,
         parts=[
-            Flowing(
+            Flow(
                 Menu(
                     entries=[
                         MenuItem(
@@ -35,7 +35,7 @@ async def weather(request: PageRequest) -> Page:
     return PageLayout(
         title="WEATHER",
         home=PageAddress("1"),
-        parts=[Flowing(Lines(said=("Rain, mostly.",)))],
+        parts=[Flow(Lines(said=("Rain, mostly.",)))],
     ).build(request)
 
 

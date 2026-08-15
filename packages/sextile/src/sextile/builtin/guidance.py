@@ -17,7 +17,7 @@ The words are the framework's own and not taken from the routes. A description
 in a table of keys is a paraphrase and cannot come to be untrue; a *number* can,
 which is why every number here is asked of the router instead.
 
-**The division is a `Break`, not a shortage of rows.** These two frames are two
+**The division is a `FrameBreak`, not a shortage of rows.** These two frames are two
 different lists, split by what a reader is doing rather than by what will fit,
 and that is what a break says. The compass follows the first list as an
 ordinary part, drawn under the words rather than held to the foot of the frame:
@@ -34,7 +34,7 @@ from sextile.addressing import keyed
 from sextile.compass import ROWS as COMPASS_ROWS
 from sextile.compass import compass
 from sextile.formatting import RowFormatter
-from sextile.layout import Break, Drawn, Flowing, Once, PageLayout
+from sextile.layout import Drawn, Flow, FrameBreak, OnFirstFrame, PageLayout
 from sextile.page import Page
 from sextile.viewdata.canvas import RowWriter
 from sextile.viewdata.composition import Composition
@@ -128,12 +128,12 @@ def guide_page(
     return PageLayout(
         title=title,
         parts=[
-            Flowing(_Keys(entries=first, column=column)),
+            Flow(_Keys(entries=first, column=column)),
             #  Under the words rather than at the foot of the frame. A rule
             #  about where one particular part sits is the beginning of a
             #  layout language, and this is a few rows of graphics like any
             #  other few rows of graphics.
-            Once(
+            OnFirstFrame(
                 Drawn(
                     rows=COMPASS_ROWS,
                     draw=lambda canvas, row: compass(
@@ -141,8 +141,8 @@ def guide_page(
                     ).draw(canvas),
                 )
             ),
-            Break(),
-            Flowing(_Keys(entries=second, column=column)),
+            FrameBreak(),
+            Flow(_Keys(entries=second, column=column)),
         ],
     ).build(request)
 

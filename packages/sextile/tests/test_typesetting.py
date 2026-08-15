@@ -21,7 +21,7 @@ from sextile.content.blocks import (
     Quote,
 )
 from sextile.formatting import Prose
-from sextile.layout import Flowing, fill
+from sextile.layout import Flow, fill
 from sextile.testing import text_of
 from sextile.viewdata.encoding import cell_count
 from sextile.viewdata.frame import COLUMNS, FRAME_PREAMBLE, ROWS, Frame
@@ -41,7 +41,7 @@ def lay_out(content: Document) -> list[Frame]:
     do.
     """
     return [
-        one.canvas.frame for one in fill([Flowing(Prose(entries=rows_for(content)))], WHOLE)
+        one.canvas.frame for one in fill([Flow(Prose(entries=rows_for(content)))], WHOLE)
     ]
 
 
@@ -56,7 +56,7 @@ def _drawn(content: Document) -> None:
     captions crashed the service once, and what they crashed was the arithmetic
     about how wide a row is.
     """
-    fill([Flowing(Prose(entries=rows_for(content)))], WHOLE)
+    fill([Flow(Prose(entries=rows_for(content)))], WHOLE)
 
 
 def body_of(frame: Frame) -> list[str]:

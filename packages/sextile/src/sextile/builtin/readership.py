@@ -19,7 +19,7 @@ from typing import TYPE_CHECKING, Final
 
 from sextile.addressing import PageAddress, keyed
 from sextile.formatting import Figures, Lines, Menu, MenuItem
-from sextile.layout import Every, Flowing, PageLayout
+from sextile.layout import Flow, OnEveryFrame, PageLayout
 from sextile.page import Page
 from sextile.viewdata.controls import Colour
 from sextile.viewdata.frame import COLUMNS
@@ -168,7 +168,7 @@ def callers_page(
     return PageLayout(
         title=title,
         parts=[
-            Flowing(
+            Flow(
                 Figures(
                     entries=[
                         MenuItem(text=said, detail=str(count))
@@ -180,7 +180,7 @@ def callers_page(
             #  Beneath the figures on every frame, a blank row above it: a
             #  figure about readers that does not say what it counts invites
             #  the worst guess.
-            Every(
+            OnEveryFrame(
                 Lines(
                     said=("", *wrap_text(_WHAT_A_CALLER_IS, COLUMNS - 1)),
                     colour=Colour.GREEN,

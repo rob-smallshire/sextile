@@ -48,7 +48,7 @@ application in its first few lines.
 ### `sextile.layout` — a page as furniture and parts
 
     PageLayout                            what a service constructs (.build)
-    Part  Once  Every  Flowing  Break     a page's parts, and the four kinds
+    Part  OnFirstFrame  OnEveryFrame  Flow  FrameBreak   a page's parts, and the four kinds
     Drawn                                  a part that draws itself, cell by cell
     Drawable  Room  Offer  Placement       what a part of your own must satisfy
     Edge  Summary  Furnishing             what furniture must satisfy

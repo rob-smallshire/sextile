@@ -21,7 +21,7 @@ from sextile.formatting import (
     MenuItem,
     Prose,
 )
-from sextile.layout import CHOICES_PER_FRAME, Flowing, Once, PageLayout, Room
+from sextile.layout import CHOICES_PER_FRAME, Flow, OnFirstFrame, PageLayout, Room
 from sextile.testing import request_for
 from sextile.viewdata.canvas import Canvas
 from sextile.viewdata.controls import Colour
@@ -101,7 +101,7 @@ class TestAMenuAsAPart:
 class TestAMenuInAPage:
     def test_twelve_entries_are_nine_and_three(self) -> None:
         page = PageLayout(
-            title="ITEMS", home=at("1"), parts=[Flowing(Menu(entries=items(12)))]
+            title="ITEMS", home=at("1"), parts=[Flow(Menu(entries=items(12)))]
         ).build(request_for(_APP, at("8")))
         assert len(page.frames) == 2
         first, second = page.frame(0), page.frame(1)
@@ -114,8 +114,8 @@ class TestAMenuInAPage:
             title="ITEMS",
             home=at("1"),
             parts=[
-                Once(Lines(said=("A lead-in", "of four", "rows, which", "costs two"))),
-                Flowing(Menu(entries=items(12))),
+                OnFirstFrame(Lines(said=("A lead-in", "of four", "rows, which", "costs two"))),
+                Flow(Menu(entries=items(12))),
             ],
         ).build(request_for(_APP, at("8")))
         found = page.frame(0)

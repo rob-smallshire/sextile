@@ -20,9 +20,9 @@ from sextile.formatting import Entry, Lines, Menu, Prose
 from sextile.layout import (
     _DEFAULT_HOME,
     DEFAULT_FURNITURE,
-    Flowing,
+    Flow,
     Furnishing,
-    Once,
+    OnFirstFrame,
     PageLayout,
     Shortcut,
     _DefaultHome,
@@ -86,13 +86,13 @@ def notice_page(
     #  No header to carry the title, so it heads the content in cyan and the
     #  lines follow a blank row down -- the plain notice the framework draws
     #  for itself, kept to the top rows with room beneath for the cursor.
-    heading = [Once(Lines(said=(title,), colour=Colour.CYAN))] if title else []
+    heading = [OnFirstFrame(Lines(said=(title,), colour=Colour.CYAN))] if title else []
     return PageLayout(
         home=home,
         shortcuts=shortcuts,
         hang_up=hang_up,
         furniture=(),
-        parts=[*heading, Once(Lines(said=("", *lines)))],
+        parts=[*heading, OnFirstFrame(Lines(said=("", *lines)))],
     ).build(request)
 
 
@@ -131,14 +131,14 @@ def menu_page(
     Returns:
         The page, of as many frames as the entries needed.
     """
-    lead = [Once(Lines(said=(*preamble, "")))] if preamble else []
+    lead = [OnFirstFrame(Lines(said=(*preamble, "")))] if preamble else []
     return PageLayout(
         title=title,
         home=home,
         shortcuts=shortcuts,
         neighbours=neighbours,
         item_noun=item_noun,
-        parts=[*lead, Flowing(Menu(entries=items, empty=empty or ""))],
+        parts=[*lead, Flow(Menu(entries=items, empty=empty or ""))],
     ).build(request)
 
 

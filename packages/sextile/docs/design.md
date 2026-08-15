@@ -537,7 +537,7 @@ is known. The content occupies rows 2 to 21 and the furniture rows 0, 1, 22 and
 as they need, and the furniture goes on afterwards when the count is settled.
 
 **A part is drawn once, on every frame, or across as many as it takes**, and a
-`Break` divides a page at a chosen point rather than where the rows run out.
+`FrameBreak` divides a page at a chosen point rather than where the rows run out.
 That is what the guide needed: its two frames are two lists, split by what a
 reader is doing.
 

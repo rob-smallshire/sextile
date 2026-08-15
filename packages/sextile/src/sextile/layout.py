@@ -15,7 +15,7 @@ Example:
     goes on for as long as it goes on::
 
         fill(
-            [Once(preamble), Every(headings), Flowing(Menu(items))],
+            [OnFirstFrame(preamble), OnEveryFrame(headings), Flow(Menu(items))],
             content_rows(DEFAULT_FURNITURE),
         )
 """
@@ -50,16 +50,16 @@ if TYPE_CHECKING:
 __all__ = [
     "CHOICES_PER_FRAME",
     "DEFAULT_FURNITURE",
-    "Break",
+    "FrameBreak",
     "Drawable",
     "Drawn",
     "Edge",
-    "Every",
-    "Flowing",
+    "OnEveryFrame",
+    "Flow",
     "Furnishing",
     "HOME_KEY",
     "Header",
-    "Once",
+    "OnFirstFrame",
     "PageLayout",
     "Part",
     "Placement",
@@ -225,7 +225,7 @@ class Drawn:
     Example:
         A month as a grid of weeks, which is the whole of a page's content::
 
-            Once(Drawn(rows=1 + len(weeks), draw=lambda canvas, row: ...))
+            OnFirstFrame(Drawn(rows=1 + len(weeks), draw=lambda canvas, row: ...))
     """
 
     rows: int
@@ -239,7 +239,7 @@ class Drawn:
 
 
 @dataclass(frozen=True)
-class Once:
+class OnFirstFrame:
     """A drawable drawn one time, at its place in the order.
 
     On the first frame where nothing flowing comes before it, and otherwise on
@@ -250,7 +250,7 @@ class Once:
 
 
 @dataclass(frozen=True)
-class Every:
+class OnEveryFrame:
     """A drawable drawn on every frame, at its place in the order.
 
     Where it comes after any flowing part, its rows are kept back at the foot
@@ -264,7 +264,7 @@ class Every:
 
 
 @dataclass(frozen=True)
-class Flowing:
+class Flow:
     """A drawable broken across as many frames as it takes.
 
     Several may appear in one list, and they follow one another: the second
@@ -275,7 +275,7 @@ class Flowing:
 
 
 @dataclass(frozen=True)
-class Break:
+class FrameBreak:
     """A division the page means, rather than one the rows forced.
 
     Whatever follows begins on a new frame. A break that would divide nothing
@@ -285,22 +285,22 @@ class Break:
 
 
 #: One of a page's parts: a `Drawable` with the frames it appears on
-#: (`Once`, `Every` or `Flowing`), a `Break`, or a bare `Drawable`, which means
-#: `Flowing` -- flowing across as many frames as it takes is what a part does
+#: (`OnFirstFrame`, `OnEveryFrame` or `Flow`), a `FrameBreak`, or a bare `Drawable`, which means
+#: `Flow` -- flowing across as many frames as it takes is what a part does
 #: unless it says otherwise, and it is the only sensible reading of one given
 #: without a wrapper.
-type Part = Once | Every | Flowing | Break | Drawable
+type Part = OnFirstFrame | OnEveryFrame | Flow | FrameBreak | Drawable
 
-#: A part once a bare drawable has been read as `Flowing`: what the filling
+#: A part once a bare drawable has been read as `Flow`: what the filling
 #: works in, every part carrying its own `drawable`.
-_Placed = Once | Every | Flowing | Break
+_Placed = OnFirstFrame | OnEveryFrame | Flow | FrameBreak
 
 
 def _placed(part: Part) -> _Placed:
     """Read a bare drawable in a parts list as a flowing part."""
-    if isinstance(part, Once | Every | Flowing | Break):
+    if isinstance(part, OnFirstFrame | OnEveryFrame | Flow | FrameBreak):
         return part
-    return Flowing(part)
+    return Flow(part)
 
 
 @dataclass
@@ -363,7 +363,7 @@ class _State:
     """How far through the list the filling has got.
 
     `pending` is what is left to draw of each item, by its position in the
-    list: a `Once` that has been drawn and a `Flowing` that has run out are
+    list: a `OnFirstFrame` that has been drawn and a `Flow` that has run out are
     both absent from it.
     """
 
@@ -376,7 +376,7 @@ class _State:
         self.pending = {
             index: part.drawable
             for index, part in enumerate(self.parts)
-            if not isinstance(part, Break)
+            if not isinstance(part, FrameBreak)
         }
         self.at_foot = _at_foot(self.parts)
 
@@ -386,7 +386,7 @@ class _State:
         return not any(
             index in self.pending
             for index, part in enumerate(self.parts)
-            if not isinstance(part, Every | Break)
+            if not isinstance(part, OnEveryFrame | FrameBreak)
         )
 
 
@@ -403,13 +403,13 @@ def _at_foot(parts: Sequence[_Placed]) -> dict[int, Drawable]:
     can take their rows, so they are drawn where they stand.
     """
     flowing = next(
-        (index for index, part in enumerate(parts) if isinstance(part, Flowing)),
+        (index for index, part in enumerate(parts) if isinstance(part, Flow)),
         len(parts),
     )
     return {
         index: part.drawable
         for index, part in enumerate(parts)
-        if index > flowing and isinstance(part, Every)
+        if index > flowing and isinstance(part, OnEveryFrame)
     }
 
 
@@ -437,7 +437,7 @@ def _frame(state: _State, rows: range) -> Filled:
     drawn = False
 
     for index, part in enumerate(state.parts):
-        if isinstance(part, Break):
+        if isinstance(part, FrameBreak):
             #  A break on a frame with nothing on it yet would make an empty
             #  one, and a break already honoured is not a second division.
             if drawn and index not in state.broken:
@@ -458,7 +458,7 @@ def _frame(state: _State, rows: range) -> Filled:
         filled.offer = filled.offer.and_then(placed.offer)
         at, left = at + placed.rows, left - placed.rows
         choices -= len(placed.offer.choices)
-        if isinstance(part, Every):
+        if isinstance(part, OnEveryFrame):
             continue
         if placed.rest is None:
             del state.pending[index]
@@ -663,7 +663,7 @@ class PageLayout:
         title: What the header calls the page. `None` takes the registered
             title of `request.address`, upper-cased; `""` heads it with nothing.
         parts: The content, in the order it appears down the frames. A bare
-            `Drawable` means `Flowing(drawable)`; `Once`, `Every` and `Break`
+            `Drawable` means `Flow(drawable)`; `OnFirstFrame`, `OnEveryFrame` and `FrameBreak`
             say the frames a part appears on where they are not the default.
         home: Where `0` leads from every frame. Unset takes `request.app.index`;
             `None` offers no way home; a `PageAddress` leads there under the
@@ -690,7 +690,7 @@ class PageLayout:
 
             PageLayout(
                 title="LATEST POSTS",
-                parts=[Once(preamble), Flowing(Menu(entries=posts))],
+                parts=[OnFirstFrame(preamble), Flow(Menu(entries=posts))],
             ).build(request)
     """
 

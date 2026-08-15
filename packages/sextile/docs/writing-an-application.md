@@ -17,12 +17,12 @@ the standard library, and written to be read.
 ```python
 from sextile import Page, PageRequest, PageRoute, Sextile
 from sextile.formatting import Lines
-from sextile.layout import Flowing, PageLayout
+from sextile.layout import Flow, PageLayout
 
 async def main(request: PageRequest) -> Page:
     return PageLayout(
         title="MY SERVICE",
-        parts=[Flowing(Lines(said=("Hello, 1981.",)))],
+        parts=[Flow(Lines(said=("Hello, 1981.",)))],
     ).build(request)
 
 app = Sextile(pages=[PageRoute("1", main, name="main")])
@@ -208,7 +208,7 @@ plain paragraphs, which is how a notice carries a quotation or a code listing
 rendered exactly as a forum post's would be:
 
 ```python
-Flowing(Prose(entries=rows_for(document)))
+Flow(Prose(entries=rows_for(document)))
 ```
 
 For a shape none of these covers, subclass `Formatter`: give the height of one
@@ -415,9 +415,9 @@ of them:
 
 ```python
 from sextile.compass import ROWS, compass
-from sextile.layout import Drawn, Once
+from sextile.layout import Drawn, OnFirstFrame
 
-Once(Drawn(rows=ROWS, draw=lambda canvas, row: compass(Composition(), row).draw(canvas)))
+OnFirstFrame(Drawn(rows=ROWS, draw=lambda canvas, row: compass(Composition(), row).draw(canvas)))
 ```
 
 `ROWS` is how many rows it occupies, which is what `Drawn` is given, so the
@@ -571,13 +571,13 @@ cannot tell the two apart.
 
 ```python
 from sextile import Suggest
-from sextile.layout import Once, PageLayout
+from sextile.layout import OnFirstFrame, PageLayout
 
 return PageLayout(
     title="FIND A PLACE",
     parts=[
-        Once(Lines(said=("Key a place name.", ""))),
-        Once(Suggest(look_up=places.matching, label="PLACE:")),
+        OnFirstFrame(Lines(said=("Key a place name.", ""))),
+        OnFirstFrame(Suggest(look_up=places.matching, label="PLACE:")),
     ],
 ).build(request)
 ```

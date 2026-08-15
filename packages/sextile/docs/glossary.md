@@ -8,7 +8,9 @@ as "was X" so a reader coming from older code or docs can find it.
 - **frame** — one screenful, 24 rows of 40 cells; a page too long for one has
   several, keyed `a` to `z`.
 - **part** — a piece of a page's body between the rules: a menu, some lines, a
-  picture, a form. `layout.Part`.
+  picture, a form. `layout.Part`. A part says which frames it appears on:
+  `OnFirstFrame` (was `Once`), `OnEveryFrame` (was `Every`), `Flow` (was
+  `Flowing`, and what a bare drawable means), or `FrameBreak` (was `Break`).
 - **entry** — one item in a sequence a formatter lays out, such as a line of a
   menu. `formatting.Entry`.
 - **furniture** — the fixed structure a page is drawn into, around its parts:

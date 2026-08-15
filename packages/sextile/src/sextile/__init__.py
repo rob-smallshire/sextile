@@ -10,10 +10,9 @@ What a service is made of:
     app = Sextile(pages=[PageRoute("1", main, name="main", keywords=("MAIN",))])
 
 and `sextile serve your_module:app` answers calls on it. A page is a value and
-a service is a list of them, so everything about a page is said in one place
-and the order things were registered in is nobody's business. Sessions, frames,
-control codes, page numbering and the wire are the framework's; what the pages
-say is yours.
+a service is a list of them, so everything about a page is stated in one place
+and registration order does not matter. Sessions, frames, control codes, page
+numbering and the wire are the framework's; what the pages say is yours.
 
 Named after the star key on a viewdata keypad.
 """
@@ -36,7 +35,7 @@ __version__ = version("sextile")
 
 #  The whole of it, and stated in one place: what is not named here is the
 #  framework's own machinery. See docs/public-surface.md, which lists the
-#  public submodules as well -- `templates`, `viewdata` and the rest are too
+#  public submodules as well -- `layout`, `viewdata` and the rest are too
 #  large to flatten into this list and are public as modules.
 __all__ = [
     "Application",

@@ -12,20 +12,19 @@ same arrangement as every other impure edge in this framework: narrow enough to
 fake in a test, and a service that wants its log somewhere else writes forty
 lines rather than going without the pages.
 
-**The record is the address.** `321<geoname-id>` is what the reader keyed, what
-the router can parse back, and what `describe` can name -- so there is nothing
-else to store and nothing that can come to disagree with it. A prefix filter is
-then a namespace filter, which is what a first digit already means.
+**The record is the address.** `52<id>` is what the reader keyed, what the
+router can parse back, and what `describe` can name -- so there is nothing else
+to store and nothing that can come to disagree with it. A prefix filter is then
+a namespace filter, which is what a first digit already means.
 
-**The caller is a token and not an address.** Counting readers wants to know how
-many, and nothing else: a random token minted per connection answers that, and
-answers nothing about who. A service that keeps what it does not need is a
-service that has to be trusted about it, and this one need not be.
+**The caller is a token, not an address.** Counting readers needs to know how
+many and nothing else. A random token minted per connection answers that and
+reveals nothing about who.
 
 **A page that was not there is logged too.** A count of pages fetched that
-quietly omitted the ones nobody could reach would be the wrong count -- and the
-numbers readers key wrongly are worth knowing. They are kept out of what is
-read back: a page that does not exist has no business on a list of popular ones.
+quietly omitted the ones nobody could reach would be the wrong count, and the
+numbers readers key wrongly are worth knowing. They are kept out of what is read
+back: a page that does not exist does not belong on a list of popular ones.
 """
 
 import asyncio
@@ -38,9 +37,8 @@ from typing import Final, Protocol, Self, runtime_checkable
 
 from sextile.addressing import PageAddress
 
-#: How long a visit is kept. Thirty days is a month of weather and a month of
-#: posts, which is what either service's "lately" means; it is a setting rather
-#: than a rule, since a service with more readers may want less of it.
+#: How long a visit is kept. Thirty days is what "lately" means; it is a setting
+#: rather than a rule, since a service with more readers may want less of it.
 KEPT: Final = timedelta(days=30)
 
 _SCHEMA: Final = """
@@ -96,9 +94,8 @@ class SqliteVisits:
     """The log, in a file of its own.
 
     A file of its own rather than a table in a service's own database, because
-    a service's own database is often derived -- the weather rebuilds its place
-    index from a GeoNames dump and stamps it with the rules that built it -- and
-    a log is the only copy of what it holds.
+    a service's own database is often derived and rebuilt, whereas a log is the
+    only copy of what it holds.
     """
 
     def __init__(self, connection: sqlite3.Connection, *, kept: timedelta = KEPT) -> None:

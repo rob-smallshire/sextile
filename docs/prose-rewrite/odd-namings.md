@@ -51,6 +51,8 @@ beyond prose.
 
 | viewdata/footer.py | `_MOVEMENT` comment "a service moves between posts, or days" (Stardot/calendar) | "whatever the service's items are" — fixed here |
 | viewdata/repaint.py | `rows_bytes` "a place the reader has typed past" (weather) | "an entry the reader has typed past" — fixed here |
+| visits.py | `KEPT` "a month of weather and a month of posts"; address example `321<geoname-id>`; `SqliteVisits` "the weather rebuilds its place index from a GeoNames dump" | genericised to "what 'lately' means", `52<id>`, "a service's own database is often derived and rebuilt" — fixed here |
+| testing.py | module/`key` example "TROND"/"Trondheim" (weather place) | "ABC" — fixed here |
 
 **Summary:** the docstring sweep found Invariant-1 (framework-must-not-know-applications) violated in framework *comments/docstrings* across ~11 files. All fixed in place. **A code-level check is still owed** — that no framework identifier, branch or string literal names a forum/post/forecast/place/coordinate concept — since that would be a defect beyond prose.
 

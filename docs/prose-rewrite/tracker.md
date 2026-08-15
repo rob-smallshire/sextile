@@ -64,14 +64,14 @@ Docs:
 - [x] README.md  (fixed broken draw_chrome headline example)
 
 Source docstrings + comments (src/sextile):
-- [ ] __init__.py, __main__.py
+- [x] __init__.py, __main__.py  (__main__ already at target)
 - [x] addressing.py
 - [x] application.py
-- [ ] cli.py
-- [ ] compass.py
+- [x] cli.py
+- [x] compass.py
 - [ ] content/ (blocks.py, transliterate.py)
 - [x] declarations.py
-- [ ] demo.py
+- [x] demo.py  (already at target; unchanged)
 - [x] formatting.py  (fixed several Invariant-1 leaks)
 - [x] forms.py  (fixed several Invariant-1 leaks)
 - [x] handlers.py
@@ -85,8 +85,8 @@ Source docstrings + comments (src/sextile):
 - [x] routing.py
 - [x] server.py
 - [x] session/ (commands.py, session.py)  (fixed 2 Invariant-1 comment leaks)
-- [ ] testing.py
-- [ ] visits.py
+- [x] testing.py
+- [x] visits.py
 - [~] viewdata/  (Batch E done: canvas, drawing, composition rewritten;
       ansi, charset, controls, encoding, frame already at target. Remaining:
       blocks, charting, command_line, countdown, font, fonts, footer,

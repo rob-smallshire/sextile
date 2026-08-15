@@ -8,8 +8,8 @@ about any one page.
 
     async with calling(app) as caller:
         await caller.key("*3#")
-        await caller.key("TROND")
-        assert "Trondheim" in caller.shown
+        await caller.key("ABC")
+        assert "ABC" in caller.shown
 
 `calling` opens the service and closes it again, so a lifespan that holds a
 database opens one for the test as it would for a call.
@@ -47,7 +47,7 @@ class Caller:
 
         Args:
             pressed: What the terminal sends. A string is the characters a
-                reader keys, `"*3#"` or `"TROND"`; bytes are for the codes no
+                reader keys, `"*3#"` or `"ABC"`; bytes are for the codes no
                 keyboard spells, such as `b"\x5f"` for RETURN. Several keys at
                 once are the same as one at a time: the session reads a byte
                 at a time either way.
@@ -65,8 +65,8 @@ class Caller:
         """What is on the screen, as rows of text.
 
         The characters only. Colour and the control codes that carry it are
-        left out, a test about what a page says having no business knowing how
-        an attribute cell is spelt.
+        left out, a test about what a page says needing no knowledge of how an
+        attribute cell is spelt.
         """
         frame = self.session.current_frame()
         if frame is None:

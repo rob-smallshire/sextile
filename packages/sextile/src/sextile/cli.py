@@ -1,7 +1,7 @@
 """The pieces both command lines are built from.
 
 Sextile has a command of its own, which can serve or draw any application, and
-an application generally wants one too -- if only to say where its data lives.
+an application generally needs one too -- if only to say where its data lives.
 Neither should have to reimplement the other, so what they share is here.
 """
 

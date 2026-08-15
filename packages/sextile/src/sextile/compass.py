@@ -1,8 +1,8 @@
 """The four keys that move about a page, drawn as a compass.
 
 `W` `A` `S` `D` are the framework's keys, not any one service's, so the picture
-of them belongs here: a service that drew its own would be drawing the same
-thing, and would keep drawing it after the keys had moved.
+of them belongs here rather than in a service: one copy, and it stays right if
+the keys change.
 
 **The arrows are mosaics because the character set has only three of them.**
 The G0 set has `←`, `→` and `↑` at 0x5B, 0x5D and 0x5E, and no down arrow at

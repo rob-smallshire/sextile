@@ -50,7 +50,7 @@ from sextile.viewdata.command_line import (
 )
 from sextile.viewdata.countdown import countdown_bytes, lit_cells
 from sextile.viewdata.frame import Frame
-from sextile.viewdata.parting import parting_bytes
+from sextile.viewdata.hangup import hangup_bytes
 from sextile.viewdata.repaint import (
     NOTHING,
     caret_bytes,
@@ -197,7 +197,7 @@ class Session:
         gives them nothing to type at.
         """
         frame = self.current_frame()
-        return parting_bytes(frame) if frame is not None else b""
+        return hangup_bytes(frame) if frame is not None else b""
 
     # -- the idle warning ---------------------------------------------------
     #

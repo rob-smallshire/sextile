@@ -22,7 +22,7 @@ from sextile.viewdata.frame import ROWS, Frame
 _GAP: Final = 2
 
 
-def parting_bytes(frame: Frame) -> bytes:
+def hangup_bytes(frame: Frame) -> bytes:
     """Leave the cursor somewhere the reader can talk to their modem.
 
     Sent after a parting frame, whose own trailing blanks are not transmitted --

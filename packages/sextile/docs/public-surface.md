@@ -97,7 +97,7 @@ Public submodules:
 | `wrapping` | `wrap_text`, `wrap_within` |
 
 Internal to the framework, and not to be imported: `command_line`,
-`countdown`, `parting`, `repaint`, `ansi`. These are what the session is built
+`countdown`, `hangup`, `repaint`, `ansi`. These are what the session is built
 from, and it draws on a frame after a page has been built rather than while it
 is being built.
 
@@ -224,7 +224,7 @@ Everything else, and specifically:
 | `routing` | a service declares routes; the router matches them. `Converter` is the extension point, and it and the two errors it raises are at the top level |
 | `pages` | reached through `sextile.handlers` or the `Sextile` methods |
 | `session`, `server` | how a call is answered, which no page takes part in |
-| `viewdata.command_line`, `.countdown`, `.parting`, `.repaint` | what the session is built from |
+| `viewdata.command_line`, `.countdown`, `.hangup`, `.repaint` | what the session is built from |
 | `viewdata.ansi` | for looking at a frame without a terminal |
 
 ## Where the line is crossed

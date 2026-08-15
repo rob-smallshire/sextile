@@ -29,7 +29,7 @@ from sextile.testing import request_for, text_of
 from sextile.viewdata import lettering
 from sextile.viewdata.blocks import BLOCKS_ACROSS, BLOCKS_DOWN
 from sextile.viewdata.charset import mosaic_pattern
-from sextile.viewdata.controls import Control
+from sextile.viewdata.controls import Attribute
 from sextile.viewdata.font import load_font
 from sextile.viewdata.frame import COLUMNS, Frame
 from sextile.viewdata.lettering import Spacing
@@ -443,12 +443,12 @@ class TestTheTitleFrame:
         frame = (await page_at(app, "0")).frames[0].frame
         rows = range(BANNER_ROW, BANNER_ROW + 3)
         assert all(
-            any(frame.cell(row, column) == Control.NEW_BACKGROUND for column in range(4))
+            any(frame.cell(row, column) == Attribute.NEW_BACKGROUND for column in range(4))
             for row in rows
         )
         #  Nothing turns it off again, so it runs to the end of every row.
         assert not any(
-            frame.cell(row, column) == Control.BLACK_BACKGROUND
+            frame.cell(row, column) == Attribute.BLACK_BACKGROUND
             for row in rows
             for column in range(COLUMNS)
         )
@@ -472,7 +472,7 @@ class TestTheTitleFrame:
             row
             for row in range(SUBTITLE_ROW, SUBTITLE_ROW + 3)
             if any(
-                frame.cell(row, column) == Control.NEW_BACKGROUND
+                frame.cell(row, column) == Attribute.NEW_BACKGROUND
                 for column in range(COLUMNS)
             )
         ]
@@ -486,7 +486,7 @@ class TestTheTitleFrame:
         frame = (await page_at(app, "0")).frames[0].frame
         row = SUBTITLE_ROW + 1
         assert any(
-            frame.cell(row, column) == Control.BLACK_BACKGROUND
+            frame.cell(row, column) == Attribute.BLACK_BACKGROUND
             for column in range(COLUMNS)
         )
 

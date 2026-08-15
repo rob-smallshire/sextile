@@ -11,7 +11,7 @@ independently and white text needs no attribute at all.
 import pytest
 
 from sextile.viewdata.canvas import DEFAULT_COLOUR, Canvas
-from sextile.viewdata.controls import Colour, Control, alpha_colour
+from sextile.viewdata.controls import Attribute, Colour, alpha_colour
 from sextile.viewdata.frame import COLUMNS, ROWS
 
 
@@ -70,7 +70,7 @@ class TestColour:
         canvas = Canvas()
         row = canvas.row(0)
         row.text("RED", Colour.RED)
-        assert canvas.frame.cell(0, 0) == Control.ALPHA_RED
+        assert canvas.frame.cell(0, 0) == Attribute.ALPHA_RED
         assert canvas.frame.text_at(0, 1, 3) == "RED"
         assert row.column == 4
 
@@ -85,8 +85,8 @@ class TestColour:
         canvas = Canvas()
         row = canvas.row(0)
         row.text("RED", Colour.RED).text("WHITE", Colour.WHITE)
-        assert canvas.frame.cell(0, 0) == Control.ALPHA_RED
-        assert canvas.frame.cell(0, 4) == Control.ALPHA_WHITE
+        assert canvas.frame.cell(0, 0) == Attribute.ALPHA_RED
+        assert canvas.frame.cell(0, 4) == Attribute.ALPHA_WHITE
         assert canvas.frame.text_at(0, 5, 5) == "WHITE"
         assert row.column == 10
 
@@ -152,7 +152,7 @@ class TestAlignment:
     def test_centred_text_with_colour_keeps_the_text_centred(self) -> None:
         canvas = Canvas()
         canvas.centre(0, "STARDOT", Colour.YELLOW)
-        assert canvas.frame.cell(0, 15) == Control.ALPHA_YELLOW
+        assert canvas.frame.cell(0, 15) == Attribute.ALPHA_YELLOW
         assert canvas.frame.text_at(0, 16, 7) == "STARDOT"
 
     def test_centring_full_width_coloured_text_shifts_it_off_the_left_edge(self) -> None:
@@ -160,7 +160,7 @@ class TestAlignment:
         #  gives up its centring rather than the colour being silently dropped.
         canvas = Canvas()
         canvas.centre(0, "X" * (COLUMNS - 1), Colour.RED)
-        assert canvas.frame.cell(0, 0) == Control.ALPHA_RED
+        assert canvas.frame.cell(0, 0) == Attribute.ALPHA_RED
         assert canvas.frame.text_at(0, 1, COLUMNS - 1) == "X" * (COLUMNS - 1)
 
     def test_right_aligned_text(self) -> None:
@@ -171,7 +171,7 @@ class TestAlignment:
     def test_right_aligned_text_with_colour_reserves_the_attribute_cell(self) -> None:
         canvas = Canvas()
         canvas.right(0, "8202608021", Colour.CYAN)
-        assert canvas.frame.cell(0, COLUMNS - 11) == Control.ALPHA_CYAN
+        assert canvas.frame.cell(0, COLUMNS - 11) == Attribute.ALPHA_CYAN
         assert canvas.frame.text_at(0, COLUMNS - 10, 10) == "8202608021"
 
 
@@ -231,7 +231,7 @@ class TestWritingAfterSomethingElse:
 
     def test_a_graphics_colour_counts_as_the_colour_in_force(self) -> None:
         canvas = Canvas()
-        canvas.frame.set_attribute(0, 0, Control.GRAPHICS_RED)
+        canvas.frame.set_attribute(0, 0, Attribute.GRAPHICS_RED)
         canvas.right(0, "X", Colour.RED)
         _, attributes = canvas.frame.to_grid()
         assert "A" not in attributes[0]
@@ -270,7 +270,7 @@ class TestDoubleHeight:
         canvas = Canvas()
         canvas.double_height(4, "STARDOT")
         for row in (4, 5):
-            assert canvas.frame.cell(row, 0) == Control.DOUBLE_HEIGHT
+            assert canvas.frame.cell(row, 0) == Attribute.DOUBLE_HEIGHT
 
     def test_the_attribute_occupies_a_cell(self) -> None:
         canvas = Canvas()
@@ -323,7 +323,7 @@ class TestMosaicRuns:
     def test_the_attribute_is_a_graphics_colour(self) -> None:
         canvas = Canvas()
         canvas.row(0).mosaic([0b111111], Colour.YELLOW)
-        assert canvas.frame.cell(0, 0) == Control.GRAPHICS_YELLOW
+        assert canvas.frame.cell(0, 0) == Attribute.GRAPHICS_YELLOW
 
     def test_staying_in_graphics_costs_nothing_more(self) -> None:
         canvas = Canvas()
@@ -344,7 +344,7 @@ class TestMosaicRuns:
         writer = canvas.row(0)
         writer.mosaic([0b111111], Colour.BLUE, separated=True)
         assert writer.column == 3
-        assert canvas.frame.cell(0, 0) == Control.SEPARATED_GRAPHICS
+        assert canvas.frame.cell(0, 0) == Attribute.SEPARATED_GRAPHICS
 
     def test_going_back_to_text_costs_a_cell(self) -> None:
         #  Without this the text would be drawn as mosaics: the colour attribute
@@ -353,7 +353,7 @@ class TestMosaicRuns:
         writer = canvas.row(0)
         writer.mosaic([0b111111], Colour.YELLOW)
         writer.text("AB", Colour.YELLOW)
-        assert canvas.frame.cell(0, 2) == Control.ALPHA_YELLOW
+        assert canvas.frame.cell(0, 2) == Attribute.ALPHA_YELLOW
         assert writer.column == 5
 
     def test_text_in_the_same_colour_still_pays_to_leave_graphics(self) -> None:
@@ -394,7 +394,7 @@ class TestABackground:
         canvas.row(0).background(Colour.BLUE, text=Colour.WHITE)
         frame = canvas.frame
         assert frame.cell(0, 0) == alpha_colour(Colour.BLUE)
-        assert frame.cell(0, 1) == Control.NEW_BACKGROUND
+        assert frame.cell(0, 1) == Attribute.NEW_BACKGROUND
         assert frame.cell(0, 2) == alpha_colour(Colour.WHITE)
 
     def test_the_text_colour_is_then_in_force(self) -> None:
@@ -425,7 +425,7 @@ class TestEndingABackground:
     def test_the_cell_is_the_one_the_hardware_wants(self) -> None:
         canvas = Canvas()
         canvas.row(0).background(Colour.BLUE, text=Colour.WHITE).text("54.0N").plain()
-        assert canvas.frame.cell(0, 3 + len("54.0N")) == Control.BLACK_BACKGROUND
+        assert canvas.frame.cell(0, 3 + len("54.0N")) == Attribute.BLACK_BACKGROUND
 
     def test_what_follows_is_written_in_the_same_colour(self) -> None:
         #  Black is taken as a background directly, being the one colour that

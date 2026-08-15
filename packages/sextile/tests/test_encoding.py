@@ -8,11 +8,11 @@ must be escaped as ESC followed by the code plus 0x40.
 
 import pytest
 
-from sextile.viewdata.controls import Colour, Control, alpha_colour, graphics_colour
+from sextile.viewdata.controls import Attribute, Colour, alpha_colour, graphics_colour
 from sextile.viewdata.encoding import (
     ESCAPE,
     ScreenControl,
-    encode_control,
+    encode_attribute,
     encode_text,
 )
 
@@ -20,40 +20,40 @@ from sextile.viewdata.encoding import (
 class TestAttributeEncoding:
     def test_alpha_red_is_escape_forty_one(self) -> None:
         #  The measurement: ESC 0x41 produced a control cell reading 0x01, red.
-        assert encode_control(Control.ALPHA_RED) == bytes([0x1B, 0x41])
+        assert encode_attribute(Attribute.ALPHA_RED) == bytes([0x1B, 0x41])
 
     @pytest.mark.parametrize(
         ("control", "expected"),
         [
-            (Control.ALPHA_RED, b"\x1bA"),
-            (Control.ALPHA_GREEN, b"\x1bB"),
-            (Control.ALPHA_WHITE, b"\x1bG"),
-            (Control.FLASH, b"\x1bH"),
-            (Control.DOUBLE_HEIGHT, b"\x1bM"),
-            (Control.GRAPHICS_WHITE, b"\x1bW"),
-            (Control.CONTIGUOUS_GRAPHICS, b"\x1bY"),
-            (Control.SEPARATED_GRAPHICS, b"\x1bZ"),
-            (Control.NEW_BACKGROUND, b"\x1b]"),
+            (Attribute.ALPHA_RED, b"\x1bA"),
+            (Attribute.ALPHA_GREEN, b"\x1bB"),
+            (Attribute.ALPHA_WHITE, b"\x1bG"),
+            (Attribute.FLASH, b"\x1bH"),
+            (Attribute.DOUBLE_HEIGHT, b"\x1bM"),
+            (Attribute.GRAPHICS_WHITE, b"\x1bW"),
+            (Attribute.CONTIGUOUS_GRAPHICS, b"\x1bY"),
+            (Attribute.SEPARATED_GRAPHICS, b"\x1bZ"),
+            (Attribute.NEW_BACKGROUND, b"\x1b]"),
         ],
     )
-    def test_measured_encodings(self, control: Control, expected: bytes) -> None:
-        assert encode_control(control) == expected
+    def test_measured_encodings(self, control: Attribute, expected: bytes) -> None:
+        assert encode_attribute(control) == expected
 
-    @pytest.mark.parametrize("control", list(Control))
-    def test_every_attribute_is_two_bytes_led_by_escape(self, control: Control) -> None:
-        encoded = encode_control(control)
+    @pytest.mark.parametrize("control", list(Attribute))
+    def test_every_attribute_is_two_bytes_led_by_escape(self, control: Attribute) -> None:
+        encoded = encode_attribute(control)
         assert len(encoded) == 2
         assert encoded[0] == ESCAPE
         assert encoded[1] == control + 0x40
 
-    @pytest.mark.parametrize("control", list(Control))
-    def test_no_attribute_encodes_into_the_c0_range(self, control: Control) -> None:
+    @pytest.mark.parametrize("control", list(Attribute))
+    def test_no_attribute_encodes_into_the_c0_range(self, control: Attribute) -> None:
         #  An attribute byte that landed in C0 would be read as screen control.
-        assert encode_control(control)[1] >= 0x20
+        assert encode_attribute(control)[1] >= 0x20
 
     def test_colour_selection_round_trips_through_encoding(self) -> None:
-        assert encode_control(alpha_colour(Colour.CYAN)) == b"\x1bF"
-        assert encode_control(graphics_colour(Colour.CYAN)) == b"\x1bV"
+        assert encode_attribute(alpha_colour(Colour.CYAN)) == b"\x1bF"
+        assert encode_attribute(graphics_colour(Colour.CYAN)) == b"\x1bV"
 
 
 class TestScreenControl:
@@ -88,13 +88,13 @@ class TestScreenControl:
         #  graphics red, and 0x14 graphics blue. The two namespaces are what
         #  keep those apart.
         for control in ScreenControl:
-            assert encode_control(Control(control))[1] != control
+            assert encode_attribute(Attribute(control))[1] != control
 
     def test_clear_screen_collides_with_normal_height_but_differs_on_the_wire(self) -> None:
         #  Both are 0x0C; only the escape tells them apart. This is the mistake
         #  the two namespaces exist to prevent.
-        assert int(ScreenControl.CLEAR_SCREEN) == int(Control.NORMAL_HEIGHT)
-        assert bytes([ScreenControl.CLEAR_SCREEN]) != encode_control(Control.NORMAL_HEIGHT)
+        assert int(ScreenControl.CLEAR_SCREEN) == int(Attribute.NORMAL_HEIGHT)
+        assert bytes([ScreenControl.CLEAR_SCREEN]) != encode_attribute(Attribute.NORMAL_HEIGHT)
 
 
 class TestTextEncoding:

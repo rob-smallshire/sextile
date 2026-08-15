@@ -51,8 +51,8 @@ from beebium.client import Beebium
 from beebium.client.exceptions import ServerNotFoundError
 from beebium.ext.peripheral.rpc_serial import RpcSerial
 from sextile.viewdata.canvas import Canvas
-from sextile.viewdata.controls import Colour, Control
-from sextile.viewdata.encoding import encode_control
+from sextile.viewdata.controls import Colour, Attribute
+from sextile.viewdata.encoding import encode_attribute
 from sextile.viewdata.frame import COLUMNS, ROWS, Frame
 
 COMMSTAR_ROM_FILENAME = "commstar_1_40_SN882A.rom"
@@ -222,7 +222,7 @@ def row_bytes_upto(frame: Frame, row: int, upto: int) -> bytes:
     out = bytearray()
     for code in frame._cells[row * COLUMNS : row * COLUMNS + upto]:
         if code < BLANK:
-            out.extend(encode_control(Control(code)))
+            out.extend(encode_attribute(Attribute(code)))
         else:
             out.append(code)
     return bytes(out)

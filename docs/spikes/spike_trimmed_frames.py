@@ -30,7 +30,7 @@ from beebium.client import Beebium
 from beebium.client.exceptions import ServerNotFoundError
 from beebium.ext.peripheral.rpc_serial import RpcSerial
 from sextile.viewdata.canvas import Canvas
-from sextile.viewdata.controls import Colour, Control
+from sextile.viewdata.controls import Colour, Attribute
 from sextile.viewdata.drawing import rule
 from sextile.viewdata.frame import COLUMNS, ROWS, Frame
 
@@ -177,7 +177,7 @@ def test_a_frame_ending_in_an_attribute(commstar: Beebium) -> None:
     """An attribute is not a blank, even with nothing after it."""
     canvas = Canvas()
     canvas.row(0).text("BEFORE")
-    canvas.frame.set_attribute(0, 10, Control.ALPHA_MAGENTA)
+    canvas.frame.set_attribute(0, 10, Attribute.ALPHA_MAGENTA)
     canvas.row(1).text("AFTER")
     compare(commstar, canvas.frame, "a trailing attribute")
 

@@ -12,7 +12,7 @@ variants, and the difference is decorative rather than structural.
 from typing import Final
 
 from sextile.viewdata.charset import decode_g0, mosaic_pattern
-from sextile.viewdata.controls import Colour, Control
+from sextile.viewdata.controls import Attribute, Colour
 from sextile.viewdata.frame import COLUMNS, ROWS, Frame
 
 #  Patterns Unicode already had before the sextant block was added, which the
@@ -86,9 +86,9 @@ def _render_row(frame: Frame, row: int, colour: bool) -> str:
             elif code in _GRAPHICS_COLOURS:
                 foreground = Colour(code - 0x10)
                 graphics = True
-            elif code == Control.BLACK_BACKGROUND:
+            elif code == Attribute.BLACK_BACKGROUND:
                 background = Colour.BLACK
-            elif code == Control.NEW_BACKGROUND:
+            elif code == Attribute.NEW_BACKGROUND:
                 background = foreground
             if colour:
                 held.append(_ansi(foreground, background))

@@ -84,7 +84,7 @@ Public submodules:
 |---|---|
 | `canvas` | `Canvas`, `RowWriter`, `Run` — writing on a frame |
 | `frame` | `Frame`, `ROWS`, `COLUMNS`, `FOOTER_ROW` — what a frame is |
-| `controls` | `Colour`, `Control`, `is_control_code`, and the two colour encoders |
+| `controls` | `Colour`, `Attribute`, `is_attribute_code`, and the two colour encoders |
 | `encoding` | `cell_count`, `fitted` — what fits in how many cells |
 | `charset` | `G0_TO_UNICODE`, `mosaic_code`, `is_representable` |
 | `drawing` | `rule`, `thin_rule`, `centred`, `key_row`, `bar` |
@@ -102,7 +102,7 @@ from, and it draws on a frame after a page has been built rather than while it
 is being built.
 
 **Some of this is offered rather than used.** `read_bitmap`, `boxed`,
-`cells_for` and `is_control_code` have no caller among the three services here,
+`cells_for` and `is_attribute_code` have no caller among the three services here,
 and that is not an argument against them. A framework's surface is justified by
 being useful to a service, not by being used by the services that happen to
 share a repository with it: a fourth service drawing its own icons wants

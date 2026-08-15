@@ -19,7 +19,7 @@ black for the reminder that `*` cancels.
 from typing import Final
 
 from sextile.viewdata.canvas import Canvas
-from sextile.viewdata.controls import Colour, Control, alpha_colour
+from sextile.viewdata.controls import Attribute, Colour, alpha_colour
 from sextile.viewdata.encoding import ScreenControl, encode_text
 from sextile.viewdata.frame import COLUMNS, FOOTER_ROW, Frame
 
@@ -41,9 +41,9 @@ BUFFER_CELLS: Final = COLUMNS - _BUFFER_ATTRIBUTES - _HINT_ATTRIBUTES - len(CANC
 def draw_command_line(canvas: Canvas, entry: str) -> None:
     """Draw the command line across the footer row."""
     frame = canvas.frame
-    frame.set_attribute(FOOTER_ROW, 0, Control.ALPHA_BLUE)
-    frame.set_attribute(FOOTER_ROW, 1, Control.NEW_BACKGROUND)
-    frame.set_attribute(FOOTER_ROW, 2, Control.ALPHA_WHITE)
+    frame.set_attribute(FOOTER_ROW, 0, Attribute.ALPHA_BLUE)
+    frame.set_attribute(FOOTER_ROW, 1, Attribute.NEW_BACKGROUND)
+    frame.set_attribute(FOOTER_ROW, 2, Attribute.ALPHA_WHITE)
 
     #  The tail, not the head: what was typed most recently is what a reader is
     #  checking. Real page numbers are far shorter than this anyway.
@@ -51,7 +51,7 @@ def draw_command_line(canvas: Canvas, entry: str) -> None:
     frame.write(FOOTER_ROW, _BUFFER_ATTRIBUTES, shown.ljust(BUFFER_CELLS))
 
     hint_start = _BUFFER_ATTRIBUTES + BUFFER_CELLS
-    frame.set_attribute(FOOTER_ROW, hint_start, Control.BLACK_BACKGROUND)
+    frame.set_attribute(FOOTER_ROW, hint_start, Attribute.BLACK_BACKGROUND)
     frame.set_attribute(FOOTER_ROW, hint_start + 1, alpha_colour(Colour.YELLOW))
     frame.write(FOOTER_ROW, hint_start + _HINT_ATTRIBUTES, CANCEL_HINT)
 

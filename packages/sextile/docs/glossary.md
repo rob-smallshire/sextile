@@ -7,6 +7,11 @@ as "was X" so a reader coming from older code or docs can find it.
 - **page** — what a handler returns: one or more frames sharing a page number.
 - **frame** — one screenful, 24 rows of 40 cells; a page too long for one has
   several, keyed `a` to `z`.
+- **attribute** (was `Control`) — a teletext spacing attribute: a colour or
+  character-set code that takes a cell of its own and shows as a blank.
+  `controls.Attribute`; `is_attribute_code` (was `is_control_code`) tells one
+  from a character. Not to be confused with `encoding.ScreenControl`, the C0
+  cursor and screen controls.
 - **part** — a piece of a page's body between the rules: a menu, some lines, a
   picture, a form. `layout.Part`. A part says which frames it appears on:
   `OnOneFrame` (was `Once`), `OnEveryFrame` (was `Every`), `Flow` (was

@@ -131,7 +131,7 @@ class Caller:
     def screen(self) -> str:
         """What is on the screen, as rows of text.
 
-        The characters only. Colour and the control codes that carry it are
+        The characters only. Colour and the attribute codes that carry it are
         left out, a test about what a page says needing no knowledge of how an
         attribute cell is spelt.
         """

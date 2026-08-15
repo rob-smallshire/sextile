@@ -10,7 +10,7 @@ import pytest
 
 from sextile.viewdata.ansi import mosaic_character, render_ansi, sextant
 from sextile.viewdata.canvas import Canvas
-from sextile.viewdata.controls import Colour, Control
+from sextile.viewdata.controls import Attribute, Colour
 from sextile.viewdata.frame import COLUMNS, ROWS, Frame
 
 
@@ -96,13 +96,13 @@ class TestRendering:
 
     def test_graphics_cells_render_as_mosaics(self) -> None:
         frame = Frame()
-        frame.set_attribute(0, 0, Control.GRAPHICS_WHITE)
+        frame.set_attribute(0, 0, Attribute.GRAPHICS_WHITE)
         frame.write(0, 1, "\u25ae")  # 0x7F, solid in graphics mode
         assert "█" in render_ansi(frame, colour=False)
 
     def test_graphics_state_does_not_leak_into_the_next_row(self) -> None:
         #  Attributes reset each row, so row 1 is alphanumeric again.
         frame = Frame()
-        frame.set_attribute(0, 0, Control.GRAPHICS_WHITE)
+        frame.set_attribute(0, 0, Attribute.GRAPHICS_WHITE)
         frame.write(1, 0, "\u25ae")
         assert render_ansi(frame, colour=False).splitlines()[1][0] == "▮"

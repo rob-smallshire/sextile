@@ -20,7 +20,7 @@ from typing import Final
 
 from sextile.viewdata.canvas import Canvas, RowWriter
 from sextile.viewdata.composition import Align, Composition, Style
-from sextile.viewdata.controls import Colour, Control, graphics_colour
+from sextile.viewdata.controls import Attribute, Colour, graphics_colour
 from sextile.viewdata.encoding import cell_count, fitted
 from sextile.viewdata.frame import COLUMNS
 
@@ -161,6 +161,6 @@ def bar(
         raise ValueError(f"no room for a bar at column {column} of row {row}")
     frame.set_attribute(row, column, graphics_colour(colour))
     if separated:
-        frame.set_attribute(row, column + 1, Control.SEPARATED_GRAPHICS)
+        frame.set_attribute(row, column + 1, Attribute.SEPARATED_GRAPHICS)
     solid = room if lit is None else max(min(lit, room), 0)
     frame.write(row, column + attributes, SOLID * solid + " " * (room - solid))

@@ -8,8 +8,8 @@ had just drawn. Making the grid fixed-size removes that failure entirely.
 
 import pytest
 
-from sextile.viewdata.controls import Colour, Control, alpha_colour
-from sextile.viewdata.encoding import ScreenControl, encode_control
+from sextile.viewdata.controls import Attribute, Colour, alpha_colour
+from sextile.viewdata.encoding import ScreenControl, encode_attribute
 from sextile.viewdata.frame import COLUMNS, FRAME_PREAMBLE, ROWS, Frame
 
 SPACE = 0x20
@@ -73,8 +73,8 @@ class TestWritingText:
 class TestAttributes:
     def test_an_attribute_occupies_a_cell(self) -> None:
         frame = Frame()
-        frame.set_attribute(0, 0, Control.ALPHA_RED)
-        assert frame.cell(0, 0) == Control.ALPHA_RED
+        frame.set_attribute(0, 0, Attribute.ALPHA_RED)
+        assert frame.cell(0, 0) == Attribute.ALPHA_RED
         assert frame.is_attribute(0, 0)
 
     def test_a_character_cell_is_not_an_attribute(self) -> None:
@@ -110,7 +110,7 @@ class TestSerialisation:
 
     def test_an_attribute_is_escaped(self) -> None:
         frame = Frame()
-        frame.set_attribute(0, 0, Control.ALPHA_RED)
+        frame.set_attribute(0, 0, Attribute.ALPHA_RED)
         assert frame.to_bytes()[len(FRAME_PREAMBLE) :][:2] == b"\x1bA"
 
     def test_escaping_lengthens_the_stream_without_moving_the_cursor(self) -> None:
@@ -119,13 +119,13 @@ class TestSerialisation:
         #  authority on layout. Compared untrimmed, where every cell is sent.
         blank = Frame()
         coloured = Frame()
-        coloured.set_attribute(10, 20, Control.ALPHA_CYAN)
+        coloured.set_attribute(10, 20, Attribute.ALPHA_CYAN)
         assert len(coloured.to_bytes(trim=False)) == len(blank.to_bytes(trim=False)) + 1
 
     def test_every_byte_is_seven_bit(self) -> None:
         frame = Frame()
         frame.write(0, 0, "£ ½ ¾ ← →")
-        frame.set_attribute(1, 0, Control.GRAPHICS_WHITE)
+        frame.set_attribute(1, 0, Attribute.GRAPHICS_WHITE)
         assert all(byte < 0x80 for byte in frame.to_bytes())
 
 
@@ -154,7 +154,7 @@ class TestGridRendering:
     def test_the_two_layers_are_the_same_shape(self) -> None:
         frame = Frame()
         frame.write(0, 0, "TEXT")
-        frame.set_attribute(0, 10, Control.FLASH)
+        frame.set_attribute(0, 10, Attribute.FLASH)
         characters, attributes = frame.to_grid()
         assert len(characters) == len(attributes) == ROWS
         assert all(len(row) == COLUMNS for row in characters + attributes)
@@ -208,7 +208,7 @@ class TestTrimming:
     def test_a_trailing_attribute_is_kept(self) -> None:
         #  An attribute is not a blank, even where nothing follows it.
         frame = Frame()
-        frame.set_attribute(0, 0, Control.ALPHA_RED)
+        frame.set_attribute(0, 0, Attribute.ALPHA_RED)
         assert frame.to_bytes() == FRAME_PREAMBLE + b"\x1bA"
 
     def test_the_untrimmed_form_is_still_available(self) -> None:
@@ -259,13 +259,13 @@ class TestSendingPartOfARow:
         #  Trimming changes how much of a row is sent, and nothing about how
         #  what is sent is encoded.
         frame = Frame()
-        frame.set_attribute(0, 0, Control.ALPHA_YELLOW)
+        frame.set_attribute(0, 0, Attribute.ALPHA_YELLOW)
         frame.write(0, 1, "HI")
         sent = frame.row_bytes(0, upto=frame.used_columns(0))
-        assert sent == encode_control(Control.ALPHA_YELLOW) + b"HI"
+        assert sent == encode_attribute(Attribute.ALPHA_YELLOW) + b"HI"
 
     def test_the_width_a_row_uses_counts_attributes(self) -> None:
         frame = Frame()
-        frame.set_attribute(0, 0, Control.ALPHA_YELLOW)
+        frame.set_attribute(0, 0, Attribute.ALPHA_YELLOW)
         frame.write(0, 1, "HI")
         assert frame.used_columns(0) == 3

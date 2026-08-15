@@ -15,7 +15,7 @@ from enum import Enum, auto
 from typing import Final, Self
 
 from sextile.viewdata.charset import mosaic_code
-from sextile.viewdata.controls import Colour, Control, alpha_colour, graphics_colour
+from sextile.viewdata.controls import Attribute, Colour, alpha_colour, graphics_colour
 from sextile.viewdata.encoding import cell_count, fitted
 from sextile.viewdata.frame import COLUMNS, ROWS, Frame
 from sextile.viewdata.wrapping import wrap_text
@@ -181,7 +181,7 @@ class RowWriter:
             self._frame.set_attribute(
                 self._row,
                 self._column,
-                Control.SEPARATED_GRAPHICS if separated else Control.CONTIGUOUS_GRAPHICS,
+                Attribute.SEPARATED_GRAPHICS if separated else Attribute.CONTIGUOUS_GRAPHICS,
             )
             self._column += 1
             self._separated = separated
@@ -229,7 +229,7 @@ class RowWriter:
                 f"{self._row} has {self.remaining}"
             )
         self._frame.set_attribute(self._row, self._column, alpha_colour(colour))
-        self._frame.set_attribute(self._row, self._column + 1, Control.NEW_BACKGROUND)
+        self._frame.set_attribute(self._row, self._column + 1, Attribute.NEW_BACKGROUND)
         self._frame.set_attribute(self._row, self._column + 2, alpha_colour(text))
         self._column += _BACKGROUND_CELLS
         self._colour = text
@@ -248,7 +248,7 @@ class RowWriter:
         """
         if self.remaining < 1:
             raise ValueError(f"row {self._row} has no cell left to end a background")
-        self._frame.set_attribute(self._row, self._column, Control.BLACK_BACKGROUND)
+        self._frame.set_attribute(self._row, self._column, Attribute.BLACK_BACKGROUND)
         self._column += 1
         return self
 
@@ -332,7 +332,7 @@ class Canvas:
             )
         for half in (row, row + 1):
             at = column
-            self._frame.set_attribute(half, at, Control.DOUBLE_HEIGHT)
+            self._frame.set_attribute(half, at, Attribute.DOUBLE_HEIGHT)
             at += 1
             if colour is not None:
                 self._frame.set_attribute(half, at, alpha_colour(colour))

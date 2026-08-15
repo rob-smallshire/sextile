@@ -15,10 +15,10 @@ from typing import Final
 
 __all__ = [
     "Colour",
-    "Control",
+    "Attribute",
     "alpha_colour",
     "graphics_colour",
-    "is_control_code",
+    "is_attribute_code",
 ]
 
 
@@ -35,7 +35,7 @@ class Colour(IntEnum):
     WHITE = 7
 
 
-class Control(IntEnum):
+class Attribute(IntEnum):
     """Teletext spacing attributes."""
 
     ALPHA_RED = 0x01
@@ -67,14 +67,14 @@ class Control(IntEnum):
     RELEASE_GRAPHICS = 0x1F
 
 
-FIRST_CONTROL: Final = 0x00
-LAST_CONTROL: Final = 0x1F
+FIRST_ATTRIBUTE: Final = 0x00
+LAST_ATTRIBUTE: Final = 0x1F
 
 _ALPHA_COLOUR_BASE: Final = 0x00
 _GRAPHICS_COLOUR_BASE: Final = 0x10
 
 
-def is_control_code(code: int) -> bool:
+def is_attribute_code(code: int) -> bool:
     """Say whether a code position holds a spacing attribute.
 
     Args:
@@ -86,19 +86,19 @@ def is_control_code(code: int) -> bool:
         displays. An attribute occupies a cell and shows as a blank, so a
         caller counting what a row says has to tell the two apart.
     """
-    return FIRST_CONTROL <= code <= LAST_CONTROL
+    return FIRST_ATTRIBUTE <= code <= LAST_ATTRIBUTE
 
 
-def alpha_colour(colour: Colour) -> Control:
+def alpha_colour(colour: Colour) -> Attribute:
     """The spacing attribute selecting alphanumeric text in a colour."""
     _reject_black(colour)
-    return Control(_ALPHA_COLOUR_BASE + colour)
+    return Attribute(_ALPHA_COLOUR_BASE + colour)
 
 
-def graphics_colour(colour: Colour) -> Control:
+def graphics_colour(colour: Colour) -> Attribute:
     """The spacing attribute selecting mosaic graphics in a colour."""
     _reject_black(colour)
-    return Control(_GRAPHICS_COLOUR_BASE + colour)
+    return Attribute(_GRAPHICS_COLOUR_BASE + colour)
 
 
 def _reject_black(colour: Colour) -> None:

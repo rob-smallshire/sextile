@@ -7,7 +7,7 @@ from sextile.viewdata import lettering
 from sextile.viewdata.blocks import BLOCKS_ACROSS, BLOCKS_DOWN
 from sextile.viewdata.canvas import Canvas
 from sextile.viewdata.composition import Align, Composition, DoesNotFit
-from sextile.viewdata.controls import Colour, Control
+from sextile.viewdata.controls import Attribute, Colour
 from sextile.viewdata.drawing import rule
 from sextile.viewdata.font import font_names, load_font, read_font
 from sextile.viewdata.frame import COLUMNS, ROWS, Frame
@@ -313,9 +313,9 @@ class TestLetteringOnAPanel:
         box = layout.panel(0, 19, width=21, colour=Colour.BLUE, rows=3)
         lettering.place(layout, 0, "NEWS", load_font("silkscreen"), Colour.CYAN, within=box)
         layout.draw(canvas)
-        assert canvas.frame.cell(0, 19) == Control.NEW_BACKGROUND
+        assert canvas.frame.cell(0, 19) == Attribute.NEW_BACKGROUND
         assert not any(
-            canvas.frame.cell(row, column) == Control.BLACK_BACKGROUND
+            canvas.frame.cell(row, column) == Attribute.BLACK_BACKGROUND
             for row in (0, 1, 2)
             for column in range(20, COLUMNS)
         )
@@ -428,11 +428,11 @@ class TestAStripeBehindLetteringIsTwoThings:
         lettering.place(layout, 6, "VIEWDATA", face, Colour.YELLOW)
         layout.draw(canvas)
         assert any(
-            canvas.frame.cell(7, column) == Control.NEW_BACKGROUND
+            canvas.frame.cell(7, column) == Attribute.NEW_BACKGROUND
             for column in range(COLUMNS)
         )
         assert not any(
-            canvas.frame.cell(row, column) == Control.NEW_BACKGROUND
+            canvas.frame.cell(row, column) == Attribute.NEW_BACKGROUND
             for row in (6, 8)
             for column in range(COLUMNS)
         )

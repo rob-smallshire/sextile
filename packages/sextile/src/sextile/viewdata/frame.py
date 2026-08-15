@@ -18,8 +18,8 @@ the authority on layout.
 from typing import Final
 
 from sextile.viewdata.charset import decode_g0
-from sextile.viewdata.controls import Control
-from sextile.viewdata.encoding import ScreenControl, encode_control, encode_text
+from sextile.viewdata.controls import Attribute
+from sextile.viewdata.encoding import ScreenControl, encode_attribute, encode_text
 
 __all__ = [
     "COLUMNS",
@@ -64,9 +64,9 @@ class Frame:
         """Whether a position holds a spacing attribute rather than a character."""
         return self.cell(row, column) < _BLANK
 
-    def set_attribute(self, row: int, column: int, control: Control) -> None:
+    def set_attribute(self, row: int, column: int, attribute: Attribute) -> None:
         """Place a spacing attribute, which occupies the cell and displays as a space."""
-        self._cells[self._offset(row, column)] = control
+        self._cells[self._offset(row, column)] = attribute
 
     def set_cell(self, row: int, column: int, code: int) -> None:
         """Put a displayable code in a cell, as the SAA5050 will read it.
@@ -121,7 +121,7 @@ class Frame:
             offset = row * COLUMNS
             for code in self._cells[offset : offset + used]:
                 if code < _BLANK:
-                    stream.extend(encode_control(Control(code)))
+                    stream.extend(encode_attribute(Attribute(code)))
                 else:
                     stream.append(code)
             if row < last_row and used < COLUMNS:
@@ -149,7 +149,7 @@ class Frame:
         width = COLUMNS if upto is None else max(0, min(upto, COLUMNS))
         for code in self._cells[offset : offset + width]:
             if code < _BLANK:
-                stream.extend(encode_control(Control(code)))
+                stream.extend(encode_attribute(Attribute(code)))
             else:
                 stream.append(code)
         return bytes(stream)

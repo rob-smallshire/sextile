@@ -22,7 +22,7 @@ from typing import Final
 
 from sextile.content.transliterate import transliterate
 from sextile.viewdata.charset import encode_g0
-from sextile.viewdata.controls import Control
+from sextile.viewdata.controls import Attribute
 
 __all__ = [
     "cell_count",
@@ -58,16 +58,16 @@ class ScreenControl(IntEnum):
     CURSOR_OFF = 0x14
 
 
-def encode_control(control: Control) -> bytes:
+def encode_attribute(attribute: Attribute) -> bytes:
     """The two bytes transmitting a teletext spacing attribute."""
-    return bytes([ESCAPE, control + _ESCAPE_OFFSET])
+    return bytes([ESCAPE, attribute + _ESCAPE_OFFSET])
 
 
 def encode_text(text: str) -> bytes:
     """Transliterate text and encode it in the G0 repertoire.
 
     Every byte returned is a displayable character: transliteration guarantees
-    the result is representable, so nothing can stray into the control range and
+    the result is representable, so nothing can stray into the attribute range and
     move the cursor by accident.
     """
     encoded = bytearray()

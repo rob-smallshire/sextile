@@ -9,7 +9,7 @@ import pytest
 
 from sextile.viewdata.canvas import Canvas
 from sextile.viewdata.composition import Align, Composition, DoesNotFit, Style
-from sextile.viewdata.controls import Colour, Control, alpha_colour
+from sextile.viewdata.controls import Attribute, Colour, alpha_colour
 from sextile.viewdata.frame import COLUMNS
 
 
@@ -32,7 +32,7 @@ class TestPlacingText:
 
     def test_a_colour_costs_a_cell_before_it(self) -> None:
         canvas = drawn(Composition().text(0, 1, "AB", Colour.CYAN))
-        assert canvas.frame.cell(0, 0) == Control.ALPHA_CYAN
+        assert canvas.frame.cell(0, 0) == Attribute.ALPHA_CYAN
 
     def test_text_at_column_zero_in_a_colour_will_not_fit(self) -> None:
         #  There is nowhere to put the attribute.
@@ -48,14 +48,14 @@ class TestPlacingText:
 class TestPlacingBlocks:
     def test_a_run_of_blocks_enters_graphics(self) -> None:
         canvas = drawn(Composition().blocks(0, 1, [0b111111], Colour.YELLOW))
-        assert canvas.frame.cell(0, 0) == Control.GRAPHICS_YELLOW
+        assert canvas.frame.cell(0, 0) == Attribute.GRAPHICS_YELLOW
         assert canvas.frame.cell(0, 1) == 0x7F
 
     def test_separated_blocks_cost_a_second_cell(self) -> None:
         composition = Composition().blocks(0, 2, [0b111111], Colour.BLUE, separated=True)
         canvas = drawn(composition)
-        assert canvas.frame.cell(0, 0) == Control.SEPARATED_GRAPHICS
-        assert canvas.frame.cell(0, 1) == Control.GRAPHICS_BLUE
+        assert canvas.frame.cell(0, 0) == Attribute.SEPARATED_GRAPHICS
+        assert canvas.frame.cell(0, 1) == Attribute.GRAPHICS_BLUE
 
     def test_two_block_runs_in_one_colour_enter_graphics_once(self) -> None:
         #  The case the sequential writer cannot see: nothing between them wants
@@ -123,7 +123,7 @@ class TestRowsAreIndependent:
     def test_a_colour_on_one_row_does_not_carry_to_the_next(self) -> None:
         composition = Composition().text(0, 1, "AB", Colour.CYAN).text(1, 1, "CD", Colour.CYAN)
         canvas = drawn(composition)
-        assert canvas.frame.cell(1, 0) == Control.ALPHA_CYAN
+        assert canvas.frame.cell(1, 0) == Attribute.ALPHA_CYAN
 
     def test_graphics_on_one_row_do_not_carry_either(self) -> None:
         composition = (
@@ -132,7 +132,7 @@ class TestRowsAreIndependent:
             .blocks(1, 1, [0b111111], Colour.YELLOW)
         )
         canvas = drawn(composition)
-        assert canvas.frame.cell(1, 0) == Control.GRAPHICS_YELLOW
+        assert canvas.frame.cell(1, 0) == Attribute.GRAPHICS_YELLOW
 
 
 class TestTheWholeAttributeSet:
@@ -145,7 +145,7 @@ class TestTheWholeAttributeSet:
 
     def test_flashing_costs_a_cell(self) -> None:
         canvas = drawn(Composition().text(0, 1, "AB", style=Style(flashing=True)))
-        assert canvas.frame.cell(0, 0) == Control.FLASH
+        assert canvas.frame.cell(0, 0) == Attribute.FLASH
 
     def test_and_steadying_costs_another(self) -> None:
         composition = (
@@ -154,18 +154,18 @@ class TestTheWholeAttributeSet:
             .text(0, 4, "CD")
         )
         canvas = drawn(composition)
-        assert canvas.frame.cell(0, 3) == Control.STEADY
+        assert canvas.frame.cell(0, 3) == Attribute.STEADY
 
     def test_double_height_costs_a_cell(self) -> None:
         canvas = drawn(Composition().text(0, 1, "AB", style=Style(double_height=True)))
-        assert canvas.frame.cell(0, 0) == Control.DOUBLE_HEIGHT
+        assert canvas.frame.cell(0, 0) == Attribute.DOUBLE_HEIGHT
 
     def test_and_is_placed_on_the_row_below_as_well(self) -> None:
         #  Which is how the hardware draws the bottom halves, and the thing
         #  everyone gets wrong by leaving that row blank.
         canvas = drawn(Composition().text(0, 1, "AB", style=Style(double_height=True)))
         assert rows_of(canvas)[1] == rows_of(canvas)[0]
-        assert canvas.frame.cell(1, 0) == Control.DOUBLE_HEIGHT
+        assert canvas.frame.cell(1, 0) == Attribute.DOUBLE_HEIGHT
 
     def test_a_background_costs_three_cells(self) -> None:
         #  Choose the colour, make it the background, choose the foreground
@@ -174,9 +174,9 @@ class TestTheWholeAttributeSet:
             0, 3, "AB", style=Style(colour=Colour.WHITE, background=Colour.BLUE)
         )
         canvas = drawn(composition)
-        assert canvas.frame.cell(0, 0) == Control.ALPHA_BLUE
-        assert canvas.frame.cell(0, 1) == Control.NEW_BACKGROUND
-        assert canvas.frame.cell(0, 2) == Control.ALPHA_WHITE
+        assert canvas.frame.cell(0, 0) == Attribute.ALPHA_BLUE
+        assert canvas.frame.cell(0, 1) == Attribute.NEW_BACKGROUND
+        assert canvas.frame.cell(0, 2) == Attribute.ALPHA_WHITE
 
     def test_a_background_matching_the_foreground_costs_two(self) -> None:
         #  Nothing to change back to, so the third cell is not spent.
@@ -184,8 +184,8 @@ class TestTheWholeAttributeSet:
             0, 2, "AB", style=Style(colour=Colour.BLUE, background=Colour.BLUE)
         )
         canvas = drawn(composition)
-        assert canvas.frame.cell(0, 0) == Control.ALPHA_BLUE
-        assert canvas.frame.cell(0, 1) == Control.NEW_BACKGROUND
+        assert canvas.frame.cell(0, 0) == Attribute.ALPHA_BLUE
+        assert canvas.frame.cell(0, 1) == Attribute.NEW_BACKGROUND
 
     def test_going_back_to_black_costs_one(self) -> None:
         composition = (
@@ -194,18 +194,18 @@ class TestTheWholeAttributeSet:
             .text(0, 6, "CD")
         )
         canvas = drawn(composition)
-        assert canvas.frame.cell(0, 5) == Control.BLACK_BACKGROUND
+        assert canvas.frame.cell(0, 5) == Attribute.BLACK_BACKGROUND
 
     def test_holding_graphics_costs_a_cell(self) -> None:
         composition = Composition().blocks(
             0, 2, [0b111111], style=Style(colour=Colour.RED, held=True)
         )
         canvas = drawn(composition)
-        assert Control.HOLD_GRAPHICS in [canvas.frame.cell(0, c) for c in (0, 1)]
+        assert Attribute.HOLD_GRAPHICS in [canvas.frame.cell(0, c) for c in (0, 1)]
 
     def test_concealing_costs_a_cell(self) -> None:
         canvas = drawn(Composition().text(0, 1, "AB", style=Style(concealed=True)))
-        assert canvas.frame.cell(0, 0) == Control.CONCEAL
+        assert canvas.frame.cell(0, 0) == Attribute.CONCEAL
 
     def test_and_cannot_be_undone_within_a_row(self) -> None:
         #  The hardware clears it at the end of a row and nowhere else, so a
@@ -325,7 +325,7 @@ class TestPanels:
         layout = Composition()
         layout.panel(0, 10, width=8, colour=Colour.BLUE)
         layout.draw(canvas)
-        assert canvas.frame.cell(0, 10) == Control.NEW_BACKGROUND
+        assert canvas.frame.cell(0, 10) == Attribute.NEW_BACKGROUND
 
     def test_and_the_cell_before_it_is_what_chooses_the_colour(self) -> None:
         #  Which is still black: a colour attribute cannot colour itself.
@@ -342,7 +342,7 @@ class TestPanels:
         layout = Composition()
         layout.panel(0, 10, width=8, colour=Colour.BLUE)
         layout.draw(canvas)
-        assert canvas.frame.cell(0, 18) == Control.BLACK_BACKGROUND
+        assert canvas.frame.cell(0, 18) == Attribute.BLACK_BACKGROUND
 
     def test_and_one_that_reaches_the_end_of_the_row_is_not(self) -> None:
         canvas = Canvas()
@@ -357,7 +357,7 @@ class TestPanels:
         layout.panel(2, 10, width=8, colour=Colour.BLUE, rows=3)
         layout.draw(canvas)
         for row in (2, 3, 4):
-            assert canvas.frame.cell(row, 10) == Control.NEW_BACKGROUND
+            assert canvas.frame.cell(row, 10) == Attribute.NEW_BACKGROUND
 
     def test_a_panel_with_no_room_for_its_attributes_is_refused(self) -> None:
         layout = Composition()
@@ -379,9 +379,9 @@ class TestWhatIsDrawnOnAPanel:
         layout = Composition()
         panel = layout.panel(0, 10, width=12, colour=Colour.BLUE)
         layout.text(0, 13, "NEWS", Colour.CYAN, within=panel).draw(canvas)
-        assert canvas.frame.cell(0, 22) == Control.BLACK_BACKGROUND
+        assert canvas.frame.cell(0, 22) == Attribute.BLACK_BACKGROUND
         assert not any(
-            canvas.frame.cell(0, column) == Control.BLACK_BACKGROUND
+            canvas.frame.cell(0, column) == Attribute.BLACK_BACKGROUND
             for column in range(11, 22)
         )
 
@@ -421,7 +421,7 @@ class TestWhatIsDrawnOnAPanel:
         ).draw(canvas)
         #  Three cells: choose red, make it the background, choose white back.
         assert canvas.frame.cell(0, 13) == alpha_colour(Colour.RED)
-        assert canvas.frame.cell(0, 14) == Control.NEW_BACKGROUND
+        assert canvas.frame.cell(0, 14) == Attribute.NEW_BACKGROUND
 
 
 class TestUpAndDownAsWellAsAlongTheRow:
@@ -520,7 +520,7 @@ class TestClosingAPanel:
         panel = layout.panel(0, 10, width=8, colour=Colour.BLUE)
         layout.blocks(0, 12, [0b111111] * 4, Colour.YELLOW, within=panel)
         layout.draw(canvas)
-        assert canvas.frame.cell(0, panel.end) == Control.BLACK_BACKGROUND
+        assert canvas.frame.cell(0, panel.end) == Attribute.BLACK_BACKGROUND
         assert not canvas.frame.is_attribute(0, panel.end - 1)
 
     def test_and_leaves_the_row_in_the_charset_it_was_in(self) -> None:

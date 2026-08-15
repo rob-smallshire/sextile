@@ -46,7 +46,7 @@ from sextile.viewdata.blocks import (
 )
 from sextile.viewdata.canvas import Canvas
 from sextile.viewdata.charset import mosaic_code
-from sextile.viewdata.controls import Colour, Control, alpha_colour, graphics_colour
+from sextile.viewdata.controls import Attribute, Colour, alpha_colour, graphics_colour
 from sextile.viewdata.encoding import cell_count
 from sextile.viewdata.frame import COLUMNS, ROWS
 
@@ -95,7 +95,7 @@ class Style:
 
     Not every combination is reachable from every other in one cell, which is
     why this is a value handed to a compositor rather than a sequence of
-    controls written by hand. A background is the worst of them: the
+    attributes written by hand. A background is the worst of them: the
     hardware has no "set background" attribute, only "make the current
     foreground the background", so white on blue costs three cells -- choose
     blue, make it the background, choose white again.
@@ -451,7 +451,7 @@ class Composition:
 
         panels = sorted(self.panels.get(row, []), key=lambda panel: panel.column)
         state, graphics = OPENING, False
-        attributes: list[tuple[int, Control]] = []
+        attributes: list[tuple[int, Attribute]] = []
         free = 0
         for at, kind, what in _events(runs, panels):
             marker = _marked(kind, what, state, panels)
@@ -461,7 +461,7 @@ class Composition:
             #  inside the panel and take a cell of colour off its right-hand
             #  end, which is exactly where nobody looks for a missing cell.
             wanted = (
-                [Control.BLACK_BACKGROUND]
+                [Attribute.BLACK_BACKGROUND]
                 if kind == "close"
                 else _attributes_for(state, graphics, marker)
             )
@@ -627,7 +627,7 @@ def _marked(
     return run
 
 
-def _attributes_for(state: Style, graphics: bool, run: Run) -> list[Control]:
+def _attributes_for(state: Style, graphics: bool, run: Run) -> list[Attribute]:
     """The shortest run of attributes taking one style to another.
 
     Order matters and is not arbitrary. The background comes first because
@@ -642,22 +642,22 @@ def _attributes_for(state: Style, graphics: bool, run: Run) -> list[Control]:
             "conceal cannot be turned off within a row: the hardware clears it "
             "only at the end of one"
         )
-    needed: list[Control] = []
+    needed: list[Attribute] = []
     colour_of = graphics_colour if run.graphics else alpha_colour
     foreground = state.colour
 
     if wanted.background is not state.background:
         if wanted.background is Colour.BLACK:
-            needed.append(Control.BLACK_BACKGROUND)
+            needed.append(Attribute.BLACK_BACKGROUND)
         else:
             #  There is no "set background": the current foreground becomes it.
             needed.append(colour_of(wanted.background))
-            needed.append(Control.NEW_BACKGROUND)
+            needed.append(Attribute.NEW_BACKGROUND)
             foreground = wanted.background
 
     if run.graphics and wanted.separated is not state.separated:
         needed.append(
-            Control.SEPARATED_GRAPHICS if wanted.separated else Control.CONTIGUOUS_GRAPHICS
+            Attribute.SEPARATED_GRAPHICS if wanted.separated else Attribute.CONTIGUOUS_GRAPHICS
         )
 
     #  The colour attribute chooses the character set as well, so it is needed
@@ -666,21 +666,21 @@ def _attributes_for(state: Style, graphics: bool, run: Run) -> list[Control]:
         needed.append(colour_of(wanted.colour))
 
     if wanted.flashing is not state.flashing:
-        needed.append(Control.FLASH if wanted.flashing else Control.STEADY)
+        needed.append(Attribute.FLASH if wanted.flashing else Attribute.STEADY)
     if wanted.double_height is not state.double_height:
         needed.append(
-            Control.DOUBLE_HEIGHT if wanted.double_height else Control.NORMAL_HEIGHT
+            Attribute.DOUBLE_HEIGHT if wanted.double_height else Attribute.NORMAL_HEIGHT
         )
     if wanted.held is not state.held:
-        needed.append(Control.HOLD_GRAPHICS if wanted.held else Control.RELEASE_GRAPHICS)
+        needed.append(Attribute.HOLD_GRAPHICS if wanted.held else Attribute.RELEASE_GRAPHICS)
     if wanted.concealed and not state.concealed:
-        needed.append(Control.CONCEAL)
+        needed.append(Attribute.CONCEAL)
     return needed
 
 
 @dataclass(frozen=True)
 class _Plan:
     runs: list[Run]
-    attributes: list[tuple[int, Control]]
+    attributes: list[tuple[int, Attribute]]
 
 

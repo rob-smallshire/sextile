@@ -9,7 +9,7 @@ import pytest
 
 from sextile.viewdata.canvas import Canvas
 from sextile.viewdata.charset import mosaic_pattern
-from sextile.viewdata.controls import Colour, Control
+from sextile.viewdata.controls import Attribute, Colour
 from sextile.viewdata.drawing import (
     SOLID,
     bar,
@@ -92,7 +92,7 @@ class TestRules:
         #  is what enters graphics, and it enters the set already chosen.
         canvas = Canvas()
         rule(canvas, 1)
-        assert canvas.frame.cell(1, 0) == Control.SEPARATED_GRAPHICS
+        assert canvas.frame.cell(1, 0) == Attribute.SEPARATED_GRAPHICS
         assert canvas.frame.is_attribute(1, 1)
 
     def test_and_takes_a_colour(self) -> None:
@@ -200,7 +200,7 @@ class TestAThinRule:
         canvas = Canvas()
         thin_rule(canvas, 5)
         _, attributes = canvas.frame.to_grid()
-        assert chr(Control.SEPARATED_GRAPHICS + 0x40) in attributes[5]
+        assert chr(Attribute.SEPARATED_GRAPHICS + 0x40) in attributes[5]
 
     def test_and_is_a_sixth_of_the_ink(self) -> None:
         thick, thin = Canvas(), Canvas()

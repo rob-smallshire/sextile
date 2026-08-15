@@ -128,7 +128,7 @@ Beeb for half an hour.
   — a TAB between fields is 79 bytes of which most is unchanged — and would make
   `CONCEAL` usable for showing one field's advice at a time, which is otherwise
   dearer than showing both.
-- **`CONCEAL` is unmeasured.** `Control.CONCEAL` exists and `Composition` emits
+- **`CONCEAL` is unmeasured.** `Attribute.CONCEAL` exists and `Composition` emits
   it, but nothing has established whether Commstar honours it, and REVEAL is a
   viewer-side toggle in any case: concealed text is a suggestion to the terminal
   rather than a guarantee. `screen_text()` reads the rendered framebuffer and

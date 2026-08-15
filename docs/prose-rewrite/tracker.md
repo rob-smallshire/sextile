@@ -19,12 +19,15 @@ section, applied literally:
 6. Public class gets `Attributes:`; `ClassVar` knobs in a labelled block above.
 7. Count nothing not enumerated; enumerate nothing not counted.
 8. Cut ornament: em-dash asides, inversions, rhythm for its own sake.
-9. Cut the "how it might have been worse" narrative: tours of other named
-   systems and their failure modes offered to justify a decision (InDesign,
-   LaTeX, CSS Regions, Textual, and the like). State the design fact and why it
-   fits *this* problem. A framework the project deliberately models (Starlette)
-   or the actual protocol (Prestel, viewdata) is not such a tour; a catalogue of
-   how unrelated systems go wrong is.
+9. Cut the "how it might have been worse" narrative. Three forms of it, all to
+   go: tours of other named systems and their failure modes (InDesign, LaTeX,
+   CSS Regions, Textual); counterfactual justifications ("a framework that knew
+   X would be a framework with an opinion", "would be one more thing that could
+   disagree"); and speculative future-guards ("three things would show it had
+   overreached"). State the design fact and, briefly, why it fits *this*
+   problem. A framework the project deliberately models (Starlette) or the
+   actual protocol (Prestel, viewdata) named in passing is fine; the digression
+   built around it is not.
 
 Markdown gets the same, register loosened one notch (a reader there chose to be
 reading), but still no metaphor a reader cannot act on.

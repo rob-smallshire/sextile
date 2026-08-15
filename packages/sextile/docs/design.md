@@ -552,14 +552,8 @@ frame's rows would need a policy to arbitrate between them; a viewdata frame is
 twenty rows of forty cells with no floats and no columns, so concatenation
 answers every case and no policy is needed.
 
-**It is deliberately not a general layout engine.** A frame is a still picture
-plus a mapping from keys to addresses, sent once down a 1200-baud line, so there
-is nothing for per-widget event handling to attach to. Parts stack down the
-frame and are never placed side by side; `viewdata/composition.py` is what
-places things within a frame. Three things would show it had overreached: a
-second axis, a way to express proportions, or a rule fixing where one particular
-part must sit. The last was nearly added for the guide's compass and was
-refused.
+The layout only stacks parts down the frame. Placing things side by side or at
+coordinates within a frame is `viewdata/composition.py`'s job.
 
 The shapes that come with the framework are in `formatting.py`:
 

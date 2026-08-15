@@ -91,7 +91,7 @@ async def read_frame(reader: asyncio.StreamReader) -> bytes:
     return buffer[buffer.find(FRAME_PREAMBLE) :]
 
 
-def text_of(data: bytes) -> str:
+def printable(data: bytes) -> str:
     return "".join(chr(byte) for byte in data if 0x20 <= byte < 0x7F)
 
 
@@ -103,7 +103,7 @@ class TestConnecting:
         reader, writer = await connect(server)
         greeting = await read_frame(reader)
         assert greeting.startswith(FRAME_PREAMBLE)
-        assert "THE BOARD" in text_of(greeting)
+        assert "THE BOARD" in printable(greeting)
         writer.close()
         await writer.wait_closed()
 
@@ -128,7 +128,7 @@ class TestNavigating:
         await writer.drain()
         response = await read_frame(reader)
 
-        assert "ITEMS" in text_of(response)
+        assert "ITEMS" in printable(response)
         writer.close()
         await writer.wait_closed()
 
@@ -144,7 +144,7 @@ class TestNavigating:
             await writer.drain()
             await asyncio.sleep(0.01)
 
-        assert "ITEMS" in text_of(await read_frame(reader))
+        assert "ITEMS" in printable(await read_frame(reader))
         writer.close()
         await writer.wait_closed()
 
@@ -161,7 +161,7 @@ class TestNavigating:
         echoed = await asyncio.wait_for(reader.read(4096), timeout=5.0)
 
         assert not echoed.startswith(FRAME_PREAMBLE)
-        assert "*84" in text_of(echoed)
+        assert "*84" in printable(echoed)
 
         writer.close()
         await writer.wait_closed()
@@ -177,7 +177,7 @@ class TestLoggingOff:
         writer.write(b"*90#")
         await writer.drain()
         goodbye = await read_frame(reader)
-        assert "GOODBYE" in text_of(goodbye)
+        assert "GOODBYE" in printable(goodbye)
 
         #  The far end closes, so reading runs out. Not the very next byte:
         #  the cursor is handed back after the frame, and whether that arrives
@@ -196,12 +196,12 @@ class TestSeveralCallers:
 
         first_writer.write(b"*8#")
         await first_writer.drain()
-        assert "ITEMS" in text_of(await read_frame(first_reader))
+        assert "ITEMS" in printable(await read_frame(first_reader))
 
         #  The second caller is still on the main index and unaffected.
         second_writer.write(b"*00#")
         await second_writer.drain()
-        assert "THE BOARD" in text_of(await read_frame(second_reader))
+        assert "THE BOARD" in printable(await read_frame(second_reader))
 
         for writer in (first_writer, second_writer):
             writer.close()
@@ -220,7 +220,7 @@ class TestSeveralCallers:
 
         second_writer.write(b"*8#")
         await second_writer.drain()
-        assert "ITEMS" in text_of(await read_frame(second_reader))
+        assert "ITEMS" in printable(await read_frame(second_reader))
 
         second_writer.close()
         await second_writer.wait_closed()
@@ -237,7 +237,7 @@ class TestSeveralCallers:
 
         #  The service is still answering.
         other_reader, other_writer = await connect(server)
-        assert "THE BOARD" in text_of(await read_frame(other_reader))
+        assert "THE BOARD" in printable(await read_frame(other_reader))
         other_writer.close()
         await other_writer.wait_closed()
 
@@ -260,7 +260,7 @@ class TestIdleCallers:
         #  "the line dropped" with its second.
         tail = await asyncio.wait_for(reader.read(), timeout=5.0)
         assert FRAME_PREAMBLE in tail, "being cut off is worth a frame of its own"
-        assert "RINGING OFF" in text_of(tail)
+        assert "RINGING OFF" in printable(tail)
 
         await close(writer, running)
 
@@ -281,7 +281,7 @@ class TestWarningBeforeRingingOff:
         await read_frame(reader)
 
         warning = await asyncio.wait_for(reader.read(4096), timeout=5.0)
-        assert "Press a key" in text_of(warning)
+        assert "Press a key" in printable(warning)
         assert not warning.startswith(FRAME_PREAMBLE), "the page beneath must survive"
 
         await close(writer, running)
@@ -299,11 +299,11 @@ class TestWarningBeforeRingingOff:
         began = asyncio.get_running_loop().time()
         for _ in range(5):
             warning = await asyncio.wait_for(reader.read(4096), timeout=5.0)
-            assert "Press a key" in text_of(warning)
+            assert "Press a key" in printable(warning)
             writer.write(b" ")
             await writer.drain()
             restored = await asyncio.wait_for(reader.read(4096), timeout=5.0)
-            assert "1-9 select" in text_of(restored), "the page's own footer comes back"
+            assert "1-9 select" in printable(restored), "the page's own footer comes back"
 
         assert asyncio.get_running_loop().time() - began > idle_timeout
         await close(writer, running)
@@ -327,7 +327,7 @@ class TestWarningBeforeRingingOff:
         #  And keying it again works.
         writer.write(b"*8#")
         await writer.drain()
-        assert "ITEMS" in text_of(await read_frame(reader))
+        assert "ITEMS" in printable(await read_frame(reader))
         await close(writer, running)
 
     async def test_the_key_that_resumes_does_not_navigate(self) -> None:
@@ -362,7 +362,7 @@ class TestWarningBeforeRingingOff:
         await read_frame(reader)
         #  Straight to the parting frame, with no bar in between.
         notice = await asyncio.wait_for(reader.read(4096), timeout=5.0)
-        assert "RINGING OFF" in text_of(notice)
+        assert "RINGING OFF" in printable(notice)
         await close(writer, running)
 
 
@@ -398,7 +398,7 @@ class TestHandingTheTerminalBack:
         await read_frame(reader)
         parting = await asyncio.wait_for(reader.read(4096), timeout=5.0)
         assert parting.startswith(FRAME_PREAMBLE)
-        assert "RINGING OFF" in text_of(parting)
+        assert "RINGING OFF" in printable(parting)
         await close(writer, running)
 
     async def test_the_cursor_is_left_on_after_a_timeout(self) -> None:
@@ -418,7 +418,7 @@ class TestHandingTheTerminalBack:
         writer.write(b"*90#")
         await writer.drain()
         parting = await _everything_left(reader)
-        assert "GOODBYE" in text_of(parting)
+        assert "GOODBYE" in printable(parting)
         assert parting.endswith(bytes([ScreenControl.CURSOR_ON]))
         await close(writer, running)
 
@@ -438,7 +438,7 @@ class TestHandingTheTerminalBack:
         await read_frame(reader)
         #  Without the terminator: `#` travels as 0x5F, which the SAA5050 draws
         #  as `#` and this helper, decoding as ASCII, shows as `_`.
-        assert "COME BACK TO *1" in text_of(await _everything_left(reader))
+        assert "COME BACK TO *1" in printable(await _everything_left(reader))
         await close(writer, running)
 
 

@@ -13,7 +13,7 @@ from sextile.formatting import MenuItem
 from sextile.layout import Shortcut
 from sextile.page import Page, PageFrame
 from sextile.pages import farewell_page, menu_page, notice_page, prose_page
-from sextile.testing import request_for
+from sextile.testing import request_for, text_of
 from sextile.viewdata.canvas import Canvas
 
 _APP = Sextile()
@@ -25,11 +25,6 @@ async def _nothing(request: object, **fields: object) -> Page:
 
 def _titled(name: str, title: str, number: str = "1") -> Sextile:
     return Sextile(pages=[PageRoute(number, _nothing, name=name, title=title)])
-
-
-def text_of(page: Page, index: int = 0) -> str:
-    characters, _ = page.frames[index].frame.to_grid()
-    return "\n".join(characters)
 
 
 def footer_of(page: Page, index: int = 0) -> str:

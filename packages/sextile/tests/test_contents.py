@@ -11,7 +11,7 @@ from sextile.builtin.contents import TITLE, contents_page
 from sextile.declarations import PageRoute
 from sextile.page import Page, PageFrame
 from sextile.requests import PageRequest
-from sextile.testing import request_for
+from sextile.testing import request_for, text_of
 from sextile.viewdata.canvas import Canvas
 
 _APP = Sextile()
@@ -36,13 +36,6 @@ def at(digits: str) -> PageAddress:
 
 def listed(*pages: PageRoute) -> Page:
     return contents_page(request=request_for(_APP, at("93")), pages=pages)
-
-
-def text_of(page: Page, index: int = 0) -> str:
-    found = page.frame(index)
-    assert found is not None
-    characters, _ = found.frame.to_grid()
-    return "\n".join(characters)
 
 
 USERS = info(name="users", keyed="5", title="By user")
@@ -135,19 +128,19 @@ class TestWhatTheseBuiltInPagesAreCalled:
     async def test_a_service_s_own_words_are_used(self) -> None:
         app = Sextile()
         app.page("93", name="contents", title="Every page")(app.contents_page)
-        assert "EVERY PAGE" in _shown(await _built(app, "93"))
+        assert "EVERY PAGE" in text_of(await _built(app, "93"))
 
     async def test_and_a_service_that_calls_it_something_else_gets_that(self) -> None:
         app = Sextile()
         app.page("50", name="contents", title="What is here")(app.contents_page)
-        shown = _shown(await _built(app, "50"))
+        shown = text_of(await _built(app, "50"))
         assert "WHAT IS HERE" in shown
         assert TITLE not in shown
 
     async def test_a_service_that_said_nothing_keeps_the_framework_s_name(self) -> None:
         app = Sextile()
         app.page("50")(app.contents_page)
-        assert TITLE in _shown(await _built(app, "50"))
+        assert TITLE in text_of(await _built(app, "50"))
 
 
 async def _built(app: Sextile, digits: str) -> Page:
@@ -156,8 +149,3 @@ async def _built(app: Sextile, digits: str) -> Page:
     return page
 
 
-def _shown(page: Page) -> str:
-    frame = page.frame(0)
-    assert frame is not None
-    characters, _ = frame.frame.to_grid()
-    return "\n".join(characters)

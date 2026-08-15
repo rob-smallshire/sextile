@@ -24,14 +24,42 @@ from dataclasses import dataclass, field
 
 from sextile.addressing import PageAddress
 from sextile.application import Sextile
+from sextile.page import Page
 from sextile.requests import Neighbours, PageRequest
 from sextile.session.session import Session
+from sextile.viewdata.frame import Frame
 
 __all__ = [
     "Caller",
     "calling",
     "request_for",
+    "text_of",
 ]
+
+
+def text_of(page: Page | Frame, index: int = 0) -> str:
+    """The characters a frame carries, its rows joined by newlines.
+
+    The usual way a test reads a built page back, and the one extraction a test
+    module would otherwise write for itself. Given a `Page`, the frame at
+    ``index``; given a `Frame` already in hand -- a drawing test working below
+    the page -- that frame, and ``index`` is not read.
+
+    Args:
+        page: The page whose frame to read, or a frame on its own.
+        index: Which frame of a page, ignored when a frame is given.
+
+    Returns:
+        The frame's rows, each the full width, joined by newlines.
+    """
+    if isinstance(page, Frame):
+        frame = page
+    else:
+        found = page.frame(index)
+        assert found is not None, f"the page has no frame at index {index}"
+        frame = found.frame
+    characters, _ = frame.to_grid()
+    return "\n".join(characters)
 
 
 def request_for(

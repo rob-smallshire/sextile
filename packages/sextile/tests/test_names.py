@@ -10,7 +10,7 @@ from sextile.addressing import PageAddress
 from sextile.application import Sextile
 from sextile.builtin.names import TITLE, names_page
 from sextile.page import Page
-from sextile.testing import request_for
+from sextile.testing import request_for, text_of
 
 _APP = Sextile()
 
@@ -25,13 +25,6 @@ def listed(**named: str) -> Page:
         named={word: at(digits) for word, digits in named.items()},
         label=lambda where: f"page {where}",
     )
-
-
-def text_of(page: Page, index: int = 0) -> str:
-    found = page.frame(index)
-    assert found is not None
-    characters, _ = found.frame.to_grid()
-    return "\n".join(characters)
 
 
 class TestWhatItShows:

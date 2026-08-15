@@ -21,7 +21,7 @@ from sextile.viewdata.countdown import (
 from sextile.viewdata.frame import COLUMNS
 
 
-def text_of(data: bytes) -> str:
+def printable(data: bytes) -> str:
     return "".join(chr(byte) for byte in data if 0x20 <= byte < 0x7F)
 
 
@@ -50,7 +50,7 @@ class TestTheBar:
 
 class TestTheRow:
     def test_it_says_what_to_do(self) -> None:
-        assert RESUME_HINT in text_of(countdown_bytes(0.5))
+        assert RESUME_HINT in printable(countdown_bytes(0.5))
 
     def test_it_fits_the_row_exactly(self) -> None:
         #  Attributes occupy cells, so the arithmetic has to come out at forty.

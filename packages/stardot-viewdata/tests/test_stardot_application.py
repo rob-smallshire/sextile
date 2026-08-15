@@ -25,7 +25,7 @@ from sextile import (
     keyed,
     keys,
 )
-from sextile.testing import request_for
+from sextile.testing import request_for, text_of
 from sextile.viewdata import lettering
 from sextile.viewdata.blocks import BLOCKS_ACROSS, BLOCKS_DOWN
 from sextile.viewdata.charset import mosaic_pattern
@@ -158,13 +158,6 @@ async def what_a_reader_sees(app: Sextile, digits: str) -> Page:
 
 def bytes_of(page: Page) -> list[bytes]:
     return [page_frame.frame.to_bytes() for page_frame in page.frames]
-
-
-def text_of(page: Page, index: int = 0) -> str:
-    found = page.frame(index)
-    assert found is not None
-    characters, _ = found.frame.to_grid()
-    return "\n".join(characters)
 
 
 def all_text_of(page: Page) -> str:

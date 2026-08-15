@@ -22,6 +22,7 @@ from sextile.content.blocks import (
 )
 from sextile.formatting import Prose
 from sextile.layout import Flowing, fill
+from sextile.testing import text_of
 from sextile.viewdata.encoding import cell_count
 from sextile.viewdata.frame import COLUMNS, FRAME_PREAMBLE, ROWS, Frame
 from sextile.viewdata.typesetting import rows_for
@@ -56,11 +57,6 @@ def _drawn(content: Document) -> None:
     about how wide a row is.
     """
     fill([Flowing(Prose(entries=rows_for(content)))], WHOLE)
-
-
-def text_of(frame: Frame) -> str:
-    characters, _ = frame.to_grid()
-    return "\n".join(characters)
 
 
 def body_of(frame: Frame) -> list[str]:

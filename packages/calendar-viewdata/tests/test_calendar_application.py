@@ -13,6 +13,7 @@ import pytest
 
 from calendar_viewdata import build_application
 from sextile import Neighbours, Page, PageAddress, Sextile, UnknownPageError
+from sextile.testing import text_of
 
 #: A Sunday, so a week boundary falls where it can be seen.
 WHEN = datetime(2026, 8, 2, 14, 30, 15, tzinfo=UTC)
@@ -32,13 +33,6 @@ async def page_at(app: Sextile, digits: str, neighbours: Neighbours | None = Non
     page = await app.ask(digits, neighbours=neighbours)
     assert page is not None, f"*{digits}# is not a page here"
     return page
-
-
-def text_of(page: Page, index: int = 0) -> str:
-    found = page.frame(index)
-    assert found is not None
-    characters, _ = found.frame.to_grid()
-    return "\n".join(characters)
 
 
 class TestThePages:

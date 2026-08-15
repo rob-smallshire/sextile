@@ -14,6 +14,7 @@ from sextile import Page, PageAddress, PageFrame, PageRequest, PageRoute, Sextil
 from sextile.formatting import Entry, MenuItem
 from sextile.forms import SUBMIT_MARK, SUGGESTIONS, Suggest, draw_form
 from sextile.session.session import Session
+from sextile.testing import text_of
 from sextile.viewdata.canvas import Canvas
 from sextile.viewdata.encoding import ScreenControl
 from sextile.viewdata.frame import Frame
@@ -61,11 +62,6 @@ async def typing(form: Suggest, letters: str) -> Suggest:
     for letter in letters:
         await form.typed(letter)
     return form
-
-
-def text_of(frame: Frame) -> str:
-    characters, _ = frame.to_grid()
-    return "\n".join(characters)
 
 
 def field_value(frame: Frame, form: Suggest) -> str:

@@ -49,7 +49,7 @@ def at(digits: str) -> PageAddress:
     return PageAddress(digits)
 
 
-def _text(message: bytes) -> str:
+def printable(message: bytes) -> str:
     return "".join(chr(byte) for byte in message if 0x20 <= byte < 0x7F)
 
 
@@ -106,12 +106,12 @@ class TestGoingToPages:
     ) -> None:
         response = await session.receive(b"*222222#")
         assert response
-        assert "NOT" in _text(response[-1]).upper()
+        assert "NOT" in printable(response[-1]).upper()
 
     async def test_a_word_that_names_no_page_says_so_as_well(self, session: Session) -> None:
         response = await session.receive(b"*BANANA#")
         assert response
-        assert "BANANA" in _text(response[-1])
+        assert "BANANA" in printable(response[-1])
 
     async def test_the_frame_shown_for_an_unknown_page_is_not_stepped_into(
         self, session: Session
@@ -241,7 +241,7 @@ class TestRingingOff:
 
     async def test_the_page_is_sent_before_the_line_drops(self, session: Session) -> None:
         response = await session.receive(b"*90#")
-        assert "GOODBYE" in _text(response[-1]).upper()
+        assert "GOODBYE" in printable(response[-1]).upper()
 
     async def test_a_keyword_can_reach_it_as_well(self, session: Session) -> None:
         await session.receive(b"*BYE#")
@@ -295,7 +295,7 @@ class TestWhatIsSent:
         #  reader was typing blind; now the footer row shows what they have.
         response = await session.receive(b"*84")
         assert len(response) == 1
-        assert "*84" in _text(response[0])
+        assert "*84" in printable(response[0])
 
     async def test_every_byte_survives_a_seven_bit_line(self, session: Session) -> None:
         for keyed in [b"*1#", b"*8#", b"*821000#", b"*9#", b"#", b"*0#"]:
@@ -415,17 +415,17 @@ class TestTheCommandLine:
     async def test_a_star_puts_the_command_line_up(self, session: Session) -> None:
         response = await session.receive(b"*")
         assert response
-        assert "cancels" in _text(response[-1])
+        assert "cancels" in printable(response[-1])
 
     async def test_it_shows_what_has_been_typed(self, session: Session) -> None:
         await session.receive(b"*")
         response = await session.receive(b"824")
-        assert "*824" in _text(response[-1])
+        assert "*824" in printable(response[-1])
 
     async def test_it_follows_every_keystroke(self, session: Session) -> None:
         await session.receive(b"*8")
-        assert "2" in _text((await session.receive(b"2"))[-1])
-        assert "4" in _text((await session.receive(b"4"))[-1])
+        assert "2" in printable((await session.receive(b"2"))[-1])
+        assert "4" in printable((await session.receive(b"4"))[-1])
 
     async def test_it_does_not_clear_the_screen(self, session: Session) -> None:
         #  The page beneath has to survive, or there was no point drawing a row.
@@ -436,16 +436,16 @@ class TestTheCommandLine:
         await session.receive(b"*824")
         response = await session.receive(b"*")
         assert response
-        assert "menu" in _text(response[-1])
-        assert "cancels" not in _text(response[-1])
+        assert "menu" in printable(response[-1])
+        assert "cancels" not in printable(response[-1])
 
     async def test_cancelling_and_beginning_again_shows_an_empty_buffer(
         self, session: Session
     ) -> None:
         await session.receive(b"*824")
         response = await session.receive(b"**")
-        assert "824" not in _text(response[-1])
-        assert "cancels" in _text(response[-1])
+        assert "824" not in printable(response[-1])
+        assert "cancels" in printable(response[-1])
 
     async def test_completing_a_request_redraws_the_whole_page(
         self, session: Session
@@ -460,7 +460,7 @@ class TestTheCommandLine:
     ) -> None:
         await session.receive(b"*222222")
         response = await session.receive(b"#")
-        assert "cancels" not in _text(response[-1])
+        assert "cancels" not in printable(response[-1])
 
     async def test_a_request_that_changes_nothing_still_restores_the_footer(
         self, session: Session
@@ -471,14 +471,14 @@ class TestTheCommandLine:
         await session.receive(b"*")
         response = await session.receive(b"#")
         assert response
-        assert "menu" in _text(response[-1])
+        assert "menu" in printable(response[-1])
 
     async def test_an_ordinary_keypress_draws_no_command_line(
         self, session: Session
     ) -> None:
         await session.receive(b"*8#")
         for response in await session.receive(b"1"):
-            assert "cancels" not in _text(response)
+            assert "cancels" not in printable(response)
 
     async def test_every_byte_survives_a_seven_bit_line(self, session: Session) -> None:
         for keyed in (b"*", b"8", b"2", b"*", b"#"):
@@ -534,8 +534,8 @@ class TestDeletingTheStar:
         await session.receive(b"\x7f")
         response = await session.receive(b"\x7f")
         assert response
-        assert "menu" in _text(response[-1])
-        assert "cancels" not in _text(response[-1])
+        assert "menu" in printable(response[-1])
+        assert "cancels" not in printable(response[-1])
 
     async def test_the_page_beneath_is_left_alone(self, session: Session) -> None:
         await session.receive(b"*8#")
@@ -572,7 +572,7 @@ class TestRubbingOutIsAlsoIncremental:
     ) -> None:
         await session.receive(b"*")
         response = await session.receive(b"\x7f")
-        assert "menu" in _text(response[-1])
+        assert "menu" in printable(response[-1])
 
     async def test_a_scrolled_buffer_still_redraws(self, session: Session) -> None:
         #  Past the buffer's width the whole row shifts, so a small edit will
@@ -595,7 +595,7 @@ class TestTheIdleWarning:
     async def test_warning_draws_the_bar(self, session: Session) -> None:
         drawn = session.warn(1.0)
         assert drawn is not None
-        assert "Press a key" in _text(drawn)
+        assert "Press a key" in printable(drawn)
         assert session.warning_showing
 
     async def test_the_page_beneath_is_not_cleared(self, session: Session) -> None:
@@ -623,8 +623,8 @@ class TestTheIdleWarning:
     async def test_the_page_s_own_footer_comes_back(self, session: Session) -> None:
         session.warn(0.5)
         response = await session.receive(b"1")
-        assert "menu" in _text(response[-1])
-        assert "Press a key" not in _text(response[-1])
+        assert "menu" in printable(response[-1])
+        assert "Press a key" not in printable(response[-1])
 
     async def test_the_next_key_works_as_usual(self, session: Session) -> None:
         await session.receive(b"*8#")
@@ -655,13 +655,13 @@ class TestTheWarningOverAPartTypedRequest:
         await session.receive(b"*82")
         drawn = session.warn(0.5)
         assert drawn is not None
-        assert "Press a key" in _text(drawn)
+        assert "Press a key" in printable(drawn)
 
     async def test_the_request_is_not_lost(self, session: Session) -> None:
         await session.receive(b"*82")
         session.warn(0.5)
         response = await session.receive(b"1")
-        assert "*821" in _text(response[-1]), "the whole request comes back"
+        assert "*821" in printable(response[-1]), "the whole request comes back"
 
     async def test_the_key_is_not_swallowed(self, session: Session) -> None:
         #  On a page the first key is eaten, because it would otherwise
@@ -694,8 +694,8 @@ class TestTheWarningOverAPartTypedRequest:
         await session.receive(b"*82")
         session.warn(0.5)
         response = await session.receive(b"*")
-        assert "menu" in _text(response[-1])
-        assert "Press a key" not in _text(response[-1])
+        assert "menu" in printable(response[-1])
+        assert "Press a key" not in printable(response[-1])
         assert not session.warning_showing
 
     async def test_rubbing_out_the_star_puts_the_footer_back_too(
@@ -704,7 +704,7 @@ class TestTheWarningOverAPartTypedRequest:
         await session.receive(b"*")
         session.warn(0.5)
         response = await session.receive(b"\x7f")
-        assert "menu" in _text(response[-1])
+        assert "menu" in printable(response[-1])
         assert not session.warning_showing
 
     async def test_typing_on_afterwards_is_incremental_again(
@@ -892,7 +892,7 @@ class TestAPageThatWillNotBuild:
         await session.greeting()
         response = await session.receive(b"*7#")
         assert response
-        shown = _text(response[-1])
+        shown = printable(response[-1])
         assert "SERVICE ERROR" in shown.upper()
         assert "*7" in shown, "the number is named, so a reader can report it"
 
@@ -900,7 +900,7 @@ class TestAPageThatWillNotBuild:
         session = Session(self.board_that_breaks())
         await session.greeting()
         response = await session.receive(b"*7#")
-        assert "*7" in _text(response[-1])
+        assert "*7" in printable(response[-1])
 
     async def test_going_back_to_a_page_that_now_breaks_says_so(self) -> None:
         board = self.board_that_breaks()
@@ -924,7 +924,7 @@ class TestAPageThatWillNotBuild:
         await session.receive(b"*7#")
         broken["yet"] = True
         response = await session.receive(b"*09#")
-        assert "SERVICE ERROR" in _text(response[-1]).upper()
+        assert "SERVICE ERROR" in printable(response[-1]).upper()
 
     async def test_and_stays_where_they_were(self) -> None:
         session = Session(self.board_that_breaks())

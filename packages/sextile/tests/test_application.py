@@ -54,7 +54,7 @@ def request_for(app: Sextile, digits: str, **params: object) -> PageRequest:
     return PageRequest(address=PageAddress(digits), app=app, params=params)
 
 
-def text_of(page: Page | None, row: int = 0) -> str:
+def row_of(page: Page | None, row: int = 0) -> str:
     assert page is not None, "expected a page, and the application had none"
     characters, _ = page.frames[0].frame.to_grid()
     return characters[row].rstrip()
@@ -68,7 +68,7 @@ class TestRouting:
         async def main(request: PageRequest) -> Page:
             return saying("MAIN")
 
-        assert text_of(await app.ask("1")) == "MAIN"
+        assert row_of(await app.ask("1")) == "MAIN"
 
     async def test_a_handler_is_given_what_the_pattern_captured(self) -> None:
         app = Sextile()
@@ -77,7 +77,7 @@ class TestRouting:
         async def post(request: PageRequest, post_id: int) -> Page:
             return saying(f"POST {post_id}")
 
-        assert text_of(await app.ask("82489493")) == "POST 489493"
+        assert row_of(await app.ask("82489493")) == "POST 489493"
 
     async def test_a_handler_is_given_the_request_it_answers(self) -> None:
         app = Sextile()
@@ -86,7 +86,7 @@ class TestRouting:
         async def post(request: PageRequest, post_id: int) -> Page:
             return saying(str(request.address))
 
-        assert text_of(await app.ask("82489493")) == "82489493"
+        assert row_of(await app.ask("82489493")) == "82489493"
 
     async def test_the_decorator_gives_the_function_back(self) -> None:
         app = Sextile()
@@ -131,7 +131,7 @@ class TestSayingSo:
     async def test_a_word_that_names_nothing_says_so(self) -> None:
         app = Sextile()
         page = await app.not_found(request_for(app, "1"), "BANANA")
-        assert "BANANA" in text_of(page, row=2)
+        assert "BANANA" in row_of(page, row=2)
 
     async def test_an_application_can_say_it_its_own_way(self) -> None:
         app = Sextile()
@@ -140,7 +140,7 @@ class TestSayingSo:
         async def missing(request: PageRequest, target: str) -> Page:
             return saying(f"NO {target}")
 
-        assert text_of(await app.not_found(request_for(app, "1"), "BANANA")) == "NO BANANA"
+        assert row_of(await app.not_found(request_for(app, "1"), "BANANA")) == "NO BANANA"
 
 
 class TestResolving:
@@ -182,7 +182,7 @@ class TestSessionState:
             return saying(str(request.session["user"]))
 
         page = await app.ask("1", session=state)
-        assert text_of(page) == "komadori"
+        assert row_of(page) == "komadori"
 
     async def test_a_handler_can_leave_something_behind(self) -> None:
         app = Sextile()
@@ -286,7 +286,7 @@ class TestWhatAServiceIsCalled:
     async def test_the_name_is_used_where_the_framework_speaks(self) -> None:
         app = Sextile(name="Stardot")
         page = await app.timed_out(request_for(app, "1"), Parting())
-        assert "Thank you for calling Stardot." in text_of(page, row=7)
+        assert "Thank you for calling Stardot." in row_of(page, row=7)
 
     async def test_a_nameless_service_is_not_thanked_on_its_behalf(self) -> None:
         #  Better to say nothing than to say "Thank you for calling ." or, worse,
@@ -306,11 +306,11 @@ class TestRingingOffForWantOfAReply:
     async def test_there_is_something_to_show(self) -> None:
         app = Sextile()
         page = await app.timed_out(request_for(app, "1"), Parting())
-        assert "no reply" in text_of(page, row=2).lower()
+        assert "no reply" in row_of(page, row=2).lower()
 
     async def test_it_says_the_line_has_gone(self) -> None:
         app = Sextile()
-        assert "OFF" in text_of(await app.timed_out(request_for(app, "1"), Parting())).upper()
+        assert "OFF" in row_of(await app.timed_out(request_for(app, "1"), Parting())).upper()
 
     async def test_it_says_where_the_reader_had_got_to(self) -> None:
         #  So they can key it again on calling back, which is the one piece of
@@ -318,7 +318,7 @@ class TestRingingOffForWantOfAReply:
         #  page they were on is the request's address.
         app = Sextile()
         page = await app.timed_out(request_for(app, "82489493"), Parting())
-        assert "*82489493#" in text_of(page, row=5)
+        assert "*82489493#" in row_of(page, row=5)
 
     async def test_a_service_can_say_it_its_own_way(self) -> None:
         app = Sextile()
@@ -327,7 +327,7 @@ class TestRingingOffForWantOfAReply:
         async def gone(request: PageRequest, parting: Parting) -> Page:
             return saying(f"YOU WERE ON *{request.address}#")
 
-        assert text_of(await app.timed_out(request_for(app, "8"), Parting())) == "YOU WERE ON *8#"
+        assert row_of(await app.timed_out(request_for(app, "8"), Parting())) == "YOU WERE ON *8#"
 
     async def test_it_leaves_room_to_type_beneath(self) -> None:
         #  The reader is about to talk to their modem, and the cursor is put
@@ -369,7 +369,7 @@ class TestWhereTheReaderHasBeen:
         page = await app.ask(
             "1", history=(PageAddress("8"), PageAddress("82489493"))
         )
-        assert text_of(page) == "8 82489493"
+        assert row_of(page) == "8 82489493"
 
 
 class TestAskingWhatAnAddressIs:
@@ -589,12 +589,12 @@ class TestWhenAPageBreaks:
     async def test_there_is_something_to_show(self) -> None:
         app = Sextile()
         page = await app.failed(request_for(app, "82489493"), RuntimeError("boom"))
-        assert "SERVICE ERROR" in text_of(page).upper()
+        assert "SERVICE ERROR" in row_of(page).upper()
 
     async def test_it_names_the_page_that_broke(self) -> None:
         app = Sextile()
         page = await app.failed(request_for(app, "82489493"), RuntimeError("boom"))
-        assert "*82489493#" in text_of(page, row=2)
+        assert "*82489493#" in row_of(page, row=2)
 
     async def test_it_says_whose_fault_it_is(self) -> None:
         #  A reader on a 1200 baud line will otherwise assume they did it.
@@ -609,7 +609,7 @@ class TestWhenAPageBreaks:
         async def broke(request: PageRequest, error: Exception) -> Page:
             return saying(f"SORRY ABOUT *{request.address}#")
 
-        assert text_of(await app.failed(request_for(app, "8"), RuntimeError("boom"))) == (
+        assert row_of(await app.failed(request_for(app, "8"), RuntimeError("boom"))) == (
             "SORRY ABOUT *8#"
         )
 

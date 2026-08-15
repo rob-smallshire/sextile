@@ -15,7 +15,7 @@ from sextile.application import Sextile
 from sextile.builtin.history import TITLE, history_page
 from sextile.layout import CHOICES_PER_FRAME
 from sextile.page import Page
-from sextile.testing import request_for
+from sextile.testing import request_for, text_of
 
 _APP = Sextile()
 
@@ -30,13 +30,6 @@ def built(*been: str, address: str = "92") -> Page:
         been=tuple(at(digits) for digits in been),
         label=lambda where: f"page {where}",
     )
-
-
-def text_of(page: Page, index: int = 0) -> str:
-    found = page.frame(index)
-    assert found is not None
-    characters, _ = found.frame.to_grid()
-    return "\n".join(characters)
 
 
 class TestTheOrder:

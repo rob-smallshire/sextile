@@ -20,6 +20,7 @@ from sextile.forms import (
     draw_form,
 )
 from sextile.session.session import Session
+from sextile.testing import text_of
 from sextile.viewdata.canvas import Canvas
 from sextile.viewdata.controls import Colour
 from sextile.viewdata.frame import COLUMNS, Frame
@@ -59,11 +60,6 @@ async def typing(form: Fields, keyed: str) -> Fields:
     for key in keyed:
         await form.typed(key)
     return form
-
-
-def text_of(frame: Frame) -> str:
-    characters, _ = frame.to_grid()
-    return "\n".join(characters)
 
 
 class TestTypingIntoOneFieldAtATime:

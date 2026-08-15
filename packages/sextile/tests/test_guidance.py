@@ -9,16 +9,9 @@ from sextile.addressing import PageAddress
 from sextile.application import Sextile
 from sextile.builtin.guidance import GuideRow, guide_page
 from sextile.page import Page
-from sextile.testing import request_for
+from sextile.testing import request_for, text_of
 
 _APP = Sextile()
-
-
-def text_of(page: Page, index: int = 0) -> str:
-    found = page.frame(index)
-    assert found is not None
-    characters, _ = found.frame.to_grid()
-    return "\n".join(characters)
 
 
 def a_guide(**wanted: object) -> Page:

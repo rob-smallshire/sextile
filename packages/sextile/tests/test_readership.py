@@ -10,8 +10,7 @@ from datetime import UTC, datetime, timedelta
 from sextile.addressing import PageAddress
 from sextile.application import Sextile
 from sextile.builtin.readership import callers_page, popular_page, recent_page
-from sextile.page import Page
-from sextile.testing import request_for
+from sextile.testing import request_for, text_of
 from sextile.visits import Visit
 
 _APP = Sextile()
@@ -23,13 +22,6 @@ NAMES = {"1": "Main menu", "3": "Find a place", "321333": "Trondheim"}
 
 def describe(address: PageAddress) -> str:
     return NAMES.get(address.digits, "")
-
-
-def text_of(page: Page) -> str:
-    found = page.frame(0)
-    assert found is not None
-    characters, _ = found.frame.to_grid()
-    return "\n".join(characters)
 
 
 def visit(page: str, *, ago: timedelta = timedelta(), times: int = 1) -> Visit:

@@ -114,7 +114,7 @@ class TestAMenuInAPage:
             title="ITEMS",
             home=at("1"),
             parts=[
-                OnOneFrame(Lines(said=("A lead-in", "of four", "rows, which", "costs two"))),
+                OnOneFrame(Lines(("A lead-in", "of four", "rows, which", "costs two"))),
                 Flow(Menu(entries=items(12))),
             ],
         ).build(request_for(_APP, at("8")))
@@ -130,21 +130,21 @@ class TestAMenuInAPage:
 class TestLinesAsAPart:
     def test_each_line_is_drawn_where_it_was_put(self) -> None:
         canvas = Canvas()
-        placed = Lines(said=("first", "", "third")).place(canvas, whole_frame())
+        placed = Lines(("first", "", "third")).place(canvas, whole_frame())
         assert placed.rows == 3
         assert said(canvas) == ["first", "third"]
 
     def test_it_chooses_nothing(self) -> None:
-        placed = Lines(said=("first",)).place(Canvas(), whole_frame())
+        placed = Lines(("first",)).place(Canvas(), whole_frame())
         assert not placed.claim.choices
 
     def test_more_lines_than_rows_go_on_to_the_next_frame(self) -> None:
-        placed = Lines(said=tuple(f"line {n}" for n in range(30))).place(
+        placed = Lines(tuple(f"line {n}" for n in range(30))).place(
             Canvas(), whole_frame()
         )
         assert placed.rows == 20
         assert isinstance(placed.remainder, Lines)
-        assert len(placed.remainder.said) == 10
+        assert len(placed.remainder.entries) == 10
 
 
 class TestAListing:

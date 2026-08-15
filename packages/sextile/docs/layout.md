@@ -66,8 +66,8 @@ above what:
 
 ```python
 parts=[
-    OnOneFrame(Lines(said=("Stardot, for users of Acorn computers.", ""))),
-    OnEveryFrame(Lines(said=("DAY   MAX   MIN",), colour=Colour.CYAN)),
+    OnOneFrame(Lines(("Stardot, for users of Acorn computers.", ""))),
+    OnEveryFrame(Lines(("DAY   MAX   MIN",), colour=Colour.CYAN)),
     Flow(Menu(entries=posts)),
 ]
 ```

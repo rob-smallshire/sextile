@@ -22,7 +22,7 @@ from sextile.layout import Flow, PageLayout
 async def main(request: PageRequest) -> Page:
     return PageLayout(
         title="MY SERVICE",
-        parts=[Flow(Lines(said=("Hello, 1981.",)))],
+        parts=[Flow(Lines(("Hello, 1981.",)))],
     ).build(request)
 
 app = Sextile(pages=[PageRoute("1", main, name="main")])
@@ -576,7 +576,7 @@ from sextile.layout import OnOneFrame, PageLayout
 return PageLayout(
     title="FIND A PLACE",
     parts=[
-        OnOneFrame(Lines(said=("Key a place name.", ""))),
+        OnOneFrame(Lines(("Key a place name.", ""))),
         OnOneFrame(Suggest(look_up=places.matching, label="PLACE:")),
     ],
 ).build(request)

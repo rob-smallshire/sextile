@@ -35,7 +35,7 @@ async def weather(request: PageRequest) -> Page:
     return PageLayout(
         title="WEATHER",
         home=PageAddress("1"),
-        parts=[Flow(Lines(said=("Rain, mostly.",)))],
+        parts=[Flow(Lines(("Rain, mostly.",)))],
     ).build(request)
 
 

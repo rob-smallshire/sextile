@@ -182,7 +182,7 @@ def callers_page(
             #  the worst guess.
             OnEveryFrame(
                 Lines(
-                    said=("", *wrap_text(_WHAT_A_CALLER_IS, COLUMNS - 1)),
+                    ("", *wrap_text(_WHAT_A_CALLER_IS, COLUMNS - 1)),
                     colour=Colour.GREEN,
                 )
             ),

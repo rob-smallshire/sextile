@@ -16,7 +16,8 @@ as "was X" so a reader coming from older code or docs can find it.
   Subclass `formatting.SequencePart`, or `RowSequencePart` for one whose entries
   are written left-to-right along their rows.
 - **entry** — one item in a sequence a sequence part lays out, such as a line of
-  a menu. `formatting.Entry`.
+  a menu. `formatting.Entry`. `Lines` takes its lines as `entries`, passed first
+  and without a keyword (was the `said=` keyword).
 - **Custom** (was `Drawn`) — a part of a stated height a page draws itself, cell
   by cell: a picture, a grid, a masthead. `layout.Custom(rows, draw)`.
 - **place** — what a custom part does: `place(canvas, room) -> Placed`, drawing

@@ -28,7 +28,7 @@ Example:
 
 from abc import ABC, abstractmethod
 from collections.abc import Sequence
-from dataclasses import dataclass, replace
+from dataclasses import dataclass, field, replace
 from typing import ClassVar, Protocol, runtime_checkable
 
 from sextile.addressing import PageAddress
@@ -264,23 +264,14 @@ class Lines(SequencePart[str]):
     moved: a line too long for the row is cut.
 
     Attributes:
-        said: The lines, in the order they are to appear. An empty one leaves a
-            blank row.
+        entries: The lines, in the order they are to appear, passed first and
+            without a keyword. An empty one leaves a blank row.
         colour: What they are drawn in. White for a notice; green for a note
             beneath a table, set apart from the table above it.
     """
 
-    entries: Sequence[str] = ()
-    said: Sequence[str] = ()
+    entries: Sequence[str] = field(default=(), kw_only=False)
     colour: Colour = Colour.WHITE
-
-    def __post_init__(self) -> None:
-        #  `said` is what a caller writes, `entries` what a sequence part divides.
-        #  They are one sequence under two names, the second being the word
-        #  that means something on a page of prose.
-        if self.said and not self.entries:
-            object.__setattr__(self, "entries", tuple(self.said))
-        object.__setattr__(self, "said", tuple(self.entries))
 
     def draw_entry(
         self, canvas: Canvas, row: int, entry: str, digit: str | None

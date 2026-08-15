@@ -162,7 +162,7 @@ async def one_day(request: PageRequest, day: date) -> Page:
         ],
         neighbours=request.neighbours,
         item_noun="day",
-        parts=[Lines(said=lines)],
+        parts=[Lines(lines)],
     ).build(request)
 
 

@@ -81,18 +81,18 @@ def notice_page(
             shortcuts=shortcuts,
             hang_up=hang_up,
             furniture=furniture,
-            parts=[Lines(said=lines)],
+            parts=[Lines(lines)],
         ).build(request)
     #  No header to carry the title, so it heads the content in cyan and the
     #  lines follow a blank row down -- the plain notice the framework draws
     #  for itself, kept to the top rows with room beneath for the cursor.
-    heading = [OnOneFrame(Lines(said=(title,), colour=Colour.CYAN))] if title else []
+    heading = [OnOneFrame(Lines((title,), colour=Colour.CYAN))] if title else []
     return PageLayout(
         home=home,
         shortcuts=shortcuts,
         hang_up=hang_up,
         furniture=(),
-        parts=[*heading, OnOneFrame(Lines(said=("", *lines)))],
+        parts=[*heading, OnOneFrame(Lines(("", *lines)))],
     ).build(request)
 
 
@@ -131,7 +131,7 @@ def menu_page(
     Returns:
         The page, of as many frames as the entries needed.
     """
-    lead = [OnOneFrame(Lines(said=(*preamble, "")))] if preamble else []
+    lead = [OnOneFrame(Lines((*preamble, "")))] if preamble else []
     return PageLayout(
         title=title,
         home=home,

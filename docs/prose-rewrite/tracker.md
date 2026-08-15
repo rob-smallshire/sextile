@@ -43,7 +43,7 @@ Legend: `[ ]` not started · `[~]` in progress · `[x]` done
 
 Docs:
 - [x] docs/writing-an-application.md  (flagship; register sample for sign-off)
-- [~] docs/design.md  (delegated to a fork; awaiting review)
+- [x] docs/design.md  (fork rewrite, reviewed; diagram/code verified intact)
 - [x] docs/layout.md
 - [ ] docs/page-layout.md
 - [x] docs/navigation.md  (also fixed stale "template" reference)

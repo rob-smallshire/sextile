@@ -25,4 +25,36 @@ reference is corrected and marked "fixed here".
 | sextile/README.md (headline example) | `from sextile.viewdata.chrome import CONTENT_FIRST_ROW, draw_chrome`; `draw_chrome(...)` | Module, function and `CONTENT_FIRST_ROW` all deleted, so the first example did not run. Rewrote it to the `PageLayout` + `Flowing(Lines(...))` form. | fixed here |
 | public-surface.md, "What is internal" table (was line ~187) | `viewdata.chrome`, `.footer`, `.layout` "what a template is built from" | `viewdata.chrome` is deleted (the doc itself says so at the chrome paragraph); there is no `viewdata/layout.py` (the furniture layer is top-level `sextile.layout`); and `viewdata.footer` is described as *public* later in the same doc ("footer ... turned out to be public"). This row contradicts the rest and needs reconciling against `test_public_surface.py`. Left the module membership unchanged; only the surrounding prose was touched. | NEEDS TESTED FIX — do not guess |
 | mosaic-fonts.md, "What to build" item 5 | `Template` base | `Template` was replaced by `PageLayout`/`Part`/`Formatter`. Rephrased the not-yet-built `Banner` as a part built on `PageLayout`. | fixed here |
+| design.md, architecture diagram | `chrome` under `viewdata/` | Deleted module; removed from the "its furniture" line (footer, command_line remain). | fixed here |
+| design.md, name section | `draw_chrome` "has no fallback title" | Rephrased to the `Header` furniture drawing no fallback title. | fixed here |
+| design.md, layout section | "What a template consumes is the `Entry` protocol" | `Template` deleted; `Formatter[E]` consumes `Entry`. Changed to `Formatter`. Also unified the live term to *furniture* where `chrome` was used as a noun. | fixed here |
+
+## Structural drift needing a decision
+
+### page-layout.md — a pre-build proposal, now mostly believed-false
+
+The header says "Built, as of 2026-08-14 … kept because the reasoning is the
+part that does not survive in the code — marked where what was built differs
+from what was proposed." But the body was never converted from proposal tense,
+so it now describes the shipped design as a future and names deleted code as
+present:
+
+- Proposal framing throughout: "The two jobs" / "23 construction sites change
+  shape" / "## What it would cost" / "## What can be deleted afterwards".
+- Deleted code as present: `Template` ("does both", "`Template._divide` already
+  works this way", "`Template` guarantees this today"), `templates.py` ("which
+  is 907 lines"), `viewdata/chrome.py`, `draw_chrome`, `CONTENT_FIRST_ROW`,
+  `CONTENT_ROWS` — all gone.
+- "**Names.** `Part`, `Room`, `Placement`, `Offer`, `Summary`, `Furnishing`,
+  `Edge` … are all proposals" and "Not settled: the names above" — these names
+  are the shipped public surface (see public-surface.md `sextile.layout`).
+
+Much of it also duplicates design.md's "Laying out a page" section, which is
+the authoritative as-built account.
+
+Left untouched pending a decision: (a) reframe fully as-built + rationale, or
+(b) relabel clearly as "the original proposal, preserved as written" with a
+one-line note that Template/chrome are gone and the names are now settled, or
+(c) delete it and fold any surviving rationale into design.md / page-layout in
+layout.md. This is a content decision, not a prose one.
 

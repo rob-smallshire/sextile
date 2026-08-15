@@ -13,7 +13,7 @@ might be about.
 ```
    viewdata/   charset, controls, encoding, frame       a screen
             |  canvas, wrapping, typesetting            putting things on one
-            |  chrome, footer, command_line             its furniture
+            |  footer, command_line                     its furniture
             |  repaint                                  redrawing part of one
             |  ansi                                     seeing it without a Beeb
             v
@@ -50,30 +50,29 @@ might be about.
 Dependencies point downward, and there is one third-party dependency:
 **`anyascii`**, for reducing arbitrary Unicode to letters the G0 set can draw.
 
-That is not a job to do by hand. Romanising the world's writing systems is a
-large and specialised subject, and a table written out here is a table that is
-wrong about somebody's alphabet -- ours did not know Đ or Ħ, so Đakovo went out
-as `?akovo`. Nor were the letters in it accented Latin ones: ø, æ, å, þ and ð
-are letters of their own alphabets with their own places in them, which is
-exactly why Unicode declines to decompose them and why each had to be listed by
-hand.
+This is not a job to do by hand. Romanising the world's writing systems is a
+large, specialised subject, and any table written out here would be wrong about
+somebody's alphabet: an earlier hand-written one omitted Đ and Ħ, so Đakovo went
+out as `?akovo`. Nor are these accented Latin letters: ø, æ, å, þ and ð are
+letters in their own right, with their own places in their own alphabets, which
+is why Unicode does not decompose them and why each had to be listed by hand.
 
-What is *not* delegated is the part no library can know: which ASCII characters
-the G0 set has not got. Ten of them, and `anyascii`'s own output goes through
-that table too. One deviation is deliberate -- it renders an emoji as
-`:tada:`, which is a good answer somewhere with room for it and twenty cells of
-a forty-cell row here.
+What is *not* delegated is the part no library can supply: which ASCII
+characters the G0 set lacks. There are ten, and `anyascii`'s own output passes
+through that table too. One of its outputs is overridden: `anyascii` renders an
+emoji as `:tada:`, which suits a medium with room to spare but costs twenty
+cells of a forty-cell row here.
 
 ## The lifecycle, which is the whole design
 
-A Viewdata terminal is a display and nothing else. It holds the frame on screen
-and *not one thing besides* — not the page it came from, not the menu that led
-there, not who is logged in. Everything of that kind is held at the server, for
-as long as the line is up.
+A Viewdata terminal is a display and nothing more. It holds the frame on screen
+and nothing besides: not the page it came from, not the menu that led there, not
+who is logged in. All of that is held at the server, for as long as the line is
+up.
 
-That is the opposite of the web, where the client carries a cookie and the
-server may forget, and it is why the shapes here differ from a web framework's
-in three specific ways:
+This is the opposite of the web, where the client carries a cookie and the
+server may forget. It is why the shapes here differ from a web framework's in
+three ways:
 
 **The connection is the session.** There is no session store, no identifier, no
 expiry policy. `Session` is an object that lives as long as the socket, and
@@ -93,15 +92,15 @@ API would otherwise stop every other caller while it waited.
 framework's only notion of what a page is called.
 
 The alternative was to be generic over an application-supplied reference type,
-which is what the original Stardot-shaped code did. Strings won because the page
-number is the one name that everyone shares — the reader keying it, the terminal
-displaying it, the application answering it, and whoever writes it on a beermat.
-History, the back key and linking between services all become ordinary
-operations on a value that needs to know nothing about what it names.
+as the original Stardot-shaped code was. Strings won because the page number is
+the one name everyone shares: the reader keying it, the terminal displaying it,
+the application answering it, and anyone who writes it down. History, the back
+key and linking between services all become ordinary operations on a value that
+carries nothing about what it names.
 
 No length limit is imposed: page numbers were measured to have no practical
-limit on Commstar. What bounds a request is the command parser's own patience
-(`ENTRY_LIMIT`, 32 characters).
+limit on Commstar. A request is bounded instead by the command parser's input
+limit (`ENTRY_LIMIT`, 32 characters).
 
 A frame letter — the `b` in `82489493b` — is *not* part of an address. It names a
 continuation of a page too long for one screen, it appears only on screen, and a
@@ -173,38 +172,37 @@ startup. Only `respond` must be written. `Sextile` is the routing implementation
 and is what nearly every service will subclass or instantiate.
 
 **`respond` returns `None` rather than a notice** when there is no such page.
-The two are shown differently and the session needs to tell them apart: a page
-that exists is somewhere the reader has *gone*, and enters the history; a page
-that does not is something *said* to a reader who has not moved. This was
-discovered by writing the session, not designed in advance.
+The two are shown differently, and the session distinguishes them: a page that
+exists is somewhere the reader has *gone*, and enters the history; a page that
+does not is something *said* to a reader who has not moved. This distinction
+emerged from writing the session, not from a plan.
 
 **Lifespan is one async context manager**, given to the constructor, and what
 it yields is what the service holds — reached from a page as
 `request.service`. Starlette's shape, adopted for Starlette's reason: setup and
-teardown written as two handlers have to be kept in step by hand and must hoist
-whatever they open somewhere both can see, where two halves of one function
-cannot drift and the thing opened is an ordinary local held across the `yield`.
-Starlette deprecated its own `on_startup`/`on_shutdown` for this; Sextile had
-them for about an hour.
+teardown written as two handlers must be kept in step by hand and must store
+whatever they open where both can reach it, whereas two halves of one function
+cannot drift and the resource opened is an ordinary local held across the
+`yield`. Starlette deprecated its own `on_startup`/`on_shutdown` for this;
+Sextile had them for about an hour.
 
 `startup`/`shutdown` remain as the methods that enter and leave it, called once
 each by whatever is running the application. The server does not call them: a
-server that opened an application's database would be a server with an opinion
-about what an application is. `sextile.cli.run_service` does it.
+server that opened an application's database would encode an assumption about
+what an application is. `sextile.cli.run_service` calls them instead.
 
-**`Application.ask`** assembles a request the way a session would — with what
-the service holds and the service itself — so that a test, a renderer or a tool
-need not remember to. Every one of them would remember, or would quietly not,
-and a page reached without them fails in a way unrelated to what was being
-tested.
+**`Application.ask`** assembles a request as a session would, with what the
+service holds and the service itself, so that a test, a renderer or a tool need
+not. Assembling it by hand at each call site is a step easily forgotten, and a
+page reached without it fails in a way unrelated to what was under test.
 
-**No mounting.** An application answered a prefix of the numbering by handing
-it to another application, which is what a web framework offers for assembling
-a large service out of small ones. It is gone.
+**No mounting.** Mounting let an application answer a prefix of the numbering by
+handing it to another application, the way a web framework assembles a large
+service out of small ones. It is gone.
 
-It never had a user. Three services are built on this framework and not one of
-them mounted anything; only the framework's own tests ever did. And it was not
-free: the prefix could not be stripped — a service draws its page number onto
+It had no user. Three services are built on this framework and not one of them
+mounted anything; only the framework's own tests ever did. And it was not free:
+the prefix could not be stripped — a service draws its page number onto
 the frame, so a number with its prefix removed would be drawn as one the reader
 could not key back — which meant the numbering had to be *merged and disjoint*
 rather than nested. Everything that reports across a service then had to see
@@ -213,10 +211,10 @@ service had to be handed its own state rather than its host's. And a `history`
 page inside a mount could still only name half of where a reader had been,
 because a history is about a call and a call crosses the whole namespace.
 
-That is a great deal of machinery for structural scalability nobody here wants.
-A viewdata service is small and self-contained: forty columns, a few dozen
-pages, one archive. The thing to notice is that the cost was not in the feature
-but in everything the feature obliged the rest of the framework to know about.
+That is a great deal of machinery for structural scalability no service here
+needs. A viewdata service is small and self-contained: forty columns, a few
+dozen pages, one archive. The cost was not in the feature but in everything the
+feature obliged the rest of the framework to account for.
 
 
 
@@ -238,9 +236,9 @@ or `R` for reply without the type changing.
 `moves` are kept apart from `choices` because they name no destination: they
 step between frames of the page already showing.
 
-**A page does not carry its own address.** What was asked for is the session's,
-and a page that named itself as well would be one more thing that could
-disagree.
+**A page does not carry its own address.** What was asked for is already held by
+the session, and a page that named itself as well would be one more thing that
+could disagree.
 
 **`hang_up` lets a page end the call.** The framework has no notion of a logoff
 page and should not acquire one: which number means goodbye is the application's
@@ -255,8 +253,8 @@ is the root of four separate defects this framework had: a converter could not
 be registered in time for a class-declared pattern that used one, because
 `self.converter` needs a router that `super().__init__` creates and immediately
 uses; a module-level application could not open anything, could not resolve a
-word of its own, and could not say a page's keywords beside it. Every one of
-those was ordering showing through. Given as data, the converters, the pages,
+word of its own, and could not say a page's keywords beside it. Each was
+registration order showing through. Given as data, the converters, the pages,
 the middleware and the lifespan all arrive in one call and there is no *before*.
 
 `@app.page(...)` and the class-level `@page(...)` remain, both defined in terms
@@ -389,17 +387,17 @@ half of one terminator — it has to be told apart from a bare `0x0A`, which is
 the BBC's cursor-down key.
 
 **A service has a name, and the framework has none to lend it.** `Sextile(name=
-"Stardot")`, read back as `Application.name`, used in the few things the
+"Stardot")`, read back as `Application.name`, is used in the few things the
 framework says on a service's behalf. It defaults to empty and no default is
-invented: a page thanking a reader for calling *Sextile* names the machinery
-rather than the thing they called, which is nobody's idea of a farewell. For the
-same reason `draw_chrome` has no fallback title — a framework writing its own
-name across the top of somebody else's service would be doing it again.
+invented: a page thanking a reader for calling *Sextile* would name the
+machinery rather than the service they called. For the same reason the `Header`
+furniture draws no fallback title — a framework writing its own name across the
+top of somebody else's service would repeat the mistake.
 
 **Ringing off is a page, both ways round.** A service that says goodbye does so
 on a page like any other, with `hang_up` set. The involuntary parting has one
 too — `Application.timed_out(parting)`, overridable with `@app.on_timed_out` —
-because no page number reaches it and something has to ask.
+because no page number reaches it, so the framework calls the handler itself.
 
 That handler is given a `Parting`: the page the caller was on, the frame of it,
 where they had been, and what they had accumulated. The terminal keeps none of
@@ -431,8 +429,8 @@ the fault from whoever could fix it. It names the number so a reader can report
 which page it was, and says whose fault it is, because somebody on a 1200 baud
 line will otherwise assume they did it.
 
-Logged rather than swallowed: a service that quietly says anything at all about
-a page it has and could not draw is a service whose bugs never get found.
+Logged rather than swallowed: a service that quietly shows a notice for a page
+it has but could not draw is a service whose bugs never get found.
 
 **Idle callers are warned, then released.** A single-line board held open by
 someone who walked away locks everyone else out, so a caller who says nothing
@@ -459,9 +457,9 @@ turn, where dropping the request entire merely means keying it again. And a
 bare `*` produces no command at all, so a reader who wakes the line by starting
 a request can carry on typing it.
 
-**Three things want the footer row**: the page's own prompt, a request being
-typed, and the bar. The bar wins while it is up, and whichever of the other two
-belongs there is put back when it goes.
+**Three things compete for the footer row**: the page's own prompt, a request
+being typed, and the bar. The bar wins while it is up, and whichever of the
+other two belongs there is restored when it goes.
 
 That includes covering a part-keyed request. Nothing is lost by it — what was
 keyed lives in the parser, not on the screen — and the alternative, leaving a
@@ -487,18 +485,18 @@ row's 45.
 remembers the menu's `destinations` and where in them they are, and passes the
 neighbours to the handler as `request.arrival`. Walking on with `D` keeps the
 sequence; leaving for an unrelated page drops it. The handler only decides
-whether to offer what it was told of.
+whether to offer what it was given.
 
 ## Drawing
 
-`Canvas` knows how to write a row and what an attribute costs.
-`viewdata/drawing.py` is the layer above: the small operations every page turns
-out to want, each of which had been written three or four times before it was
-put there — `fitted`, `centred`, `centred_double`, `rule`, `bar`.
+`Canvas` writes a row and accounts for what an attribute costs.
+`viewdata/drawing.py` is the layer above: the small operations most pages turn
+out to need, each written three or four times before it was put there —
+`fitted`, `centred`, `centred_double`, `rule`, `bar`.
 
 Free functions rather than methods, so that a service can write its own beside
 them and reach for either without minding which is which. They take a canvas
-and a row, and none of them knows what a page is.
+and a row, and none of them references a page.
 
 `fitted` measures **cells, not characters**, and has no ellipsis: on forty
 columns three dots saying "there was more" cost more than the three characters
@@ -510,8 +508,8 @@ that works out where the attributes go, and the plan for large lettering.
 
 ## Laying out a page
 
-Five places had grown their own version of the same six steps — take a list,
-divide it between frames, draw the chrome, write the rows, wire up the keys,
+Five places had grown their own version of the same six steps: take a list,
+divide it between frames, draw the furniture, write the rows, wire up the keys,
 return a `Page`. About 275 lines, and they had drifted: two disagreed about how
 much room a lead-in costs, and one advertised a `1-9 select` on a frame with
 nothing to select.
@@ -520,7 +518,7 @@ That became `Template`, which did the six steps and had a subclass say how tall
 an entry was. It did two jobs, and only one of them was available on its own:
 the furniture round a frame came with being a formatter of a homogeneous
 sequence, so a page whose content was a grid, a form or a masthead had to draw
-its own chrome. Six pages did.
+its own furniture. Six pages did.
 
 `PageLayout` is the two jobs separated. A page is furniture round the edge of
 each frame and a list of parts down the middle, and the parts need not be
@@ -534,9 +532,9 @@ is known. The content occupies rows 2 to 21 and the furniture rows 0, 1, 22 and
 as they need, and the furniture goes on afterwards when the count is settled.
 
 **A part is drawn once, on every frame, or across as many as it takes**, and a
-`Break` divides a page where it means to rather than where the rows run out.
-That last is what the guide wanted: its two frames are two lists split by what
-a reader is doing.
+`Break` divides a page at a chosen point rather than where the rows run out.
+That is what the guide needed: its two frames are two lists, split by what a
+reader is doing.
 
 **Content parts claim and furniture reports.** A part says which keys lead
 where and what the prompt should call them; a furnishing is handed the
@@ -566,7 +564,7 @@ divide `Entry` values, `Prose` divides rendered rows.
 `draw` and `draw_detail` are handed a `RowWriter`, which walks one row from
 left to right — the right shape for text and the wrong one for a mosaic
 picture, which is placed by cell and may be three rows tall. The weather
-service's page of weather symbols is what asked for it.
+service's page of weather symbols is what motivated it.
 
 **A form is a part.** It occupies a row range, draws itself, contributes the
 keys its suggestions answer, and says what the prompt should call them. It is
@@ -578,8 +576,8 @@ layout carrying one is built for the request it answers rather than kept.
 as fractions of the height, never as data — deciding what the top and bottom of
 a chart mean is the caller's, and it is the whole of the interesting part
 (whether a scale starts at zero, whether it is fixed so two frames compare,
-where a threshold falls). A charting module that guessed at that would be
-guessing about somebody else's subject.
+where a threshold falls). A charting module that chose those would be deciding
+something only the caller can.
 
 A value sits at the middle of its share of the width, so a chart lines up with
 the labels or pictures above it, and the line runs level out to the edges rather
@@ -605,22 +603,22 @@ takes the footer row the same way.
 **A keystroke that draws nothing still moves the cursor.** A space is a blank
 cell written over a blank cell, so the frame comes out identical and the
 repaint has no rows to send — and sending nothing leaves the cursor a cell
-behind where the form thinks it is, with every keystroke after it landing one
+behind where the form expects it, with every keystroke after it landing one
 cell out and every rub-out taking the wrong one. Where nothing moved but the
 caret did, the caret alone is sent. Found by typing `ULAN BATOR` into the
 weather service; pinned by a test that follows the bytes and works out where
 they leave the cursor, rather than by one that looks at the screen.
 
-**`thin_rule`** is the chrome's rule with a sixth of the ink — one block thick
+**`thin_rule`** is the furniture's rule with a sixth of the ink — one block thick
 instead of three, in the same separated mosaics and across the same cells. A bar
 belongs where a page ends; between two things that are both content it reads as
 a second frame beginning.
 
 **`separation` puts blank rows *between* entries**, not after the last of them.
-A shape several rows tall wants air around it or two entries read as one block;
-charging that air to every entry wastes it at the foot of the frame, where the
-chrome's rule is doing the same job for nothing. It is worth a whole entry a
-frame — the weather's day table fits five days where it fitted four.
+A shape several rows tall needs space around it or two entries read as one block;
+charging that space to every entry wastes it at the foot of the frame, where the
+furniture's rule already does the same job. It is worth a whole entry per frame
+— the weather's day table fits five days where it fitted four.
 
 **The arrow keys move.** A page names its keys in letters, because that is what
 its footer and its compass say to a reader, and `with_arrows` offers the arrows
@@ -656,7 +654,7 @@ store and nothing that can come to disagree with it. A prefix filter is then a
 namespace filter, which is what a first digit already means: a weather service
 asks for `321` and gets its forecasts.
 
-**The caller is a token, not an address.** Counting readers wants to know how
+**The caller is a token, not an address.** Counting readers means knowing how
 many and nothing else. `record_visits` mints a random token the first time it
 sees a session and keeps it in the session, so `count(distinct caller)` answers
 the question and answers nothing about who. A service that keeps what it does
@@ -714,8 +712,8 @@ on the widest thing in the first: `*3#  Forecast by lat/lon position` fits, and
 the same title beside `*321<geoname-id>#` does not. Cut, it reads as a fault
 rather than as a shortage of room; carried on to a row with nothing in the first
 column, it reads as what it is — which column a thing is in being what tells a
-page number from a title that has run on. Two rows at most; a third is a title
-that wants rewriting. Both the contents page and the words page get it, and the
+page number from a title that has run on. Two rows at most; a third means the
+title should be rewritten. Both the contents page and the words page get it, and the
 pagination counts the extra rows.
 
 **A hint and a note are drawn in different colours.** Both were green, so the
@@ -740,14 +738,15 @@ and starts them on the second, instead of overrunning the rule. Headings are
 drawn only on a frame that has entries to label.
 
 **`wrap_within(text, cells=, rows=)`** puts text into a region that has a
-height as well as a width. `wrap_text` knows how wide a line may be and nothing
-about how many there is room for, so every caller with a region to fill did the
-same two things by hand — wrap, then take the first however-many lines and hope.
+height as well as a width. `wrap_text` takes the width a line may be and nothing
+about how many lines there is room for, so every caller with a region to fill
+did the same two things by hand: wrap, then take the first however-many lines
+and hope.
 
 It wraps and then cuts, with nothing cleverer in between, and that is a measured
-result rather than a shrug: a greedy fill was the obvious fallback for a region
-one line short, and **balanced wrapping never costs a line** — twenty thousand
-random widths and word lengths, no exception. It follows from the last line
+result: a greedy fill was the obvious fallback for a region one line short, but
+**balanced wrapping never costs a line** — twenty thousand random widths and
+word lengths, no exception. It follows from the last line
 being free. So text that does not fit is text the region was never going to
 hold; size the region for the longest thing it can be handed.
 
@@ -765,7 +764,7 @@ strings for the gaps, which has to be redone by hand whenever a word changes.
 `Prose.of("...", "...")` reaches the machinery that was already there, and the
 wrapped output is identical to what the hand-broken literals produced.
 
-**What a template consumes is the `Entry` protocol** — `text`, `detail`, and a
+**What a `Formatter` consumes is the `Entry` protocol** — `text`, `detail`, and a
 `destination` that may be `None` — so a service with a richer notion of a menu
 entry passes that instead of copying into somebody else's dataclass. `MenuItem`
 is there for services with no such notion, and `MenuItem.for_page(app, name)`
@@ -827,8 +826,7 @@ field is the same problem.
 
 ### What the keypad allows
 
-Narrower than it looks, and it settled the interaction rather than taste doing
-it.
+Narrower than it looks, and it settled the interaction rather than taste.
 
 **Digits are data or they are choices, never both.** On a suggestion list they
 choose, so a place whose name holds a digit is found by the letters around it.

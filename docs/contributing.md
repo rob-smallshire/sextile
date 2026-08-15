@@ -52,5 +52,4 @@ The output is written to `docs/_build/html`, which is git-ignored.
 :hidden:
 
 /plans/revealing-sextile
-/spikes/README
 ```

@@ -20,25 +20,31 @@ version = release
 extensions = [
     "myst_parser",
     "sphinx.ext.autodoc",
-    "sphinx.ext.autosummary",
     "sphinx.ext.napoleon",
     "sphinx.ext.intersphinx",
     "sphinx.ext.viewcode",
     "sphinx_autodoc_typehints",
 ]
 
-templates_path = ["_templates"]
 source_suffix = {".md": "markdown"}
 root_doc = "index"
 
 #  Everything the documentation set is made of lives under the Diátaxis tree and
-#  the legacy files it pulls in by name. Anything else under docs/ -- the raw
-#  discussions, the spikes' code -- is kept out so it raises no orphan warning.
+#  the one legacy file it pulls in whole (the rework plan). Anything else under
+#  docs/ is kept out so it raises no orphan warning. The architecture notes,
+#  target architecture, open questions and spikes README are excluded rather than
+#  pulled in: they link to files under packages/*/docs and to the raw
+#  discussions, none of which are in this tree, so they cannot build clean until
+#  the Phase 4 content pass ports them. They stay where they are meanwhile.
 exclude_patterns = [
     "_build",
     "Thumbs.db",
     ".DS_Store",
     "discussions/**",
+    "spikes/**",
+    "architecture.md",
+    "target-architecture.md",
+    "open-questions.md",
     "**/__pycache__/**",
 ]
 
@@ -52,9 +58,7 @@ myst_enable_extensions = [
 ]
 myst_heading_anchors = 3
 
-# -- autodoc / autosummary / napoleon -----------------------------------------
-
-autosummary_generate = True
+# -- autodoc / napoleon -------------------------------------------------------
 
 #  Every docstring is Google style; napoleon is configured for that and numpy is
 #  off so it does not try to read them the other way.

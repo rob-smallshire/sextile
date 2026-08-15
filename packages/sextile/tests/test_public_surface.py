@@ -218,10 +218,9 @@ class TestTheServicesImportOnlyNamedSurface:
         assert not unresolved, f"sextile.__all__ names what it does not re-export: {unresolved}"
 
 
-#: The autosummary block in the API reference: every indented line that is a
-#: dotted `sextile` module name.
+#: The API reference toctree: every `modules/<dotted module>` entry in it.
 _API_INDEX: Final = _WORKSPACE / "docs" / "reference" / "api" / "index.md"
-_MODULE_LINE: Final = re.compile(r"^\s+(sextile(?:\.\w+)*)\s*$")
+_MODULE_LINE: Final = re.compile(r"^\s*modules/(sextile(?:\.\w+)*)\s*$")
 
 
 def _api_reference_modules() -> set[str]:
@@ -235,10 +234,9 @@ def _api_reference_modules() -> set[str]:
 class TestTheApiReferenceMatchesTheSurface:
     """The API reference documents every public module and no other.
 
-    A page is generated per module the autosummary in `docs/reference/api/index.md`
-    lists; holding that list to `PUBLIC` keeps a new public module from being
-    added without a reference page, and a page from outliving the module it
-    documented.
+    The toctree in `docs/reference/api/index.md` lists a page per module;
+    holding that list to `PUBLIC` keeps a new public module from being added
+    without a reference page, and a page from outliving the module it documented.
     """
 
     def test_it_lists_exactly_the_public_modules(self) -> None:

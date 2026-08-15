@@ -68,7 +68,7 @@ dismisses the bar and does nothing else. Both behaviours are the framework's,
 and every service has them by default. `--idle-timeout` and `--warn-after`
 change the timings; `0` turns either off.
 
-## Numbering
+## Page numbering
 
 A pattern is literal digits and named fields.
 
@@ -258,7 +258,7 @@ Two conventions are worth keeping, because readers rely on them across services:
   key from a slow one. Build the prompt and the choices from the same
   description of what the frame offers, or they will disagree.
 
-### The prompt at the foot of a frame
+### The footer prompt
 
 `PageLayout` writes its own prompt from the keys the parts and the page offer. A
 frame drawn some other way composes one from items rather than writing a string:
@@ -328,7 +328,7 @@ in `sextile.formatting` draws exactly that frame, a page with no furniture:
 return farewell_page("GOODBYE", f"Thank you for calling {app.name}.", "", "Ring off.")
 ```
 
-## Say what a page is where you write it
+## Titles, details and keywords
 
 ```python
 PageRoute("5", users, name="users", title="By user",
@@ -382,7 +382,7 @@ app = Sextile(pages=[
 ])
 ```
 
-## Say a page's name once
+## Getting page information
 
 A page that names itself in its decorator and again in its own chrome has two
 copies to keep in step, and the decorator's is the one shown in menus, on the
@@ -401,7 +401,7 @@ that title in upper case, which is what a heading is. Pages whose heading is
 The framework's own pages work the same way: map `contents` into the service's
 numbering with a title and the page uses it, or keeps its own if none is given.
 
-## Saying where a page is, once
+## Obtaining page addresses
 
 `addressing.keyed` renders a page number as a reader keys it — `*91#` — and
 `MenuItem.for_page(app, name)` gives the words the page was registered with.
@@ -450,7 +450,7 @@ drawn arrow would look like a mistake.
 `#` is not on the compass. It also moves to the next frame, but the compass
 shows directions, and `#` belongs in a list of keys to press.
 
-## Pages that come with the framework
+## Built-in pages
 
 Three pages come built and registered nowhere, so a service maps them into its
 own numbering or does without. They are handlers already, so each mapping is one
@@ -486,7 +486,7 @@ def describe(self, address: PageAddress) -> str:
     ...
 ```
 
-## The request
+## PageRequest: How pages are requested
 
 ```python
 async def post(request: PageRequest, post_id: int) -> Page:
@@ -498,10 +498,13 @@ async def post(request: PageRequest, post_id: int) -> Page:
     request.application        # the service, for asking where another page is
 ```
 
-`arrival` is what gives "next" a meaning: a page reached through a menu has that
-menu's pages on either side of it, and a page reached by keying its number has
-neither and should offer neither. The session works this out from the choices
-the menu offered; the handler only decides whether to use it.
+`arrival` gives the pages on either side of this one when the reader reached it
+through a sequence such as a menu: `arrival.preceding` and `arrival.following`,
+each a `PageAddress` or `None`. Use them to wire the `A` and `D` keys —
+*previous* and *next* — to the neighbouring pages. A page reached by keying its
+number directly belongs to no sequence, so both are `None`, and it should offer
+neither key. The session computes them from the menu the reader used; the
+handler only decides whether to use them.
 
 `session` is a plain mutable mapping that lasts as long as the connection. The
 terminal holds nothing but the frame on screen, so anything that must outlast a
@@ -519,7 +522,7 @@ app = Sextile.of(request)
 choices = {"1": app.address_for("post", post_id=post.id)}
 ```
 
-## Saying that a page is not there
+## Error handling
 
 Return `None`. The session shows a notice and leaves the reader on the current
 page, rather than moving them to an empty one.
@@ -555,7 +558,7 @@ has nothing to show. The second should be a real page that says why: an empty
 menu with no explanation looks like a fault, and on a slow service a reader
 cannot tell the two apart.
 
-## A page a reader types into
+## Forms: Accepting typed input
 
 ```python
 from sextile import Suggest
@@ -617,7 +620,7 @@ choices=arrows_lead_where({"A": before, "D": after})
 shortcut given `arrow=True`. A form receives the arrows unmapped, which is what
 lets TAB move between fields without registering a `D`.
 
-## What is true of every page
+## Middleware: Intercepting every request and response
 
 A handler decides what one page says. **Middleware handles what is true of every
 page** — who is calling, how long a page took, whether the caller is allowed:
@@ -651,7 +654,7 @@ cannot separate the wire from the page. `log_pages` names and times every page,
 warning on anything over a second, by *duration* rather than by outcome: a
 missing page is ordinary, but taking four seconds to decide it is missing is not.
 
-## Anything that has to be opened
+## Application lifecycle
 
 ```python
 CLIENT = Held("client", httpx.AsyncClient)
@@ -705,7 +708,7 @@ Handlers are `async`. Anything synchronous and slow — SQLite, a file read —
 belongs in `asyncio.to_thread`, or every caller waits while one caller's page is
 built.
 
-## Forty columns, and what they cost
+## Text and Graphics
 
 A colour attribute **occupies a character cell**. A row that changes colour twice
 has thirty-eight columns left for text, not forty. `Canvas` does this arithmetic,
@@ -741,7 +744,7 @@ For long text, give `sextile.viewdata.typesetting` a `Document` of blocks; it
 wraps the text, colours quotations and listings distinctly, and divides the
 result into frame-sized pages of rows.
 
-## Seeing it
+## Previewing a page
 
 ```sh
 uv run sextile render my_service:app --page 1              # in colour

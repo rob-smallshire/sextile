@@ -81,7 +81,7 @@ def notice_page(
             shortcuts=shortcuts,
             hang_up=hang_up,
             furniture=furniture,
-            parts=[Flowing(Lines(said=lines))],
+            parts=[Lines(said=lines)],
         ).build(request)
     #  No header to carry the title, so it heads the content in cyan and the
     #  lines follow a blank row down -- the plain notice the framework draws
@@ -168,7 +168,7 @@ def prose_page(
         title=title,
         home=home,
         shortcuts=shortcuts,
-        parts=[Flowing(Prose.of(*paragraphs))],
+        parts=[Prose.of(*paragraphs)],
     ).build(request)
 
 

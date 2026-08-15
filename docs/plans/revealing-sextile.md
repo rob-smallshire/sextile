@@ -105,9 +105,12 @@ Order: 0, then 1, then 2, then 3; 5 interleaves; 6 is partly forced by 1-2.
     `PageRoute`.
 1.7 Titles: `title_for(address)` and `label_for(address)` with one hook;
     per-route `label=`.
-1.8 Small: `Page.text(n)`/`testing.text_of`; `RowWriter` column offset and
-    run trimming to a budget; drop `digit` from non-numbering formatters;
-    flowing as the default (bare drawable in `parts`).
+1.8 Small: done — `testing.text_of(page, index)` (one helper, all local
+    reimplementations gone); flowing as the default (a bare `Drawable` in
+    `parts` means `Flowing`). Deferred: `RowWriter` column offset and run
+    trimming to a budget -> Phase 3 (with the drawing-triplicate collapse);
+    drop `digit` from non-numbering formatters -> Phase 2 (with the formatter
+    renames).
 
 ### Phase 2: names (recommendations; "your call" items settled by the user)
 
@@ -120,6 +123,9 @@ Order: 0, then 1, then 2, then 3; 5 interleaves; 6 is partly forced by 1-2.
 | Shortcut | `says` `arrow` | `label` `with_arrow` |
 | PageLayout | `follows` `item` | `next_page` `item_noun` |
 | Formatters | `Lines(said=)` `Formatter`/`RowFormatter` `Figures` | `Lines(entries)` positional; `SequencePart`/`RowPart`; `KeyValues` |
+
+Deferred from 1.8: drop the `digit` parameter from formatters that do not
+number their rows, folded in with the formatter renames above.
 | Forms | `Suggest(look_up=, field=, typing=, empty=)` `Fields(complete=, note=, sends=, advice=)` `Field.takes` | `TypeAhead(lookup=, field_colour=, text_colour=, no_match=)` `FieldSet(on_submit=, footnote=, submit_label=, footer_items=)` `Field.accepts` |
 | Request | `Arrival(preceding, following)` `Parting` `service` | `Neighbours(previous, next)` `IdleTimeout` `state` |
 | Application | `lately_read`/`most_read`/`who_has_called` `ask()` `advertised()`/`pages()` | `recent_page`/`popular_page`/`callers_page` `request_page()` `routes()` |
@@ -145,6 +151,9 @@ Duplicates to collapse: centring/double-height/mosaic triplicates onto
 `incremental_bytes` vs `typed_bytes`; two escape loops in `Frame`; colour
 ranges in `canvas.py` and `ansi.py`; `charting.ACROSS_A_CELL/DOWN_A_CELL`;
 `drawing.SOLID` vs `SOLID_BLOCKS`.
+Deferred from 1.8: `RowWriter` column offset and run trimming to a budget,
+taken with the centring/double-height/mosaic triplicate collapse onto
+`Composition`.
 
 ### Phase 5: docstrings and CLAUDE.md
 

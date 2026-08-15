@@ -25,7 +25,7 @@ from typing import TYPE_CHECKING, Final
 
 from sextile.addressing import PageAddress, keyed
 from sextile.formatting import Menu, MenuItem
-from sextile.layout import Flowing, PageLayout
+from sextile.layout import PageLayout
 from sextile.page import Page
 
 if TYPE_CHECKING:
@@ -65,7 +65,7 @@ def history_page(
         )
     ]
     return PageLayout(
-        title=title, parts=[Flowing(Menu(entries=entries, empty=_NOWHERE))]
+        title=title, parts=[Menu(entries=entries, empty=_NOWHERE)]
     ).build(request)
 
 

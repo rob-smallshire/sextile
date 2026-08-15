@@ -22,7 +22,7 @@ Example:
 
         PageLayout(
             title="LATEST POSTS",
-            parts=[Flowing(Menu(entries=posts))],
+            parts=[Menu(entries=posts)],
         ).build(request)
 """
 

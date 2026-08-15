@@ -25,7 +25,7 @@ from typing import TYPE_CHECKING, Final
 
 from sextile.addressing import PageAddress, keyed
 from sextile.formatting import Listing, MenuItem
-from sextile.layout import Flowing, PageLayout
+from sextile.layout import PageLayout
 from sextile.page import Page
 
 if TYPE_CHECKING:
@@ -48,5 +48,5 @@ def names_page(
         MenuItem(text=keyed(word), detail=label(named[word])) for word in sorted(named)
     ]
     return PageLayout(
-        title=title, parts=[Flowing(Listing(entries=entries, empty=_NOTHING))]
+        title=title, parts=[Listing(entries=entries, empty=_NOTHING)]
     ).build(request)

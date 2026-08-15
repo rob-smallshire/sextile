@@ -116,19 +116,17 @@ def _menu(
     return PageLayout(
         title=title,
         parts=[
-            Flowing(
-                Menu(
-                    entries=[
-                        MenuItem(
-                            text=named,
-                            detail=f"{keyed(visit.page)}  {said}",
-                            destination=visit.page,
-                        )
-                        for visit, said in entries
-                        if (named := label(visit.page))
-                    ],
-                    empty=empty,
-                )
+            Menu(
+                entries=[
+                    MenuItem(
+                        text=named,
+                        detail=f"{keyed(visit.page)}  {said}",
+                        destination=visit.page,
+                    )
+                    for visit, said in entries
+                    if (named := label(visit.page))
+                ],
+                empty=empty,
             )
         ],
     ).build(request)

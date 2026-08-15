@@ -45,7 +45,7 @@ from sextile import (
     standard_pages,
 )
 from sextile.formatting import Lines, MenuItem
-from sextile.layout import Drawn, Flowing, Once, PageLayout, Shortcut
+from sextile.layout import Drawn, Once, PageLayout, Shortcut
 from sextile.viewdata.canvas import Canvas
 from sextile.viewdata.controls import Colour
 
@@ -162,7 +162,7 @@ async def one_day(request: PageRequest, day: date) -> Page:
         ],
         neighbours=request.neighbours,
         item_noun="day",
-        parts=[Flowing(Lines(said=lines))],
+        parts=[Lines(said=lines)],
     ).build(request)
 
 

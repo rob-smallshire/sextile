@@ -163,6 +163,27 @@ class TestAPartThatFlows:
         assert said_on([one.canvas for one in filled], 0)[-2:] == ["and", "then"]
 
 
+class TestABareDrawableIsFlowing:
+    """A `Drawable` in a parts list, wrapped in nothing, means `Flowing`.
+
+    Flowing across as many frames as it takes is what a part does unless it says
+    otherwise, so the common case need not say it.
+    """
+
+    def test_it_flows_across_frames_like_an_explicit_flowing(self) -> None:
+        bare = fill([items(20)], CONTENT)
+        wrapped = fill([Flowing(items(20))], CONTENT)
+        assert len(bare) == len(wrapped) == 3
+        assert [said_on([one.canvas for one in bare], f) for f in range(3)] == [
+            said_on([one.canvas for one in wrapped], f) for f in range(3)
+        ]
+
+    def test_it_follows_a_once_the_way_a_flowing_would(self) -> None:
+        filled = fill([Once(Says("lead-in")), items(12)], CONTENT)
+        assert said_on([one.canvas for one in filled], 0)[0] == "lead-in"
+        assert len(filled) == 2
+
+
 class TestOnceAndEvery:
     def test_once_is_drawn_on_the_first_frame_only(self) -> None:
         filled = fill([Once(Says("lead-in")), Flowing(items(12))], CONTENT)

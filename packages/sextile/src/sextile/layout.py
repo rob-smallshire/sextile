@@ -285,8 +285,22 @@ class Break:
 
 
 #: One of a page's parts: a `Drawable` with the frames it appears on
-#: (`Once`, `Every` or `Flowing`), or a `Break`.
-type Part = Once | Every | Flowing | Break
+#: (`Once`, `Every` or `Flowing`), a `Break`, or a bare `Drawable`, which means
+#: `Flowing` -- flowing across as many frames as it takes is what a part does
+#: unless it says otherwise, and it is the only sensible reading of one given
+#: without a wrapper.
+type Part = Once | Every | Flowing | Break | Drawable
+
+#: A part once a bare drawable has been read as `Flowing`: what the filling
+#: works in, every part carrying its own `drawable`.
+_Placed = Once | Every | Flowing | Break
+
+
+def _placed(part: Part) -> _Placed:
+    """Read a bare drawable in a parts list as a flowing part."""
+    if isinstance(part, Once | Every | Flowing | Break):
+        return part
+    return Flowing(part)
 
 
 @dataclass
@@ -330,7 +344,7 @@ def fill(parts: Sequence[Part], rows: range) -> list[Filled]:
         ValueError: If a part can never be placed, being taller than a whole
             frame, or if two parts on one frame both carry a form.
     """
-    state = _State(parts)
+    state = _State([_placed(part) for part in parts])
     frames: list[Filled] = []
     while True:
         frames.append(_frame(state, rows))
@@ -353,7 +367,7 @@ class _State:
     both absent from it.
     """
 
-    parts: Sequence[Part]
+    parts: Sequence[_Placed]
     pending: dict[int, Drawable] = field(default_factory=dict)
     broken: set[int] = field(default_factory=set)
     at_foot: dict[int, Drawable] = field(default_factory=dict)
@@ -376,7 +390,7 @@ class _State:
         )
 
 
-def _at_foot(parts: Sequence[Part]) -> dict[int, Drawable]:
+def _at_foot(parts: Sequence[_Placed]) -> dict[int, Drawable]:
     """Which parts drawn on every frame have their rows kept back at the foot.
 
     Those that come after the first flowing part, in the order the list gives
@@ -648,7 +662,9 @@ class PageLayout:
     Attributes:
         title: What the header calls the page. `None` takes the registered
             title of `request.address`, upper-cased; `""` heads it with nothing.
-        parts: The content, in the order it appears down the frames.
+        parts: The content, in the order it appears down the frames. A bare
+            `Drawable` means `Flowing(drawable)`; `Once`, `Every` and `Break`
+            say the frames a part appears on where they are not the default.
         home: Where `0` leads from every frame. Unset takes `request.app.index`;
             `None` offers no way home; a `PageAddress` leads there under the
             `index` label; a `Shortcut` where the footer should call it

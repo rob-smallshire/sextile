@@ -7,12 +7,14 @@ whole family of pages addressed by date.
 
 Declaring pages beside their functions with a `PageRouter`, rather than on the app
 directly, is the form a service grows into: the pages are a module of their own,
-spread into the service in one line. Page 1 is now a menu:
+spread into the service in one line. Page 1 is now a menu, with an about page and a
+page for a single day:
 
 ```{sextile-frame}
 :page: "1"
 :show-code:
 
+import calendar
 from datetime import date
 
 from sextile import (
@@ -38,7 +40,16 @@ async def main(request: PageRequest) -> Page:
 
 @router.page("42{day:date}", name="day", title="One day")
 async def one_day(request: PageRequest, day: date) -> Page:
-    return notice_page(request, day.strftime("%A %d %B %Y"), "", f"ISO {day.isoformat()}")
+    _, week, _ = day.isocalendar()
+    length = 366 if calendar.isleap(day.year) else 365
+    return notice_page(
+        request,
+        day.strftime("%A %d %B %Y"),
+        "",
+        f"Day {day.timetuple().tm_yday} of {length}",
+        f"Week {week}",
+        f"ISO {day.isoformat()}",
+    )
 
 
 @router.page("9", name="about", title="About this service", keywords=("ABOUT",))
@@ -58,18 +69,20 @@ entries `1`–`9`, so a reader chooses with one keypress.
 
 `app.menu_item("about")` builds a menu entry from a registered page — its title
 and its number — so the menu never respells a number. `app.address_for("day",
-day=...)` is the same read backwards: it builds the page number from a route's
+day=...)` is the same read backwards: it builds a page number from a route's
 pattern and its fields.
 
 ## Address a family of pages
 
-The `day` page's pattern is `42{day:date}`: the literal `42` then a `date` field.
+The `day` page's pattern is `42{day:date}`: the literal `42`, then a `date` field.
 The `date` converter reads the eight digits after `42` as a `date` and hands it to
-the handler, so `*4220260101#` is 1 January 2026:
+the handler, so `*4220260101#` is 1 January 2026 — everything it shows comes from
+that one date:
 
 ```{sextile-frame}
 :page: "4220260101"
 
+import calendar
 from datetime import date
 
 from sextile import Page, PageRequest, PageRouter, Sextile, notice_page
@@ -79,7 +92,16 @@ router = PageRouter()
 
 @router.page("42{day:date}", name="day", title="One day")
 async def one_day(request: PageRequest, day: date) -> Page:
-    return notice_page(request, day.strftime("%A %d %B %Y"), "", f"ISO {day.isoformat()}")
+    _, week, _ = day.isocalendar()
+    length = 366 if calendar.isleap(day.year) else 365
+    return notice_page(
+        request,
+        day.strftime("%A %d %B %Y"),
+        "",
+        f"Day {day.timetuple().tm_yday} of {length}",
+        f"Week {week}",
+        f"ISO {day.isoformat()}",
+    )
 
 
 app = Sextile(name="CALENDAR", pages=[*router])
@@ -88,4 +110,3 @@ app = Sextile(name="CALENDAR", pages=[*router])
 One page number, `*4220260101#`, drawn by the same code as `*1#`. From the menu,
 key `1` to reach it; or key `*ABOUT#` from anywhere to reach the about page by its
 keyword.
-```

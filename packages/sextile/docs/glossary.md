@@ -30,8 +30,11 @@ as "was X" so a reader coming from older code or docs can find it.
   `Neighbours(previous, next)`.
 - **shortcut** — a key present on every frame that leads to a fixed address.
   `layout.Shortcut`.
-- **home vs index** — home is the way back to a service's first page, on `0`;
-  index is the word the footer shows for it, `0 index`.
+- **home vs index** — home is where a caller arrives when the line opens
+  (`Sextile(home=...)`, page 1 by default; a service opening on a title frame
+  sets its own). Index is where the `0` key goes from every frame
+  (`Sextile(index=...)`, the same as home unless set apart). The footer word
+  `index` is the label for that key.
 - **session vs service state** — session state is one caller's own, lasting as
   long as the line is up (`request.session`); service state is shared across
   callers for the life of the service. Service state is currently

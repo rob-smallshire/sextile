@@ -29,7 +29,7 @@ from sextile.handlers import standard_pages
 from sextile.layout import Custom, Flow, OnOneFrame, PageLayout, Shortcut
 from sextile.middleware import CallNext, Middleware
 from sextile.page import Page, PageAddress, PageFrame, UnknownPageError, keyed
-from sextile.pages import farewell_page, menu_page, notice_page, prose_page
+from sextile.pages import farewell_page, menu_page, notice_page, prose_page, title_page
 from sextile.requests import Neighbours, PageRequest
 from sextile.routing import Converter, Handler, NoSuchRouteError, PageRoute, PageRouter, RouteError
 from sextile.state import StateKey
@@ -78,5 +78,6 @@ __all__ = [
     "notice_page",
     "prose_page",
     "standard_pages",
+    "title_page",
     "transliterate",
 ]

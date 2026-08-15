@@ -13,12 +13,13 @@ The framework's own notices are these too: `Sextile.not_found`, `.failed` and
 `.timed_out` build a `notice_page` with `furniture=()`.
 """
 
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 
 from sextile.formatting import Entry, Lines, Menu, Prose
 from sextile.layout import (
     DEFAULT_FURNITURE,
     DEFAULT_HOME,
+    Custom,
     DefaultHome,
     Flow,
     Furnishing,
@@ -28,13 +29,16 @@ from sextile.layout import (
 )
 from sextile.page import Page, PageAddress
 from sextile.requests import Neighbours, PageRequest
+from sextile.viewdata.canvas import Canvas
 from sextile.viewdata.controls import Colour
+from sextile.viewdata.frame import ROWS
 
 __all__ = [
     "farewell_page",
     "menu_page",
     "notice_page",
     "prose_page",
+    "title_page",
 ]
 
 #: What a page's `home` is when the caller leaves it unset: the app's index,
@@ -195,3 +199,34 @@ def farewell_page(
     return notice_page(
         request, *lines, title=title, home=None, furniture=(), hang_up=hang_up
     )
+
+
+def title_page(
+    request: PageRequest,
+    *,
+    draw: Callable[[Canvas], None],
+    next_page: PageAddress | None = None,
+    shortcuts: Sequence[Shortcut] = (),
+) -> Page:
+    """The whole-frame title a service opens on, drawn by the caller.
+
+    Args:
+        request: The request this page answers.
+        draw: Draws the frame, given the canvas; it has every row, from 0.
+        next_page: Where `#` leads once the frame has been read, the service's
+            index by default. `#` is the one key a viewdata reader tries without
+            being told, and a title frame is an invitation to press it.
+        shortcuts: Keys offered on the frame besides `#`.
+
+    Returns:
+        One frame with no furniture and no way home: a masthead is the whole
+        frame, and there is no index to send a reader back to that they are not
+        already at.
+    """
+    return PageLayout(
+        furniture=(),
+        home=None,
+        next_page=next_page if next_page is not None else request.app.index,
+        shortcuts=shortcuts,
+        parts=[OnOneFrame(Custom(rows=ROWS, draw=lambda canvas, row: draw(canvas)))],
+    ).build(request)

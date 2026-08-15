@@ -37,7 +37,7 @@ application in its first few lines.
     Form  TypeAhead  draw_form
     PageLayout  Flow  Custom  OnOneFrame  Shortcut
     Lines  Prose  MenuItem
-    menu_page  notice_page  prose_page  farewell_page
+    menu_page  notice_page  prose_page  farewell_page  title_page
     standard_pages  transliterate
     keys  handlers  __version__
 
@@ -167,7 +167,7 @@ Pass a parameter rather than reading a constant.
 
 ### `sextile.pages` — the commonest pages, said in one call
 
-    menu_page  notice_page  prose_page  farewell_page
+    menu_page  notice_page  prose_page  farewell_page  title_page
 
 The one-call shapes, each building a `PageLayout` from the request the page
 answers. Also at the top level, those being what most services reach for first.

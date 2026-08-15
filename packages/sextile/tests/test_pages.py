@@ -10,7 +10,7 @@ from sextile.application import Sextile
 from sextile.formatting import MenuItem
 from sextile.layout import Shortcut
 from sextile.page import Page, PageAddress, PageFrame
-from sextile.pages import farewell_page, menu_page, notice_page, prose_page
+from sextile.pages import farewell_page, menu_page, notice_page, prose_page, title_page
 from sextile.routing import PageRoute
 from sextile.testing import request_for, text_of
 from sextile.viewdata.canvas import Canvas
@@ -28,6 +28,46 @@ def _titled(name: str, title: str, number: str = "1") -> Sextile:
 
 def footer_of(page: Page, index: int = 0) -> str:
     return text_of(page, index).splitlines()[-1]
+
+
+class TestTitlePage:
+    def test_it_draws_the_frame_from_the_top(self) -> None:
+        def draw(canvas: Canvas) -> None:
+            canvas.row(3).text("HELLO")
+
+        page = title_page(request_for(_APP), draw=draw)
+        assert "HELLO" in text_of(page)
+
+    def test_it_is_one_frame_with_no_furniture(self) -> None:
+        page = title_page(request_for(_APP), draw=lambda canvas: None)
+        assert len(page.frames) == 1
+        #  No header, no rules, no footer: every row is the caller's.
+        assert text_of(page).strip() == ""
+
+    def test_hash_leads_to_the_index_by_default(self) -> None:
+        app = Sextile(index="8")
+        page = title_page(request_for(app), draw=lambda canvas: None)
+        assert page.next_page == PageAddress("8")
+
+    def test_next_page_may_be_given(self) -> None:
+        page = title_page(request_for(_APP), draw=lambda canvas: None, next_page=PageAddress("52"))
+        assert page.next_page == PageAddress("52")
+
+    def test_it_offers_no_way_home(self) -> None:
+        page = title_page(request_for(_APP), draw=lambda canvas: None)
+        frame = page.frame(0)
+        assert frame is not None
+        assert frame.destination("0") is None
+
+    def test_it_carries_the_shortcuts_given(self) -> None:
+        page = title_page(
+            request_for(_APP),
+            draw=lambda canvas: None,
+            shortcuts=[Shortcut(key="1", destination=PageAddress("52"))],
+        )
+        frame = page.frame(0)
+        assert frame is not None
+        assert frame.destination("1") == PageAddress("52")
 
 
 class TestNoticePage:

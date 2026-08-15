@@ -18,10 +18,10 @@ the log is held under, the same key a service hands `record_visits`.
 
 from collections.abc import Callable
 
-from sextile.declarations import Handler, PageRoute
 from sextile.page import Page
 from sextile.pages import notice_page
 from sextile.requests import PageRequest
+from sextile.routing import Handler, PageRoute
 from sextile.state import StateKey
 from sextile.visits import Visits
 

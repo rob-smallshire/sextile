@@ -23,13 +23,12 @@ from sextile import keys
 from sextile.application import CallNext, Middleware, Sextile
 from sextile.builtin.guidance import GuideRow
 from sextile.content.transliterate import transliterate
-from sextile.declarations import Handler, PageRoute, PageRouter
 from sextile.forms import Form, TypeAhead, draw_form
 from sextile.handlers import standard_pages
 from sextile.page import Page, PageAddress, PageFrame, UnknownPageError, keyed
 from sextile.pages import farewell_page, menu_page, notice_page, prose_page
 from sextile.requests import Neighbours, PageRequest
-from sextile.routing import Converter, NoSuchRouteError, RouteError
+from sextile.routing import Converter, Handler, NoSuchRouteError, PageRoute, PageRouter, RouteError
 from sextile.state import StateKey
 
 __version__ = version("sextile")

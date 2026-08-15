@@ -24,16 +24,26 @@ can only be told apart if all but the last has a width known in advance.
 are refused at registration rather than matched arbitrarily.
 
 This module maps addresses to targets; `sextile.application` decides that a
-target builds a page.
+target builds a page. It also holds the page *declaration*: `PageRoute` is
+everything about a page stated as a value, and `PageRouter` collects those from
+`@router.page` for a handler in a module of its own. A service is a list of
+`PageRoute`s, which is what makes registration order unobservable.
 """
 
 import re
-from collections.abc import Callable, Mapping
+from collections.abc import (
+    Awaitable,
+    Callable,
+    Iterable,
+    Iterator,
+    Mapping,
+    Sequence,
+)
 from dataclasses import dataclass
 from datetime import date
 from typing import Final
 
-from sextile.page import PageAddress, UnknownPageError
+from sextile.page import Page, PageAddress, UnknownPageError
 
 _FIELD: Final = re.compile(r"\{(?P<spec>[^{}]*)\}")
 
@@ -425,3 +435,178 @@ class Router[T]:
         except RouteError as error:
             raise RouteError(f"{pattern!r}: {error}") from error
         return _Field(name=name, converter=converter)
+
+
+# -- declaring a page ------------------------------------------------------
+
+#: A page handler. `None` rather than a page means there is no such page --
+#: something *said* to a reader who has not moved, as against somewhere they
+#: have gone -- and the session tells the two apart.
+type Handler = Callable[..., Awaitable[Page | None]]
+
+
+@dataclass(frozen=True)
+class PageRoute:
+    """One page of a service, declared as a value rather than as a decoration.
+
+    Everything about a page is here: its place in the numbering, what builds it,
+    what to call it where it is listed, and the words that reach it. The service
+    is a list of these. Declaring pages as data makes registration order
+    unobservable: converters, pages, middleware and lifespan all arrive in one
+    constructor call, so no step has to run before another.
+
+    A route also carries what the service reads back about the page it declared:
+    `Sextile.route` and `Sextile.routes` return these, with `keyed` filled
+    in. On a route a caller constructs, `keyed` is empty until a service
+    registers it, there being no numbering to read it against yet.
+    """
+
+    pattern: str
+    """The page numbers this answers: literal digits and named fields."""
+
+    handler: Handler
+    """What builds the page. `None` rather than a page means there is no such
+    page, which the session shows differently from one it could not build."""
+
+    name: str | None = None
+    """What `address_for` calls it. The handler's own name unless given."""
+
+    title: str = ""
+    """What to call this page where it is *listed* rather than shown -- in a
+    menu, in the history, in the contents. A page with no title is not
+    advertised, which is how a title frame stays off the contents."""
+
+    detail: str = ""
+    """A second line, wherever the title gets one."""
+
+    keywords: Sequence[str] = ()
+    """Words a reader may key instead of the number."""
+
+    label: str | Callable[..., str] | None = None
+    """What to call the page in a list of *visited* pages, where the listed
+    title is wrong because the number carried a field: "One post" names the kind
+    of page, "Post 489493" names the one a reader was on. A `str.format` template
+    over the route's captured fields (`label="Post {post_id}"`), or a callable
+    taking them as keyword arguments (`label=lambda day: day_title(day)`). None
+    leaves `Sextile.label_for` to build one from the title and the fields."""
+
+    keyed: str = ""
+    """The number a reader keys, fields shown as `<name>`: `52<user_id>`. Filled
+    in when a service registers the route, from the numbering it registers it
+    into; empty on a route a caller has only constructed."""
+
+
+def declaring[H: Handler](
+    keep: Callable[[PageRoute], object],
+    pattern: str,
+    *,
+    name: str | None,
+    title: str,
+    detail: str,
+    keywords: Sequence[str],
+    label: str | Callable[..., str] | None,
+) -> Callable[[H], H]:
+    """A `@page`-style decorator that hands the `PageRoute` it builds to `keep`.
+
+    The one implementation behind `Sextile.page` and `PageRouter.page`: both
+    build a `PageRoute` from the same arguments and differ only in where it
+    goes, so neither decorator can come to build one differently from the other.
+
+    Args:
+        keep: What to do with the route the decorated handler declares --
+            `Sextile.add_page` for a service, a list's `append` for a router.
+        pattern: The page numbers the handler answers.
+        name: What `address_for` calls it, or None to take the handler's name.
+        title: What to call it where it is listed rather than shown.
+        detail: A second line, wherever the title gets one.
+        keywords: Words a reader may key instead of the number.
+        label: What to call the page in a list of visited pages, when the title
+            is wrong because the number carried a field. See `PageRoute.label`.
+
+    Returns:
+        A decorator that registers its handler and returns it unchanged.
+    """
+
+    def register(handler: H) -> H:
+        keep(
+            PageRoute(
+                pattern=pattern,
+                handler=handler,
+                name=name,
+                title=title,
+                detail=detail,
+                keywords=keywords,
+                label=label,
+            )
+        )
+        return handler
+
+    return register
+
+
+class PageRouter:
+    """Pages declared together, in a module of their own, for one service.
+
+    A handler that lives apart from the `Sextile` it serves is declared with
+    `@router.page(...)`, the same call as `@app.page`, and the module's pages
+    reach the service in one spread. Iterating a router yields its `PageRoute`s
+    in the order they were declared, so a service reads the way its source does.
+
+    Example:
+        router = PageRouter()
+
+        @router.page("3", title="By day", keywords=("WHO",))
+        async def days(request: PageRequest) -> Page:
+            ...
+
+        app = Sextile(pages=[*router, *standard_pages(history="92")])
+    """
+
+    def __init__(self) -> None:
+        self._routes: list[PageRoute] = []
+
+    def page[H: Handler](
+        self,
+        pattern: str,
+        *,
+        name: str | None = None,
+        title: str = "",
+        detail: str = "",
+        keywords: Sequence[str] = (),
+        label: str | Callable[..., str] | None = None,
+    ) -> Callable[[H], H]:
+        """Declare a page beside the function that builds it.
+
+        The same call as `Sextile.page`, for a handler in a module that has no
+        application object to hang it on. The route takes the handler's own name
+        unless given one.
+
+        Args:
+            pattern: The page numbers this answers: literal digits and fields.
+            name: What `address_for` calls it, or None for the handler's name.
+            title: What to call it where it is listed. Untitled is unadvertised.
+            detail: A second line, wherever the title gets one.
+            keywords: Words a reader may key instead of the number.
+            label: What to call it in a list of visited pages, when the title is
+                wrong because the number carried a field. See `PageRoute.label`.
+
+        Returns:
+            A decorator that collects its handler's route and returns it
+            unchanged, so a service checked strictly stays so past the decorator.
+        """
+        return declaring(
+            self._routes.append,
+            pattern,
+            name=name,
+            title=title,
+            detail=detail,
+            keywords=keywords,
+            label=label,
+        )
+
+    def include(self, routes: Iterable[PageRoute]) -> None:
+        """Add every route in `routes`, after the ones this router already has."""
+        self._routes.extend(routes)
+
+    def __iter__(self) -> Iterator[PageRoute]:
+        return iter(self._routes)

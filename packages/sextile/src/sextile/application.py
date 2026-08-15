@@ -22,7 +22,7 @@ answering from memory is answer from somewhere else -- a database, an HTTP API,
 a device. The one caller kept waiting should not be all of them.
 
 The request a handler takes is `sextile.requests`'s; the vocabulary for
-declaring a page beside its handler is `sextile.declarations`'s. Both are
+declaring a page beside its handler is `sextile.routing`'s. Both are
 re-exported here, `sextile` itself being where a service imports from.
 """
 
@@ -44,18 +44,21 @@ from sextile.builtin import contents, guidance, history, names, readership
 from sextile.builtin.contents import contents_page
 from sextile.builtin.history import history_page
 from sextile.builtin.names import names_page
-from sextile.declarations import (
-    Handler,
-    PageRoute,
-    PageRouter,
-    declaring,
-)
 from sextile.formatting import MenuItem
 from sextile.layout import CHOICES_PER_FRAME, HOME_KEY
 from sextile.page import Page, PageAddress, UnknownPageError, keyed
 from sextile.pages import notice_page
 from sextile.requests import Neighbours, PageRequest
-from sextile.routing import Converter, ConverterFactory, Match, Router
+from sextile.routing import (
+    Converter,
+    ConverterFactory,
+    Handler,
+    Match,
+    PageRoute,
+    PageRouter,
+    Router,
+    declaring,
+)
 from sextile.state import State
 from sextile.visits import Visits
 

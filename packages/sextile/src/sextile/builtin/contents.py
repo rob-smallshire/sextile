@@ -29,8 +29,8 @@ from sextile.layout import PageLayout
 from sextile.page import Page, keyed
 
 if TYPE_CHECKING:
-    from sextile.declarations import PageRoute
     from sextile.requests import PageRequest
+    from sextile.routing import PageRoute
 
 TITLE: Final = "EVERY PAGE"
 

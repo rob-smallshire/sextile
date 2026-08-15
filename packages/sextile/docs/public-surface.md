@@ -219,9 +219,9 @@ Everything else, and specifically:
 
 | Module | Why an application does not need it |
 |---|---|
-| `application`, `requests`, `declarations` | their public names are re-exported by `sextile` |
+| `application`, `requests` | their public names are re-exported by `sextile` |
 | `page` | likewise: `PageAddress`, `keyed`, `UnknownPageError`, `Page`, `PageFrame` |
-| `routing` | a service declares routes; the router matches them. `Converter` is the extension point, and it and the two errors it raises are at the top level |
+| `routing` | a service declares routes; the router matches them. `PageRoute`, `PageRouter` and `Handler` are declared here and re-exported by `sextile`; `Converter` is the extension point, and it and the two errors it raises are at the top level |
 | `pages` | reached through `sextile.handlers` or the `Sextile` methods |
 | `session`, `server` | how a call is answered, which no page takes part in |
 | `viewdata.command_line`, `.idle_warning`, `.hangup`, `.repaint` | what the session is built from |

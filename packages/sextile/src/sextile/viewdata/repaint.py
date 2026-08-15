@@ -60,7 +60,7 @@ def rows_bytes(
     how much of each row to send: **the wider of the old row and the new one**.
     A row that has grown shorter must blank what it vacated, or the tail of the
     longer thing that was there stays on screen -- which on a suggestion list
-    means a place the reader has typed past still offering itself.
+    means an entry the reader has typed past still offering itself.
 
     ``caret`` is where to leave the cursor, and it is turned on there: the
     reader is in the middle of a word and needs to see where the next letter

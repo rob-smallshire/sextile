@@ -49,7 +49,10 @@ beyond prose.
 | application.py `guide()` | "a search field answers letters, a forecast answers F" (weather) — the same phrase, matched to guidance.py | genericised — fixed here |
 | layout.py `Shortcut` | "a forecast returning to the search that found it, a post returning to the board it was on" (weather + Stardot) | "a page returning to the one that led to it" — fixed here |
 
-**Summary:** the docstring sweep found Invariant-1 (framework-must-not-know-applications) violated in framework *comments/docstrings* across ~9 files. All fixed in place. **A code-level check is still owed** — that no framework identifier, branch or string literal names a forum/post/forecast/place/coordinate concept — since that would be a defect beyond prose.
+| viewdata/footer.py | `_MOVEMENT` comment "a service moves between posts, or days" (Stardot/calendar) | "whatever the service's items are" — fixed here |
+| viewdata/repaint.py | `rows_bytes` "a place the reader has typed past" (weather) | "an entry the reader has typed past" — fixed here |
+
+**Summary:** the docstring sweep found Invariant-1 (framework-must-not-know-applications) violated in framework *comments/docstrings* across ~11 files. All fixed in place. **A code-level check is still owed** — that no framework identifier, branch or string literal names a forum/post/forecast/place/coordinate concept — since that would be a defect beyond prose.
 
 ## Structural drift needing a decision
 

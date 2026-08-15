@@ -15,9 +15,9 @@ when what it would say has changed: twenty-five cells over several minutes
 changes about twice a minute, and the row costs 45 bytes, a third of a second at
 1200 baud.
 
-The whole row goes each time, rather than only the cell the bar has given up,
-and the reason is not laziness. There is no absolute cursor addressing on the
-wire: reaching column *c* of row 23 costs `2 + c` bytes of `HOME`, `UP` and
+The whole row goes each time, rather than only the cell the bar has given up.
+There is no absolute cursor addressing on the wire: reaching column *c* of row
+23 costs `2 + c` bytes of `HOME`, `UP` and
 `RIGHT`. Blanking one cell at the right-hand end of a full bar therefore costs
 42 bytes against the row's 45, and only becomes worthwhile as the bar empties
 and the cell to change moves leftward. Three bytes is not worth a second way of

@@ -160,8 +160,8 @@ def _cut(line: str, width: int) -> str:
 
 
 #: What each of the movement keys does, said fully and briefly. The item axis
-#: takes its noun from whoever is drawing the page: a service moves between
-#: posts, or days, or whatever it is made of.
+#: takes its noun from whoever is drawing the page: whatever the service's
+#: items are.
 _MOVEMENT: Final = {
     keys.PREVIOUS_FRAME: ("page up", "up"),
     keys.NEXT_FRAME: ("page down", "down"),
@@ -173,10 +173,9 @@ _MOVEMENT: Final = {
 def movement(available: Iterable[str], *, item: str = "item") -> list[FooterItem]:
     """Footer items for the movement keys a frame answers, in order.
 
-    Here because both the templates and a service drawing a frame by hand have
-    to name these, and naming them twice is how two pages of one service come
-    to describe the same key differently -- which is what happened: a page
-    built by a template said one thing and a page built by hand said another.
+    Here because both `PageLayout` and a service drawing a frame by hand have to
+    name these keys, and naming them in two places lets two pages of one service
+    describe the same key differently.
     """
     answered = set(available)
     return [

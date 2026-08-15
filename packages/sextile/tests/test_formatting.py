@@ -3,7 +3,7 @@
 What a formatter does with the room it is given: how many entries go in it,
 which of them can be chosen, and what is left for the next frame.
 
-See docs/page-layout.md.
+See docs/design.md.
 """
 
 from dataclasses import dataclass

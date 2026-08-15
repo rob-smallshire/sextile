@@ -45,7 +45,7 @@ Docs:
 - [x] docs/writing-an-application.md  (flagship; register sample for sign-off)
 - [x] docs/design.md  (fork rewrite, reviewed; diagram/code verified intact)
 - [x] docs/layout.md
-- [ ] docs/page-layout.md
+- [x] docs/page-layout.md  (DELETED; rationale folded into design.md, links repointed)
 - [x] docs/navigation.md  (also fixed stale "template" reference)
 - [x] docs/rendering.md  (also fixed stale chrome.py references)
 - [x] docs/viewdata-encoding.md  (already exemplary; one idiom fixed)

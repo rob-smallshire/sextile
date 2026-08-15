@@ -6,8 +6,8 @@ settles what sits above what. `fill` walks them and returns as many frames as
 they needed, which is the first of the two passes that build a page: nothing
 here knows how many frames there will be, and nothing here draws furniture.
 
-See [page-layout.md](../../docs/page-layout.md) for the design this implements
-and the reasoning behind it.
+See [design.md](../../docs/design.md#laying-out-a-page) for the design this
+implements and the reasoning behind it.
 
 Example:
     A lead-in on the first frame, a heading on all of them, and a menu that

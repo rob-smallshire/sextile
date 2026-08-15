@@ -4,8 +4,8 @@ Every page a service returns is built the same way: furniture round the edge of
 each frame, and a list of parts down the middle. `PageLayout` holds both and
 `build` turns them into a `Page`.
 
-This describes what is there. [page-layout.md](page-layout.md) says why it is
-built this way, and what was tried and rejected.
+This describes what is there. [design.md](design.md#laying-out-a-page) says why
+it is built this way, and what was tried and rejected.
 
 ## The shape of a frame
 

@@ -3,7 +3,7 @@
 The fill pass alone: what goes on which frame, and what each frame claims.
 Nothing here draws furniture, which is the other pass and knows the count.
 
-See docs/page-layout.md.
+See docs/design.md.
 """
 
 from dataclasses import dataclass

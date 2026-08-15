@@ -403,7 +403,7 @@ def _noted() -> FieldSet:
         return f"nearest to {values['where']}" if values.get("where") else ""
 
     return FieldSet(
-        fields=[Field(name="where", label="WHERE", row=2, takes=str.isdigit,
+        fields=[Field(name="where", label="WHERE", row=2, accepts=str.isdigit,
                       hint="a number", hint_row=HINT_ROW)],
         on_submit=lambda values: None,
         footnote=note,

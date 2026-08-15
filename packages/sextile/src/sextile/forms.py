@@ -409,7 +409,7 @@ class Field:
 
     row: int
 
-    takes: Callable[[str], bool]
+    accepts: Callable[[str], bool]
     """Whether a character belongs in this field. A form handles typing; what a
     particular field's value is made of is the service's concern."""
 
@@ -535,7 +535,7 @@ class FieldSet(Form):
             key in self._ONWARD
             or key in self._BACK
             or key == keys.RUB_OUT
-            or self.live.takes(key)
+            or self.live.accepts(key)
         )
 
     async def typed(self, key: str) -> None:

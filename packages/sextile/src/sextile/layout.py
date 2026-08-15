@@ -33,7 +33,7 @@ from sextile.keys import (
     PREVIOUS_FRAME,
     PREVIOUS_ITEM,
     arrows_lead_where,
-    moving,
+    frame_moves,
 )
 from sextile.page import Page, PageFrame
 from sextile.viewdata.canvas import Canvas
@@ -788,7 +788,7 @@ class PageLayout:
         return PageFrame(
             frame=filled.canvas.frame,
             choices=self._choices(filled, home=home),
-            moves=moving(back=back, on=on),
+            moves=frame_moves(has_previous=back, has_next=on),
             form=filled.claim.form,
         )
 

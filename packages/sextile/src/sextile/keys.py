@@ -40,7 +40,7 @@ __all__ = [
     "UP",
     "arrows_lead_where",
     "as_letter",
-    "moving",
+    "frame_moves",
     "with_arrows",
 ]
 
@@ -147,12 +147,12 @@ def arrows_lead_where[T](choices: Mapping[str, T]) -> dict[str, T]:
     }
 
 
-def moving(*, back: bool, on: bool) -> frozenset[str]:
+def frame_moves(*, has_previous: bool, has_next: bool) -> frozenset[str]:
     """The keys that move between the frames of one page, arrows included.
 
     Args:
-        back: Whether there is a previous frame to go back to.
-        on: Whether there is a further frame to go on to.
+        has_previous: Whether there is a previous frame to go back to.
+        has_next: Whether there is a further frame to go on to.
 
     Returns:
         The keys the frame should answer, empty for a page of one frame.
@@ -164,8 +164,8 @@ def moving(*, back: bool, on: bool) -> frozenset[str]:
     since what an arrow means is for the page to decide.
     """
     pressed = set()
-    if back:
+    if has_previous:
         pressed.add(PREVIOUS_FRAME)
-    if on:
+    if has_next:
         pressed.update({NEXT_FRAME, HASH})
     return with_arrows(pressed)

@@ -8,7 +8,9 @@ Neither should have to reimplement the other, so what they share is here.
 import argparse
 import asyncio
 import importlib
+import logging
 import sys
+from collections.abc import Callable
 from contextlib import suppress
 from typing import Final
 
@@ -27,8 +29,10 @@ __all__ = [
     "ApplicationSpecError",
     "add_form_arguments",
     "add_listening_arguments",
+    "add_standard_subcommands",
     "render_page",
     "run_service",
+    "run_standard",
 ]
 
 #: How a frame can be shown on a terminal that is not a BBC Micro.
@@ -220,6 +224,71 @@ def _releasing(idle_timeout: float | None) -> str:
     if idle_timeout is None:
         return "holding idle callers indefinitely"
     return f"releasing idle callers after {idle_timeout:.0f}s"
+
+
+def add_standard_subcommands(
+    subcommands: "argparse._SubParsersAction[argparse.ArgumentParser]",
+    *,
+    configure: Callable[[argparse.ArgumentParser], None] = lambda parser: None,
+    page_example: str = "1",
+) -> None:
+    """Add the `render` and `serve` subcommands every service's command line shares.
+
+    A service adds its own subcommands to the same `subcommands` afterwards --
+    Stardot its `ingest`, the weather its `import-places`. `run_standard`
+    dispatches the two added here.
+
+    Args:
+        subcommands: The action returned by `parser.add_subparsers`, to add
+            `render` and `serve` to.
+        configure: Called with each of the two subparsers, to add the arguments
+            a service needs to find its own data, such as a database path. The
+            same call runs against both, so `render` and `serve` agree about
+            where the data lives without the service saying it twice.
+        page_example: A page number to show in `render --page`'s help, such as
+            `"1 or 82489493"`.
+    """
+    render = subcommands.add_parser("render", help="Show a frame without a BBC Micro")
+    render.add_argument("--page", help=f"Render a page by its number, such as {page_example}")
+    add_form_arguments(render)
+    configure(render)
+
+    serve = subcommands.add_parser("serve", help="Answer calls from terminals")
+    add_listening_arguments(serve)
+    configure(serve)
+
+
+def run_standard(
+    arguments: argparse.Namespace,
+    load: Callable[[argparse.Namespace], Sextile],
+) -> int | None:
+    """Run `render` or `serve`, or return None where the command is neither.
+
+    The counterpart of `add_standard_subcommands`: a service's `main` calls this
+    and, where it returns None, dispatches its own subcommands instead.
+
+    Args:
+        arguments: The parsed command line, whose `command` selects what runs.
+        load: Builds the service from the arguments, called only for a command
+            that needs it, so an unfindable data path fails no earlier than the
+            command that reads it.
+
+    Returns:
+        The process exit status for `render` or `serve`, or None where the
+        command is one the caller handles itself.
+    """
+    if arguments.command == "render":
+        if arguments.page is None:
+            print("Nothing to render: pass --page <number>.", file=sys.stderr)
+            return 2
+        return asyncio.run(render_page(load(arguments), arguments))
+    if arguments.command == "serve":
+        #  A server logs page by page as it answers; without this the middleware's
+        #  lines would go nowhere. The timestamp is what a log of a long-running
+        #  service is read by.
+        logging.basicConfig(level=logging.INFO, format="%(asctime)s  %(message)s")
+        return asyncio.run(run_service(load(arguments), arguments))
+    return None
 
 
 def rendered(frame: Frame, form: str, *, colour: bool) -> str:

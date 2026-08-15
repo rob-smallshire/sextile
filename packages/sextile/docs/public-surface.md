@@ -236,7 +236,7 @@ below the page.
 ### `sextile.cli` — building a service's command line
 
     run_service  render_page  add_listening_arguments  add_form_arguments
-    ApplicationSpecError
+    add_standard_subcommands  run_standard  ApplicationSpecError
 
 ### `sextile.viewdata.compass` — the four keys that move about a page, drawn
 

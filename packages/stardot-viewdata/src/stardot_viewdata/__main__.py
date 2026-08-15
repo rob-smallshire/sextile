@@ -11,18 +11,13 @@ service agree about where it is without being told twice.
 
 import argparse
 import asyncio
-import logging
 import sys
 from collections.abc import Sequence
 from contextlib import suppress
 from pathlib import Path
 
-from sextile.cli import (
-    add_form_arguments,
-    add_listening_arguments,
-    render_page,
-    run_service,
-)
+from sextile import Sextile
+from sextile.cli import add_standard_subcommands, run_standard
 from stardot_viewdata import __version__
 from stardot_viewdata.application import DEFAULT_DATABASE_FILEPATH, build_application
 from stardot_viewdata.feed.client import FeedClient
@@ -45,10 +40,9 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--version", action="version", version=f"stardot-viewdata {__version__}")
     subcommands = parser.add_subparsers(dest="command")
 
-    render = subcommands.add_parser("render", help="Show a frame without a BBC Micro")
-    render.add_argument("--page", help="Render a page by its number, such as 1 or 82489493")
-    add_form_arguments(render)
-    _add_database_argument(render)
+    add_standard_subcommands(
+        subcommands, configure=_add_database_argument, page_example="1 or 82489493"
+    )
 
     ingest = subcommands.add_parser("ingest", help="Fetch the feed into the archive")
     ingest.add_argument("--once", action="store_true", help="Poll once and stop")
@@ -67,10 +61,6 @@ def build_parser() -> argparse.ArgumentParser:
 
     archive = subcommands.add_parser("archive", help="Report what the archive holds")
     _add_database_argument(archive)
-
-    serve_command = subcommands.add_parser("serve", help="Answer calls from terminals")
-    add_listening_arguments(serve_command)
-    _add_database_argument(serve_command)
 
     return parser
 
@@ -97,32 +87,22 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser = build_parser()
     arguments = parser.parse_args(argv)
 
+    standard = run_standard(arguments, load=_application)
+    if standard is not None:
+        return standard
+
     match arguments.command:
-        case "render":
-            return _render(arguments)
         case "ingest":
             return asyncio.run(_ingest(arguments))
         case "archive":
             return _archive(arguments)
-        case "serve":
-            return _serve(arguments)
         case _:
             parser.print_help()
             return 0
 
 
-def _render(arguments: argparse.Namespace) -> int:
-    if arguments.page is None:
-        print("Nothing to render: pass --page <number>.", file=sys.stderr)
-        return 2
-    application = build_application(arguments.database_filepath)
-    return asyncio.run(render_page(application, arguments))
-
-
-def _serve(arguments: argparse.Namespace) -> int:
-    logging.basicConfig(level=logging.INFO, format="%(asctime)s  %(message)s")
-    application = build_application(arguments.database_filepath)
-    return asyncio.run(run_service(application, arguments))
+def _application(arguments: argparse.Namespace) -> Sextile:
+    return build_application(arguments.database_filepath)
 
 
 async def _ingest(arguments: argparse.Namespace) -> int:

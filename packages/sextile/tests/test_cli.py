@@ -15,9 +15,15 @@ from sextile.application import Sextile
 from sextile.cli import (
     ApplicationSpecError,
     add_listening_arguments,
+    add_standard_subcommands,
     load_application,
     run_service,
+    run_standard,
 )
+from sextile.page import Page
+from sextile.pages import notice_page
+from sextile.requests import PageRequest
+from sextile.routing import PageRoute
 from sextile.server import DEFAULT_IDLE_TIMEOUT, DEFAULT_PORT
 
 
@@ -158,3 +164,73 @@ class TestTheIdleWarning:
         monkeypatch.setattr("sextile.cli.serve", fake_serve)
         await run_service(Board(), parse("--warn-after", "30"))
         assert seen["warn_after"] == 30.0
+
+
+async def _greeting(request: PageRequest, **fields: object) -> Page:
+    return notice_page(request, "Hello.")
+
+
+_APP = Sextile(pages=[PageRoute("1", _greeting, name="hello", title="Hello")])
+
+
+def with_standard_subcommands(
+    *,
+    configure: Any = lambda parser: None,
+    page_example: str = "1",
+) -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser()
+    subcommands = parser.add_subparsers(dest="command")
+    add_standard_subcommands(subcommands, configure=configure, page_example=page_example)
+    return parser
+
+
+class TestStandardSubcommands:
+    """The `render` and `serve` a service's command line shares."""
+
+    def test_render_takes_the_form_arguments(self) -> None:
+        arguments = with_standard_subcommands().parse_args(["render", "--page", "1"])
+        assert arguments.command == "render"
+        assert arguments.page == "1"
+        assert arguments.form == "ansi"
+
+    def test_serve_takes_the_listening_arguments(self) -> None:
+        arguments = with_standard_subcommands().parse_args(["serve", "--port", "1"])
+        assert arguments.command == "serve"
+        assert arguments.port == 1
+
+    def test_configure_reaches_both_subcommands(self) -> None:
+        def configure(parser: argparse.ArgumentParser) -> None:
+            parser.add_argument("--database-filepath", default="here")
+
+        parser = with_standard_subcommands(configure=configure)
+        assert parser.parse_args(["render", "--page", "1"]).database_filepath == "here"
+        assert parser.parse_args(["serve"]).database_filepath == "here"
+
+
+class TestRunningAStandardCommand:
+    def test_an_unknown_command_is_left_to_the_caller(self) -> None:
+        arguments = argparse.Namespace(command="ingest")
+        assert run_standard(arguments, load=lambda _: _APP) is None
+
+    def test_render_without_a_page_is_refused_before_the_app_is_built(self) -> None:
+        loaded: list[bool] = []
+
+        def load(_: argparse.Namespace) -> Sextile:
+            loaded.append(True)
+            return _APP
+
+        arguments = with_standard_subcommands().parse_args(["render"])
+        assert run_standard(arguments, load=load) == 2
+        assert loaded == []
+
+    def test_render_draws_the_page(self) -> None:
+        arguments = with_standard_subcommands().parse_args(["render", "--page", "1"])
+        assert run_standard(arguments, load=lambda _: _APP) == 0
+
+    def test_serve_is_run(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        async def fake_serve(application: Sextile, **keywords: Any) -> _StoppedServer:
+            return _StoppedServer()
+
+        monkeypatch.setattr("sextile.cli.serve", fake_serve)
+        arguments = with_standard_subcommands().parse_args(["serve"])
+        assert run_standard(arguments, load=lambda _: _APP) == 0

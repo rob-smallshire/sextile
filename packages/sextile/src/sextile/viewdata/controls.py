@@ -14,9 +14,12 @@ from enum import IntEnum
 from typing import Final
 
 __all__ = [
+    "ALPHA_COLOURS",
+    "GRAPHICS_COLOURS",
     "Colour",
     "Attribute",
     "alpha_colour",
+    "colour_of",
     "graphics_colour",
     "is_attribute_code",
 ]
@@ -72,6 +75,26 @@ LAST_ATTRIBUTE: Final = 0x1F
 
 _ALPHA_COLOUR_BASE: Final = 0x00
 _GRAPHICS_COLOUR_BASE: Final = 0x10
+
+#: The spacing attributes that select a foreground colour, stated once here so a
+#: reader of a frame does not respell the ranges. Alpha runs 0x01-0x07 and
+#: graphics 0x11-0x17; black has no colour attribute and is in neither.
+ALPHA_COLOURS: Final = range(_ALPHA_COLOUR_BASE + 1, _ALPHA_COLOUR_BASE + 8)
+GRAPHICS_COLOURS: Final = range(_GRAPHICS_COLOUR_BASE + 1, _GRAPHICS_COLOUR_BASE + 8)
+
+
+def colour_of(code: int) -> Colour | None:
+    """The colour a spacing attribute selects, or None if it selects none.
+
+    The inverse of `alpha_colour` and `graphics_colour`: both the alpha and the
+    graphics colour attributes pick the same eight colours, and this reads either
+    back. No code returns black, black having no colour attribute.
+    """
+    if code in ALPHA_COLOURS:
+        return Colour(code - _ALPHA_COLOUR_BASE)
+    if code in GRAPHICS_COLOURS:
+        return Colour(code - _GRAPHICS_COLOUR_BASE)
+    return None
 
 
 def is_attribute_code(code: int) -> bool:

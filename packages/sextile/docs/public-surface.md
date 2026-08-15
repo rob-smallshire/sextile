@@ -99,7 +99,7 @@ Public submodules:
 |---|---|
 | `canvas` | `Canvas`, `RowWriter`, `Span` — writing on a frame |
 | `frame` | `Frame`, `ROWS`, `COLUMNS`, `FOOTER_ROW` — what a frame is |
-| `controls` | `Colour`, `Attribute`, `is_attribute_code`, and the two colour encoders |
+| `controls` | `Colour`, `Attribute`, `is_attribute_code`, the two colour encoders and `colour_of` reading one back |
 | `measure` | `cell_count`, `fitted` — what fits in how many cells |
 | `charset` | `G0_TO_UNICODE`, `mosaic_code`, `is_representable` |
 | `drawing` | `rule`, `thin_rule`, `centred`, `key_row`, `bar` |

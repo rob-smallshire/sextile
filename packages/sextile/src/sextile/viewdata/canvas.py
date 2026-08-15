@@ -15,7 +15,13 @@ from enum import Enum, auto
 from typing import Final, Self
 
 from sextile.viewdata.charset import mosaic_code
-from sextile.viewdata.controls import Attribute, Colour, alpha_colour, graphics_colour
+from sextile.viewdata.controls import (
+    Attribute,
+    Colour,
+    alpha_colour,
+    colour_of,
+    graphics_colour,
+)
 from sextile.viewdata.frame import COLUMNS, ROWS, Frame
 from sextile.viewdata.measure import cell_count, fitted
 from sextile.viewdata.wrapping import wrap_text
@@ -47,13 +53,6 @@ class Span:
 
     text: str
     colour: Colour | None = None
-
-#  Attributes that change the foreground colour, and so what a character
-#  written after them will look like.
-_ALPHA_COLOURS = range(0x01, 0x08)
-_GRAPHICS_COLOURS = range(0x11, 0x18)
-_GRAPHICS_OFFSET = 0x10
-
 
 class _Mode(Enum):
     """Whether the cells being written are read as letters or as blocks.
@@ -260,11 +259,9 @@ class RowWriter:
         """
         colour = DEFAULT_COLOUR
         for column in range(self._column):
-            code = self._frame.cell(self._row, column)
-            if code in _ALPHA_COLOURS:
-                colour = Colour(code)
-            elif code in _GRAPHICS_COLOURS:
-                colour = Colour(code - _GRAPHICS_OFFSET)
+            found = colour_of(self._frame.cell(self._row, column))
+            if found is not None:
+                colour = found
         return colour
 
     @property

@@ -12,7 +12,7 @@ variants, and the difference is decorative rather than structural.
 from typing import Final
 
 from sextile.viewdata.charset import decode_g0, mosaic_pattern
-from sextile.viewdata.controls import Attribute, Colour
+from sextile.viewdata.controls import GRAPHICS_COLOURS, Attribute, Colour, colour_of
 from sextile.viewdata.frame import COLUMNS, ROWS, Frame
 
 #  Patterns Unicode already had before the sextant block was added, which the
@@ -29,9 +29,6 @@ _SEXTANT_BASE: Final = 0x1FB00
 #  Teletext colour index to ANSI bright foreground and background.
 _ANSI_FOREGROUND: Final = [30, 91, 92, 93, 94, 95, 96, 97]
 _ANSI_BACKGROUND: Final = [40, 101, 102, 103, 104, 105, 106, 107]
-
-_ALPHA_COLOURS: Final = range(0x01, 0x08)
-_GRAPHICS_COLOURS: Final = range(0x11, 0x18)
 
 
 def sextant(pattern: int) -> str:
@@ -80,12 +77,10 @@ def _render_row(frame: Frame, row: int, colour: bool) -> str:
             #  The attribute cell itself displays as a space in the prevailing
             #  background; the change applies from the following cell.
             held.append(" ")
-            if code in _ALPHA_COLOURS:
-                foreground = Colour(code)
-                graphics = False
-            elif code in _GRAPHICS_COLOURS:
-                foreground = Colour(code - 0x10)
-                graphics = True
+            found = colour_of(code)
+            if found is not None:
+                foreground = found
+                graphics = code in GRAPHICS_COLOURS
             elif code == Attribute.BLACK_BACKGROUND:
                 background = Colour.BLACK
             elif code == Attribute.NEW_BACKGROUND:

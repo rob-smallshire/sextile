@@ -40,18 +40,15 @@ from sextile import (
     menu_page,
     notice_page,
     prose_page,
+    title_page,
 )
 from sextile.formatting import MenuItem
 from sextile.layout import (
     HOME_KEY,
-    Custom,
-    OnOneFrame,
-    PageLayout,
     Shortcut,
 )
 from sextile.viewdata.canvas import Canvas
 from sextile.viewdata.controls import Colour
-from sextile.viewdata.frame import ROWS
 from stardot_viewdata.model import Post
 from stardot_viewdata.post_page import (
     CONVENTIONAL_NEXT_FRAME_KEY,
@@ -99,33 +96,24 @@ async def title(request: PageRequest) -> Page:
     index, guide_item = app.menu_item("main"), app.menu_item("help")
     main_page, about = app.address_for("main"), app.address_for("help")
 
-    def draw(canvas: Canvas, row: int) -> None:
+    def draw(canvas: Canvas) -> None:
         draw_masthead(canvas, SERVICE_NAME)
-        canvas.row(row + 12).text("The Stardot forum for users of Acorn", Colour.WHITE)
-        canvas.row(row + 13).text("computers and emulators.", Colour.WHITE)
-        canvas.row(row + 15).text(f"{held} posts held.", Colour.GREEN)
+        canvas.row(12).text("The Stardot forum for users of Acorn", Colour.WHITE)
+        canvas.row(13).text("computers and emulators.", Colour.WHITE)
+        canvas.row(15).text(f"{held} posts held.", Colour.GREEN)
         #  Each colour change costs a cell, which shows as a space -- so the
         #  attribute is the space, rather than being paid for on top of one.
-        canvas.row(row + 17).text("Key", Colour.WHITE).text(
+        canvas.row(17).text("Key", Colour.WHITE).text(
             CONVENTIONAL_NEXT_FRAME_KEY, Colour.YELLOW
         ).text(f"for the {index.text.lower()}.", Colour.WHITE)
-        canvas.row(row + 19).text("Key", Colour.WHITE).text(
+        canvas.row(19).text("Key", Colour.WHITE).text(
             keyed(about), Colour.YELLOW
         ).text(f"for {guide_item.text.lower()}.", Colour.WHITE)
 
-    return PageLayout(
-        #  None at all: a masthead is the whole frame.
-        furniture=(),
-        #  No `0` either: the opening frame is where a reader arrives, so there
-        #  is no index to send them back to that they are not already at.
-        home=None,
-        #  `#` is the one key a viewdata reader tries without being told, and a
-        #  title frame is nothing but an invitation to press it. Setting this
-        #  answers that key as well as saying where it leads.
-        next_page=main_page,
+    return title_page(
+        request, draw=draw, next_page=main_page,
         shortcuts=[Shortcut(key="1", destination=main_page)],
-        parts=[OnOneFrame(Custom(rows=ROWS, draw=draw))],
-    ).build(request)
+    )
 
 
 @router.page("1", name="main", title="Main index", keywords=("MAIN", "INDEX", "HOME"))

@@ -30,12 +30,12 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING, Final
 
 from sextile import keys
-from sextile.compass import ROWS as COMPASS_ROWS
-from sextile.compass import compass
 from sextile.formatting import RowSequencePart
 from sextile.layout import HOME_KEY, Custom, Flow, FrameBreak, OnOneFrame, PageLayout
 from sextile.page import Page, keyed
 from sextile.viewdata.canvas import RowWriter
+from sextile.viewdata.compass import ROWS as COMPASS_ROWS
+from sextile.viewdata.compass import compass
 from sextile.viewdata.composition import Composition
 from sextile.viewdata.drawing import key_row
 from sextile.viewdata.encoding import cell_count

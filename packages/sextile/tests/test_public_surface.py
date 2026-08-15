@@ -35,7 +35,7 @@ PUBLIC: Final = frozenset(
         "sextile.state",
         "sextile.visits",
         "sextile.cli",
-        "sextile.compass",
+        "sextile.viewdata.compass",
         "sextile.testing",
         "sextile.viewdata",
         "sextile.viewdata.blocks",

@@ -414,7 +414,7 @@ The four keys that move around a page are the framework's, and so is the picture
 of them:
 
 ```python
-from sextile.compass import ROWS, compass
+from sextile.viewdata.compass import ROWS, compass
 from sextile.layout import Custom, OnOneFrame
 
 OnOneFrame(Custom(rows=ROWS, draw=lambda canvas, row: compass(Composition(), row).draw(canvas)))

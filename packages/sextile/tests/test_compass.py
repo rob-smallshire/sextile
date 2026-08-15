@@ -1,9 +1,9 @@
 """The four keys that move about a page, drawn as a compass."""
 
 from sextile import keys
-from sextile.compass import ROWS, compass
 from sextile.viewdata.blocks import BLOCKS_DOWN
 from sextile.viewdata.canvas import Canvas
+from sextile.viewdata.compass import ROWS, compass
 from sextile.viewdata.composition import Composition
 from sextile.viewdata.frame import COLUMNS, Frame
 
@@ -73,7 +73,7 @@ class TestTheArrowsThemselves:
     def test_each_is_a_quarter_turn_of_the_last(self) -> None:
         #  Which is what keeps the four looking like one set, and is why only
         #  one of them is drawn in the source.
-        from sextile.compass import _DOWN, _LEFT, _RIGHT, _UP
+        from sextile.viewdata.compass import _DOWN, _LEFT, _RIGHT, _UP
 
         assert _RIGHT.turned() == _UP
         assert _UP.turned() == _LEFT
@@ -81,7 +81,7 @@ class TestTheArrowsThemselves:
         assert _DOWN.turned() == _RIGHT
 
     def test_and_each_fits_three_cells_by_two_rows(self) -> None:
-        from sextile.compass import _DOWN, _LEFT, _RIGHT, _UP
+        from sextile.viewdata.compass import _DOWN, _LEFT, _RIGHT, _UP
 
         for arrow in (_UP, _DOWN, _LEFT, _RIGHT):
             assert arrow.cells_across <= 3

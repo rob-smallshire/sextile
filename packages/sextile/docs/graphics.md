@@ -283,7 +283,7 @@ run at a time.
 
 ## A worked example: the compass
 
-`sextile/compass.py` draws the four movement keys as arrows, and is a short
+`sextile/viewdata/compass.py` draws the four movement keys as arrows, and is a short
 read for how these layers go together: **one** arrow drawn as an `icon`, three
 `turned()` from it, and a `Composition` to place them among the letters that
 label them.

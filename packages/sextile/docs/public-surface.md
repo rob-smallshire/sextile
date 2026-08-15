@@ -95,6 +95,7 @@ Public submodules:
 | `font` | `Font`, `load_font`, `font_names`, `read_font`, `Glyph`, `FontError` |
 | `footer` | `FooterItem`, `Priority`, `movement`, `render_footer`, `FOOTER_WIDTH` — composing a prompt for a frame drawn by hand |
 | `wrapping` | `wrap_text`, `wrap_within` |
+| `compass` | `ROWS`, `compass` — `W`/`A`/`S`/`D` drawn, for a guide page |
 
 Internal to the framework, and not to be imported: `command_line`,
 `idle_warning`, `hangup`, `repaint`, `ansi`. These are what the session is built
@@ -205,13 +206,14 @@ below the page.
     run_service  render_page  add_listening_arguments  add_form_arguments
     ApplicationSpecError
 
-### `sextile.compass` — the four keys that move about a page, drawn
+### `sextile.viewdata.compass` — the four keys that move about a page, drawn
 
     ROWS  compass
 
 The picture of `W`/`A`/`S`/`D` is the framework's, not any one service's, so a
 service drawing its own guide page reaches for the same one rather than
-redrawing it. `ROWS` is how many rows it occupies.
+redrawing it. `ROWS` is how many rows it occupies. It is a drawing on the block
+grid like the rest of `viewdata`, which is where it now lives.
 
 ## What is internal
 

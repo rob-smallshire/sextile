@@ -27,7 +27,7 @@ and the 7E1 line takes the eighth bit, landing them on the viewdata
 cursor-control codes 0x08-0x0B. So arrows and WASD are two spellings of one
 compass, and `sextile/keys.py` is where it is spelled once.
 
-`sextile/compass.py` draws that compass, for a page that shows a reader which
+`sextile/viewdata/compass.py` draws that compass, for a page that shows a reader which
 way is which rather than telling them. The arrows on it are mosaics because
 the G0 set has left, right and up and **no down arrow** — those three are there
 for BBC BASIC and the line editor rather than as a compass, so one of the four
@@ -184,7 +184,7 @@ boundary specially, and it makes DELETE do the obvious thing everywhere.
 | | |
 |---|---|
 | `sextile/keys.py` | the compass, and the arrow codes that spell it |
-| `sextile/compass.py` | drawing it, for a page that shows rather than tells |
+| `sextile/viewdata/compass.py` | drawing it, for a page that shows rather than tells |
 | `sextile/session/commands.py` | bytes to commands; syntax only, no meanings |
 | `sextile/session/session.py` | where the reader is, where they have been, what to send |
 | `sextile/page.py` | `Page` and `PageFrame`: frames, choices, moves |

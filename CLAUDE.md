@@ -49,7 +49,9 @@ and weather services keep the first honest.
 ## Conventions
 
 - `uv` for everything: `uv run pytest`, `uv run ruff check .`, `uv run mypy`
-  (`--strict`, tests included). All three run over the workspace and must pass.
+  (`--strict`, tests included), and the docs build
+  `uv run --group docs sphinx-build -n -W --keep-going -b html docs docs/_build/html`
+  (warnings are errors). All four run over the workspace and must pass.
 - Path variables use the `_filepath`/`_dirpath` suffixes, not `_dir`/`_file`.
 - Comments explain *why*, beside the line that makes a choice. The why-comments
   in `routing.py` and `keys.py` are the model.
@@ -108,6 +110,8 @@ uv run stardot-viewdata serve                       # then answer calls on port 
 uv run weather-viewdata import-places               # fill the gazetteer first (seconds)
 uv run weather-viewdata render --page 3213133880    # then Trondheim's forecast
 nc localhost 6850                                   # and call it
+
+uv run --group docs sphinx-build -n -W --keep-going -b html docs docs/_build/html   # build the docs
 ```
 
 `ingest` and `import-places` default to SQLite files in the working directory,

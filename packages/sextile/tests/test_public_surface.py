@@ -32,6 +32,7 @@ PUBLIC: Final = frozenset(
         "sextile.handlers",
         "sextile.pages",
         "sextile.middleware",
+        "sextile.state",
         "sextile.visits",
         "sextile.cli",
         "sextile.compass",

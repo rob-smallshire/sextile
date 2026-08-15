@@ -31,7 +31,7 @@ application in its first few lines.
 
     Sextile  PageRoute  PageInfo  Handler
     Page  PageFrame  PageAddress  keyed
-    PageRequest  Neighbours  Parting  Held  GuideRow
+    PageRequest  Neighbours  Parting  Held  StateKey  GuideRow
     Middleware  Next
     Converter  UnknownPageError  NoSuchRouteError  RouteError
     Form  Suggest  draw_form
@@ -164,6 +164,15 @@ framework's own title, detail and keywords. It is also at the top level. The
 individual handlers are there for a service that wants finer control; the
 readership three (`recent`, `popular`, `callers`) take a `Finder` for the visit
 log. The pages behind them are `sextile.builtin`, which is internal.
+
+### `sextile.state` — what a service holds while it runs
+
+    StateKey  State  StateReader
+
+`StateKey[T]("name")` is a typed key into what the lifespan opened; also at the
+top level. `app.state[KEY] = value` writes it, `request.state[KEY]` reads it
+back typed. `State` is what `app.state` is, `StateReader` the read-only view a
+page is given.
 
 ### `sextile.middleware` — what wraps every page
 

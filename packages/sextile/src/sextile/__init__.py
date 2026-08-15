@@ -32,6 +32,7 @@ from sextile.page import Page, PageFrame
 from sextile.pages import farewell_page, menu_page, notice_page, prose_page
 from sextile.requests import Neighbours, PageRequest, Parting
 from sextile.routing import Converter, NoSuchRouteError, RouteError
+from sextile.state import StateKey
 
 __version__ = version("sextile")
 
@@ -58,6 +59,7 @@ __all__ = [
     "Parting",
     "RouteError",
     "Sextile",
+    "StateKey",
     "Suggest",
     "UnknownPageError",
     "__version__",

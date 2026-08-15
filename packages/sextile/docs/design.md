@@ -547,27 +547,19 @@ are not needed.
 
 **Parts concatenate; they do not compete.** Where several flowing parts follow
 one another, each takes the rows left to it and the next begins where it ended,
-so there is no rule about how many parts may flow. The rejected alternative is
-to let two streams contend for a frame's rows, which is where general layout
-engines grow their difficulty: InDesign threads one story through frames a
-person has drawn and linked; LaTeX runs three streams — running text, floats,
-footnotes — refereed by a dozen fraction and count parameters, and floats
-deferred often enough drift to the end of a chapter; CSS Regions offered the
-same for the web, shipped in Blink, and was removed. A viewdata frame is twenty
-rows of forty cells with no floats and no columns, so concatenation answers
-every case here.
+so there is no rule about how many parts may flow. Letting streams contend for a
+frame's rows would need a policy to arbitrate between them; a viewdata frame is
+twenty rows of forty cells with no floats and no columns, so concatenation
+answers every case and no policy is needed.
 
-**It is deliberately not a general layout engine.** It is not a widget toolkit:
-a frame is a still picture plus a mapping from keys to addresses, sent once down
-a 1200-baud line, with nothing for per-widget event handling to attach to. It is
-not a second placement engine: `viewdata/composition.py` places things within a
-frame, and parts only stack down it, never side by side. And it is not borrowed
-from terminal UI frameworks such as Textual, which lay out into one scrolling
-viewport where the problem here is to break content into discrete frames, each
-carrying its own furniture and keys. Three things would show it had overreached:
-a second axis, a way to express proportions, or a rule fixing where one
-particular part must sit. The last was nearly added for the guide's compass and
-was refused.
+**It is deliberately not a general layout engine.** A frame is a still picture
+plus a mapping from keys to addresses, sent once down a 1200-baud line, so there
+is nothing for per-widget event handling to attach to. Parts stack down the
+frame and are never placed side by side; `viewdata/composition.py` is what
+places things within a frame. Three things would show it had overreached: a
+second axis, a way to express proportions, or a rule fixing where one particular
+part must sit. The last was nearly added for the guide's compass and was
+refused.
 
 The shapes that come with the framework are in `formatting.py`:
 

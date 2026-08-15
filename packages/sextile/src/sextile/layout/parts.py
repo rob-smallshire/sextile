@@ -118,12 +118,12 @@ class Drawable(Protocol):
     form, which holds what has been typed.
     """
 
-    def place(self, canvas: Canvas, room: Space) -> Placed:
-        """Draw as much as `room` allows, and say what is left over.
+    def place(self, canvas: Canvas, space: Space) -> Placed:
+        """Draw as much as `space` allows, and say what is left over.
 
         Args:
             canvas: The frame being filled.
-            room: What the frame has left to give.
+            space: What the frame has left to give.
 
         Returns:
             The rows used, what they claim, and whatever remains for the next
@@ -154,10 +154,10 @@ class Custom:
     rows: int
     draw: "Callable[[Canvas, int], None]"
 
-    def place(self, canvas: Canvas, room: Space) -> Placed:
-        if room.rows < self.rows:
+    def place(self, canvas: Canvas, space: Space) -> Placed:
+        if space.rows < self.rows:
             return Placed(rows=0, remainder=self)
-        self.draw(canvas, room.first_row)
+        self.draw(canvas, space.first_row)
         return Placed(rows=self.rows)
 
 

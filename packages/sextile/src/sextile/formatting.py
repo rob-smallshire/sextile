@@ -150,15 +150,15 @@ class SequencePart[E](ABC):
         del entry
         return None
 
-    def place(self, canvas: Canvas, room: Space) -> Placed:
+    def place(self, canvas: Canvas, space: Space) -> Placed:
         """Draw as many entries as the room allows, and hand back the rest."""
         if not self.entries:
-            return self._nothing(canvas, room)
-        taking = self._fitting(room)
+            return self._nothing(canvas, space)
+        taking = self._fitting(space)
         if taking == 0:
             return Placed(rows=0, remainder=self)
         choices: dict[str, PageAddress] = {}
-        row = room.first_row
+        row = space.first_row
         for offset, entry in enumerate(self.entries[:taking]):
             digit = str(offset + 1) if self.numbered else None
             where = self.destination(entry) if digit is not None else None
@@ -176,26 +176,26 @@ class SequencePart[E](ABC):
             remainder=replace(self, entries=rest) if rest else None,
         )
 
-    def _fitting(self, room: Space) -> int:
-        """How many entries go in this room.
+    def _fitting(self, space: Space) -> int:
+        """How many entries go in this space.
 
         The gap falls between entries and not after the last of them, so
         there is one gap more room than there appears to be: five
         three-row entries with a blank between them occupy nineteen rows rather
         than twenty.
         """
-        fits = (room.rows + self.gap) // (self.rows_per_entry + self.gap)
+        fits = (space.rows + self.gap) // (self.rows_per_entry + self.gap)
         if self.numbered:
-            fits = min(fits, room.choices)
+            fits = min(fits, space.choices)
         return max(min(fits, len(self.entries)), 0)
 
-    def _nothing(self, canvas: Canvas, room: Space) -> Placed:
+    def _nothing(self, canvas: Canvas, space: Space) -> Placed:
         """What to draw where there are no entries: a reason, or nothing."""
         if not self.empty:
             return Placed(rows=0)
-        if room.rows < 1:
+        if space.rows < 1:
             return Placed(rows=0, remainder=self)
-        canvas.row(room.first_row).text(fitted(self.empty, COLUMNS - 1), Colour.WHITE)
+        canvas.row(space.first_row).text(fitted(self.empty, COLUMNS - 1), Colour.WHITE)
         return Placed(rows=1)
 
 

@@ -66,20 +66,20 @@ class Form(ABC):
     #: The row this form was placed on. Nought until it has been.
     top_row: int = 0
 
-    def place(self, canvas: "Canvas", room: "Space") -> "Placed":
+    def place(self, canvas: "Canvas", space: "Space") -> "Placed":
         """Draw this form where the layout has put it, and claim its keys.
 
         Args:
             canvas: The frame being filled.
-            room: What the frame has left to give.
+            space: What the frame has left to give.
 
         Returns:
             The rows it took, the digits its suggestions answer to, and itself
             as the frame's form. A form is drawn whole or not at all, so a
             frame without room for it is asked to begin another.
         """
-        self.top_row = room.first_row
-        if len(self.rows) > room.rows:
+        self.top_row = space.first_row
+        if len(self.rows) > space.rows:
             return Placed(rows=0, remainder=self)
         self.draw(canvas)
         return Placed(

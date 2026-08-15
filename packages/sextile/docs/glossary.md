@@ -63,6 +63,11 @@ as "was X" so a reader coming from older code or docs can find it.
   sets its own). Index is where the `0` key goes from every frame
   (`Sextile(index=...)`, the same as home unless set apart). The footer word
   `index` is the label for that key.
+- **PageRequest** — the request a handler answers. Kept `PageRequest`, not
+  renamed to `Request`: the `Page*` family (`PageRoute`, `PageRouter`,
+  `PageAddress`, `PageFrame`, `PageLayout`) is consistent, and the prefix keeps
+  it clear of httpx's `Request` in an app that imports both. Decided in Phase 2,
+  not to be re-litigated.
 - **fetch** (was `ask`) — `Sextile.fetch(target)` builds a request for a page
   and answers it in process, for a test, a renderer or a tool with no socket.
   "fetch" is what a browser calls it; there is no HTTP verb to borrow.

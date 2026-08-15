@@ -36,7 +36,7 @@ as "was X" so a reader coming from older code or docs can find it.
   `index` is the label for that key.
 - **session vs service state** — session state is one caller's own, lasting as
   long as the line is up (`request.session`); service state is shared across
-  callers for the life of the service. Service state is currently
-  `request.service`; Phase 1 renames it to `request.state`.
+  callers for the life of the service. Service state is `request.state`, a
+  read-only view of what the lifespan opened, keyed by `StateKey`.
 - **form** — rows of a frame a reader types into, a field with furniture around
   it. `forms.Form`, `forms.Field`.

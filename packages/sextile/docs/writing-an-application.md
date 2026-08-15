@@ -457,11 +457,11 @@ Sextile(pages=[
 ])
 ```
 
-The readership pages read the visit log, so they take a `Finder` for it — the
-same `held_in(name)` a service hands `record_visits`:
+The readership pages read the visit log, so they take the `StateKey` it is held
+under — the same key a service hands `record_visits`:
 
 ```python
-*standard_pages(recent="96", popular="97", callers="98", visits=held_in("visits"))
+*standard_pages(recent="96", popular="97", callers="98", visits=VISITS)
 ```
 
 Each calls the application method of the same name (`history_page`,
@@ -495,7 +495,7 @@ async def post(request: PageRequest, post_id: int) -> Page:
     request.address            # the page number asked for
     request.neighbours.next    # the next page in the sequence, if any
     request.session["user"]    # this caller's own state, for as long as the line is up
-    request.service["client"]  # what the lifespan opened, for as long as the process
+    request.state[CLIENT]      # what the lifespan opened, for as long as the process
     request.history            # every page visited before this one, oldest first
     request.app                # the service, for asking where another page is
 ```
@@ -664,13 +664,14 @@ missing page is ordinary, but taking four seconds to decide it is missing is not
 ## Application lifecycle
 
 ```python
-CLIENT = Held("client", httpx.AsyncClient)
+CLIENT = StateKey[httpx.AsyncClient]("client")
 
 @asynccontextmanager
-async def lifespan(app: Sextile) -> AsyncIterator[Mapping[str, object]]:
+async def lifespan(app: Sextile) -> AsyncIterator[None]:
     client = httpx.AsyncClient()
+    app.state[CLIENT] = client
     try:
-        yield CLIENT.holding(client)
+        yield
     finally:
         await client.aclose()
 
@@ -678,30 +679,33 @@ app = Sextile(lifespan=lifespan, pages=[...])
 ```
 
 The lifespan is entered once before the first call and left once after the last.
-**What it yields is what the service holds**, and every page is given it:
+It writes what the service holds into `app.state` under `StateKey` keys and
+yields nothing; every page is given the same values as `request.state`:
 
 ```python
 async def post(request: PageRequest, post_id: int) -> Page:
-    client = CLIENT.of(request.service)
+    client = request.state[CLIENT]
 ```
 
-What a service holds is typed as `object`, because the framework cannot know
-what any service puts there. A `Held` key states the narrowing once: the name
-and the type travel together, `of` raises by name when the service has not
-started, and `found_in` returns `None` for a value a service may run without.
-Yield several with `|`: `CLIENT.holding(client) | VISITS.holding(log)`. When the
-kind is a protocol or an abstract class, `Held.checking(name, kind)` makes the
-same key; the type checker rejects those where a concrete type is expected, and
-the annotation on the assignment states what the key holds:
+A `StateKey[T]("name")` states the narrowing once: the key carries the type
+`T`, so `app.state[CLIENT] = client` type-checks the write and
+`request.state[CLIENT]` reads it back as an `httpx.AsyncClient`.
+`request.state[KEY]` raises `KeyError` naming the key when the service has not
+started; `request.state.get(KEY)` returns `None` for a value a service may run
+without. Identity is the key, not the name: two keys spelt the same are
+distinct, and the name is only for the repr and the error text. A key holding a
+protocol or an abstract class needs no special form — `StateKey[Visits]("visits")`
+narrows to `Visits` like any other:
 
 ```python
-VISITS: Final[Held[Visits]] = Held.checking("visits", Visits)
+VISITS: Final = StateKey[Visits]("visits")
 ```
 
-`service` is the counterpart of `session`, and the contrast is the reason for
-having both: `session` is one caller's and lasts as long as the line, `service`
-is shared and lasts as long as the process. A page cannot write to `service`,
-because a change there would reach every other caller at once.
+`state` is the counterpart of `session`, and the contrast is the reason for
+having both: `session` is one caller's and lasts as long as the line, `state`
+is shared and lasts as long as the process. `request.state` is a read-only
+view, because a page writing there would reach every other caller at once; only
+the lifespan writes, through `app.state`.
 
 It is one function rather than a setup/teardown pair, because two functions must
 be kept in step by hand and must store whatever they open where both can reach

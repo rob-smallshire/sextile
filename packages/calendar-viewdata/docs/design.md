@@ -56,9 +56,9 @@ What each page exercises, since that is half the point:
 
 **The clock is what the service holds.** `build_application(now=...)` takes a
 callable returning an aware `datetime`, defaulting to `datetime.now(UTC)`, and
-the lifespan yields it; a page reads it from `request.service`. It is the only
-thing here that is not a pure function, and a service whose pages change under
-it cannot be tested otherwise.
+the lifespan writes it into `app.state` under `CLOCK`; a page reads it from
+`request.state[CLOCK]`. It is the only thing here that is not a pure function,
+and a service whose pages change under it cannot be tested otherwise.
 
 That makes it a small demonstration of the general shape: a service holds
 whatever it opened, and pages are handed it rather than closing over it.

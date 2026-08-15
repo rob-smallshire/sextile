@@ -178,14 +178,14 @@ exists is somewhere the reader has *gone*, and enters the history; a page that
 does not is something *said* to a reader who has not moved. This distinction
 emerged from writing the session, not from a plan.
 
-**Lifespan is one async context manager**, given to the constructor, and what
-it yields is what the service holds — reached from a page as
-`request.service`. Starlette's shape, adopted for Starlette's reason: setup and
-teardown written as two handlers must be kept in step by hand and must store
-whatever they open where both can reach it, whereas two halves of one function
-cannot drift and the resource opened is an ordinary local held across the
-`yield`. Starlette deprecated its own `on_startup`/`on_shutdown` for this;
-Sextile had them for about an hour.
+**Lifespan is one async context manager**, given to the constructor. It writes
+what the service holds into `app.state` under `StateKey` keys and yields
+nothing; a page reads it back as `request.state[KEY]`. Starlette's shape,
+adopted for Starlette's reason: setup and teardown written as two handlers must
+be kept in step by hand and must store whatever they open where both can reach
+it, whereas two halves of one function cannot drift and the resource opened is
+an ordinary local held across the `yield`. Starlette deprecated its own
+`on_startup`/`on_shutdown` for this; Sextile had them for about an hour.
 
 `startup`/`shutdown` remain as the methods that enter and leave it, called once
 each by whatever is running the application. The server does not call them: a
@@ -680,10 +680,10 @@ a page: a delete on every fetch is a write nobody asked for, and a day is short
 enough that the file has a ceiling.
 
 The middleware is made before the service's lifespan has opened anything, so it
-takes the log *or a way of finding it* — `record_visits(held_in("visits"))`
-looks in what the service holds, per page. A service holding nothing under that
-name still gets its page: the reader is owed it, so the visit goes unrecorded
-rather than the page going unsent.
+takes the `StateKey` the log will be held under rather than the log —
+`record_visits(VISITS)` reads `request.state.get(VISITS)` per page. A service
+holding nothing under that key still gets its page: the reader is owed it, so
+the visit goes unrecorded rather than the page going unsent.
 
 `Sextile.lately_read` and `Sextile.most_read` build two of the three pages, as
 menus rather than tables — every row is a page number, so every row is somewhere

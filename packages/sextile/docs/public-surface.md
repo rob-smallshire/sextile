@@ -31,7 +31,7 @@ application in its first few lines.
 
     Sextile  PageRoute  PageInfo  Handler
     Page  PageFrame  PageAddress  keyed
-    PageRequest  Neighbours  Parting  Held  StateKey  GuideRow
+    PageRequest  Neighbours  Parting  StateKey  GuideRow
     Middleware  Next
     Converter  UnknownPageError  NoSuchRouteError  RouteError
     Form  Suggest  draw_form
@@ -162,8 +162,9 @@ answers. Also at the top level, those being what most services reach for first.
 returns the routes for whichever pages a service gives a number, carrying the
 framework's own title, detail and keywords. It is also at the top level. The
 individual handlers are there for a service that wants finer control; the
-readership three (`recent`, `popular`, `callers`) take a `Finder` for the visit
-log. The pages behind them are `sextile.builtin`, which is internal.
+readership three (`recent`, `popular`, `callers`) take the `StateKey` the visit
+log is held under. The pages behind them are `sextile.builtin`, which is
+internal.
 
 ### `sextile.state` — what a service holds while it runs
 
@@ -176,7 +177,7 @@ page is given.
 
 ### `sextile.middleware` — what wraps every page
 
-    log_pages  record_visits  held_in  Finder
+    log_pages  record_visits
 
 ### `sextile.visits` — the log of what has been read
 
@@ -214,7 +215,7 @@ Everything else, and specifically:
 
 | Module | Why an application does not need it |
 |---|---|
-| `application`, `requests`, `declarations`, `held` | their public names are re-exported by `sextile` |
+| `application`, `requests`, `declarations` | their public names are re-exported by `sextile` |
 | `addressing`, `page` | likewise: `PageAddress`, `keyed`, `Page`, `PageFrame` |
 | `routing` | a service declares routes; the router matches them. `Converter` is the extension point, and it and the two errors it raises are at the top level |
 | `pages` | reached through `sextile.handlers` or the `Sextile` methods |

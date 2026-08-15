@@ -116,9 +116,11 @@ class SequencePart[E](ABC):
 
     Attributes:
         entries: The values to draw, in the order they are to appear.
-        empty: Said in place of the entries where there are none. A service
-            that answers slowly cannot let a frame come up empty and
-            unexplained, because a reader cannot tell that from a fault.
+        empty: Said in place of the entries where there are none. A string is
+            one row; a sequence is its rows as given, an empty string among them
+            a blank one. A service that answers slowly cannot let a frame come
+            up empty and unexplained, because a reader cannot tell that from a
+            fault.
 
     Example:
         A part three rows tall that draws each entry by cell::
@@ -136,7 +138,7 @@ class SequencePart[E](ABC):
     choose_hint: ClassVar[FooterItem | None] = None
 
     entries: Sequence[E]
-    empty: str = ""
+    empty: str | Sequence[str] = ""
 
     @abstractmethod
     def draw_entry(self, canvas: Canvas, row: int, entry: E) -> None:
@@ -209,13 +211,23 @@ class SequencePart[E](ABC):
         return max(min(fits, len(self.entries)), 0)
 
     def _nothing(self, canvas: Canvas, space: Space) -> Placed:
-        """What to draw where there are no entries: a reason, or nothing."""
-        if not self.empty:
+        """What to draw where there are no entries: the reason, a row each, or nothing."""
+        lines = self._empty_lines()
+        if not lines:
             return Placed(rows=0)
-        if space.rows < 1:
+        #  Deferred whole where the frame has no room, so the reason never
+        #  arrives split across two frames with half its lines on each.
+        if space.rows < len(lines):
             return Placed(rows=0, remainder=self)
-        canvas.row(space.first_row).text(fitted(self.empty, COLUMNS - 1), Colour.WHITE)
-        return Placed(rows=1)
+        for offset, line in enumerate(lines):
+            canvas.row(space.first_row + offset).text(fitted(line, COLUMNS - 1), Colour.WHITE)
+        return Placed(rows=len(lines))
+
+    def _empty_lines(self) -> list[str]:
+        """The empty message as rows: a string is one row, a sequence its rows as given."""
+        if isinstance(self.empty, str):
+            return [self.empty] if self.empty else []
+        return list(self.empty)
 
 
 @dataclass(frozen=True, kw_only=True)

@@ -140,6 +140,14 @@ class TestMenuPage:
         page = menu_page(request_for(_APP), items=[], empty="Nothing yet.")
         assert "Nothing yet." in text_of(page)
 
+    def test_an_empty_menu_can_say_why_in_several_lines(self) -> None:
+        page = menu_page(
+            request_for(_APP), items=[], empty=["Nothing yet.", "", "Do call again."]
+        )
+        shown = text_of(page)
+        assert "Nothing yet." in shown
+        assert "Do call again." in shown
+
     def test_its_header_comes_from_the_registration(self) -> None:
         app = _titled("posts", "Latest posts", "8")
         page = menu_page(request_for(app, "8"), items=_items(1))

@@ -106,7 +106,7 @@ def menu_page(
     title: str | None = None,
     home: _Home = DEFAULT_HOME,
     preamble: Sequence[str] = (),
-    empty: str | None = None,
+    empty: str | Sequence[str] | None = None,
     shortcuts: Sequence[Shortcut] = (),
     neighbours: "Neighbours | None" = None,
     item_noun: str = "item",
@@ -124,8 +124,8 @@ def menu_page(
         preamble: Lines shown once on the first frame, above the entries, with
             a blank row between.
         empty: Said in place of the entries where there are none, so an empty
-            menu explains itself rather than looking like a fault. None leaves
-            the frame blank.
+            menu explains itself rather than looking like a fault. A string is
+            one row, a sequence its rows as given. None leaves the frame blank.
         shortcuts: Keys offered on every frame besides the digits and `0`.
         neighbours: The pages either side of this one, wiring `A`/`D`; pass
             `request.neighbours`.

@@ -97,6 +97,24 @@ class TestAMenuAsAPart:
     def test_and_nothing_to_say_about_it_takes_no_rows(self) -> None:
         assert Menu(entries=[]).place(Canvas(), whole_frame()).rows == 0
 
+    def test_a_reason_of_several_lines_takes_a_row_each(self) -> None:
+        canvas = Canvas()
+        placed = Menu(entries=[], empty=["Nothing yet.", "", "Do call again."]).place(
+            canvas, whole_frame()
+        )
+        assert placed.rows == 3
+        assert placed.remainder is None
+        assert said(canvas) == ["Nothing yet.", "Do call again."]
+
+    def test_a_reason_of_lines_defers_where_the_frame_is_full(self) -> None:
+        #  No room left is deferred whole, as a one-line reason is, so nothing of
+        #  the message is drawn half onto a frame that cannot hold it.
+        placed = Menu(entries=[], empty=["A", "B"]).place(
+            Canvas(), Space(first_row=CONTENT.start, rows=0, choices=0)
+        )
+        assert placed.rows == 0
+        assert placed.remainder is not None
+
 
 class TestAMenuInAPage:
     def test_twelve_entries_are_nine_and_three(self) -> None:

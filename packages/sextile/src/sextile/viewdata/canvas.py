@@ -122,7 +122,7 @@ class RowWriter:
         self._column += cell_count(text)
         return self
 
-    def runs(self, runs: "Iterable[Span]") -> Self:
+    def runs(self, runs: "Iterable[Span]", *, cells: int | None = None) -> Self:
         """Append several stretches of text, each in its own colour.
 
         What `text` does repeatedly, with the difference that this trims rather
@@ -134,12 +134,26 @@ class RowWriter:
         which costs nothing except in the rare case where the trimming actually
         bites -- and there one character is a cheap price for not having to ask
         `text` what it is about to charge.
+
+        Args:
+            runs: The stretches to write, in order.
+            cells: A budget the runs share, giving way within it rather than at
+                the row's edge. For a row that carries something further along
+                it -- a clock, then a figure aligned right of it -- so the first
+                does not eat the room the second needs. The row's edge still
+                binds when it is the nearer of the two.
         """
+        budget = cells
         for run in runs:
             room = self.remaining - _ATTRIBUTE_CELL
+            if budget is not None:
+                room = min(room, budget - _ATTRIBUTE_CELL)
             if room <= 0:
                 break
-            self.text(fitted(run.text, room), run.colour)
+            text = fitted(run.text, room)
+            self.text(text, run.colour)
+            if budget is not None:
+                budget -= _ATTRIBUTE_CELL + cell_count(text)
         return self
 
     def mosaic(

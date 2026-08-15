@@ -10,7 +10,7 @@ independently and white text needs no attribute at all.
 
 import pytest
 
-from sextile.viewdata.canvas import DEFAULT_COLOUR, Canvas
+from sextile.viewdata.canvas import DEFAULT_COLOUR, Canvas, Span
 from sextile.viewdata.controls import Attribute, Colour, alpha_colour
 from sextile.viewdata.frame import COLUMNS
 
@@ -55,6 +55,21 @@ class TestPlainText:
         canvas = Canvas()
         canvas.row(0).text("STAR").text("DOT")
         assert canvas.frame.text_at(0, 0, 7) == "STARDOT"
+
+    def test_runs_fill_to_the_row_edge_by_default(self) -> None:
+        canvas = Canvas()
+        canvas.row(0).runs([Span("X" * COLUMNS, Colour.RED)])
+        #  One attribute cell, then the rest of the row.
+        assert canvas.frame.text_at(0, 1, COLUMNS - 1) == "X" * (COLUMNS - 1)
+
+    def test_runs_can_be_held_to_a_cells_budget(self) -> None:
+        #  With cells=, the runs give way within that budget rather than at the
+        #  row edge, so something else can be drawn further along the same row.
+        canvas = Canvas()
+        canvas.row(0).runs([Span("ABCDEFGHIJ", Colour.RED)], cells=5)
+        assert canvas.frame.cell(0, 0) == Attribute.ALPHA_RED
+        assert canvas.frame.text_at(0, 1, 4) == "ABCD"
+        assert canvas.frame.text_at(0, 5, COLUMNS - 5).strip() == ""
 
     def test_transliteration_is_accounted_for_in_the_column(self) -> None:
         #  An ellipsis becomes three characters, so it costs three cells.

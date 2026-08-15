@@ -1,14 +1,18 @@
 # Writing a Sextile application
 
-A service is a set of numbered pages and the keys that lead between them.
-Sextile owns everything else: the connection, the session, the routing, and the
-bytes on the wire.
+A Viewdata service answers calls from a terminal over a modem. It sends frames,
+each a screen of 24 rows by 40 columns, and the caller navigates by keying a
+page number such as `*821#`, or a single digit that the current frame maps to
+another page. A Sextile application is the set of numbered pages, and for each
+page the keys that lead from it. Sextile provides the rest: it accepts the
+connection, holds one session per caller, routes a keyed number to the function
+that builds the page, and encodes each frame for the wire.
 
 The worked example is
-[`calendar-viewdata`](../../calendar-viewdata/), which is small, depends
-on nothing but the standard library, and is meant to be read.
+[`calendar-viewdata`](../../calendar-viewdata/): small, dependent on nothing but
+the standard library, and written to be read.
 
-## The smallest thing that answers
+## A minimal application
 
 ```python
 from sextile import Page, PageRequest, PageRoute, Sextile
@@ -24,22 +28,21 @@ async def main(request: PageRequest) -> Page:
 app = Sextile(pages=[PageRoute("1", main, name="main")])
 ```
 
-The title, the page number, the rules and the prompt come with `PageLayout`.
-What a page supplies is its title, where its keys lead, and the parts that go
-between the rules — see [layout.md](layout.md).
+`PageLayout` draws the furniture: the title bar, the page number, the two rules
+and the prompt. The page supplies the text of its title, where its keys lead,
+and the parts that sit between the rules. See [layout.md](layout.md).
 
-**A page is a value and a service is a list of them.** Everything about a page
-is on one line of that list — where it is in the numbering, what builds it,
-what it is called where it is *listed* rather than shown, and the words that
-reach it — so a page says what it is once, in one place.
+**A page is a value; a service is a list of pages.** One `PageRoute` carries
+everything about a page: its place in the numbering, the function that builds
+it, the name it is listed under, and the words that reach it. Each page is
+declared once, in one place.
 
-That is also what makes the order things were registered in unobservable. The
-converters a pattern needs, the pages themselves, what wraps them and what the
-service holds all arrive in the same call, so there is no *before* and no
-*after* for a service to get wrong.
+Because everything arrives in the single `Sextile(...)` call — the converters a
+pattern needs, the routes, the middleware, the lifespan — registration order
+does not matter. No step has to run before another.
 
-`@app.page(...)` is the same thing said as a decoration, for a service small
-enough that a list would be ceremony:
+`@app.page(...)` declares a route as a decorator instead, which reads better for
+a small service:
 
 ```python
 app = Sextile()
@@ -49,36 +52,36 @@ async def main(request: PageRequest) -> Page:
     ...
 ```
 
-It is defined in terms of the list, so the two cannot drift.
+The decorator builds the same `PageRoute`, so the two forms cannot diverge.
 
 ```sh
 uv run sextile serve my_service:app
 nc localhost 6850
 ```
 
-A caller arrives on page 1 unless the application says otherwise —
-`Sextile(home="8")` — and is released after fifteen minutes of silence, since a
-single-line board held open by someone who walked away locks everyone else out.
-Half way through that, the footer becomes a draining bar reading `Press a key`,
-so that being disconnected is never a surprise; the first key dismisses it and
-does nothing else. Both are the framework's, and every service gets them without
-writing anything. `--idle-timeout` and `--warn-after` change the timings, and
-`0` turns either off.
+A caller arrives on page 1 unless the application sets another home with
+`Sextile(home="8")`. After fifteen minutes without a keypress the session hangs
+up, so that one idle caller cannot hold a single-line board against everyone
+else. Partway through that period the footer turns into a draining bar reading
+`Press a key`, warning of the disconnection before it happens; the first key
+dismisses the bar and does nothing else. Both behaviours are the framework's,
+and every service has them by default. `--idle-timeout` and `--warn-after`
+change the timings; `0` turns either off.
 
 ## Numbering
 
-Patterns are literal digits and named fields.
+A pattern is literal digits and named fields.
 
 ```python
 PageRoute("82{post_id:int}", post, name="post")
 PageRoute("32{day:date}", day, name="day")     # 3220260802 is 2 August 2026
 ```
 
-`int` takes one or more digits and refuses a leading zero, so a page cannot have
-two numbers. `date` takes eight, as `YYYYMMDD`.
+`int` matches one or more digits and refuses a leading zero, so each value has
+one spelling. `date` matches eight digits, as `YYYYMMDD`.
 
-**`int(n)` takes exactly n digits**, zero-padded. That is what lets fields sit
-next to one another, since a page number has no separators:
+**`int(n)` matches exactly n digits**, zero-padded. Fixed widths are what let
+fields sit next to one another, since a page number has no separators:
 
 ```python
 PageRoute("32{year:int(4)}{month:int(2)}{day:int(2)}", iso, name="iso")
@@ -86,14 +89,14 @@ PageRoute("32{year:int(4)}{month:int(2)}{day:int(2)}", iso, name="iso")
 app.address_for("iso", year=2026, month=8, day=2)     # 3220260802
 ```
 
-The leading-zero rule inverts here, for the same reason it exists. A
-variable-width field refuses a leading zero because `0042` and `42` would be two
-numbers for one page; a fixed-width field *requires* the padding, because with
-the width settled there is again only one spelling of each value. So `708` is
-month 8 and `78` is not a page.
+The leading-zero rule reverses for fixed-width fields, and for the same purpose:
+one spelling per value. A variable-width field refuses a leading zero, because
+`0042` and `42` would be two numbers for one page. A fixed-width field requires
+the padding, because once the width is fixed each value again has one spelling.
+So `708` is month 8, and `78` is not a page.
 
-An application that needs another field shape registers one, either fixed or
-parameterised by whatever is written in the brackets:
+An application that needs another field shape registers a converter, either
+fixed or parameterised by the argument in brackets:
 
 ```python
 app = Sextile(
@@ -105,42 +108,44 @@ app = Sextile(
 )
 ```
 
-Given to the constructor, because the router has to know a field shape before
-it compiles a pattern that uses one. `app.converter(...)` adds one afterwards,
-which is fine for a page declared afterwards too.
+Converters go to the constructor, because the router must know a field shape
+before it compiles a pattern that uses it. `app.converter(...)` adds one later,
+which suits a page declared later too.
 
 Two rules keep matching predictable. **Most literal wins**: `90` beats
-`9{n:int}` however they were registered, because a table whose meaning changed
-when someone tidied it would be no use. And **fields must be separable**: all
-but the last field running together must have a fixed width, or nothing could
-say where one ended and the next began. Give them widths, or put a literal digit
-between them.
+`9{n:int}` whatever order they were registered in, so that reordering the routes
+cannot change what a number means. **Fields must be separable**: where fields
+run together, all but the last must have a fixed width, or nothing marks where
+one ends and the next begins. Give them widths, or put a literal digit between
+them.
 
-None of this needs prefix-free numbers. A viewdata request is terminated, so
-`*8#` and `*82489493#` are unambiguously different and fields may vary in width.
+None of this requires prefix-free numbers. A viewdata request is terminated by
+`#`, so `*8#` and `*82489493#` are distinct, and fields may vary in width.
 
-**Build addresses, do not spell them.** Every route has a name, taken from the
-handler unless given, and `address_for` reads the pattern backwards:
+**Build addresses; do not spell them out.** Every route has a name, taken from
+the handler unless one is given, and `address_for` fills a pattern from named
+values:
 
 ```python
 choices = {"1": app.address_for("post", post_id=post.id)}
 ```
 
-That is what stops a numbering scheme existing in two places and drifting.
+This keeps the numbering scheme in one place instead of copied across every
+link.
 
-**Keywords** cost nothing, and belong beside the page they reach:
+**Keywords** belong beside the page they reach:
 
 ```python
 PageRoute("1", main, name="main", keywords=("MAIN", "INDEX"))
 ```
 
-`app.alias("MAIN", app.address_for("main"))` does the same for a word that
-names a page some other way.
+`app.alias("MAIN", app.address_for("main"))` does the same for a word registered
+apart from the route.
 
 ## Menus and listings
 
-Every page is a `PageLayout`: furniture round the edge of each frame, and a
-list of parts down the middle. Most pages are a list of things, so the framework
+Most pages are a `PageLayout`: furniture round the edge of each frame, and a
+list of parts down the middle. Most present a list of items, so the framework
 formats those.
 
 ```python
@@ -162,19 +167,19 @@ PageLayout(
 ).build(request.address)
 ```
 
-`Menu` numbers its entries 1–9 and puts nine on a frame, each with a line of
-detail beneath. `Listing` is the same mechanism for a reference page: nothing
-selectable, the detail in a second column. `Figures` is a label and a
-right-aligned figure, `Lines` is lines drawn as given, and `Prose` is running
-text. The layout draws the furniture, builds the prompt from what the frame
-actually offers, wires up `W`, `S` and `#`, and sends `0` home.
+`Menu` numbers its entries 1–9, nine to a frame, each with a line of detail
+beneath. `Listing` is the same mechanism for a reference page: no selectable
+digits, the detail in a second column. `Figures` is a label with a
+right-aligned figure, `Lines` draws lines as given, and `Prose` is running text.
+The layout draws the furniture, builds the prompt from the keys the frame
+offers, wires up `W`, `S` and `#`, and sends `0` home.
 
-[layout.md](layout.md) describes the whole of it. What follows is what a
-service reaches for most.
+[layout.md](layout.md) describes all of it. What follows is what a service uses
+most.
 
-**Entries are a protocol, not a type.** Anything with `text`, `detail` and
-`destination` will do, so a service with its own richer entry — carrying the
-post, the timestamp, whatever it needs — hands that over directly:
+**An entry is a protocol, not a type.** Anything with `text`, `detail` and
+`destination` will serve, so a service with its own richer entry type — carrying
+the post, the timestamp, and anything else it needs — passes that directly:
 
 ```python
 @dataclass(frozen=True)
@@ -189,7 +194,7 @@ class Line:
     def destination(self) -> PageAddress: return app.address_for("post", post_id=...)
 ```
 
-For running text, do not break your own lines:
+For running text, leave the line breaks to the framework:
 
 ```python
 PageLayout(
@@ -207,30 +212,30 @@ PageLayout(
 ).build(request.address)
 ```
 
-Each argument to `Prose.of` is a paragraph; the framework wraps them, spaces
-them, and divides them between frames. `Prose` also takes rendered rows rather
-than plain paragraphs, which is how a notice gets a quotation or a code listing
+Each argument to `Prose.of` is a paragraph; the framework wraps and spaces them
+and divides them between frames. `Prose` also accepts rendered rows in place of
+plain paragraphs, which is how a notice carries a quotation or a code listing
 rendered exactly as a forum post's would be:
 
 ```python
 Flowing(Prose(entries=rows_for(document)))
 ```
 
-For a shape none of these has, subclass `Formatter` and say how tall an entry
-is and how to draw one; the arithmetic, the frames and the keys come with it. A
-shape written along its rows subclasses `RowFormatter` instead and writes
-`draw` and `draw_detail`. Both are dataclasses, so a subclass needing something
-an entry does not carry — a date to mark against, a column to size — declares a
-field rather than writing a constructor.
+For a shape none of these covers, subclass `Formatter`: give the height of one
+entry and the code to draw it, and the arithmetic, the frames and the keys come
+with it. A shape laid out along its rows subclasses `RowFormatter` instead and
+writes `draw` and `draw_detail`. Both are dataclasses, so a subclass that needs
+something an entry does not carry — a date to mark against, a column width —
+declares a field rather than writing a constructor.
 
-For content that is not a sequence at all — a grid, a masthead, a picture —
+For content that is not a sequence — a grid, a masthead, a picture —
 `Drawn(rows, draw)` is a part of a stated height that the page draws itself.
 
 ## Pages, frames and keys
 
-A page is one or more frames, and **each frame says what its keys do while it is
-showing** — because frame b of a listing offers a different nine choices from
-frame a.
+A page is one or more frames, and **each frame carries what its keys do while it
+is on screen**, because frame b of a listing offers a different nine choices
+from frame a.
 
 ```python
 PageFrame(
@@ -240,24 +245,23 @@ PageFrame(
 )
 ```
 
-`choices` lead elsewhere; `moves` stay on this page and step between its frames.
-Keys are characters, not digits, so a page may offer `D` for next or `R` for
-reply without anything changing.
+`choices` lead to other pages; `moves` stay on this page and step between its
+frames. Keys are characters, not only digits, so a page may offer `D` for next
+or `R` for reply.
 
-Two conventions worth keeping, because readers rely on them across services:
+Two conventions are worth keeping, because readers rely on them across services:
 
-- **`0` returns to the index, from every frame.** It is the one key a reader who
-  has lost their bearings can rely on.
-- **A frame names only the keys that do something on it.** An offer that goes
-  nowhere is worse than no offer, and on a service that answers slowly a reader
-  cannot tell a dead key from a slow one. Build the prompt and the choices from
-  the same description of what is available, or they will disagree.
+- **`0` returns to the index from every frame.** It is the one key a lost reader
+  can always rely on.
+- **A frame names only the keys that do something on it.** A key that leads
+  nowhere is worse than none, and on a slow service a reader cannot tell a dead
+  key from a slow one. Build the prompt and the choices from the same
+  description of what the frame offers, or they will disagree.
 
 ### The prompt at the foot of a frame
 
-`PageLayout` writes its own, from what the parts claimed and what the page
-offers. A frame drawn some other way composes one from items, and does **not**
-write it as a string:
+`PageLayout` writes its own prompt from the keys the parts and the page offer. A
+frame drawn some other way composes one from items rather than writing a string:
 
 ```python
 from sextile.viewdata.footer import ROOM, FooterItem, Priority, movement, render_footer
@@ -268,11 +272,11 @@ items.append(FooterItem(HOME_KEY, "index", Priority.ESSENTIAL))
 prompt = render_footer(items, ROOM)
 ```
 
-`movement` gives the framework's words for `W`, `S`, `A` and `D` — *page up*,
-*page down*, *previous day*, *next day* — taking the noun from you, since only
-you know what your service is made of. Say it in full; the renderer decides how
-much of it a given row can hold, and a page with cells to spare gets the whole
-sentence.
+`movement` supplies the framework's words for `W`, `S`, `A` and `D` — *page up*,
+*page down*, *previous* and *next* — with the noun taken from the `item`
+argument, since only the service knows what it is made of. Give the label in
+full; the renderer decides how much of it a given row can hold, and a page with
+cells to spare shows all of it.
 
 Anything else the frame offers is a `FooterItem` of its own:
 
@@ -280,13 +284,13 @@ Anything else the frame offers is a `FooterItem` of its own:
 |---|---|
 | `key` | what the reader presses |
 | `label` | what it does, in words |
-| `brief` | a shorter way of saying that, for a crowded row |
+| `brief` | a shorter label, for a crowded row |
 | `priority` | `ESSENTIAL` the way out, `PRIMARY` what the page is for, `SECONDARY` moving about, `REDUNDANT` an alias for a key already shown |
 
-The order things are given up in is in
-[navigation.md](navigation.md), with worked examples. The one rule worth
-knowing here is that **priority decides what survives, not position** — so an
-item can go anywhere in the list that reads well.
+The order in which items are dropped when a row is full is in
+[navigation.md](navigation.md), with worked examples. The rule worth knowing
+here is that **priority decides what survives, not position**, so an item can go
+wherever in the list reads well.
 
 To end the call, say so on the page:
 
@@ -294,8 +298,8 @@ To end the call, say so on the page:
 return Page(frames=(...), hang_up=True)
 ```
 
-There is a second parting the service does not choose — the idle caller who is
-released — and it has a page of its own, told where they had got to:
+There is a second parting the service does not choose: the idle caller who is
+released. It has a page of its own, told where the caller had reached:
 
 ```python
 @app.on_timed_out
@@ -304,21 +308,21 @@ async def gone(parting: Parting) -> Page:
 ```
 
 The terminal keeps nothing, so `parting.address` is worth showing: "You were
-reading *82489493#" is what lets somebody dial back in and pick up. The default
-page does this already, and names the service if it has a name:
+reading *82489493#" is what lets a caller dial back in and pick up. The default
+page does this, and names the service if it has a name:
 
 ```python
 app = Sextile(name="Stardot")     # "Thank you for calling Stardot."
 ```
 
-`name` is empty unless you say otherwise, and the framework will not invent one.
+`name` is empty unless the service sets it, and the framework does not invent
+one.
 
-Both are the last thing a reader sees, so **draw them without a footer and leave
-the lower rows blank**. A key offering the index would be a key that does
-nothing, and the framework puts the cursor two rows below the last thing said
-and turns it on, so that the reader has somewhere to type to their modem.
-`farewell_page` in `sextile.formatting` draws exactly that frame, being a
-page with no furniture:
+Both are the last frame a reader sees, so **draw them with no footer and leave
+the lower rows blank**. A key offering the index would do nothing once the line
+is closing. The framework places the cursor two rows below the last line and
+turns it on, giving the reader somewhere to type modem commands. `farewell_page`
+in `sextile.formatting` draws exactly that frame, a page with no furniture:
 
 ```python
 return farewell_page("GOODBYE", f"Thank you for calling {app.name}.", "", "Ring off.")
@@ -331,11 +335,11 @@ PageRoute("5", contributors, name="contributors", title="By contributor",
           detail="browse by poster", keywords=("WHO", "USERS"))
 ```
 
-The route takes the handler's own name unless given one.
+The route takes the handler's own name unless one is given.
 
 The title and detail are what the page is called wherever it is *listed* rather
-than shown — a menu offering it, a history naming it, the contents. Say them once
-here and nothing downstream needs its own copy:
+than shown — a menu offering it, the history, the contents page. Declared once
+here, they need no second copy downstream:
 
 ```python
 app.page_info("contributors").title      # "By contributor"
@@ -343,20 +347,19 @@ app.describe(PageAddress("5"))           # "By contributor"
 app.pages()                              # every page that has a title
 ```
 
-**A page with no title is not advertised.** Giving one a title is how a service
-says it may be listed, so a title frame or a logoff page stays off the contents
-without a flag. Having no title and having no keywords are different things: a
-logoff page can stay off the contents and still answer `*BYE#`.
+**A page with no title is not advertised.** A title is how a service marks a
+page as listable, so a title frame or a log-off page stays off the contents page
+without a separate flag. A title and a keyword are independent: a log-off page
+can stay off the contents and still answer `*BYE#`.
 
-A service whose handlers are methods may declare them beside those methods
-instead, with the class-level `@page(...)`. They are collected when the
-application is constructed, base classes first, in the order they are written.
-It is the same registration by another road.
+A service whose handlers are methods may declare them at the method with the
+class-level `@page(...)`. They are collected when the application is
+constructed, base classes first, in written order. This is the same
+registration by another route.
 
 The same declaration works on module-level functions, gathered with
-`routes_in`, so a service of ordinary functions keeps each route on the
-function that builds the page rather than in a list that has to trail its
-handlers:
+`routes_in`, so a service of plain functions keeps each route on the function
+that builds the page rather than in a separate list:
 
 ```python
 @page("5", title="By contributor", detail="browse by poster",
@@ -367,11 +370,10 @@ async def contributors(request: PageRequest) -> Page:
 app = Sextile(pages=routes_in(sys.modules[__name__]))
 ```
 
-Decorate a function where it is defined, not where it is imported: the
-declaration rides on the function object itself, so decorating a borrowed
-handler would declare it for everyone who imports it. A route for somebody
-else's handler — the framework's own pages, say — is one `PageRoute` line
-beside the call:
+Decorate a function where it is defined, not where it is imported. The
+declaration is stored on the function object, so decorating a borrowed handler
+would declare it for every importer. A route for another module's handler — the
+framework's own pages, say — is one `PageRoute` line:
 
 ```python
 app = Sextile(pages=[
@@ -383,8 +385,8 @@ app = Sextile(pages=[
 ## Say a page's name once
 
 A page that names itself in its decorator and again in its own chrome has two
-copies to keep in step, and the decorator's is the one that shows in menus, on
-the contents page and in the history. So a heading comes from the declaration:
+copies to keep in step, and the decorator's is the one shown in menus, on the
+contents page and in the history. So the heading comes from the declaration:
 
 ```python
 @page("3", name="days", title="By day", detail="newest first")
@@ -392,20 +394,18 @@ async def _days(self, request: PageRequest) -> Page:
     return self._menu(request.address, items=items)   # headed BY DAY
 ```
 
-`describe(address)` gives the registered title, and `heading_for(address)` is
-that title shouted, which is what a heading is. Pages whose heading is *not*
-their name — a post's forum, a day's date — pass one, and passing one now
-means something.
+`describe(address)` gives the registered title, and `heading_for(address)` gives
+that title in upper case, which is what a heading is. Pages whose heading is
+*not* their title — a post's forum, a day's date — pass one explicitly.
 
-The framework's own pages work the same way from the other side: map `contents`
-into your numbering with a title and the page takes it, and keeps its own if
-you give none.
+The framework's own pages work the same way: map `contents` into the service's
+numbering with a title and the page uses it, or keeps its own if none is given.
 
 ## Saying where a page is, once
 
-`addressing.keyed` gives a page number as a reader keys it — `*91#` — and
+`addressing.keyed` renders a page number as a reader keys it — `*91#` — and
 `MenuItem.for_page(app, name)` gives the words the page was registered with.
-Between them, a page that tells a reader to press something need not spell out
+Together they let a page that tells a reader what to press avoid spelling out
 either:
 
 ```python
@@ -415,14 +415,14 @@ canvas.row(19).text("Key", Colour.WHITE).text(
 ).text(f"for {guide.text.lower()}.", Colour.WHITE)
 ```
 
-Move the help page to another number and the instruction moves with it. A frame
-that says `*91#` when the guide has moved is worse than no instruction at all:
-the reader does as they are told and it does not work.
+Move the help page to another number and the instruction follows. A frame that
+says `*91#` after the guide has moved is worse than no instruction: the reader
+keys it and nothing happens.
 
 ## The compass
 
-The four keys that move about a page are the framework's, so the picture of
-them is too:
+The four keys that move around a page are the framework's, and so is the picture
+of them:
 
 ```python
 from sextile.compass import ROWS, compass
@@ -431,29 +431,30 @@ from sextile.layout import Drawn, Once
 Once(Drawn(rows=ROWS, draw=lambda canvas, row: compass(Composition(), row).draw(canvas)))
 ```
 
-`ROWS` says how many rows it takes, which is what `Drawn` is told, so the
-layout can leave room for it or start it on the next frame. A service that drew its own would be drawing the same thing, and would
-go on drawing it after the keys had moved.
+`ROWS` is how many rows it occupies, which is what `Drawn` is given, so the
+layout can leave room for it or start it on the next frame. A service that drew
+its own compass would duplicate this one, and would keep drawing the old keys
+after the framework's had changed.
 
-It calls the vertical pair **page up** and **page down**. A frame is what the
-wire calls it, but the frames of a page are the pages of one document to
-whoever is reading — and saying so keeps *previous* and *next* for the other
-axis, where they mean the items. It also says that the cursor keys work, which
-they do: `keys.ARROW_KEYS` maps all four.
+It labels the vertical pair **page up** and **page down**. *Frame* is the wire's
+term, but to a reader the frames of a page are the pages of one document, and
+using *page* here keeps *previous* and *next* for the other axis, where they
+mean the items. The picture also shows that the cursor keys work, which they do:
+`keys.ARROW_KEYS` maps all four.
 
-The arrows are mosaics rather than letters because the character set has only
-three of them — `←`, `→` and `↑`, and no down arrow at all — so one of the four
-had to be drawn whatever happened, and three letters beside one picture look
-like a mistake.
+The arrows are drawn as mosaics rather than letters because the character set
+has only three arrow characters — `←`, `→` and `↑`, with no down arrow — so one
+of the four had to be drawn whatever else was done, and three letters beside one
+drawn arrow would look like a mistake.
 
-`#` is not on it. It moves to the next frame as well, but a compass is about
-which way is which, and `#` belongs in a list of things to key.
+`#` is not on the compass. It also moves to the next frame, but the compass
+shows directions, and `#` belongs in a list of keys to press.
 
 ## Pages that come with the framework
 
-Three pages are built for you and registered nowhere, so that a service maps
-them into its own numbering or does without. They are handlers already, so
-the mapping is one line apiece:
+Three pages come built and registered nowhere, so a service maps them into its
+own numbering or does without. They are handlers already, so each mapping is one
+line:
 
 ```python
 from sextile import handlers
@@ -463,24 +464,21 @@ PageRoute("93", handlers.contents, title="Every page", keywords=("PAGES",))
 PageRoute("94", handlers.names, title="Words you can key", keywords=("KEYWORDS",))
 ```
 
-Each answers by calling the application's method of the same name, so a
-service wanting to change what one shows overrides the method and keeps the
-route.
+Each calls the application method of the same name, so a service that wants to
+change what one shows overrides the method and keeps the route.
 
-Each is generated from what the framework already knows — where a caller has
+Each is generated from what the framework already holds — where the caller has
 been, which patterns are registered, which words are aliased — so none can drift
-from the service it describes. Anything you would otherwise type into a help
-page by hand is a list that goes stale.
+from the service it describes, whereas a hand-typed help page goes stale.
 
-`contents` lists what the service is made of, taking pages with fields as
-patterns rather than enumerating them — `*52<user-id>#  One contributor` — which
-is the one thing a hand-written index cannot do.
+`contents` lists what the service is made of, showing pages with fields as
+patterns rather than enumerating every value — `*52<user-id>#  One contributor`
+— which a hand-written index cannot do.
 
-Key 1 goes back one page — the same as `*0#` — 2 goes back two, and longer
-histories page with `W`/`S`/`#`. The entries are labelled by
-`Application.describe`, which by default reads the route's own name and fields,
-so `82{post_id:int}` named `post` shows as "post 489493". Override it to say
-what a reader would say:
+Key 1 goes back one page (the same as `*0#`), 2 goes back two, and longer
+histories page with `W`/`S`/`#`. `Application.describe` labels the entries; by
+default it reads the route's name and fields, so `82{post_id:int}` named `post`
+shows as "post 489493". Override it to use the reader's own words:
 
 ```python
 def describe(self, address: PageAddress) -> str:
@@ -500,22 +498,21 @@ async def post(request: PageRequest, post_id: int) -> Page:
     request.application        # the service, for asking where another page is
 ```
 
-`arrival` is what makes "next" mean something: a page reached through one menu
-has that menu's pages either side of it, and one reached by keying its number
-has neither, and should offer neither. The session works this out from the
-choices the menu offered; the handler only has to decide whether to use it.
+`arrival` is what gives "next" a meaning: a page reached through a menu has that
+menu's pages on either side of it, and a page reached by keying its number has
+neither and should offer neither. The session works this out from the choices
+the menu offered; the handler only decides whether to use it.
 
-`session` is a plain mutable mapping that lives as long as the connection. The
-terminal holds nothing but the frame on screen, so anything outlasting a single
-page belongs here.
+`session` is a plain mutable mapping that lasts as long as the connection. The
+terminal holds nothing but the frame on screen, so anything that must outlast a
+single page belongs here.
 
-`application` is what lets a handler be an ordinary function rather than a
-closure built inside a factory: a page that offers another page has to ask the
-numbering where that one is, and this is how it asks. It is optional only
-because a request built by hand in a test has no service behind it;
-`request.app` is the same thing without the `None`, and `Sextile.of(request)`
-narrows to the routing application for a handler that asks the numbering
-something:
+`application` is what lets a handler be a plain function rather than a closure
+built in a factory: a page that offers another page must look up where that page
+is, and `application` is how. It is optional only because a request built by
+hand in a test has no service behind it. `request.app` is the same value without
+the `None`, and `Sextile.of(request)` narrows to the routing application for a
+handler that queries the numbering:
 
 ```python
 app = Sextile.of(request)
@@ -524,8 +521,8 @@ choices = {"1": app.address_for("post", post_id=post.id)}
 
 ## Saying that a page is not there
 
-Return `None`. The session then shows a notice and leaves the reader where they
-were, which is not the same as taking them somewhere empty.
+Return `None`. The session shows a notice and leaves the reader on the current
+page, rather than moving them to an empty one.
 
 ```python
 async def post(request: PageRequest, post_id: int) -> Page | None:
@@ -533,8 +530,8 @@ async def post(request: PageRequest, post_id: int) -> Page | None:
     return None if found is None else _page_for(found)
 ```
 
-The framework's notice is deliberately plain. A service with furniture of its
-own should say it in that:
+The framework's notice is deliberately plain. A service with its own furniture
+should render the notice in that:
 
 ```python
 @app.on_not_found
@@ -542,10 +539,10 @@ async def missing(target: str) -> Page:
     ...
 ```
 
-**A handler that raises is a different thing**, and gets a different page: the
-viewdata equivalent of a 500. The session catches it, logs the traceback and
+**A handler that raises is different**, and gets a different page: the viewdata
+equivalent of a 500. The session catches the exception, logs the traceback and
 shows `failed` without moving the reader, so a bug in one page costs that page
-rather than the call.
+and not the call.
 
 ```python
 @app.on_failed
@@ -553,10 +550,10 @@ async def broke(address: PageAddress) -> Page:
     ...
 ```
 
-There is a difference worth keeping between a page that does not exist and a
-page that exists but has nothing to show. The second should be a real page that
-says why — an empty menu with no explanation looks like a fault, and on a
-service that answers slowly a reader cannot tell the difference.
+Keep the difference between a page that does not exist and a page that exists but
+has nothing to show. The second should be a real page that says why: an empty
+menu with no explanation looks like a fault, and on a slow service a reader
+cannot tell the two apart.
 
 ## A page a reader types into
 
@@ -574,20 +571,20 @@ return PageLayout(
 ).build(request.address)
 ```
 
-A form answers a keypress by changing part of the frame rather than by going
-anywhere. `Suggest` is a field with the best few matches beneath it, each on a
-digit; `Fields` is several fields moved between with TAB and the arrows. Both
-are `Form`s, and a service wanting a third shape subclasses that.
+A form answers a keypress by redrawing part of the frame rather than by moving
+to another page. `Suggest` is a field with the best few matches beneath it, each
+on a digit; `Fields` is several fields moved between with TAB and the arrows.
+Both are `Form`s, and a service that wants a third shape subclasses `Form`.
 
-**A form is a part**, so it is told where it begins and counts its own rows
-from nought. `Suggest` puts its field on its first row and its suggestions two
-below unless told otherwise, and a page that moves it up or down moves the part
-rather than the numbers inside it. The form also says what the prompt should
-call the keys it answers — `A-Z type a name` and `1-9 choose one` — so a page
-carrying one need not name them itself.
+**A form is a part**, so it is given the row it begins on and counts its own rows
+from zero. `Suggest` puts its field on its first row and its suggestions two rows
+below unless told otherwise, and a page that moves the form up or down moves the
+part, not the offsets inside it. The form also supplies the prompt's words for
+the keys it answers — `A-Z type a name` and `1-9 choose one` — so a page carrying
+one need not name them itself.
 
-**Put the form in the session**, not in the handler: it is one caller's typing
-and lasts exactly as long as their line.
+**Keep the form in the session**, not in the handler: it holds one caller's
+typing and lasts as long as their line.
 
 ```python
 form = request.session.get(SEARCH)
@@ -596,21 +593,20 @@ if not isinstance(form, Suggest):
     request.session[SEARCH] = form
 ```
 
-Three things the wire decided, so that a service does not have to rediscover
-them:
+Three constraints the wire imposes, so a service need not rediscover them:
 
-- **Offer three suggestions, not nine.** Nine rows repainted per keystroke is
-  three seconds at 1200 baud; three is one, and a keystroke that changes nothing
-  but the field is a single byte.
-- **Digits are data or they are choices.** A form whose fields hold numbers
-  cannot offer `0` for the index — say `*1#` in the footer instead, rather than
-  offering a key that would eat a digit.
+- **Offer three suggestions, not nine.** Repainting nine rows per keystroke takes
+  three seconds at 1200 baud; three rows take one, and a keystroke that changes
+  only the field is a single byte.
+- **Digits are either data or choices.** A form whose fields hold numbers cannot
+  offer `0` for the index; put `*1#` in the footer instead, rather than a key
+  that would swallow a digit.
 - **Say what RETURN will do where it does it**, and only while it would do
   something. `Suggest` marks the suggestion it would take; `Fields` marks the
-  last field once the form is whole.
+  last field once every field is filled.
 
-If a page's keys should also answer the cursor keys, say so — the framework
-knows which byte is which arrow and deliberately does not decide what one means:
+If a page's keys should also answer the cursor keys, say so. The framework knows
+which byte is which arrow and deliberately does not fix what an arrow means:
 
 ```python
 moves=with_arrows({PREVIOUS_FRAME, NEXT_FRAME})
@@ -618,14 +614,13 @@ choices=arrows_lead_where({"A": before, "D": after})
 ```
 
 `PageLayout` does the first for every page it builds, and the second for any
-shortcut given `arrow=True`. A form receives the
-arrows as themselves, which is what lets TAB move between fields without
-typing a `D`.
+shortcut given `arrow=True`. A form receives the arrows unmapped, which is what
+lets TAB move between fields without registering a `D`.
 
 ## What is true of every page
 
-A handler answers what one page says. **Middleware answers what is true of every
-page** — who is asking, how long it took, whether they may:
+A handler decides what one page says. **Middleware handles what is true of every
+page** — who is calling, how long a page took, whether the caller is allowed:
 
 ```python
 async def timing(request: PageRequest, build: Next) -> Page | None:
@@ -637,13 +632,13 @@ async def timing(request: PageRequest, build: Next) -> Page | None:
 app = Sextile(middleware=[timing], pages=[...])
 ```
 
-It is given the request and the rest of the chain, and may look, may change
-what comes back, or may answer instead and never call it at all — which is how
-a service builds authentication without the framework having an opinion about
-how anybody logs in. The first given is the outermost, so a reader of the list
-sees a request entering at the top and leaving at the bottom.
+Each middleware is given the request and the rest of the chain. It may inspect
+the request, change the page that comes back, or answer itself and never call
+the chain, which is how a service adds authentication without the framework
+prescribing how anyone logs in. The first in the list is the outermost, so the
+list reads top-to-bottom as a request enters and the page leaves.
 
-One comes with the framework, and it exists because of the wire:
+One middleware comes with the framework, and it exists because of the wire:
 
 ```python
 from sextile.middleware import log_pages
@@ -652,10 +647,9 @@ app = Sextile(middleware=[log_pages()], pages=[...])
 ```
 
 At 1200 baud a frame takes eight seconds to reach the reader, so "it felt slow"
-cannot tell the wire from the page. `log_pages` names every page and times it,
-warning on anything past a second — by *duration* rather than by outcome, since
-a missing page is ordinary and taking four seconds to decide it was missing is
-not.
+cannot separate the wire from the page. `log_pages` names and times every page,
+warning on anything over a second, by *duration* rather than by outcome: a
+missing page is ordinary, but taking four seconds to decide it is missing is not.
 
 ## Anything that has to be opened
 
@@ -673,52 +667,49 @@ async def lifespan(app: Sextile) -> AsyncIterator[Mapping[str, object]]:
 app = Sextile(lifespan=lifespan, pages=[...])
 ```
 
-Entered once before the first call and left once after the last, so a handler
-never has to wonder. **What it yields is what the service holds**, and every
-page is handed it:
+The lifespan is entered once before the first call and left once after the last.
+**What it yields is what the service holds**, and every page is given it:
 
 ```python
 async def post(request: PageRequest, post_id: int) -> Page:
     client = CLIENT.of(request.service)
 ```
 
-What a service holds is typed as objects, because the framework cannot know
-what any service puts in it. A `Held` key is the narrowing said once: the name
+What a service holds is typed as `object`, because the framework cannot know
+what any service puts there. A `Held` key states the narrowing once: the name
 and the type travel together, `of` raises by name when the service has not
-started, and `found_in` answers `None` for a thing a service may run without.
-Yield several with `|`: `CLIENT.holding(client) | VISITS.holding(log)`. For a
-kind that is a protocol or an abstract class, `Held.checking(name, kind)` makes
-the same key — the type checker refuses those where a type is expected, and
-the assignment's annotation says what the key holds:
+started, and `found_in` returns `None` for a value a service may run without.
+Yield several with `|`: `CLIENT.holding(client) | VISITS.holding(log)`. When the
+kind is a protocol or an abstract class, `Held.checking(name, kind)` makes the
+same key; the type checker rejects those where a concrete type is expected, and
+the annotation on the assignment states what the key holds:
 
 ```python
 VISITS: Final[Held[Visits]] = Held.checking("visits", Visits)
 ```
 
-`service` is the counterpart of `session`, and the contrast is why there are
-two: `session` is this caller's and lasts as long as the line, `service` is
-everybody's and lasts as long as the process. A page cannot write to `service`,
-because a page that changed what the service holds would change it for every
-other caller at once.
+`service` is the counterpart of `session`, and the contrast is the reason for
+having both: `session` is one caller's and lasts as long as the line, `service`
+is shared and lasts as long as the process. A page cannot write to `service`,
+because a change there would reach every other caller at once.
 
-One function rather than a pair of handlers, because setup and teardown as two
-functions have to be kept in step by hand and must hoist whatever they open
-somewhere both can see. As two halves of one function they cannot drift, and
-the thing opened is an ordinary local held across the `yield`.
+It is one function rather than a setup/teardown pair, because two functions must
+be kept in step by hand and must store whatever they open where both can reach
+it. As two halves of one function they cannot drift, and the opened resource is
+an ordinary local held across the `yield`.
 
-The lifespan is given the application, which matters for a service assembled by
-a factory: there is no name for the application until its constructor has
-returned.
+The lifespan is given the application, which matters for a service assembled by a
+factory: the application has no name until its constructor has returned.
 
-Handlers are `async`. Anything synchronous and slow — SQLite, a file — belongs
-in `asyncio.to_thread`, or the one caller waiting on it is every caller waiting
-on it.
+Handlers are `async`. Anything synchronous and slow — SQLite, a file read —
+belongs in `asyncio.to_thread`, or every caller waits while one caller's page is
+built.
 
 ## Forty columns, and what they cost
 
-A colour attribute **occupies a character cell**. A row that changes colour
-twice has thirty-eight columns for text, not forty. `Canvas` does that
-arithmetic, which is why you write to it rather than to a `Frame`:
+A colour attribute **occupies a character cell**. A row that changes colour twice
+has thirty-eight columns left for text, not forty. `Canvas` does this arithmetic,
+which is why a page writes to it rather than to a `Frame`:
 
 ```python
 canvas.row(row).text("1 ", Colour.YELLOW).text(title, Colour.WHITE)
@@ -726,8 +717,8 @@ canvas.right(row, page_number, Colour.WHITE)
 canvas.paragraph(first_row, rows, prose, colour=Colour.WHITE)
 ```
 
-`sextile.viewdata.drawing` has the small operations every page wants — free
-functions, so your own sit beside them:
+`sextile.viewdata.drawing` has the small operations most pages need, as free
+functions, so a service's own sit beside them:
 
 ```python
 from sextile.viewdata.drawing import bar, centred, centred_double, rule
@@ -740,13 +731,13 @@ bar(canvas, 20, colour=Colour.GREEN, cells=20, lit=13)   # a gauge
 fitted(title, COLUMNS - 4)                         # shortened to the cells free
 ```
 
-`draw_chrome` gives you a header with the page number, two rules and a footer,
-leaving twenty rows. It is a convenience, not a requirement; a service that
-wants the whole screen simply does not call it.
+`draw_chrome` draws a header with the page number, two rules and a footer,
+leaving twenty rows. It is a convenience, not a requirement; a service that wants
+the whole screen does not call it.
 
-For long text, hand `sextile.viewdata.typesetting` a `Document` of blocks and it will
-wrap it, colour quotations and listings distinctly, and divide the result into
-frame-sized pages of rows.
+For long text, give `sextile.viewdata.typesetting` a `Document` of blocks; it
+wraps the text, colours quotations and listings distinctly, and divides the
+result into frame-sized pages of rows.
 
 ## Seeing it
 
@@ -756,8 +747,8 @@ uv run sextile render my_service:app --page 1 --form grid  # characters and attr
 uv run sextile render my_service:app --page 1 --form bytes # the wire, as a hex dump
 ```
 
-`render` also prints where each key on that frame leads, which is the quickest
-way to check a menu is wired up correctly.
+`render` also prints where each key on the frame leads, which is the quickest way
+to check a menu is wired correctly.
 
 For a real terminal, see the dialling instructions in
 [stardot-viewdata's README](../../stardot-viewdata/README.md).

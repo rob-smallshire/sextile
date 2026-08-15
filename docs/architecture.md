@@ -12,7 +12,8 @@ packages/weather-viewdata/     the weather, from met.no and a local gazetteer
 
 The framework depends on nothing at all; the applications depend on it and not
 on each other. That is stated in the packaging rather than left as a convention,
-so an import in the wrong direction fails rather than merely being regrettable.
+so an import in the wrong direction fails at build time rather than being left
+to convention.
 
 Each is written up as built, and those are the documents to read:
 

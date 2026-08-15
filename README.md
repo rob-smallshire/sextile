@@ -92,7 +92,7 @@ was verified from what was inferred. **Keep that distinction** in anything new.
 ## Working on it
 
 ```sh
-uv run pytest        # both packages
+uv run pytest        # the whole workspace
 uv run ruff check .
 uv run mypy
 ```

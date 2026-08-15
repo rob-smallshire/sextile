@@ -36,10 +36,9 @@ Beeb for half an hour.
   quarters off; this would take most of the rest on a menu where only the middle
   rows differ. The cursor positioning it needs has now been measured and works;
   see `viewdata-encoding.md`.
-- **`render --post` is gone.** It drew a post's body with no chrome, which was
-  useful for inspecting layout in isolation, and it did not survive the split
-  because it was a page-drawing command that bypassed pages. `lay_out` still
-  does the same thing from a test.
+- **`render --post` is gone.** It drew a post's body with no furniture, which
+  was useful for inspecting layout in isolation, and it did not survive the
+  split because it was a page-drawing command that bypassed pages.
 
 ## Wanted before it runs unattended
 
@@ -56,8 +55,8 @@ Beeb for half an hour.
   archive. This matters as soon as anything but a human starts the poller.
 - **The archive path is relative to the working directory.** `stardot.sqlite`
   by default, which means `stardot-viewdata serve` and `ingest` silently
-  disagree if run from different directories — the first thing that went wrong in practice. A fixed
-  location under `platformdirs` would be kinder.
+  disagree if run from different directories. A fixed location under
+  `platformdirs` would be kinder.
 - **No service file.** Running on a Raspberry Pi wants the poller and the server
   supervised, and a decision about whether they are one process or two. They are
   currently two, sharing only the SQLite file, which works and is simple.
@@ -76,8 +75,8 @@ Beeb for half an hour.
   ever genuinely needs to be assembled from parts, that is the place to start
   reading and the reasons will still be there.
 - **`sextile.viewdata` is a large surface for an application to reach into.**
-  Chrome, canvas, colours, layout and the frame itself are all public, and an
-  application needs most of them. Whether some of it should be a smaller,
+  Canvas, colours, drawing, composition and the frame itself are all public, and
+  an application needs most of them. Whether some of it should be a smaller,
   friendlier facade is a question for when there are more services.
 
 ## Raised by the weather service

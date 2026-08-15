@@ -99,11 +99,11 @@ Source docstrings + comments (src/sextile):
 
 ### Phase 3 — workspace docs
 
-- [ ] README.md (root)
-- [ ] docs/architecture.md
-- [ ] docs/target-architecture.md
-- [ ] docs/open-questions.md
-- [ ] NOTICE.md (only if it carries prose worth touching)
+- [x] README.md (root)  (fixed stale 'both packages')
+- [x] docs/architecture.md
+- [x] docs/target-architecture.md  (stale 'second application' fixed)
+- [x] docs/open-questions.md  (removed false lay_out claim; stale chrome term)
+- [x] NOTICE.md  (license/attribution text; no prose to rewrite)
 
 ### Phase 4 — CLAUDE.md
 

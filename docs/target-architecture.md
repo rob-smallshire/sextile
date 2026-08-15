@@ -43,7 +43,7 @@ consequence of accepting closer integration. Splitting it the other way turns th
 mismatch into an advantage: **phpBB provides resources; Sextile provides
 conversations with those resources.** Each call into phpBB stays an ordinary
 phpBB request, answered and forgotten, while Sextile keeps a caller connected for
-three hours without phpBB knowing or caring.
+three hours with no phpBB request open between calls.
 
 **Content adaptation and presentation adaptation are different jobs.** The
 extension converts phpBB internals into clean forum-domain resources.
@@ -65,8 +65,8 @@ moved and should be moved back.
    forum vocabulary may appear in the framework. If they do, the boundary has
    drifted into Python.
 
-The second invariant is checkable today, and the second application in this
-workspace exists to keep checking it.
+The second invariant is checkable today, and the calendar and weather
+applications exist to keep checking it.
 
 ## Phases
 

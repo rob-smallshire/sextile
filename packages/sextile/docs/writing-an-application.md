@@ -254,12 +254,12 @@ Two conventions are worth keeping, because readers rely on them across services:
 frame drawn some other way composes one from items rather than writing a string:
 
 ```python
-from sextile.viewdata.footer import ROOM, FooterItem, Priority, movement, render_footer
+from sextile.viewdata.footer import FOOTER_WIDTH, FooterItem, Priority, movement, render_footer
 
 items = [FooterItem("1", "month", Priority.PRIMARY)]
 items += movement(choices, item="day")
 items.append(FooterItem(HOME_KEY, "index", Priority.ESSENTIAL))
-prompt = render_footer(items, ROOM)
+prompt = render_footer(items, FOOTER_WIDTH)
 ```
 
 `movement` supplies the framework's words for `W`, `S`, `A` and `D` — *page up*,
@@ -275,7 +275,7 @@ Anything else the frame offers is a `FooterItem` of its own:
 | `key` | what the reader presses |
 | `label` | what it does, in words |
 | `brief` | a shorter label, for a crowded row |
-| `priority` | `ESSENTIAL` the way out, `PRIMARY` what the page is for, `SECONDARY` moving about, `REDUNDANT` an alias for a key already shown |
+| `priority` | `ESSENTIAL` the way out, `PRIMARY` what the page is for, `SECONDARY` moving about, `ALIAS` an alias for a key already shown |
 
 The order in which items are dropped when a row is full is in
 [navigation.md](navigation.md), with worked examples. The rule worth knowing

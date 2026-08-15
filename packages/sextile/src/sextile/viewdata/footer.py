@@ -38,7 +38,7 @@ from sextile.viewdata.frame import COLUMNS
 __all__ = [
     "FooterItem",
     "Priority",
-    "ROOM",
+    "FOOTER_WIDTH",
     "movement",
     "render_footer",
 ]
@@ -46,7 +46,7 @@ __all__ = [
 _SEPARATOR = ", "
 
 #: The row less the cell the colour attribute takes.
-ROOM: Final = COLUMNS - 1
+FOOTER_WIDTH: Final = COLUMNS - 1
 
 
 class Priority(IntEnum):
@@ -61,7 +61,7 @@ class Priority(IntEnum):
     SECONDARY = 1
     """Moving about."""
 
-    REDUNDANT = 0
+    ALIAS = 0
     """An alias for something already shown, such as `#` beside `S`."""
 
 
@@ -127,7 +127,7 @@ def _wordings(
         shorten(band, 1)
         yield dict(said), list(kept)
     for index in _shedding(items, kept):
-        if items[index].priority is Priority.REDUNDANT and len(kept) > 1:
+        if items[index].priority is Priority.ALIAS and len(kept) > 1:
             kept.remove(index)
             yield dict(said), list(kept)
     last: list[Priority] = [Priority.ESSENTIAL, *reversed(moving)]

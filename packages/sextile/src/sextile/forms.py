@@ -589,7 +589,7 @@ class FieldSet(Form):
                 #  characters in a field that takes six.
                 room = min(field.width, row.remaining - _END_CELLS)
                 row.text(fitted(field.value, room).ljust(room), self._text_colour)
-                row.plain()
+                row.end_background()
             else:
                 #  Two spaces and the colour attribute before them come to the
                 #  three cells a background costs, so a field does not shift

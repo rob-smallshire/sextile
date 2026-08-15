@@ -40,7 +40,7 @@ from sextile.viewdata.canvas import Canvas
 from sextile.viewdata.controls import Colour
 from sextile.viewdata.drawing import rule
 from sextile.viewdata.encoding import cell_count, fitted
-from sextile.viewdata.footer import ROOM, FooterItem, Priority, movement, render_footer
+from sextile.viewdata.footer import FOOTER_WIDTH, FooterItem, Priority, movement, render_footer
 from sextile.viewdata.frame import COLUMNS, ROWS
 from sextile.viewdata.typesetting import TRUNCATION_NOTICE
 
@@ -606,7 +606,7 @@ class Footer:
     rows: int = 1
 
     def draw(self, canvas: Canvas, at: int, page: FrameContext) -> None:
-        said = render_footer(page.offered, ROOM)
+        said = render_footer(page.offered, FOOTER_WIDTH)
         if said:
             canvas.row(at).text(fitted(said, COLUMNS - 1), self.colour)
 

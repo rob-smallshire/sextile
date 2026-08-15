@@ -93,7 +93,7 @@ Public submodules:
 | `composition` | `Composition`, `Panel`, `Align`, `Style`, `DoesNotFit`, `Where` — placing things relative to each other |
 | `lettering` | outsized letters: `place`, `boxed`, `cells_needed`, `width`, `rows_needed`, `Spacing` |
 | `font` | `Font`, `load_font`, `font_names`, `read_font`, `Glyph`, `FontError` |
-| `footer` | `FooterItem`, `Priority`, `movement`, `render_footer`, `ROOM` — composing a prompt for a frame drawn by hand |
+| `footer` | `FooterItem`, `Priority`, `movement`, `render_footer`, `FOOTER_WIDTH` — composing a prompt for a frame drawn by hand |
 | `wrapping` | `wrap_text`, `wrap_within` |
 
 Internal to the framework, and not to be imported: `command_line`,

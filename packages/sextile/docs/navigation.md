@@ -85,12 +85,12 @@ lose, not by what happens to sit at the end of the string.
 So a prompt is **composed as items, not written as a string**:
 
 ```python
-from sextile.viewdata.footer import ROOM, FooterItem, Priority, movement, render_footer
+from sextile.viewdata.footer import FOOTER_WIDTH, FooterItem, Priority, movement, render_footer
 
 items = [FooterItem("1-9", "select", Priority.PRIMARY)]
 items += movement(moving, item="post")
 items.append(FooterItem(HOME_KEY, "index", Priority.ESSENTIAL))
-prompt = render_footer(items, ROOM)
+prompt = render_footer(items, FOOTER_WIDTH)
 ```
 
 `movement` gives the framework's own words for the framework's own keys, so a

@@ -7,6 +7,11 @@ as "was X" so a reader coming from older code or docs can find it.
 - **page** — what a handler returns: one or more frames sharing a page number.
 - **frame** — one screenful, 24 rows of 40 cells; a page too long for one has
   several, keyed `a` to `z`.
+- **footer** (the prompt row) — `render_footer(items, FOOTER_WIDTH)` composes it;
+  `FOOTER_WIDTH` (was `ROOM`) is the cells it has. A `FooterItem` carries a
+  `Priority`: `ESSENTIAL`/`PRIMARY`/`SECONDARY`, and `ALIAS` (was `REDUNDANT`)
+  for a key already shown under another name. `RowWriter.end_background()` (was
+  `plain()`) closes a coloured background so what follows sits on black.
 - **attribute** (was `Control`) — a teletext spacing attribute: a colour or
   character-set code that takes a cell of its own and shows as a blank.
   `controls.Attribute`; `is_attribute_code` (was `is_control_code`) tells one

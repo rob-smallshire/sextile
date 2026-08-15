@@ -21,7 +21,7 @@ MENU = FooterItem("0", "index", Priority.ESSENTIAL)
 SELECT = FooterItem("1-9", "select", Priority.PRIMARY)
 FRAME = FooterItem("S", "page down", Priority.SECONDARY, brief="down")
 POST = FooterItem("D", "next post", Priority.SECONDARY, brief="next")
-NEXT = FooterItem("#", "next frame", Priority.REDUNDANT)
+NEXT = FooterItem("#", "next frame", Priority.ALIAS)
 
 
 class TestWhenItAllFits:
@@ -107,7 +107,7 @@ class TestNeverOverflowing:
 
 class TestPriorityOrder:
     def test_the_priorities_run_from_essential_downwards(self) -> None:
-        assert Priority.ESSENTIAL > Priority.PRIMARY > Priority.SECONDARY > Priority.REDUNDANT
+        assert Priority.ESSENTIAL > Priority.PRIMARY > Priority.SECONDARY > Priority.ALIAS
 
     def test_equal_priorities_give_up_their_words_together(self) -> None:
         #  They are the same sort of thing -- a pair of movement keys, say --
@@ -167,7 +167,7 @@ class TestWhatGoesBeforeWhat:
         #  does not say where the way out goes, has kept the wrong thing.
         items = [
             FooterItem("S", "page down", Priority.SECONDARY, brief="down"),
-            FooterItem("#", "next frame", Priority.REDUNDANT),
+            FooterItem("#", "next frame", Priority.ALIAS),
             MENU,
         ]
         rendered = render_footer(items, 16)

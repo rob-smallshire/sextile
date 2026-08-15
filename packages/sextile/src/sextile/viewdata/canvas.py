@@ -235,7 +235,7 @@ class RowWriter:
         self._colour = text
         return self
 
-    def plain(self) -> Self:
+    def end_background(self) -> Self:
         """End any background, so what follows sits on black again.
 
         One cell. The foreground is untouched -- black is taken as a background

@@ -1,12 +1,9 @@
 """Naming one thing a service holds, and narrowing it back out.
 
-What a service holds is typed as objects, because the framework cannot know
-what any service puts in it. Every service then wrote the same function per
-thing it held -- take the mapping, get the name, check the type, raise with
-some words -- and each copy raised its own version of the same complaint. A
-`Held` key is that function written once: the name and the type travel
-together, so a page asking for what the lifespan opened narrows in one call
-and a mistyped key fails by name rather than at the far end of a telephone
+What a service holds is typed as `object`, because the framework cannot know
+what any service puts there. A `Held` key states the narrowing once: the name
+and the type travel together, so a page reaches what the lifespan opened in one
+call, and a mistyped key fails by name rather than at the far end of a telephone
 line.
 
     PLACES = Held("places", Index)

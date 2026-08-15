@@ -2,26 +2,23 @@
 
 An address is the page number itself: the digits a reader keys between `*` and
 `#`. The framework carries nothing richer deliberately. A page number is the one
-name shared by everybody who has to talk about a page -- the reader, the
-terminal, the application, and whoever writes it down -- and an application that
-wants richer internal types can keep them to itself and route them here.
+name shared by everyone who talks about a page -- the reader, the terminal, the
+application, and whoever writes it down -- and an application that wants richer
+internal types keeps them to itself and routes them here.
 
-This is the same choice a web framework makes in dealing in paths rather than in
-each application's own notion of a resource, and it buys the same things: a
-history, a back key and a link between applications all become ordinary
-operations on a value, needing to know nothing about what the value names.
+Dealing in the page number rather than each application's own reference type
+keeps history, the back key and links between services as ordinary operations on
+a value that needs to know nothing about what it names.
 
 Page numbers have no practical length limit -- measured against Commstar, which
 accepted far more digits than any service would allocate -- so none is imposed
-here. What limits a request is the command parser's own patience.
+here. What limits a request is the command parser's entry limit.
 """
 
 from dataclasses import dataclass
 from typing import Final
 
-#: Frames are lettered, so a page cannot have more than there are letters.
-#: Frames to a page, `a` to `z`. A page is numbered, its frames are
-#: lettered, and there are no more letters.
+#: Frames to a page, lettered `a` to `z`; there are no more letters.
 FRAMES_PER_PAGE: Final = 26
 
 
@@ -70,9 +67,8 @@ def frame_letter(index: int) -> str:
 def keyed(address: "PageAddress | str") -> str:
     """A page number as a reader keys it: `*91#`.
 
-    Here rather than in each place that says it, because a service says it
-    everywhere -- in a guide, on a contents page, in a not-found message -- and
-    one that spells it out each time will eventually spell it differently. It
-    takes a keyword as readily as a number, `*MAIN#` being keyed the same way.
+    Defined here rather than in each place that shows a page number, so a service
+    does not spell `*91#` differently in different places. Takes a keyword as
+    readily as a number: `*MAIN#` is keyed the same way.
     """
     return f"*{address}#"

@@ -3,8 +3,8 @@
 An application answers page requests. `Sextile` answers them by routing, which
 is the shape almost every service will want; an application that answers them
 some other way -- one page generated, one proxied, one drawn -- is still an
-application, which is why this is a base class with useful defaults rather than
-a router with a hole in it.
+application, so this is a base class with useful defaults rather than only a
+router.
 
 A handler is a function of a *request*, not of a page number:
 
@@ -147,22 +147,22 @@ class Application(ABC):
         return keyed(address)
 
     def heading_for(self, address: PageAddress) -> str:
-        """What to head a page with: what it was registered as, shouted.
+        """What to head a page with: what it was registered as, in upper case.
 
-        A page that names itself where it is declared and again in its own
-        chrome has two copies of its name to keep in step, and they do not
-        stay in step. A page whose heading is not its name -- a post's forum,
-        a month's name -- writes its own instead of calling this.
+        A page whose heading is its registered name gets it from here rather
+        than repeating it in its own chrome. A page whose heading is not its
+        name -- a post's forum, a month's name -- writes its own instead of
+        calling this.
         """
         return self.describe(address).upper()
 
     def heading(self, address: PageAddress, default: str) -> str:
-        """What to head a page with. The framework's own name, unless told.
+        """What to head a page with: ``default``, unless a title was registered.
 
-        `Sextile` prefers what the service called the page when it registered
-        it: a built-in page has a name of its own and is given another on the
-        way in, and without this the two say the same thing twice -- with the
-        service's copy the one that shows in menus and on a contents page.
+        `Sextile` prefers the title the service gave the page when it registered
+        it, so a built-in page mapped into a service's numbering shows the
+        service's title in menus and on the contents page rather than the
+        framework's ``default``.
         """
         return default
 
@@ -201,9 +201,8 @@ class Application(ABC):
         the syntax of a request, the key that turns a page -- and a guide that
         drifts from the thing it describes is worse than none.
 
-        A service passes its own keys, since which they are is a thing only it
-        knows: a search field answers letters, a forecast answers `F`, and a
-        framework that guessed would be describing a service it had not met.
+        A service passes its own keys, since only it knows them: a search field
+        answers letters, a forecast answers `F`.
         `moving` joins the first frame and `asking` the second. `items=False`
         leaves `A` and `D` off the compass, for a service that does not wire
         them to `request.arrival` and so does not answer them.
@@ -365,16 +364,12 @@ class Application(ABC):
         session: MutableMapping[str, object] | None = None,
         history: tuple[PageAddress, ...] = (),
     ) -> Page | None:
-        """Answer a page number, as a session would ask it.
+        """Answer a page number, the way a session would ask it.
 
-        A request carries more than the number now -- what the service holds,
-        and the service itself -- and building one by hand means remembering
-        both. Every test of every application would remember them, or would
-        quietly not, and a page reached without them fails in a way that has
-        nothing to do with what was being tested.
-
-        So the assembly lives here, once. `render_page` uses it, and so should
-        anything else that wants a page without a socket.
+        A request carries more than the number: what the service holds, and the
+        service itself. Assembling one by hand at each call site is easy to get
+        subtly wrong, so the assembly lives here once. `render_page` uses it,
+        and so should anything else that wants a page without a socket.
         """
         address = target if isinstance(target, PageAddress) else PageAddress(target)
         return await self.respond(
@@ -402,9 +397,9 @@ class Application(ABC):
     def name(self) -> str:
         """What this service is called, for the few things the framework says.
 
-        Empty unless a service says otherwise, and the framework will not invent
-        one: a page thanking a reader for calling *Sextile* names the machinery
-        rather than the service, which is nobody's idea of a farewell.
+        Empty unless a service sets it, and the framework invents no default: a
+        farewell naming *Sextile* would name the framework rather than the
+        service.
         """
         return ""
 
@@ -613,10 +608,8 @@ class Sextile(Application):
     def pages(self) -> tuple[PageInfo, ...]:
         """Every page this service advertises, in the order it registered them.
 
-        Registration order rather than the router's, which is about matching and
-        would put the most literal pattern first for reasons a reader does not
-        care about.
-
+        Registration order rather than the router's match order, which would put
+        the most literal pattern first.
         """
         return tuple(self._pages.values())
 
@@ -703,11 +696,10 @@ class Sextile(Application):
     def params_for(self, address: PageAddress) -> Mapping[str, object] | None:
         """What a page number means: the fields its route captured, or None.
 
-        The same reading of a number that served the page, offered to a service
-        that has the number and wants the thing again -- reading its own log
-        back, most likely. Taking the digits apart a second time is a second
-        thing to get wrong when the numbering changes, and this numbering has
-        changed once already.
+        The same reading of a number that served the page, for a service that
+        has the number and wants the fields again -- reading its own log back,
+        most likely. Taking the digits apart by hand would be the numbering
+        written down twice.
         """
         found = self._router.match(address)
         return None if found is None else found.params
@@ -804,8 +796,7 @@ def _wrap(middleware: Middleware, build: Next) -> Next:
     """Bind one middleware to the rest of the chain below it.
 
     A function rather than a closure written in place, so that it captures this
-    iteration's values rather than the last iteration's, which is the oldest
-    bug in the world.
+    iteration's values rather than the last iteration's.
     """
 
     async def wrapped(request: PageRequest) -> Page | None:
@@ -818,8 +809,9 @@ def _plain_notice(title: str, *lines: str, hang_up: bool = False) -> Page:
     """The framework's own way of saying something for itself.
 
     Deliberately plain, and drawn without the header-and-footer furniture that
-    `sextile.viewdata.chrome` offers. A service that has furniture of its own
-    should say these things in it, and one that has not should still be legible.
+    `sextile.layout` provides (`Header`, `Rule`, `Prompt`). A service that has
+    furniture of its own should say these things in it, and one that has not
+    should still be legible.
 
     Kept to the top few rows, which leaves somewhere for the cursor to go if
     this turns out to be the last thing the reader sees.

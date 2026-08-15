@@ -1,11 +1,9 @@
-"""What a page is asked with, and what a caller leaves behind.
+"""The request a handler is given, and what a departing caller leaves behind.
 
-A handler is a function of a *request*, not of a page number. That
-distinction matters more here than the corresponding one does on the web: a
-viewdata terminal is a display and nothing more, so everything a session
-knows is held at this end, and two callers keying the same number can
-legitimately be shown different things once there is such a thing as being
-logged in, or as having arrived from a particular menu.
+A handler is a function of a request, not of a page number. A viewdata terminal
+is a display and nothing more, so all session state is held at the server, and
+two callers keying the same number can be shown different things: because they
+arrived through different menus, or because one is logged in.
 """
 
 from collections.abc import Mapping, MutableMapping
@@ -57,36 +55,31 @@ class PageRequest:
     application: "Application | None" = None
     """The service this page belongs to.
 
-    Starlette's `request.app`, and here for the same reason: it is what lets a
-    handler be an ordinary function declared beside its fellows rather than a
-    closure built inside a factory. A page that offers another page has to ask
-    the numbering where that one is, and this is how it asks.
+    Starlette's `request.app`. It lets a handler be an ordinary function
+    declared beside its fellows rather than a closure built in a factory: a page
+    that offers another page looks up where that page is through the service.
 
     Optional only because a request built by hand in a test has no service
-    behind it. Anything the session or the renderer builds carries one.
+    behind it; anything the session or the renderer builds carries one.
     """
 
     service: Mapping[str, object] = field(default_factory=dict)
     """What the service opened, for as long as it is running -- an archive, a
     client, an index.
 
-    The counterpart of `session`, and the contrast is the whole point of there
-    being two: `session` is this caller's and lasts as long as the line,
-    `service` is everybody's and lasts as long as the process. Read-only here,
-    because a page that changed what the service holds would be changing it for
-    every other caller at once.
-
-    What goes in it is whatever the application's `lifespan` yielded."""
+    The counterpart of `session`: `session` is one caller's and lasts as long as
+    the line, `service` is shared and lasts as long as the process. Read-only
+    here, because a change would reach every other caller at once. Holds
+    whatever the application's `lifespan` yielded."""
 
     @property
     def app(self) -> "Application":
         """The service this page belongs to, and not None.
 
-        `application` is optional because a request built by hand in a test
-        has no service behind it. Every request the session or the renderer
-        builds carries one, so a handler reached through either says
-        `request.app` -- the narrowing every application was otherwise
-        writing for itself, at the top of its own module.
+        `application` is optional because a request built by hand in a test has
+        no service behind it. Every request the session or the renderer builds
+        carries one, so a handler reached through either uses `request.app`
+        rather than narrowing `application` itself.
         """
         if self.application is None:
             raise RuntimeError("this page was asked for outside a running service")

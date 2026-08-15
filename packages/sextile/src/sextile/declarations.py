@@ -1,12 +1,11 @@
-"""Saying what a page is, where it is written.
+"""Declaring what a page is, beside where it is written.
 
-Everything about a page is said once, in one place -- where it is in the
+Everything about a page is declared once, in one place: its place in the
 numbering, what builds it, what to call it where it is listed, and the words
-that reach it -- and this module is the vocabulary for saying it. A
-`PageRoute` says it as a value; `@page` says the same thing beside the
-function or method that builds the page, gathered by `routes_in` for a
-module and by `routes_on` for an instance. Declaring pages as data is what
-makes registration order unobservable.
+that reach it. `PageRoute` is that declaration as a value; `@page` attaches the
+same declaration to the function or method that builds the page, gathered by
+`routes_in` for a module and by `routes_on` for an instance. Declaring pages as
+data makes registration order unobservable.
 """
 
 from collections.abc import Awaitable, Callable, Sequence
@@ -18,19 +17,16 @@ from sextile.page import Page
 
 #: A page handler. `None` rather than a page means there is no such page --
 #: something *said* to a reader who has not moved, as against somewhere they
-#: have gone -- and the session tells the two apart. Typed `Awaitable[Page]`
-#: here at first, which quietly refused the very handlers the documentation
-#: shows.
+#: have gone -- and the session tells the two apart.
 type Handler = Callable[..., Awaitable[Page | None]]
 
 
 @dataclass(frozen=True)
 class PageInfo:
-    """What a service said about a page when it registered it.
+    """What a service declared about a page when it registered it.
 
-    The words belong where the page is declared. A service that names each page
-    again in its menu, again wherever one is listed, and again in its own guide
-    has three copies to keep in step, and they do not stay in step.
+    The words belong where the page is declared, so they are stated once rather
+    than copied into every menu, list and guide that names the page.
     """
 
     name: str
@@ -50,15 +46,11 @@ class PageInfo:
 class PageRoute:
     """One page of a service, declared as a value rather than as a decoration.
 
-    The canonical way to say what a service is made of. Everything about a
-    page is here -- where it is in the numbering, what builds it, what to call
-    it where it is listed, and the words that reach it -- so a page says what
-    it is once, in one place, and the service is a list of them.
-
-    Declaring pages as data is what makes registration order unobservable. A
-    pattern using a field shape of the service's own, a page wanting a keyword,
-    a service holding an archive: all of it arrives in one constructor call,
-    so there is no "before" and no "after" for anybody to get wrong.
+    Everything about a page is here: its place in the numbering, what builds it,
+    what to call it where it is listed, and the words that reach it. The service
+    is a list of these. Declaring pages as data makes registration order
+    unobservable: converters, pages, middleware and lifespan all arrive in one
+    constructor call, so no step has to run before another.
     """
 
     pattern: str
@@ -114,11 +106,11 @@ def page[H](
                 ...
 
     `app.page(...)` does the same thing, but only where an application object
-    already exists to hang it on. A service whose handlers are methods -- which
-    is every service holding an archive or an HTTP client -- has no `self` at
-    class-definition time, so its registrations end up in a block a long way
-    from the functions they describe. This puts them back together. The same
-    declaration on a module-level function is gathered by `routes_in`.
+    already exists to hang it on. A service whose handlers are methods has no
+    `self` at class-definition time, so registering with `app.page` would put
+    the registrations a long way from the functions they describe. This keeps
+    them together. The same declaration on a module-level function is gathered
+    by `routes_in`.
 
     Collected when the application is constructed, in the order they are
     written, base classes first. The route takes the handler's name unless
@@ -151,9 +143,8 @@ def routes_in(module: ModuleType) -> tuple[PageRoute, ...]:
     The module-level counterpart of declaring pages on a class, for the
     service whose handlers are ordinary functions. The declaration sits on
     the function that builds the page, and the factory says
-    `pages=routes_in(pages_module)` instead of keeping a list that has to
-    trail its handlers -- which is how such a list ends up two thirds of the
-    way down a long module.
+    `pages=routes_in(pages_module)` instead of keeping a separate list that has
+    to trail its handlers.
 
     Decorate a function where it is defined, not where it is imported: the
     declaration rides on the function object itself, so decorating a

@@ -84,7 +84,7 @@ async def title(request: PageRequest) -> Page:
     No page number in the header, because `*0#` is the back command and a
     number a reader cannot key is an instruction that misleads them.
     """
-    app = Sextile.of(request)
+    app = request.app
     held = await _read(request, lambda repository: repository.count_posts())
     #  Both instructions are built from the pages they name and the keys this
     #  frame actually answers, so neither can come to say something the service
@@ -122,7 +122,7 @@ async def title(request: PageRequest) -> Page:
 @page("1", name="main", title="Main index", keywords=("MAIN", "INDEX", "HOME"))
 async def main_index(request: PageRequest) -> Page:
     """The index: what the service offers, and how many posts it holds."""
-    app = Sextile.of(request)
+    app = request.app
     held = await _read(request, lambda repository: repository.count_posts())
     items = [
         MenuItem.for_page(app, name)
@@ -150,7 +150,7 @@ async def main_index(request: PageRequest) -> Page:
 @page("3", name="days", title="By day", detail="browse by date", keywords=("DAYS",))
 async def days_index(request: PageRequest) -> Page:
     """The sixty most recent days posts were made on, the newest first."""
-    app = Sextile.of(request)
+    app = request.app
     days = await _read(request, lambda repository: repository.days(limit=60))
     if not days:
         return _notice(app, request.address, None, ["NO POSTS held yet."])
@@ -168,7 +168,7 @@ async def days_index(request: PageRequest) -> Page:
 @page("32{day:date}", name="day", title="One day")
 async def one_day(request: PageRequest, day: date) -> Page:
     """Every post held from one day, in the order they were published."""
-    app = Sextile.of(request)
+    app = request.app
     posts = await _read(request, lambda repository: repository.posts_on(day))
     return _posts_menu(app, request.address, posts, day_title(day))
 
@@ -177,7 +177,7 @@ async def one_day(request: PageRequest, day: date) -> Page:
       keywords=("FORUMS",))
 async def forums_index(request: PageRequest) -> Page:
     """The forums posts have been seen in, with how many are held from each."""
-    app = Sextile.of(request)
+    app = request.app
     forums = await _read(request, lambda repository: repository.forums())
     if not forums:
         return _notice(app, request.address, None, ["NO POSTS held yet."])
@@ -195,7 +195,7 @@ async def forums_index(request: PageRequest) -> Page:
 @page("42{forum_id:int}", name="forum", title="One forum")
 async def one_forum(request: PageRequest, forum_id: int) -> Page:
     """The newest posts held from one forum."""
-    app = Sextile.of(request)
+    app = request.app
     posts = await _read(request, lambda repository: repository.posts_in_forum(forum_id))
     #  Ask the archive rather than the post: a post first seen in a
     #  per-topic feed knows its forum's id but not its name, and the archive
@@ -210,7 +210,7 @@ async def one_forum(request: PageRequest, forum_id: int) -> Page:
       keywords=("WHO", "USERS"))
 async def contributors_index(request: PageRequest) -> Page:
     """Everyone who has posted, the most prolific first."""
-    app = Sextile.of(request)
+    app = request.app
     contributors = await _read(request, lambda repository: repository.contributors())
     if not contributors:
         return _notice(app, request.address, None, ["NO POSTS held yet."])
@@ -228,7 +228,7 @@ async def contributors_index(request: PageRequest) -> Page:
 @page("52{user_id:int}", name="contributor", title="One contributor")
 async def one_contributor(request: PageRequest, user_id: int) -> Page:
     """The newest posts held from one contributor."""
-    app = Sextile.of(request)
+    app = request.app
     posts = await _read(request, lambda repository: repository.posts_by_author(user_id))
     title = posts[0].author_name if posts else f"USER {user_id}"
     return _posts_menu(app, request.address, posts, title)
@@ -242,7 +242,7 @@ async def topics_index(request: PageRequest) -> Page:
     Topics are known only for posts seen since the board's feed began
     carrying them, which the page says where it has none to show.
     """
-    app = Sextile.of(request)
+    app = request.app
     topics = await _read(request, lambda repository: repository.topics(limit=60))
     if not topics:
         return PageLayout(
@@ -272,7 +272,7 @@ async def topics_index(request: PageRequest) -> Page:
 @page("72{topic_id:int}", name="topic", title="One topic")
 async def one_topic(request: PageRequest, topic_id: int) -> Page:
     """Every post held from one topic."""
-    app = Sextile.of(request)
+    app = request.app
     posts = await _read(request, lambda repository: repository.posts_in_topic(topic_id))
     title = posts[0].topic_title if posts else f"TOPIC {topic_id}"
     return _posts_menu(app, request.address, posts, title)
@@ -282,7 +282,7 @@ async def one_topic(request: PageRequest, topic_id: int) -> Page:
       keywords=("LATEST", "NEW", "POSTS"))
 async def latest_posts(request: PageRequest) -> Page:
     """The sixty newest posts held, whatever forum or topic they are from."""
-    app = Sextile.of(request)
+    app = request.app
     posts = await _read(request, lambda repository: repository.latest_posts(limit=60))
     return _posts_menu(app, request.address, posts)
 
@@ -290,7 +290,7 @@ async def latest_posts(request: PageRequest) -> Page:
 @page("82{post_id:int}", name="post", title="One post")
 async def one_post(request: PageRequest, post_id: int) -> Page:
     """One post in full, or a notice where the archive has not seen it."""
-    app = Sextile.of(request)
+    app = request.app
     post = await _read(request, lambda repository: repository.post(post_id))
     if post is None:
         return PageLayout(
@@ -314,7 +314,7 @@ async def one_post(request: PageRequest, post_id: int) -> Page:
 @page("9", name="about", title="About this service", keywords=("ABOUT",))
 async def about(request: PageRequest) -> Page:
     """What the service is, how much it holds, and how its numbering works."""
-    app = Sextile.of(request)
+    app = request.app
     held = await _read(request, lambda repository: repository.count_posts())
     return PageLayout(
         title=f"ABOUT {app.name.upper()}",
@@ -342,7 +342,7 @@ async def about(request: PageRequest) -> Page:
 @page("90", name="logoff", title="Log off", keywords=("BYE", "OFF"))
 async def logoff(request: PageRequest) -> Page:
     """The farewell frame, after which the line drops."""
-    app = Sextile.of(request)
+    app = request.app
     return farewell_page(
         "GOODBYE", f"Thank you for calling {app.name}.", "", "Ring off."
     )
@@ -359,7 +359,7 @@ async def guide(request: PageRequest) -> Page:
     left for a service is the rows only it can know, which here are the pages it
     keeps its own numbers for.
     """
-    app = Sextile.of(request)
+    app = request.app
     return await app.guide(
         request,
         asking=[

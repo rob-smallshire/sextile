@@ -1,10 +1,9 @@
-"""The interface between the framework and whatever is running on it.
+"""The application: a service that answers page requests by routing.
 
-An application answers page requests. `Sextile` answers them by routing, which
-is the shape almost every service will want; an application that answers them
-some other way -- one page generated, one proxied, one drawn -- is still an
-application, so this is a base class with useful defaults rather than only a
-router.
+`Sextile` answers a page request by routing its number to a handler. It is the
+one application class: everything about connections, sessions, the protocol and
+the numbering is on the framework's side of `respond`, and what the pages say
+is the service's.
 
 A handler is a function of a *request*, not of a page number:
 
@@ -30,7 +29,7 @@ re-exported here, `sextile` itself being where a service imports from.
 from collections.abc import Awaitable, Callable, Mapping, MutableMapping, Sequence
 from contextlib import AbstractAsyncContextManager
 from datetime import UTC, datetime, timedelta
-from typing import Final, Self
+from typing import Final
 
 from sextile import keys
 from sextile.addressing import PageAddress, UnknownPageError, keyed
@@ -99,24 +98,6 @@ type DescribeHandler = Callable[[PageAddress], str | None]
 
 class Sextile:
     """An application that answers by routing page numbers to handlers."""
-
-    @classmethod
-    def of(cls, request: PageRequest) -> "Self":
-        """The application a page belongs to, narrowed to the routing kind.
-
-        For a handler that asks the numbering something -- `address_for`,
-        `page_info` -- which is this class's surface rather than the
-        `Application` one. Written here once rather than at the top of every
-        service, and on the class rather than the request so that a service
-        with an application type of its own narrows to that: `Board.of(...)`.
-        """
-        app = request.app
-        if not isinstance(app, cls):
-            raise RuntimeError(
-                f"this page was asked outside a {cls.__name__} service and "
-                "cannot ask the numbering anything"
-            )
-        return app
 
     def __init__(
         self,
@@ -669,7 +650,7 @@ class Sextile:
                 session=session if session is not None else {},
                 history=history,
                 service=self.service,
-                application=self,
+                app=self,
             )
         )
 

@@ -36,6 +36,14 @@ class PageRequest:
 
     address: PageAddress
 
+    app: "Sextile"
+    """The service this page belongs to.
+
+    Starlette's `request.app`. It lets a handler be an ordinary function
+    declared beside its fellows rather than a closure built in a factory: a page
+    that offers another page looks up where that page is through the service.
+    """
+
     params: dict[str, object] = field(default_factory=dict)
     """What the route's pattern captured. Also passed to the handler as keyword
     arguments, so a handler need not unpack them."""
@@ -52,17 +60,6 @@ class PageRequest:
     keeps. The terminal remembers none of it, so a service wanting to offer a
     way back through the call has to be handed the way back."""
 
-    application: "Sextile | None" = None
-    """The service this page belongs to.
-
-    Starlette's `request.app`. It lets a handler be an ordinary function
-    declared beside its fellows rather than a closure built in a factory: a page
-    that offers another page looks up where that page is through the service.
-
-    Optional only because a request built by hand in a test has no service
-    behind it; anything the session or the renderer builds carries one.
-    """
-
     service: Mapping[str, object] = field(default_factory=dict)
     """What the service opened, for as long as it is running -- an archive, a
     client, an index.
@@ -71,20 +68,6 @@ class PageRequest:
     the line, `service` is shared and lasts as long as the process. Read-only
     here, because a change would reach every other caller at once. Holds
     whatever the application's `lifespan` yielded."""
-
-    @property
-    def app(self) -> "Sextile":
-        """The service this page belongs to, and not None.
-
-        `application` is optional because a request built by hand in a test has
-        no service behind it. Every request the session or the renderer builds
-        carries one, so a handler reached through either uses `request.app`
-        rather than narrowing `application` itself.
-        """
-        if self.application is None:
-            raise RuntimeError("this page was asked for outside a running service")
-        return self.application
-
 
 @dataclass(frozen=True)
 class Parting:

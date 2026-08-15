@@ -6,7 +6,7 @@ where to put it, and only the framework knows the patterns well enough to say.
 """
 
 from sextile.addressing import PageAddress
-from sextile.application import Arrival, PageInfo, PageRequest, Sextile
+from sextile.application import PageInfo, Sextile
 from sextile.page import Page
 from sextile.pages.contents import TITLE, contents_page
 
@@ -132,15 +132,7 @@ class TestWhatTheseBuiltInPagesAreCalled:
 
 
 async def _built(app: Sextile, digits: str) -> Page:
-    page = await app.respond(
-        PageRequest(
-            address=PageAddress(digits),
-            params={},
-            arrival=Arrival(),
-            session={},
-            history=(),
-        )
-    )
+    page = await app.ask(digits)
     assert page is not None
     return page
 

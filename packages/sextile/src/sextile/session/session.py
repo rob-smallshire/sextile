@@ -551,7 +551,7 @@ class Session:
                     session=self._state,
                     history=been,
                     service=self._application.service,
-                    application=self._application,
+                    app=self._application,
                 )
             )
         except Exception as error:

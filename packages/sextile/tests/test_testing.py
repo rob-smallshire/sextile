@@ -13,7 +13,7 @@ from sextile.testing import calling
 
 
 async def index(request: PageRequest) -> Page:
-    app = Sextile.of(request)
+    app = request.app
     return PageLayout(
         title="INDEX",
         home=app.index,

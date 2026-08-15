@@ -10,7 +10,7 @@ from typing import Final, Protocol, runtime_checkable
 
 import pytest
 
-from sextile import Held, PageRequest
+from sextile import Held, PageRequest, Sextile
 from sextile.addressing import PageAddress
 
 
@@ -88,13 +88,13 @@ class TestFind:
     def test_reads_what_a_request_carries(self) -> None:
         opened = Archive()
         request = PageRequest(
-            address=PageAddress("1"), service={"archive": opened}
+            address=PageAddress("1"), app=Sextile(), service={"archive": opened}
         )
 
         assert ARCHIVE.find(request) is opened
 
     def test_answers_none_when_the_request_carries_nothing(self) -> None:
-        request = PageRequest(address=PageAddress("1"))
+        request = PageRequest(address=PageAddress("1"), app=Sextile())
 
         assert ARCHIVE.find(request) is None
 

@@ -48,8 +48,8 @@ def saying(what: str) -> Page:
     return Page(frames=(PageFrame(canvas.frame),))
 
 
-def request_for(digits: str, **params: object) -> PageRequest:
-    return PageRequest(address=PageAddress(digits), params=params)
+def request_for(app: Sextile, digits: str, **params: object) -> PageRequest:
+    return PageRequest(address=PageAddress(digits), app=app, params=params)
 
 
 def text_of(page: Page | None, row: int = 0) -> str:
@@ -66,7 +66,7 @@ class TestRouting:
         async def main(request: PageRequest) -> Page:
             return saying("MAIN")
 
-        assert text_of(await app.respond(request_for("1"))) == "MAIN"
+        assert text_of(await app.ask("1")) == "MAIN"
 
     async def test_a_handler_is_given_what_the_pattern_captured(self) -> None:
         app = Sextile()
@@ -75,7 +75,7 @@ class TestRouting:
         async def post(request: PageRequest, post_id: int) -> Page:
             return saying(f"POST {post_id}")
 
-        assert text_of(await app.respond(request_for("82489493"))) == "POST 489493"
+        assert text_of(await app.ask("82489493")) == "POST 489493"
 
     async def test_a_handler_is_given_the_request_it_answers(self) -> None:
         app = Sextile()
@@ -84,7 +84,7 @@ class TestRouting:
         async def post(request: PageRequest, post_id: int) -> Page:
             return saying(str(request.address))
 
-        assert text_of(await app.respond(request_for("82489493"))) == "82489493"
+        assert text_of(await app.ask("82489493")) == "82489493"
 
     async def test_the_decorator_gives_the_function_back(self) -> None:
         app = Sextile()
@@ -93,7 +93,7 @@ class TestRouting:
         async def main(request: PageRequest) -> Page:
             return one_frame()
 
-        assert await main(request_for("1")) is not None
+        assert await main(request_for(app, "1")) is not None
 
     async def test_a_route_is_named_for_the_function_that_answers_it(self) -> None:
         #  So that a page can link to another by name without being told twice
@@ -124,7 +124,7 @@ class TestSayingSo:
 
     async def test_an_unrouted_page_is_not_answered(self) -> None:
         app = Sextile()
-        assert await app.respond(request_for("6")) is None
+        assert await app.ask("6") is None
 
     async def test_a_word_that_names_nothing_says_so(self) -> None:
         app = Sextile()
@@ -179,7 +179,7 @@ class TestSessionState:
         async def main(request: PageRequest) -> Page:
             return saying(str(request.session["user"]))
 
-        page = await app.respond(PageRequest(address=PageAddress("1"), session=state))
+        page = await app.ask("1", session=state)
         assert text_of(page) == "komadori"
 
     async def test_a_handler_can_leave_something_behind(self) -> None:
@@ -191,7 +191,7 @@ class TestSessionState:
             request.session["seen"] = True
             return one_frame()
 
-        await app.respond(PageRequest(address=PageAddress("1"), session=state))
+        await app.ask("1", session=state)
         assert state == {"seen": True}
 
 
@@ -201,7 +201,7 @@ class TestArrival:
     #  Arrive by keying a number and there is no sequence, so none is offered.
 
     async def test_a_request_knows_of_no_neighbours_by_default(self) -> None:
-        request = request_for("821")
+        request = request_for(Sextile(), "821")
         assert request.arrival.preceding is None
         assert request.arrival.following is None
 
@@ -214,11 +214,8 @@ class TestArrival:
             choices = {"N": following} if following else {}
             return Page(frames=(PageFrame(blank(), choices=choices),))
 
-        page = await app.respond(
-            PageRequest(
-                address=PageAddress("821"),
-                arrival=Arrival(following=PageAddress("822")),
-            )
+        page = await app.ask(
+            "821", arrival=Arrival(following=PageAddress("822"))
         )
         assert page is not None
         assert page.frames[0].destination("N") == PageAddress("822")
@@ -369,7 +366,7 @@ class TestWhereTheReaderHasBeen:
     #  through the call it has to be told the way back.
 
     async def test_a_request_carries_no_history_by_default(self) -> None:
-        assert request_for("1").history == ()
+        assert request_for(Sextile(), "1").history == ()
 
     async def test_a_handler_is_told_where_the_reader_has_been(self) -> None:
         app = Sextile()
@@ -378,11 +375,8 @@ class TestWhereTheReaderHasBeen:
         async def main(request: PageRequest) -> Page:
             return saying(" ".join(str(been) for been in request.history))
 
-        page = await app.respond(
-            PageRequest(
-                address=PageAddress("1"),
-                history=(PageAddress("8"), PageAddress("82489493")),
-            )
+        page = await app.ask(
+            "1", history=(PageAddress("8"), PageAddress("82489493"))
         )
         assert text_of(page) == "8 82489493"
 
@@ -562,7 +556,7 @@ class TestWhereZeroGoes:
     async def test_the_framework_s_own_pages_use_the_index(self) -> None:
         app = Sextile(home="0", index="1")
         page = await app.history(
-            PageRequest(address=PageAddress("92"), history=(PageAddress("8"),))
+            PageRequest(address=PageAddress("92"), app=app, history=(PageAddress("8"),))
         )
         assert page.frames[0].destination("0") == PageAddress("1")
 
@@ -594,10 +588,10 @@ class TestDeclaringPagesOnTheClass:
         return Board()
 
     async def test_a_declared_page_is_registered(self) -> None:
-        assert text_of(await self.build().respond(request_for("1"))) == "MAIN"
+        assert text_of(await self.build().ask("1")) == "MAIN"
 
     async def test_with_its_fields(self) -> None:
-        page_shown = await self.build().respond(request_for("82489493"))
+        page_shown = await self.build().ask("82489493")
         assert text_of(page_shown) == "POST 489493"
 
     def test_the_route_takes_the_method_s_name(self) -> None:
@@ -653,10 +647,10 @@ class TestDeclaringPagesInAModule:
         return Sextile(pages=routes_in(self.build_module()))
 
     async def test_a_declared_page_is_registered(self) -> None:
-        assert text_of(await self.build().respond(request_for("1"))) == "MAIN"
+        assert text_of(await self.build().ask("1")) == "MAIN"
 
     async def test_with_its_fields(self) -> None:
-        page_shown = await self.build().respond(request_for("82489493"))
+        page_shown = await self.build().ask("82489493")
         assert text_of(page_shown) == "POST 489493"
 
     def test_the_route_takes_the_function_s_name(self) -> None:
@@ -713,7 +707,7 @@ class TestDeclaringAndInheriting:
             async def main(self, request: PageRequest) -> Page:
                 return saying("MINE")
 
-        assert text_of(await Board().respond(request_for("1"))) == "MINE"
+        assert text_of(await Board().ask("1")) == "MINE"
 
     def test_declaring_the_same_number_twice_is_still_refused(self) -> None:
         class Board(Sextile):
@@ -1053,7 +1047,7 @@ class TestMiddleware:
             return await build(request)
 
         app = Sextile(middleware=[watching], pages=[PageRoute("1", _nothing, name="main")])
-        await app.respond(PageRequest(address=PageAddress("1")))
+        await app.ask("1")
         assert seen == [PageAddress("1")]
 
     async def test_it_may_answer_instead_of_the_page(self) -> None:
@@ -1065,7 +1059,7 @@ class TestMiddleware:
             return instead
 
         app = Sextile(middleware=[refusing], pages=[PageRoute("1", _nothing, name="main")])
-        assert await app.respond(PageRequest(address=PageAddress("1"))) is instead
+        assert await app.ask("1") is instead
 
     async def test_it_may_change_what_comes_back(self) -> None:
         async def hanging_up(request: PageRequest, build: Next) -> Page | None:
@@ -1073,7 +1067,7 @@ class TestMiddleware:
             return None if page is None else Page(frames=page.frames, hang_up=True)
 
         app = Sextile(middleware=[hanging_up], pages=[PageRoute("1", _nothing, name="main")])
-        page = await app.respond(PageRequest(address=PageAddress("1")))
+        page = await app.ask("1")
         assert page is not None and page.hang_up
 
     async def test_the_first_given_is_the_outermost(self) -> None:
@@ -1094,7 +1088,7 @@ class TestMiddleware:
             middleware=[noting("first"), noting("second")],
             pages=[PageRoute("1", _nothing, name="main")],
         )
-        await app.respond(PageRequest(address=PageAddress("1")))
+        await app.ask("1")
         assert order == ["into first", "into second", "out of second", "out of first"]
 
     async def test_a_page_that_is_not_there_still_reaches_it(self) -> None:
@@ -1107,16 +1101,16 @@ class TestMiddleware:
             return await build(request)
 
         app = Sextile(middleware=[watching])
-        assert await app.respond(PageRequest(address=PageAddress("7"))) is None
+        assert await app.ask("7") is None
         assert seen == [PageAddress("7")]
 
     async def test_a_service_with_none_is_unaffected(self) -> None:
         app = Sextile(pages=[PageRoute("1", _nothing, name="main")])
-        assert await app.respond(PageRequest(address=PageAddress("1"))) is not None
+        assert await app.ask("1") is not None
 
 
 class TestAPageKnowingItsService:
-    """`request.application`, which is Starlette's `request.app`.
+    """`request.app`, which is Starlette's name for the same thing.
 
     What lets a handler be an ordinary function declared beside its fellows
     rather than a closure built inside a factory: a page offering another page
@@ -1127,8 +1121,7 @@ class TestAPageKnowingItsService:
         seen: list[str] = []
 
         async def main(request: PageRequest) -> Page:
-            assert request.application is not None
-            seen.append(request.application.name)
+            seen.append(request.app.name)
             return Page(frames=(PageFrame(frame=Canvas().frame),))
 
         app = Sextile(name="Weather", pages=[PageRoute("1", main, name="main")])
@@ -1139,8 +1132,7 @@ class TestAPageKnowingItsService:
         built: list[PageAddress] = []
 
         async def main(request: PageRequest) -> Page:
-            assert isinstance(request.application, Sextile)
-            built.append(request.application.address_for("about"))
+            built.append(request.app.address_for("about"))
             return Page(frames=(PageFrame(frame=Canvas().frame),))
 
         app = Sextile(
@@ -1152,11 +1144,7 @@ class TestAPageKnowingItsService:
         await Session(app).greeting()
         assert built == [PageAddress("9")]
 
-    async def test_a_request_built_by_hand_has_none(self) -> None:
-        #  Which is right: there is no service behind it.
-        assert PageRequest(address=PageAddress("1")).application is None
-
-    async def test_app_is_the_service_without_the_none(self) -> None:
+    async def test_the_app_is_the_service_that_answered(self) -> None:
         seen: list[Sextile] = []
 
         async def main(request: PageRequest) -> Page:
@@ -1166,17 +1154,6 @@ class TestAPageKnowingItsService:
         app = Sextile(pages=[PageRoute("1", main, name="main")])
         await Session(app).greeting()
         assert seen == [app]
-
-    async def test_app_on_a_bare_request_says_what_is_wrong(self) -> None:
-        with pytest.raises(RuntimeError, match="outside a running service"):
-            PageRequest(address=PageAddress("1")).app  # noqa: B018
-
-    async def test_sextile_of_narrows_to_the_routing_application(self) -> None:
-        app = Sextile(pages=[PageRoute("1", _nothing, name="main")])
-
-        request = PageRequest(address=PageAddress("1"), application=app)
-
-        assert Sextile.of(request) is app
 
 
 class TestHeadingAPage:
@@ -1213,7 +1190,6 @@ class TestAskingForAPageWithoutASocket:
 
         async def main(request: PageRequest) -> Page:
             seen.append(request.service["archive"])
-            assert request.application is not None
             return Page(frames=(PageFrame(frame=Canvas().frame),))
 
         app = Sextile(lifespan=lifespan, pages=[PageRoute("1", main, name="main")])
@@ -1281,6 +1257,5 @@ _seen: list[tuple[object, str]] = []
 
 
 async def _remembering(request: PageRequest) -> Page:
-    assert request.application is not None
-    _seen.append((request.service.get("held"), request.application.name))
+    _seen.append((request.service.get("held"), request.app.name))
     return Page(frames=(PageFrame(frame=Canvas().frame),))

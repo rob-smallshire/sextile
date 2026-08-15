@@ -52,7 +52,7 @@ class TestLoggingEveryPage:
         clock = Clock()
         clock.step = 0.25
         with caplog.at_level(logging.INFO, logger="sextile.pages"):
-            await _app(clock).respond(PageRequest(address=PageAddress("1")))
+            await _app(clock).ask("1")
         assert "*1#" in caplog.text
         assert "0.250s" in caplog.text
 
@@ -63,7 +63,7 @@ class TestLoggingEveryPage:
         #  having beside the time.
         clock = Clock()
         with caplog.at_level(logging.INFO, logger="sextile.pages"):
-            await _app(clock).respond(PageRequest(address=PageAddress("1")))
+            await _app(clock).ask("1")
         assert "1 frames" in caplog.text
 
     async def test_a_page_that_is_not_there_is_logged_too(
@@ -73,7 +73,7 @@ class TestLoggingEveryPage:
         #  reach would be the wrong count.
         clock = Clock()
         with caplog.at_level(logging.INFO, logger="sextile.pages"):
-            await _app(clock).respond(PageRequest(address=PageAddress("7")))
+            await _app(clock).ask("7")
         assert "not here" in caplog.text
 
 
@@ -84,7 +84,7 @@ class TestSayingWhenSomethingIsSlow:
         clock = Clock()
         clock.step = 0.01
         with caplog.at_level(logging.INFO, logger="sextile.pages"):
-            await _app(clock).respond(PageRequest(address=PageAddress("1")))
+            await _app(clock).ask("1")
         assert caplog.records[0].levelno == logging.INFO
 
     async def test_a_slow_one_is_a_warning(
@@ -93,7 +93,7 @@ class TestSayingWhenSomethingIsSlow:
         clock = Clock()
         clock.step = 4.0
         with caplog.at_level(logging.INFO, logger="sextile.pages"):
-            await _app(clock).respond(PageRequest(address=PageAddress("1")))
+            await _app(clock).ask("1")
         assert caplog.records[0].levelno == logging.WARNING
 
     async def test_even_when_the_page_was_not_there(
@@ -105,7 +105,7 @@ class TestSayingWhenSomethingIsSlow:
         clock = Clock()
         clock.step = 4.0
         with caplog.at_level(logging.INFO, logger="sextile.pages"):
-            await _app(clock).respond(PageRequest(address=PageAddress("7")))
+            await _app(clock).ask("7")
         assert caplog.records[0].levelno == logging.WARNING
 
     async def test_how_slow_is_slow_is_a_setting(
@@ -114,7 +114,7 @@ class TestSayingWhenSomethingIsSlow:
         clock = Clock()
         clock.step = 0.5
         with caplog.at_level(logging.INFO, logger="sextile.pages"):
-            await _app(clock, slow=0.1).respond(PageRequest(address=PageAddress("1")))
+            await _app(clock, slow=0.1).ask("1")
         assert caplog.records[0].levelno == logging.WARNING
 
 
@@ -193,6 +193,7 @@ async def _through(
     return await middleware(
         PageRequest(
             address=address,
+            app=Sextile(),
             session=session if session is not None else {},
             service=service if service is not None else {},
         ),

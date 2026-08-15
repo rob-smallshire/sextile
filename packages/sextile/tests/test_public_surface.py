@@ -10,6 +10,7 @@ which is where a reader looks. Closing a crossing? Delete its line from
 """
 
 import ast
+import importlib
 import pathlib
 from collections.abc import Iterator
 from typing import Final
@@ -78,6 +79,46 @@ def imports_of(service: str) -> Iterator[tuple[pathlib.Path, str]]:
                         yield found, alias.name
 
 
+def _service_src_dirpath(service: str) -> pathlib.Path:
+    return _WORKSPACE / "packages" / service / "src"
+
+
+def named_imports_of(service: str) -> Iterator[tuple[pathlib.Path, str, str]]:
+    """Every `from sextile.<module> import <name>` in one service's source.
+
+    Yields (path, module, name) for the source tree only, not the tests: a
+    service's tests may reach for machinery to drive it, but its source is held
+    to the surface. A `from sextile.x import y` where `y` is itself a public
+    submodule is a module import, not a name, and is reported so the caller can
+    accept it as such.
+    """
+    for found in sorted(_service_src_dirpath(service).rglob("*.py")):
+        tree = ast.parse(found.read_text())
+        for node in ast.walk(tree):
+            if isinstance(node, ast.ImportFrom) and node.level == 0:
+                named = node.module or ""
+                if named == "sextile" or named.startswith("sextile."):
+                    for alias in node.names:
+                        yield found, named, alias.name
+
+
+def _name_resolves(module: str, name: str) -> bool:
+    """Whether a name listed in `module.__all__` can be obtained from it.
+
+    A leaf name is an attribute; a public submodule (`sextile.viewdata` lists
+    `lettering`) is not an attribute of its parent until first imported, so ask
+    the import machinery for it directly.
+    """
+    imported = importlib.import_module(module)
+    if hasattr(imported, name):
+        return True
+    try:
+        importlib.import_module(f"{module}.{name}")
+    except ImportError:
+        return False
+    return True
+
+
 class TestTheServicesImportOnlyWhatIsPublic:
     """Read the services rather than trusting the document, which was wrong.
 
@@ -117,3 +158,58 @@ class TestTheServicesImportOnlyWhatIsPublic:
             assert path.with_suffix(".py").is_file() or (path / "__init__.py").is_file(), (
                 f"{module} is listed as public and does not exist"
             )
+
+
+class TestEveryPublicModuleStatesItsNames:
+    """`__all__` is the surface a module offers; the doc follows it.
+
+    A module without `__all__` has no stated surface, so `from it import *`
+    would take everything and a reader cannot tell contract from machinery.
+    Each name in `__all__` must be obtainable, or the list is a promise the
+    module does not keep.
+    """
+
+    @pytest.mark.parametrize("module", sorted(PUBLIC))
+    def test_the_module_declares_all(self, module: str) -> None:
+        imported = importlib.import_module(module)
+        assert hasattr(imported, "__all__"), (
+            f"{module} is public but declares no __all__; state its surface."
+        )
+
+    @pytest.mark.parametrize("module", sorted(PUBLIC))
+    def test_every_name_in_all_resolves(self, module: str) -> None:
+        imported = importlib.import_module(module)
+        unresolved = [
+            name for name in getattr(imported, "__all__", ()) if not _name_resolves(module, name)
+        ]
+        assert not unresolved, f"{module}.__all__ names what it does not offer: {unresolved}"
+
+
+class TestTheServicesImportOnlyNamedSurface:
+    """Beyond the module, the name: a service imports what a module exports.
+
+    The module-level check says a service reaches for no machinery module; this
+    says that within a public module it reaches for no name the module does not
+    put in `__all__`. Only the services' source is held to this: their tests may
+    drive the framework through machinery.
+    """
+
+    @pytest.mark.parametrize("service", SERVICES)
+    def test_named_imports_are_all_exported(self, service: str) -> None:
+        reached = set()
+        for found, module, name in named_imports_of(service):
+            if module not in PUBLIC:
+                continue  # the module-level test already reports this crossing
+            if name not in importlib.import_module(module).__all__:
+                reached.add((found.name, module, name))
+        assert not reached, (
+            f"{service} imports names not in a module's __all__: {sorted(reached)}. "
+            "Either the framework should export them and their __all__ wants "
+            "updating, or the service should not be reaching for them."
+        )
+
+    def test_the_top_level_re_exports_all_resolve(self) -> None:
+        import sextile
+
+        unresolved = [name for name in sextile.__all__ if not _name_resolves("sextile", name)]
+        assert not unresolved, f"sextile.__all__ names what it does not re-export: {unresolved}"

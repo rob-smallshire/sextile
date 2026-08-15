@@ -74,9 +74,13 @@ composer in `layout.footer`; all re-exported here, so a service imports from
 
 ### `sextile.formatting` — sequences laid out as parts
 
-    SequencePart  RowSequencePart        to subclass
+    SequencePart  RowSequencePart  NumberedRowSequencePart   to subclass
     Menu  Listing  Figures  Lines  Prose  the shapes
     Entry  MenuItem                       what a shape is given
+
+`NumberedRowSequencePart` is `RowSequencePart` with a digit column drawn for it;
+a service numbering its own entries subclasses it, and every other part is spared
+the digit. `Menu` is the one shape the framework builds on it.
 
 ### `sextile.viewdata.typesetting` — a document as rows
 

@@ -51,6 +51,7 @@ __all__ = [
     "Listing",
     "Menu",
     "MenuItem",
+    "NumberedRowSequencePart",
     "Prose",
     "RowSequencePart",
 ]
@@ -129,18 +130,27 @@ class SequencePart[E](ABC):
     empty: str = ""
 
     @abstractmethod
-    def draw_entry(
-        self, canvas: Canvas, row: int, entry: E, digit: str | None = None
-    ) -> None:
+    def draw_entry(self, canvas: Canvas, row: int, entry: E) -> None:
         """Draw one entry in the `rows_per_entry` rows beginning at `row`.
 
         Args:
             canvas: The frame being drawn.
             row: The row the entry begins on.
             entry: The value to draw.
-            digit: The key that chooses this entry, or None where this shape is
-                not `numbered`.
+
+        A numbered part is drawn its digit for it: `NumberedRowSequencePart`
+        draws the digit column before the entry, so a subclass never sees the
+        digit and every part but a numbered one is spared the parameter.
         """
+
+    def _draw_entry(self, canvas: Canvas, row: int, entry: E, digit: str | None) -> None:
+        """Draw one entry, given the digit that chooses it where there is one.
+
+        The one place the loop hands a part its digit. The base drops it; a
+        numbered part overrides this to draw the digit column with it.
+        """
+        del digit
+        self.draw_entry(canvas, row, entry)
 
     def destination(self, entry: E) -> PageAddress | None:
         """The address choosing `entry` leads to, or None where it leads nowhere.
@@ -164,7 +174,7 @@ class SequencePart[E](ABC):
             where = self.destination(entry) if digit is not None else None
             if digit is not None and where is not None:
                 choices[digit] = where
-            self.draw_entry(canvas, row, entry, digit)
+            self._draw_entry(canvas, row, entry, digit)
             row += self.rows_per_entry + self.gap
         rest = self.entries[taking:]
         return Placed(
@@ -210,7 +220,7 @@ class RowSequencePart[E](SequencePart[E]):
     """
 
     @abstractmethod
-    def draw(self, row: RowWriter, entry: E, digit: str | None = None) -> None:
+    def draw(self, row: RowWriter, entry: E) -> None:
         """Write an entry's first row."""
 
     #  Empty on purpose, and not abstract: an entry one row tall has no second
@@ -218,16 +228,36 @@ class RowSequencePart[E](SequencePart[E]):
     def draw_detail(self, row: RowWriter, entry: E) -> None:  # noqa: B027
         """Write an entry's second row, where `rows_per_entry` allows one."""
 
-    def draw_entry(
-        self, canvas: Canvas, row: int, entry: E, digit: str | None = None
-    ) -> None:
-        self.draw(canvas.row(row), entry, digit)
+    def draw_entry(self, canvas: Canvas, row: int, entry: E) -> None:
+        self.draw(canvas.row(row), entry)
         if self.rows_per_entry > 1:
             self.draw_detail(canvas.row(row + 1), entry)
 
 
 @dataclass(frozen=True, kw_only=True)
-class Menu(RowSequencePart[Entry]):
+class NumberedRowSequencePart[E](RowSequencePart[E]):
+    """A row sequence part whose entries a reader chooses by a digit.
+
+    Only a numbered part takes a digit, so only this one has it in its drawing
+    path: it draws the digit column -- a yellow `1 ` before the entry -- and
+    `draw` writes the entry after it, in the room the digit has left. `Menu` is
+    the one shape built on it; a service numbering its own entries subclasses
+    this rather than reaching for the digit itself.
+    """
+
+    numbered: ClassVar[bool] = True
+
+    def _draw_entry(self, canvas: Canvas, row: int, entry: E, digit: str | None) -> None:
+        writer = canvas.row(row)
+        if digit is not None:
+            writer.text(f"{digit} ", Colour.YELLOW)
+        self.draw(writer, entry)
+        if self.rows_per_entry > 1:
+            self.draw_detail(canvas.row(row + 1), entry)
+
+
+@dataclass(frozen=True, kw_only=True)
+class Menu(NumberedRowSequencePart[Entry]):
     """Numbered choices, each with a line of detail beneath it.
 
     The shape most viewdata pages take. A reader chooses with a single
@@ -236,7 +266,6 @@ class Menu(RowSequencePart[Entry]):
     """
 
     rows_per_entry: ClassVar[int] = 2
-    numbered: ClassVar[bool] = True
     choose_hint: ClassVar[FooterItem | None] = FooterItem(
         "1-9", "select", Priority.PRIMARY
     )
@@ -244,9 +273,10 @@ class Menu(RowSequencePart[Entry]):
     def destination(self, entry: Entry) -> PageAddress | None:
         return entry.destination
 
-    def draw(self, row: RowWriter, entry: Entry, digit: str | None = None) -> None:
-        if digit is not None:
-            row.text(f"{digit} ", Colour.YELLOW)
+    def draw(self, row: RowWriter, entry: Entry) -> None:
+        #  The digit column is already drawn; the entry follows in the room it
+        #  left, which is why the width is the row less the four cells the digit
+        #  and the two colour attributes spend.
         row.text(fitted(entry.text, COLUMNS - 4), Colour.WHITE)
 
     def draw_detail(self, row: RowWriter, entry: Entry) -> None:
@@ -274,7 +304,7 @@ class Lines(SequencePart[str]):
     colour: Colour = Colour.WHITE
 
     def draw_entry(
-        self, canvas: Canvas, row: int, entry: str, digit: str | None = None
+        self, canvas: Canvas, row: int, entry: str
     ) -> None:
         if entry:
             canvas.row(row).text(fitted(entry, COLUMNS - 1), self.colour)
@@ -349,7 +379,7 @@ class Listing(RowSequencePart[Entry]):
                 )
         return carried
 
-    def draw(self, row: RowWriter, entry: Entry, digit: str | None = None) -> None:
+    def draw(self, row: RowWriter, entry: Entry) -> None:
         assert self.column is not None
         key_row(row, entry.text, entry.detail, column=self.column)
 
@@ -392,7 +422,7 @@ class Figures(RowSequencePart[Entry]):
         object.__setattr__(self, "figure_width", figure)
         object.__setattr__(self, "label_width", min(widest + self._GAP, cells))
 
-    def draw(self, row: RowWriter, entry: Entry, digit: str | None = None) -> None:
+    def draw(self, row: RowWriter, entry: Entry) -> None:
         assert self.label_width is not None and self.figure_width is not None
         row.skip(self.INDENT)
         #  The label is padded rather than the figure indented, so that one
@@ -431,7 +461,7 @@ class Prose(SequencePart[Row]):
         )
 
     def draw_entry(
-        self, canvas: Canvas, row: int, entry: Row, digit: str | None = None
+        self, canvas: Canvas, row: int, entry: Row
     ) -> None:
         if entry.text:
             #  No truncation here: `typesetting` has already wrapped to the room

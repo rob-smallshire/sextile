@@ -89,7 +89,7 @@ class _Keys(RowSequencePart[GuideRow]):
 
     column: int
 
-    def draw(self, row: RowWriter, entry: GuideRow, digit: str | None = None) -> None:
+    def draw(self, row: RowWriter, entry: GuideRow) -> None:
         key_row(row, entry.key, entry.does, column=self.column)
 
 

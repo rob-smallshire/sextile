@@ -401,8 +401,8 @@ class Listing(RowSequencePart[Entry]):
         empty left column, it reads as what it is, because which column a thing
         is in is what tells the two apart.
 
-        Two rows at most: a detail needing a third wants rewriting, a listing
-        being a table rather than a place for prose.
+        Two rows at most: a detail needing a third should be rewritten, a
+        listing being a table rather than a place for prose.
         """
         assert self.column is not None
         cells = COLUMNS - self.column - self.ATTRIBUTES
@@ -428,7 +428,7 @@ class Figures(RowSequencePart[Entry]):
 
     For a page that reports rather than offers: how many callers, how much is
     held, how long since. The entry's `text` is the label and its `detail` the
-    figure, written out as the page wants it read.
+    figure.
 
     Attributes:
         label_width: How wide the labels' column is, in cells, and
@@ -438,7 +438,7 @@ class Figures(RowSequencePart[Entry]):
     """
 
     #: Two cells of margin before the label. A table of figures reads as a
-    #: block rather than as a list, and a block wants a margin.
+    #: block rather than as a list, so it is set in from the edge.
     INDENT: ClassVar[int] = 2
 
     #: A cell between the longest label and its figure, over and above the

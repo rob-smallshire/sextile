@@ -135,37 +135,44 @@ number their rows, folded in with the formatter renames above.
 | Testing | `calling` `Caller.key` `Caller.shown` | `connect` `press` `screen` |
 | Keys | `CONVENTIONAL_NEXT_FRAME` `moving(back=, on=)` `arrows_lead_where` `keys.BACK` vs `HOME_KEY` | `HASH` `frame_move_keys(has_previous=, has_next=)` `with_arrow_aliases`; one constant per meaning |
 
-### Phase 3: modules and duplicates
+### Phase 3: modules and duplicates -- DONE
 
-Splits: `application.py` (page methods -> `pages/`; middleware types ->
-`middleware.py`; notices -> `notices.py`); `layout.py` -> `layout/{parts,
-furniture,page}.py` with `viewdata/footer.py` moved in; `forms.py` ->
-`forms/{base,type_ahead,fields}.py`; `session/session.py` -> navigation,
-screen, coordinator; `composition.py` -> planner into `attributes.py`;
-`encoding.py` -> wire vs measurement.
-Merges: `addressing`+`page`+`requests`+`declarations`(+`held`) -> one core
-types module; `handlers.py` -> `pages/`; `compass.py` -> `viewdata/`.
-`__init__.py` exports what hello world needs.
-Duplicates to collapse: centring/double-height/mosaic triplicates onto
-`Composition`; `footer._cut`≡`fitted`; `_to_footer_row` x2;
-`incremental_bytes` vs `typed_bytes`; two escape loops in `Frame`; colour
-ranges in `canvas.py` and `ansi.py`; `charting.ACROSS_A_CELL/DOWN_A_CELL`;
-`drawing.SOLID` vs `SOLID_BLOCKS`.
-Deferred from 1.8: `RowWriter` column offset and run trimming to a budget,
-taken with the centring/double-height/mosaic triplicate collapse onto
-`Composition`.
-Deferred from Phase 2 batch 1: rename the `place(canvas, room: Space)`
-parameter `room` -> `space`. Blocked by a second sense of `room` -- an int
-of available cells/rows in formatting, forms, drawing, wrapping and lettering
-(`room = COLUMNS - ...`, `wrap_within(cells=room)`) -- so the int-`room` wants
-its own name (`width`/`cells`?) before the `Space` parameter can take `room`'s.
-Deferred from Phase 2 batch 5: `composition.Align.LEFT`/`RIGHT` do double duty
-as top/bottom in vertical placement -- a semantics fix (a separate `VAlign`, or
-`Align.START`/`END`), not a rename.
-Deferred from Phase 2 batch 2: spare non-numbering sequence parts the `digit`
-parameter, via a `Numbered` intermediate whose `draw` owns the digit-taking
-signature (only `Menu` subclasses it), or the base drawing the digit column
-itself -- the latter is the `RowWriter` column-offset arithmetic above.
+Splits landed: `application.py` -- middleware types to `middleware.py`, the
+seven built-in page methods to free functions in `sextile.handlers` (gathering
+from `request.app`), which kept `builtin/` free of the application object;
+`layout.py` -> a `layout/` package of `parts`, `furniture`, `page` with
+`viewdata/footer.py` moved in as `layout/footer.py`; `forms.py` ->
+`forms/{base,type_ahead,fields}.py`; `session/session.py` -> `navigation`,
+`screen` and the coordinator; `composition.py` -> the attribute planner into
+`viewdata/attributes.py`; `encoding.py` -> the wire half (kept, now internal)
+and `viewdata/measure.py` (`cell_count`, `fitted`).
+Merges landed: `addressing` -> `page`; `declarations` -> `routing`; `compass`
+-> `viewdata/compass.py`. `requests` stayed (Starlette name); `held` was
+already gone. `__init__.py` now exports the commonest layout and formatting
+shapes, so hello world and a menu import from `sextile` in one line.
+Duplicates collapsed: the centring and double-height twins deleted (the
+Composition-based `drawing.centred`/`centred_double` survive), the mosaic twin
+resolved by `bar` drawing through `RowWriter.mosaic`; `footer._cut`≡`fitted`;
+the two `_to_footer_row` and `repaint._to_row` unified as `repaint.to_row` with
+the last-row wrap as its edge case; `incremental_bytes` expressed through
+`typed_bytes`; the two `Frame` escape loops into `_encoded_cells`; the colour
+ranges owned by `controls` (`colour_of`); `drawing.SOLID` dropped for
+`SOLID_BLOCKS`. (`charting.ACROSS_A_CELL/DOWN_A_CELL` had already gone in phase
+2 batch 5.)
+Deferred items resolved: `RowWriter` column offset became `starting_at`, which
+reads the colour and mode in force; run trimming to a budget became
+`RowWriter.runs(cells=)`. The `place(canvas, room: Space)` parameter is now
+`space`, the int `room` split into `cells`/`extent`/`width` first.
+`composition.Align.LEFT`/`RIGHT` became `Align.START`/`END`, axis-neutral,
+rather than a separate `VAlign`, because `Where` is `int | Align` on both axes.
+The `digit` parameter moved to `NumberedRowSequencePart`, drawn for a numbered
+part through a private hook, so every other part lost it.
+
+Not done, by decision: the page methods went to `sextile.handlers` functions
+rather than a `pages/` package, and the `not_found`/`timed_out`/`failed`
+notices stayed in `application.py` -- they are the application's own words, and
+480 lines and one class is fine. `handlers.py` stayed rather than merging into
+`pages/`.
 
 ### Phase 5: docstrings and CLAUDE.md
 

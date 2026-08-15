@@ -12,13 +12,13 @@ minute, and at 1200 baud a row costs a third of a second.
 
 import pytest
 
-from sextile.viewdata.countdown import (
+from sextile.viewdata.frame import COLUMNS
+from sextile.viewdata.idle_warning import (
     BAR_CELLS,
     RESUME_HINT,
-    countdown_bytes,
+    idle_warning_bytes,
     lit_cells,
 )
-from sextile.viewdata.frame import COLUMNS
 
 
 def printable(data: bytes) -> str:
@@ -50,7 +50,7 @@ class TestTheBar:
 
 class TestTheRow:
     def test_it_says_what_to_do(self) -> None:
-        assert RESUME_HINT in printable(countdown_bytes(0.5))
+        assert RESUME_HINT in printable(idle_warning_bytes(0.5))
 
     def test_it_fits_the_row_exactly(self) -> None:
         #  Attributes occupy cells, so the arithmetic has to come out at forty.
@@ -59,14 +59,14 @@ class TestTheRow:
     def test_it_is_drawn_over_the_footer_row_alone(self) -> None:
         #  No clear-screen: the page beneath has to survive, or there was no
         #  point drawing a row.
-        assert 0x0C not in countdown_bytes(0.5)
+        assert 0x0C not in idle_warning_bytes(0.5)
 
     def test_every_byte_survives_a_seven_bit_line(self) -> None:
-        assert all(byte < 0x80 for byte in countdown_bytes(0.5))
+        assert all(byte < 0x80 for byte in idle_warning_bytes(0.5))
 
     def test_a_fuller_bar_is_not_the_same_row_as_an_emptier_one(self) -> None:
-        assert countdown_bytes(1.0) != countdown_bytes(0.2)
+        assert idle_warning_bytes(1.0) != idle_warning_bytes(0.2)
 
     def test_the_row_is_redrawn_in_full(self) -> None:
         #  Cells the bar has given up must be overwritten, not left lit.
-        assert countdown_bytes(0.0).endswith(b" " * BAR_CELLS)
+        assert idle_warning_bytes(0.0).endswith(b" " * BAR_CELLS)

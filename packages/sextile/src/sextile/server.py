@@ -25,7 +25,7 @@ from typing import Final
 
 from sextile.application import Sextile
 from sextile.session.session import Session
-from sextile.viewdata.countdown import BAR_CELLS
+from sextile.viewdata.idle_warning import BAR_CELLS
 
 #: After the MC6850 ACIA, which drives the BBC Micro's serial port.
 DEFAULT_PORT: Final = 6850

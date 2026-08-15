@@ -48,9 +48,9 @@ from sextile.viewdata.command_line import (
     footer_bytes,
     incremental_bytes,
 )
-from sextile.viewdata.countdown import countdown_bytes, lit_cells
 from sextile.viewdata.frame import Frame
 from sextile.viewdata.hangup import hangup_bytes
+from sextile.viewdata.idle_warning import idle_warning_bytes, lit_cells
 from sextile.viewdata.repaint import (
     NOTHING,
     caret_bytes,
@@ -228,7 +228,7 @@ class Session:
         if cells == self._warning_cells:
             return None
         self._warning_cells = cells
-        return countdown_bytes(remaining)
+        return idle_warning_bytes(remaining)
 
     def dismiss(self) -> bytes | None:
         """Put back whatever the row should show, or None if no bar was up."""

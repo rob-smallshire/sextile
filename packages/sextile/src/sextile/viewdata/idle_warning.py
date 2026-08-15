@@ -64,7 +64,7 @@ def lit_cells(remaining: float) -> int:
     return max(1, round(fraction * BAR_CELLS))
 
 
-def countdown_bytes(remaining: float) -> bytes:
+def idle_warning_bytes(remaining: float) -> bytes:
     """The bytes that draw the warning, leaving the page beneath alone."""
     colour = Colour.RED if remaining <= _URGENT else Colour.YELLOW
     canvas = Canvas(Frame())

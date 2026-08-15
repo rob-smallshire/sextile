@@ -31,6 +31,7 @@ from sextile.viewdata.measure import cell_count, fitted
 __all__ = [
     "bar",
     "centred",
+    "centred_double",
     "key_row",
     "rule",
     "thin_rule",

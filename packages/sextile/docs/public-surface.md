@@ -106,7 +106,7 @@ Public submodules:
 | `controls` | `Colour`, `Attribute`, `is_attribute_code`, the two colour encoders and `colour_of` reading one back |
 | `measure` | `cell_count`, `fitted` — what fits in how many cells |
 | `charset` | `G0_TO_UNICODE`, `mosaic_code`, `is_representable` |
-| `drawing` | `rule`, `thin_rule`, `centred`, `key_row`, `bar` |
+| `drawing` | `rule`, `thin_rule`, `centred`, `centred_double`, `key_row`, `bar` |
 | `blocks` | mosaic pictures: `Icon`, `icon`, `block_runs`, `read_bitmap`, `BLOCKS_ACROSS`, `BLOCKS_DOWN` |
 | `charting` | `curve`, `bars` |
 | `composition` | `Composition`, `Panel`, `Align`, `Style`, `DoesNotFit`, `Where` — placing things relative to each other |

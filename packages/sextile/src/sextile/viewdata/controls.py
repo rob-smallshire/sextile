@@ -14,8 +14,6 @@ from enum import IntEnum
 from typing import Final
 
 __all__ = [
-    "ALPHA_COLOURS",
-    "GRAPHICS_COLOURS",
     "Colour",
     "Attribute",
     "alpha_colour",

@@ -252,7 +252,7 @@ pattern, the handler, the title, the detail and any keywords, and
 That is not merely tidier. **It makes registration order unobservable**, which
 is the root of four separate defects this framework had: a converter could not
 be registered in time for a class-declared pattern that used one, because
-`self.converter` needs a router that `super().__init__` creates and immediately
+`self.add_converter` needs a router that `super().__init__` creates and immediately
 uses; a module-level application could not open anything, could not resolve a
 word of its own, and could not say a page's keywords beside it. Each was
 registration order showing through. Given as data, the converters, the pages,
@@ -323,7 +323,7 @@ service maps into its own numbering — or does not offer at all:
 
 ```python
 self.page("92", name="history")(self.history)
-self.alias("HISTORY", self.address_for("history"))
+self.add_keyword("HISTORY", self.address_for("history"))
 ```
 
 It can live in the framework because there is nothing service-specific about it.

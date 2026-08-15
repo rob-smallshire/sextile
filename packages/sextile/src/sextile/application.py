@@ -160,7 +160,7 @@ class Sextile:
                 route, name=name, keyed=self._router.named(name).keyed
             )
         for keyword in route.keywords:
-            self.alias(keyword, self.address_for(name))
+            self.add_keyword(keyword, self.address_for(name))
 
     def page[H: Handler](
         self,
@@ -184,7 +184,7 @@ class Sextile:
         stays off it without needing a flag of its own.
 
         ``keywords`` are words a reader may key instead of the number, aliased
-        onto this page. Said here rather than in a separate `alias` call for
+        onto this page. Said here rather than in a separate `add_keyword` call for
         the same reason the title is: a page should say what it is in one
         place.
 
@@ -248,11 +248,11 @@ class Sextile:
         """
         return tuple(self._pages.values())
 
-    def alias(self, keyword: str, address: str | PageAddress) -> None:
+    def add_keyword(self, keyword: str, address: str | PageAddress) -> None:
         """Let a word be keyed in place of a page number: `*MAIN#` for `*1#`."""
         self._router.alias(keyword, address)
 
-    def converter(self, name: str, converter: Converter | ConverterFactory) -> None:
+    def add_converter(self, name: str, converter: Converter | ConverterFactory) -> None:
         """Offer a field shape this application's numbering needs."""
         self._router.converter(name, converter)
 
@@ -489,7 +489,7 @@ class Sextile:
         numbering, or does not offer it at all.
 
             self.page("92", name="history")(self.history_page)
-            self.alias("HISTORY", self.address_for("history"))
+            self.add_keyword("HISTORY", self.address_for("history"))
 
         Key 1 for the page before this one -- the same as `*0#` -- 2 for the one
         before that, and so on.

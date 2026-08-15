@@ -149,7 +149,7 @@ class TestResolving:
 
     async def test_a_keyword_names_a_page(self) -> None:
         app = Sextile()
-        app.alias("MAIN", "1")
+        app.add_keyword("MAIN", "1")
         assert app.resolve("MAIN") == PageAddress("1")
 
     async def test_a_word_that_is_no_keyword_names_nothing(self) -> None:
@@ -164,7 +164,7 @@ class TestResolving:
         async def posts_index(request: PageRequest) -> Page:
             return one_frame()
 
-        app.alias("LATEST", app.address_for("latest"))
+        app.add_keyword("LATEST", app.address_for("latest"))
         assert app.resolve("LATEST") == PageAddress("8")
 
 
@@ -649,7 +649,7 @@ class TestFieldShapesOfAnApplicationsOwn:
         #  For a service built round a module-level application, where the
         #  decorator has an object to hang on and ordering never arises.
         app = Sextile()
-        app.converter("pair", Converter(field_pattern=r"[0-9]{2}", width=2, parse=int))
+        app.add_converter("pair", Converter(field_pattern=r"[0-9]{2}", width=2, parse=int))
 
         @app.page("8{n:pair}", name="paired")
         async def paired(request: PageRequest, n: int) -> Page:
@@ -780,7 +780,7 @@ class TestATargetTheNumberingDoesNotName:
         #  whose numbering means something different on Tuesdays.
         app = Sextile()
         app.page("1", name="main")(_nothing)
-        app.alias("MAIN", PageAddress("1"))
+        app.add_keyword("MAIN", PageAddress("1"))
 
         @app.on_unresolved
         def look_it_up(target: str) -> PageAddress | None:

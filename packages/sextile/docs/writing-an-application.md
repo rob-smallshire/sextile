@@ -109,7 +109,7 @@ app = Sextile(
 ```
 
 Converters go to the constructor, because the router must know a field shape
-before it compiles a pattern that uses it. `app.converter(...)` adds one later,
+before it compiles a pattern that uses it. `app.add_converter(...)` adds one later,
 which suits a page declared later too.
 
 Two rules keep matching predictable. **Most literal wins**: `90` beats
@@ -139,7 +139,7 @@ link.
 PageRoute("1", main, name="main", keywords=("MAIN", "INDEX"))
 ```
 
-`app.alias("MAIN", app.address_for("main"))` does the same for a word registered
+`app.add_keyword("MAIN", app.address_for("main"))` does the same for a word registered
 apart from the route.
 
 ## Menus and listings

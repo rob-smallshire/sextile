@@ -64,9 +64,9 @@ class Board(Sextile):
         self.page("82{item_id:int}", name="item")(self.item)
         self.page("9", name="notice")(self.notice)
         self.page("90", name="goodbye")(self.goodbye)
-        self.alias("MAIN", self.address_for("main"))
-        self.alias("LATEST", self.address_for("items"))
-        self.alias("BYE", self.address_for("goodbye"))
+        self.add_keyword("MAIN", self.address_for("main"))
+        self.add_keyword("LATEST", self.address_for("items"))
+        self.add_keyword("BYE", self.address_for("goodbye"))
 
     async def main(self, request: PageRequest) -> Page:
         return self.menu(request.address, "THE BOARD", [self.address_for("items")])

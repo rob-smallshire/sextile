@@ -4,9 +4,8 @@ Deliberately structural rather than typographic. On forty columns, colour earns
 its keep telling a quotation from a code listing from the author's own words; it
 earns nothing rendering an italic, so emphasis is dropped and structure is kept.
 
-A paragraph holds lines rather than one string because a single line break
-and a paragraph break are different things and both arrive as one. That is how
-phpBB's HTML reads -- one `<br>` is a new line, two are a new paragraph -- and
+A paragraph holds lines rather than one string because a single line break and a
+paragraph break are different things that can arrive looking the same, and
 spending a blank row on every break would be ruinous on a twenty-four row
 screen.
 """

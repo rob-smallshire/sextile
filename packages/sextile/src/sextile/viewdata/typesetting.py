@@ -9,10 +9,10 @@ someone reading in colour can tell at a glance whose words they are looking at.
 A quotation is cyan, a listing green, an image or attachment magenta, and the
 author's own words white.
 
-A document long enough to exhaust a page's frames says so rather than ending
-mid-sentence with nothing to explain it, and `TRUNCATION_NOTICE` is the
-sentence it says -- used here and by the layout, so that a reader who meets it
-on a long document and again on a long list meets the same words.
+A document long enough to exhaust a page's frames shows a notice rather than
+ending mid-sentence, and `TRUNCATION_NOTICE` is that notice -- used here and by
+the layout, so a reader meets the same words on a long document and on a long
+list.
 """
 
 from dataclasses import dataclass
@@ -39,7 +39,7 @@ _QUOTE_INDENT: Final = 2
 _MAX_QUOTE_DEPTH: Final = 4
 
 #: Said on the last frame of anything too long to show in full, by a
-#: document and by a template alike: a reader who has reached the end of
+#: document and by the layout alike: a reader who has reached the end of
 #: what there is should not have to wonder whether that was all of it.
 TRUNCATION_NOTICE: Final = "... TRUNCATED, TOO LONG TO SHOW"
 
@@ -56,7 +56,7 @@ class Row:
 def rows_for(content: Document) -> list[Row]:
     """Render a document into rows, without dividing them between frames.
 
-    For a caller that wants to do its own pagination -- a template that has a
+    For a caller that wants to do its own pagination -- a layout that has a
     lead-in on the first frame, say, and so cannot use a fixed frame size.
     """
     rows = list(_rows_for(content.blocks, depth=0))
@@ -104,9 +104,9 @@ def _marked(kind: str, what: str, indent: int, width: int) -> list[Row]:
     """A picture or a file, named across as many rows as the name needs.
 
     These were the two blocks that built a row without wrapping it, so a
-    photograph with a long caption overran the frame and raised where every
-    other kind of block had been wrapped for years. Real posts carry captions
-    like `vlcsnap-2026-08-02-17h29m56s151.png`.
+    picture with a long caption overran the frame and raised where every other
+    kind of block had been wrapped for years. A caption can be as long as a
+    filename like `vlcsnap-2026-08-02-17h29m56s151.png`.
     """
     return [
         Row(text, Colour.MAGENTA, indent)

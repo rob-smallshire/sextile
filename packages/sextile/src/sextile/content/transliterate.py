@@ -6,13 +6,13 @@ alternative -- letting unrepresentable characters travel further down the
 pipeline -- defers the failure to the moment bytes reach the wire, where it
 surfaces as a corrupted frame rather than a legible substitution.
 
-**The romanisation is `anyascii`'s and not ours.** Reducing the world's writing
-systems to Latin letters is a large and specialised subject, and a table written
-out by hand is a table that is wrong about somebody's alphabet: this module had
-one, it did not know Đ or Ħ, and Đakovo went out as `?akovo`. Nor were the
-letters in it accented Latin ones -- ø, æ, å, þ and ð are letters of their own
-alphabets with their own places in them, which is exactly why Unicode does not
-decompose them and why each had to be listed by hand in the first place.
+**The romanisation is `anyascii`'s, not this module's.** Reducing the world's
+writing systems to Latin letters is a large and specialised subject, and a table
+written out by hand is wrong about somebody's alphabet: this module had one, it
+did not know Đ or Ħ, and Đakovo went out as `?akovo`. Nor were the letters in it
+accented Latin ones -- ø, æ, å, þ and ð are letters of their own alphabets with
+their own places in them, which is exactly why Unicode does not decompose them
+and why each had to be listed by hand.
 
 What is left here is the part no library can know: **which ASCII characters the
 G0 set has not got.** Ten of them, their code points occupied by arrows,
@@ -61,7 +61,7 @@ def _is_shortcode(romanised: str) -> bool:
     """Whether this is `anyascii` naming an emoji rather than romanising a letter.
 
     It answers `:tada:` for a party popper, which is a good answer somewhere
-    with room for it. Here a row is forty cells and a post with three emoji in
+    with room for it. Here a row is forty cells and a line with three emoji in
     it would spend twenty of them on their names. A question mark costs one and
     says the same thing: there was something here you cannot see.
     """

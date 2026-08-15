@@ -53,6 +53,9 @@ beyond prose.
 | viewdata/repaint.py | `rows_bytes` "a place the reader has typed past" (weather) | "an entry the reader has typed past" — fixed here |
 | visits.py | `KEPT` "a month of weather and a month of posts"; address example `321<geoname-id>`; `SqliteVisits` "the weather rebuilds its place index from a GeoNames dump" | genericised to "what 'lately' means", `52<id>`, "a service's own database is often derived and rebuilt" — fixed here |
 | testing.py | module/`key` example "TROND"/"Trondheim" (weather place) | "ABC" — fixed here |
+| content/blocks.py | module docstring "That is how phpBB's HTML reads -- one `<br>` is a new line, two are a new paragraph" (phpBB/forum) | general "different things that can arrive looking the same" — fixed here |
+| content/transliterate.py, wrapping.py, typesetting.py | "a post with three emoji"; "a crash on a real post"; "Real posts carry captions" (forum) | "a line", "on real text", "A caption can be as long as a filename" — fixed here |
+| viewdata/charting.py | `curve`/`bars` "a forecast with an hour missing"; "quantity per hour" (weather) | "a series with a value missing"; "per interval" — fixed here |
 
 **Summary:** the docstring sweep found Invariant-1 (framework-must-not-know-applications) violated in framework *comments/docstrings* across ~11 files. All fixed in place. **A code-level check is still owed** — that no framework identifier, branch or string literal names a forum/post/forecast/place/coordinate concept — since that would be a defect beyond prose.
 

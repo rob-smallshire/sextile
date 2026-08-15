@@ -3,15 +3,14 @@
 A cell is two blocks across and three down, so a region of the frame is a
 bitmap: `across = 2 * cells`, `down = 3 * rows`. These turn a run of numbers
 into such a bitmap, and `blocks.block_runs` turns that into the mosaic cells a
-row writer can place. Nothing here knows what is being plotted or what colour
-it is drawn in.
+row writer can place. This module does not decide what is being plotted or what
+colour it is drawn in.
 
 **Values arrive as fractions of the height, not as data.** 0.0 is the bottom
 row of blocks and 1.0 the top. Deciding what the top and bottom of a chart mean
 is the caller's, and it is the whole of the interesting part: whether a scale
 starts at zero, whether it is fixed so that two frames can be compared, where a
-threshold falls. A charting module that guessed at that would be guessing about
-somebody else's subject.
+threshold falls.
 
 **A value sits at the middle of its share of the width**, so that a chart lines
 up with a column of labels or pictures above it. That leaves half a share blank
@@ -44,9 +43,9 @@ def curve(
     height in all, so a line climbing from the floor to the ceiling in a single
     step still only rises about a block a column.
 
-    A missing value breaks it. There is no interpolating across a gap: a
-    forecast with an hour missing from the middle is not a forecast that says
-    what happened in that hour, and joining the ends would draw a claim.
+    A missing value breaks it. There is no interpolating across a gap: a series
+    with a value missing from the middle says nothing about that point, and
+    joining the ends would draw a claim about it.
     """
     grid = [[False] * across for _ in range(down)]
     if not fractions or across < 1 or down < 1:
@@ -64,9 +63,9 @@ def bars(
 ) -> list[list[bool]]:
     """Columns standing on the bottom of the region, one to a value.
 
-    Each takes its whole share of the width, so the bars touch. That is what a
-    reader wants of a series that is a quantity per hour rather than a level at
-    an instant -- there is no gap between one hour and the next.
+    Each takes its whole share of the width, so the bars touch. That suits a
+    series that is a quantity per interval rather than a level at an instant --
+    there is no gap between one interval and the next.
     """
     grid = [[False] * across for _ in range(down)]
     if not fractions or across < 1 or down < 1:

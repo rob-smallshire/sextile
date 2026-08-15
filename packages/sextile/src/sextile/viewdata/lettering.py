@@ -262,10 +262,10 @@ def place(
     sits in the middle of them rather than at the top.
 
     Centred unless a column is given -- within `within`, if it is going on a
-    panel, so that a word in a coloured box is centred in the box. Where that
-    leaves it is the composition's business: it knows what the colour
-    attribute costs and how far into a cell the ink may start, and this module
-    knows about letters.
+    panel, so that a word in a coloured box is centred in the box. The
+    composition works out where that leaves it, accounting for what the colour
+    attribute costs and how far into a cell the ink may start; this module
+    handles the letters.
     """
     return composition.picture(
         row,

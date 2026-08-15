@@ -69,7 +69,7 @@ Source docstrings + comments (src/sextile):
 - [x] application.py
 - [x] cli.py
 - [x] compass.py
-- [ ] content/ (blocks.py, transliterate.py)
+- [x] content/ (blocks.py, transliterate.py)  (removed a phpBB leak)
 - [x] declarations.py
 - [x] demo.py  (already at target; unchanged)
 - [x] formatting.py  (fixed several Invariant-1 leaks)
@@ -87,10 +87,9 @@ Source docstrings + comments (src/sextile):
 - [x] session/ (commands.py, session.py)  (fixed 2 Invariant-1 comment leaks)
 - [x] testing.py
 - [x] visits.py
-- [~] viewdata/  (Batch E done: canvas, drawing, composition rewritten;
-      ansi, charset, controls, encoding, frame already at target. Remaining:
-      blocks, charting, command_line, countdown, font, fonts, footer,
-      lettering, parting, repaint, typesetting, wrapping)
+- [x] viewdata/  (all done across batches E/F/G; ansi, blocks, charset,
+      command_line, controls, encoding, fonts, frame, parting already at
+      target and left unchanged)
 
 ### Phase 2 — applications
 

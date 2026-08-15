@@ -4,7 +4,7 @@ A mosaic font is a bitmap font measured in *blocks* rather than pixels: a letter
 eight blocks tall is two and two-thirds cells tall on the screen, and a banner
 made of them is drawn with `blocks.block_runs` like any other picture.
 
-**The format is ours, and it is a text file, for two reasons.** A vendored font
+**The format is this project's own, and a text file, for two reasons.** A vendored font
 is third-party material that has to be reviewed and whose terms have to travel
 with it, which a binary blob makes nobody do; and none of the formats these
 faces arrive in carries the one thing most needed here, an advance for each

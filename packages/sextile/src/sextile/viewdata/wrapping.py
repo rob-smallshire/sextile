@@ -9,7 +9,7 @@ Widths are counted in **cells rather than characters**, because that is what the
 frame counts. Transliteration can lengthen a string on its way to the wire -- the
 G0 set has no ellipsis, so `…` is drawn as three full stops -- and a line
 measured in characters can overrun the row it was wrapped for. That was found by
-a crash on a real post rather than by thinking about it.
+a crash on real text rather than by thinking about it.
 
 Lines are **balanced** by default rather than filled greedily. Greedy wrapping
 takes as much as fits on each line in turn, which at forty columns leaves a
@@ -78,9 +78,8 @@ def wrap_within(text: str, *, cells: int, rows: int) -> list[str]:
     the words that go are the last ones. Size the region for the longest thing
     it can be handed.
 
-    A region with no room holds nothing rather than raising. A layout squeezed
-    to nothing is a thing to fix in the daylight, not a page that falls over at
-    the far end of a telephone line.
+    A region with no room holds nothing rather than raising: a squeezed layout
+    is a bug to fix, not a reason to fail on a live call.
     """
     if rows < 1 or cells < 1:
         return []

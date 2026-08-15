@@ -95,7 +95,7 @@ Source docstrings + comments (src/sextile):
 
 - [x] calendar-viewdata (docs + src)  (pilot; Template->PageLayout drift fixed)
 - [x] stardot-viewdata (docs + src)  (mostly already plain; template->Menu drift fixed, atom miscount)
-- [ ] weather-viewdata (docs + src)
+- [x] weather-viewdata (docs + src)  (framework drift fixed; Laid surface + orphaned comment logged)
 
 ### Phase 3 — workspace docs
 

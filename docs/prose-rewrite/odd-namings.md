@@ -59,6 +59,18 @@ beyond prose.
 
 **Summary:** the docstring sweep found Invariant-1 (framework-must-not-know-applications) violated in framework *comments/docstrings* across ~11 files. All fixed in place. **A code-level check is still owed** — that no framework identifier, branch or string literal names a forum/post/forecast/place/coordinate concept — since that would be a defect beyond prose.
 
+## Invariant-2 concern (application reaching past the public surface)
+
+CLAUDE.md invariant 2: nothing in an application may reach into the framework's
+internals; the surface is stated in public-surface.md.
+
+| Finding | Detail |
+|---------|--------|
+| `weather-viewdata/forecast_page.py` imports `Laid` from `sextile.layout` | `Laid` (= `Once | Every | Flowing | Break`, layout.py:258) is used as `list[Laid]` but is **not listed in public-surface.md**'s `sextile.layout` names. Either the surface omits a name it should export (likely — it sits beside the public `Once`/`Every`/`Flowing`/`Break`/`Drawn`), or the app is crossing the surface. NEEDS a decision + `test_public_surface.py` update; code left untouched. |
+
+Also, `handlers.py` (weather) carried a dead `#:` doc-comment describing a
+removed constant (nothing followed it); removed as prose cruft.
+
 ## Structural drift needing a decision
 
 ### page-layout.md — a pre-build proposal, now mostly believed-false

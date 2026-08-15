@@ -188,7 +188,12 @@ page is given.
 
 ### `sextile.middleware` — what wraps every page
 
+    Middleware  CallNext
     log_pages  record_visits
+
+`Middleware` and `CallNext` are the type a service writes and the rest of the
+chain it is handed; both are re-exported at the top level. `log_pages` and
+`record_visits` are the two the framework ships.
 
 ### `sextile.visits` — the log of what has been read
 

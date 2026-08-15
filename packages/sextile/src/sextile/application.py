@@ -46,6 +46,7 @@ from sextile.builtin.history import history_page
 from sextile.builtin.names import names_page
 from sextile.formatting import MenuItem
 from sextile.layout import CHOICES_PER_FRAME, HOME_KEY
+from sextile.middleware import Middleware, chained
 from sextile.page import Page, PageAddress, UnknownPageError, keyed
 from sextile.pages import notice_page
 from sextile.requests import Neighbours, PageRequest
@@ -64,9 +65,7 @@ from sextile.visits import Visits
 
 __all__ = [
     "Handler",
-    "Middleware",
     "Neighbours",
-    "CallNext",
     "PageRequest",
     "PageRoute",
     "PageRouter",
@@ -80,21 +79,6 @@ _QUOTED: Final = 30
 type NotFoundHandler = Callable[[PageRequest, str], Awaitable[Page]]
 type TimeoutHandler = Callable[[PageRequest, int], Awaitable[Page]]
 type FailureHandler = Callable[[PageRequest, Exception], Awaitable[Page]]
-
-type CallNext = Callable[[PageRequest], Awaitable[Page | None]]
-
-type Middleware = Callable[[PageRequest, CallNext], Awaitable[Page | None]]
-"""Something wrapped round every page a service builds.
-
-A page handler answers what one page *says*; middleware answers what is true
-of every page -- who is asking, how long it took, whether they may. It is
-given the request and the rest of the chain, and may look, may change what
-comes back, or may answer instead and never call it at all.
-
-The framework deliberately has no opinion about authentication, and this is
-why it does not need one: a service that wants it wraps its pages.
-"""
-
 
 type Lifespan = Callable[["Sextile"], AbstractAsyncContextManager[None]]
 type ResolveHandler = Callable[[str], PageAddress | None]
@@ -301,20 +285,8 @@ class Sextile:
         return None
 
     async def _chain(self, request: PageRequest) -> Page | None:
-        """The middleware, outermost first, and the page at the bottom.
-
-        Built per request rather than once, which costs a closure apiece and
-        buys the obvious thing: middleware may be added to an application that
-        has already answered something, and a service assembled in pieces does
-        not have to know it has finished being assembled.
-        """
-        build: CallNext = self._build
-        #  Reversed, so that the first given is the outermost: a reader of the
-        #  list should see a request entering at the top and leaving at the
-        #  bottom.
-        for middleware in reversed(self._middleware):
-            build = _wrap(middleware, build)
-        return await build(request)
+        """The middleware, outermost first, and the page at the bottom."""
+        return await chained(self._build, self._middleware)(request)
 
     def params_for(self, address: PageAddress) -> Mapping[str, object] | None:
         """What a page number means: the fields its route captured, or None.
@@ -672,18 +644,5 @@ class Sextile:
                 app=self,
             )
         )
-
-
-def _wrap(middleware: Middleware, build: CallNext) -> CallNext:
-    """Bind one middleware to the rest of the chain below it.
-
-    A function rather than a closure written in place, so that it captures this
-    iteration's values rather than the last iteration's.
-    """
-
-    async def wrapped(request: PageRequest) -> Page | None:
-        return await middleware(request, build)
-
-    return wrapped
 
 

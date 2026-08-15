@@ -13,8 +13,7 @@ import logging
 import pytest
 
 from sextile import Page, PageAddress, PageFrame, PageRequest, PageRoute, Sextile, StateKey
-from sextile.application import Middleware
-from sextile.middleware import log_pages, record_visits
+from sextile.middleware import Middleware, log_pages, record_visits
 from sextile.state import State
 from sextile.viewdata.canvas import Canvas
 from sextile.visits import SqliteVisits, Visits

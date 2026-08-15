@@ -20,13 +20,14 @@ Named after the star key on a viewdata keypad.
 from importlib.metadata import version
 
 from sextile import keys
-from sextile.application import CallNext, Middleware, Sextile
+from sextile.application import Sextile
 from sextile.builtin.guidance import GuideRow
 from sextile.content.transliterate import transliterate
 from sextile.formatting import Lines, MenuItem, Prose
 from sextile.forms import Form, TypeAhead, draw_form
 from sextile.handlers import standard_pages
 from sextile.layout import Custom, Flow, OnOneFrame, PageLayout, Shortcut
+from sextile.middleware import CallNext, Middleware
 from sextile.page import Page, PageAddress, PageFrame, UnknownPageError, keyed
 from sextile.pages import farewell_page, menu_page, notice_page, prose_page
 from sextile.requests import Neighbours, PageRequest

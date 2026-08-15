@@ -1,9 +1,11 @@
-"""Things worth wrapping round every page.
+"""Middleware: what wraps every page, and the two the framework ships.
 
-Middleware answers what is true of every page, where a handler answers what one
-page says. The framework ships the two that every service turns out to want and
-nothing else: what a service should log about itself is not a question a
-framework can answer, but *that* it should log something is not in doubt.
+`Middleware` is the type and `CallNext` the rest of the chain it is handed;
+`chained` composes a sequence of them round a page builder. Middleware answers
+what is true of every page, where a handler answers what one page says. The
+framework ships the two that every service turns out to want and nothing else:
+what a service should log about itself is not a question a framework can answer,
+but *that* it should log something is not in doubt.
 
 `log_pages` writes to the machine's log, for whoever runs the service.
 `record_visits` writes to a log the service can read back, for whoever reads
@@ -17,18 +19,71 @@ ceremony round it.
 import logging
 import secrets
 import time
-from collections.abc import Callable
+from collections.abc import Awaitable, Callable, Sequence
 from typing import Final
 
-from sextile.application import CallNext, Middleware, PageRequest
 from sextile.page import Page
+from sextile.requests import PageRequest
 from sextile.state import StateKey
 from sextile.visits import Visits
 
 __all__ = [
+    "CallNext",
+    "Middleware",
     "log_pages",
     "record_visits",
 ]
+
+
+type CallNext = Callable[[PageRequest], Awaitable[Page | None]]
+
+type Middleware = Callable[[PageRequest, CallNext], Awaitable[Page | None]]
+"""Something wrapped round every page a service builds.
+
+A page handler answers what one page *says*; middleware answers what is true
+of every page -- who is asking, how long it took, whether they may. It is
+given the request and the rest of the chain, and may look, may change what
+comes back, or may answer instead and never call it at all.
+
+The framework deliberately has no opinion about authentication, and this is
+why it does not need one: a service that wants it wraps its pages.
+"""
+
+
+def _wrap(middleware: Middleware, build: CallNext) -> CallNext:
+    """Bind one middleware to the rest of the chain below it.
+
+    A function rather than a closure written in place, so that it captures this
+    iteration's values rather than the last iteration's.
+    """
+
+    async def wrapped(request: PageRequest) -> Page | None:
+        return await middleware(request, build)
+
+    return wrapped
+
+
+def chained(build: CallNext, middleware: Sequence[Middleware]) -> CallNext:
+    """`build` with `middleware` wrapped round it, outermost first.
+
+    Args:
+        build: The page builder at the bottom of the chain.
+        middleware: The middleware to wrap round it, the first given outermost.
+
+    Returns:
+        A `CallNext` that enters the outermost middleware and reaches `build`
+        at the bottom.
+
+    Composed per request rather than once, which costs a closure apiece and
+    buys the obvious thing: middleware may be added to an application that has
+    already answered something, and a service assembled in pieces does not have
+    to know it has finished being assembled.
+    """
+    #  Reversed, so that the first given is the outermost: a reader of the list
+    #  should see a request entering at the top and leaving at the bottom.
+    for one in reversed(middleware):
+        build = _wrap(one, build)
+    return build
 
 #: Longer than this and the page is worth naming in the log by itself. A frame
 #: takes eight seconds to send at 1200 baud, so a page that takes a second to

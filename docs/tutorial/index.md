@@ -1,17 +1,22 @@
 # Tutorial
 
 A tutorial: build one working Viewdata service from nothing, a step at a time.
-Each step adds one capability and leaves the service running, so the framework
-is met in the order a service needs it rather than all at once.
+You will write a calendar — the date and time, a month as a grid, the days to
+come — and dial into it as a 1980s terminal would. Each step adds one capability
+and leaves the service running, so the framework is met in the order a service
+needs it. Allow about an hour.
+
+By the end your file is `calendar_viewdata/application.py`, the framework's own
+worked example, line for line.
 
 ```{toctree}
 :maxdepth: 1
 
 01-hello-frame
-02-a-menu
-03-page-numbering
-04-titles-and-keywords
-05-state-and-data
-06-a-form
+02-menus-and-numbers
+03-frames-and-keys
+04-sequences
+05-state-and-lifespan
+06-framework-pages
 07-testing
 ```

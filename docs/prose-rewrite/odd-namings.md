@@ -57,7 +57,20 @@ beyond prose.
 | content/transliterate.py, wrapping.py, typesetting.py | "a post with three emoji"; "a crash on a real post"; "Real posts carry captions" (forum) | "a line", "on real text", "A caption can be as long as a filename" — fixed here |
 | viewdata/charting.py | `curve`/`bars` "a forecast with an hour missing"; "quantity per hour" (weather) | "a series with a value missing"; "per interval" — fixed here |
 
-**Summary:** the docstring sweep found Invariant-1 (framework-must-not-know-applications) violated in framework *comments/docstrings* across ~11 files. All fixed in place. **A code-level check is still owed** — that no framework identifier, branch or string literal names a forum/post/forecast/place/coordinate concept — since that would be a defect beyond prose.
+**Summary:** the docstring sweep found Invariant-1 (framework-must-not-know-applications) violated in framework *comments/docstrings* across ~11 files. All fixed in place.
+
+### Code-level Invariant-1 audit — DONE, CLEAN
+
+Checked framework `src` for identifiers, branches, runtime strings and imports naming an application concept:
+
+- **No framework class/function/variable is named after an app concept.** Scan hits (`Board`, `contributors`, `post`, `feed`) are docstring examples or generic — `feed` is `CommandParser.feed(bytes)` and "line feed"; `place`/`Placement` are layout.
+- **No branch** compares to an app-concept string (`== "weather"` etc.).
+- **The framework imports no application package** (also enforced by packaging).
+- Fixed 3 residual docstring leaks the prose sweep missed: "a weather service can ask for the forecasts" → generic; "a post's forum, a month's name" → generic; "One post" → "One item" (all in application.py).
+
+**Two judgment calls left for the owner (not changed):**
+1. The **`contributor` / "By contributor" / "poster"** running example in `contents.py`, `declarations.py` and `application.py` docstrings — borderline (a plausibly generic example of a field-carrying page, but a forum-flavoured word). Anchors contents.py's example; genericise (e.g. to "member"/"entry") only if you want it stricter.
+2. `demo._SAMPLE_BODY` — a made-up forum-post-like string ("The board runs at 8MHz…") used as demo frame content. The module calls itself "a picture of a page"; it's illustrative data, not a dependency.
 
 ## Invariant-2 concern (application reaching past the public surface)
 

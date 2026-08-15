@@ -151,8 +151,7 @@ class Application(ABC):
 
         A page whose heading is its registered name gets it from here rather
         than repeating it in its own chrome. A page whose heading is not its
-        name -- a post's forum, a month's name -- writes its own instead of
-        calling this.
+        registered name writes its own instead of calling this.
         """
         return self.describe(address).upper()
 
@@ -237,7 +236,7 @@ class Application(ABC):
             limit: How many to show, defaulting to the nine a frame holds. More
                 than that goes on to further frames rather than being dropped.
             prefix: Narrows it to a namespace, which is what a first digit
-                already means: a weather service can ask for the forecasts
+                already means: a service can ask for one namespace's pages
                 alone.
 
         Registered nowhere, like the history, the contents and the words. The
@@ -642,7 +641,7 @@ class Sextile(Application):
 
         `describe` reads what a page said about itself, which is right for a
         page whose number is fixed and wrong for one whose number carries a
-        field: "One post" is the right title in a list of *kinds* of page and
+        field: "One item" is the right title in a list of *kinds* of page and
         the wrong one in a list of pages a reader has been to.
 
         Returning None means the registration's own words will do, so a handler

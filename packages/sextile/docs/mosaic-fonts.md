@@ -117,7 +117,7 @@ thing most needed — a per-glyph advance in blocks. Requirements:
 - **Human-readable and diffable.** A vendored font is reviewed like any other
   file; glyphs written as the picture they are, as `yaff` does.
 - **Per-glyph advance**, separate from the glyph's own width, so tracking and
-  spaces are the font's business — and a fixed advance for the face beside it,
+  spaces belong to the font — and a fixed advance for the face beside it,
   because both ways of spacing are wanted.
 - **Arbitrary height and width**, not tied to 8×8.
 - **A name, and its provenance** — where it came from and on what terms — in the
@@ -272,8 +272,9 @@ Roughly in order, each committable on its own.
    they touch its edge.
 4. **Wrapping** in blocks, reusing the balanced algorithm in `wrapping.py`
    (measure in blocks rather than cells; the last line is free).
-5. **A template**, `Banner` or similar, on the `Template` base, so a page places
-   large lettering the way it places a menu.
+5. **A part**, `Banner` or similar, built on `PageLayout` (a `Part`, or a
+   `Formatter` subclass), so a page places large lettering the way it places a
+   menu.
 6. **The ZX Origins importer**, beside `tools/mdfs_font.py`. A font is
    converted once and the result vendored, so the framework carries no parser
    for a format read once in the life of a face.
@@ -285,7 +286,7 @@ Roughly in order, each committable on its own.
    ways; the page names neither a column nor a row.
    `VIEWDATA` follows it in `acorn`, the lighter face, with a stripe a row deep
    behind a word three rows tall — the same two colours said more quietly, and
-   drawn as two things that know nothing of each other.
+   drawn as two independent things.
 
 ## Decisions still open
 

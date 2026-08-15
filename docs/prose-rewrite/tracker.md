@@ -48,9 +48,9 @@ Docs:
 - [ ] docs/page-layout.md
 - [x] docs/navigation.md  (also fixed stale "template" reference)
 - [x] docs/rendering.md  (also fixed stale chrome.py references)
-- [ ] docs/viewdata-encoding.md
-- [ ] docs/graphics.md
-- [ ] docs/mosaic-fonts.md
+- [x] docs/viewdata-encoding.md  (already exemplary; one idiom fixed)
+- [x] docs/graphics.md
+- [x] docs/mosaic-fonts.md  (fixed stale Template-base reference)
 - [x] docs/public-surface.md  (prose only; module-table drift recorded, not fixed)
 - [x] README.md  (fixed broken draw_chrome headline example)
 

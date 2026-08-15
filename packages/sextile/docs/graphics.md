@@ -117,8 +117,8 @@ if layout.fits():
 
 Three things that buys.
 
-**It says whether the layout is possible**, naming the row, the column and the
-arithmetic, before a cell is written — and draws nothing at all if any row
+**It reports whether the layout is possible**, naming the row, the column and
+the arithmetic, before a cell is written, and draws nothing at all if any row
 fails, so a bad layout does not leave half a frame on somebody's screen:
 
 ```
@@ -126,9 +126,9 @@ row 0: the run at column 6 needs 3 attribute cell(s) before it and only 2 are fr
 ```
 
 **Two runs in one style cost one attribute, not two.** Block runs at either end
-of a row enter graphics once, because the composition can see there is no text
-between them and so never returns to alpha. This is the case a sequential writer
-cannot see, and it is what a mosaic banner is made of.
+of a row enter graphics once, because the composition detects there is no text
+between them and does not return to alpha. A sequential writer cannot detect
+this case, and it is what a mosaic banner is made of.
 
 **It is exact rather than clever**, which is worth saying because it looks like
 an optimisation problem and is not. An attribute displays as a blank, and a
@@ -138,11 +138,11 @@ each gap is whether the attributes fit in it. A left-to-right pass is therefore
 optimal and there is nothing to search. Placement becomes a search only if runs
 are free to *move*, which is a different feature and not this one.
 
-**Where a thing goes is its business too.** Give `Align.CENTRE` instead of a
-column and the composition works out where the middle is — which it has to,
-because what a style costs in cells decides whether the middle is reachable at
-all. Text, rules and lettering each used to work that out for themselves and
-came out a cell and a half apart on the same frame.
+**It places things by alignment.** Give `Align.CENTRE` instead of a column and
+the composition computes where the middle is. It must, because what a style
+costs in cells decides whether the middle is reachable at all. Text, rules and
+lettering each used to compute that separately and came out a cell and a half
+apart on the same frame.
 
 ```python
 Composition().text(6, Align.CENTRE, "V I E W D A T A", Colour.CYAN)
@@ -157,7 +157,7 @@ shear.
 
 **Rows are independent.** Every row begins white, in alpha, with contiguous
 graphics selected, whatever the row above ended in. So a frame composition is a
-row composition done twenty-four times and nothing reasons across rows.
+row composition done twenty-four times, and no state carries across rows.
 
 ### Panels: a coloured box with things on it
 
@@ -173,10 +173,9 @@ lettering.place(layout, 5, "NEWS", face, Colour.CYAN, within=box)
 
 **A background belongs to the field, not to what is written on it.** It lasts
 to the end of the row unless something stops it, and it costs cells that
-whatever is written on it would otherwise have to account for. So it is
-declared once and a run drawn `within` it takes it without saying anything — a
-run that turned the background off in the middle of a box would put a black
-hole in it.
+whatever is written on it would otherwise have to account for. So it is declared
+once, and a run drawn `within` it inherits it; a run that turned the background
+off inside a box would leave a black hole in it.
 
 What the composition works out, and a caller therefore need not:
 
@@ -226,9 +225,9 @@ layout.panel(7, colour=Colour.BLUE, around=range(6, 9), padding=3)
 
 Neither knows about the other. The stripe is **fitted to what is already on
 those rows**, so it needs no width and no column; the row they share comes out
-coloured because the composition can see that it is — the run on that row is
+coloured because the composition detects that it is — the run on that row is
 covered by the panel and takes its background, while the runs above and below
-are not and do not. Nothing had to be told that a stripe was wanted.
+are not and do not. No stripe had to be declared separately.
 
 Fitted to the **ink** rather than to the cells the runs occupy: a picture
 centred to the block often begins with a blank half-cell, and a stripe measured

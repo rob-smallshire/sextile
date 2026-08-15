@@ -11,7 +11,7 @@ from dataclasses import dataclass
 import pytest
 
 from sextile.addressing import FRAMES_PER_PAGE, PageAddress
-from sextile.application import Sextile
+from sextile.application import Neighbours, Sextile
 from sextile.keys import CONVENTIONAL_NEXT_FRAME, DOWN, LEFT, NEXT_FRAME, RIGHT, UP
 from sextile.layout import (
     DEFAULT_FURNITURE,
@@ -463,7 +463,7 @@ class TestWhatTheItemsAreCalled:
             PageLayout(
                 title="ONE DAY",
                 home=at("1"),
-                item=item,
+                item_noun=item,
                 parts=[Once(Says("Saturday."))],
                 shortcuts=[
                     Shortcut(key="A", destination=at("41"), arrow=True),
@@ -480,12 +480,42 @@ class TestWhatTheItemsAreCalled:
         assert "previous day" in footer
         assert "next day" in footer
 
+    def _by_neighbours(self, neighbours: Neighbours) -> Page:
+        return PageLayout(
+            title="ONE DAY",
+            home=at("1"),
+            neighbours=neighbours,
+            item_noun="day",
+            parts=[Once(Says("Saturday."))],
+        ).build(request_for(_APP, at("42")))
+
+    def test_neighbours_wire_the_item_keys_with_their_arrows(self) -> None:
+        page = self._by_neighbours(Neighbours(previous=at("41"), next=at("43")))
+        found = page.frame(0)
+        assert found is not None
+        assert found.destination("A") == at("41")
+        assert found.destination("D") == at("43")
+        assert found.destination(LEFT) == at("41")
+        footer = rows_of(page)[-1]
+        assert "previous day" in footer
+        assert "next day" in footer
+
+    def test_a_neighbour_that_is_not_there_is_neither_wired_nor_named(self) -> None:
+        page = self._by_neighbours(Neighbours(next=at("43")))
+        found = page.frame(0)
+        assert found is not None
+        assert found.destination("A") is None
+        assert found.destination("D") == at("43")
+        footer = rows_of(page)[-1]
+        assert "previous" not in footer
+        assert "next day" in footer
+
     def test_a_shortcut_that_is_not_a_movement_key_says_its_own_words(self) -> None:
         footer = rows_of(
             PageLayout(
                 title="ONE DAY",
                 home=at("1"),
-                item="day",
+                item_noun="day",
                 parts=[Once(Says("Saturday."))],
                 shortcuts=[Shortcut(key="1", destination=at("32"), says="month")],
             ).build(request_for(_APP, at("42")))
@@ -499,7 +529,7 @@ class TestWhatTheItemsAreCalled:
             PageLayout(
                 title="A LONG NOTICE",
                 home=at("1"),
-                item="day",
+                item_noun="day",
                 parts=[Flowing(lines(30))],
             ).build(request_for(_APP, at("42")))
         )[-1]

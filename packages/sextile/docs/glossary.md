@@ -25,9 +25,8 @@ as "was X" so a reader coming from older code or docs can find it.
   digits; moves are keys that page or step within where the reader already is,
   `W`/`A`/`S`/`D` and `#`.
 - **sequence, neighbours** — the pages either side of this one in a run a menu
-  offered, so a reader can step along without going back. Currently
-  `Arrival(preceding, following)`; Phase 2 renames it to
-  `Neighbours(previous, next)`.
+  offered, so a reader can step along without going back. `request.neighbours`
+  is a `Neighbours(previous, next)` (was `Arrival(preceding, following)`).
 - **shortcut** — a key present on every frame that leads to a fixed address.
   `layout.Shortcut`.
 - **home vs index** — home is where a caller arrives when the line opens

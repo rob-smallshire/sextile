@@ -84,10 +84,10 @@ class Board(Sextile):
         choices = {"0": self.address_for("main")}
         #  Offered only to a reader who arrived through a menu, which is the one
         #  thing a page number cannot say for itself.
-        if request.arrival.following is not None:
-            choices["D"] = request.arrival.following
-        if request.arrival.preceding is not None:
-            choices["A"] = request.arrival.preceding
+        if request.neighbours.next is not None:
+            choices["D"] = request.neighbours.next
+        if request.neighbours.previous is not None:
+            choices["A"] = request.neighbours.previous
         return Page(frames=(PageFrame(frame=canvas.frame, choices=choices),))
 
     async def notice(self, request: PageRequest) -> Page:

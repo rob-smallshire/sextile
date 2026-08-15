@@ -484,7 +484,7 @@ row's 45.
 
 **Sequences.** When a reader steps into a page from a menu, the session
 remembers the menu's `destinations` and where in them they are, and passes the
-neighbours to the handler as `request.arrival`. Walking on with `D` keeps the
+neighbours to the handler as `request.neighbours`. Walking on with `D` keeps the
 sequence; leaving for an unrelated page drops it. The handler only decides
 whether to offer what it was given.
 
@@ -639,7 +639,7 @@ translating, in the one place a move is acted on.
 
 **The compass leaves its sideways arm off where a service has no use for it.**
 `A` and `D` step through the run of pages a menu offered, and *the framework
-does not implement them*: a service wires them to `request.arrival` — Stardot
+does not implement them*: a service wires them to `request.neighbours` -- Stardot
 does — or it has no such thing. The weather has no such thing, and was drawing
 two keys that do nothing on the one page a reader goes to to find out what the
 keys do. `compass(..., items=False)` and `guide(..., items=False)`. The up and

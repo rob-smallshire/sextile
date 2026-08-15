@@ -23,7 +23,7 @@ from dataclasses import dataclass
 from typing import Final
 
 from sextile.addressing import PageAddress, UnknownPageError
-from sextile.application import Arrival, PageRequest, Parting, Sextile
+from sextile.application import Neighbours, PageRequest, Parting, Sextile
 from sextile.forms import draw_form
 from sextile.keys import (
     CONVENTIONAL_NEXT_FRAME,
@@ -78,16 +78,16 @@ class _Sequence:
     position: int
 
     @property
-    def following(self) -> PageAddress | None:
+    def next(self) -> PageAddress | None:
         after = self.position + 1
         return self.destinations[after] if after < len(self.destinations) else None
 
     @property
-    def preceding(self) -> PageAddress | None:
+    def previous(self) -> PageAddress | None:
         return self.destinations[self.position - 1] if self.position > 0 else None
 
-    def arrival(self) -> Arrival:
-        return Arrival(following=self.following, preceding=self.preceding)
+    def neighbours(self) -> Neighbours:
+        return Neighbours(previous=self.previous, next=self.next)
 
     def moved_to(self, address: PageAddress) -> "_Sequence | None":
         """The same sequence, repositioned, if it contains the destination."""
@@ -547,7 +547,7 @@ class Session:
             return await self._application.respond(
                 PageRequest(
                     address=address,
-                    arrival=sequence.arrival() if sequence else Arrival(),
+                    neighbours=sequence.neighbours() if sequence else Neighbours(),
                     session=self._state,
                     history=been,
                     service=self._application.service,

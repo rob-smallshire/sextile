@@ -28,7 +28,7 @@ from sextile.layout import (
     _DefaultHome,
 )
 from sextile.page import Page
-from sextile.requests import PageRequest
+from sextile.requests import Neighbours, PageRequest
 from sextile.viewdata.controls import Colour
 
 __all__ = [
@@ -105,7 +105,8 @@ def menu_page(
     preamble: Sequence[str] = (),
     empty: str | None = None,
     shortcuts: Sequence[Shortcut] = (),
-    item: str = "item",
+    neighbours: "Neighbours | None" = None,
+    item_noun: str = "item",
 ) -> Page:
     """A menu: a list of choices, nine to a frame, each numbered 1-9.
 
@@ -123,7 +124,9 @@ def menu_page(
             menu explains itself rather than looking like a fault. None leaves
             the frame blank.
         shortcuts: Keys offered on every frame besides the digits and `0`.
-        item: What `A` and `D` move between, as the footer names it.
+        neighbours: The pages either side of this one, wiring `A`/`D`; pass
+            `request.neighbours`.
+        item_noun: What `A` and `D` move between, as the footer names it.
 
     Returns:
         The page, of as many frames as the entries needed.
@@ -133,7 +136,8 @@ def menu_page(
         title=title,
         home=home,
         shortcuts=shortcuts,
-        item=item,
+        neighbours=neighbours,
+        item_noun=item_noun,
         parts=[*lead, Flowing(Menu(entries=items, empty=empty or ""))],
     ).build(request)
 

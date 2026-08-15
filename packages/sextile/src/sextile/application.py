@@ -49,14 +49,14 @@ from sextile.formatting import MenuItem
 from sextile.layout import CHOICES_PER_FRAME, HOME_KEY
 from sextile.page import Page
 from sextile.pages import notice_page
-from sextile.requests import Arrival, PageRequest, Parting
+from sextile.requests import Neighbours, PageRequest, Parting
 from sextile.routing import Converter, ConverterFactory, Match, Router
 from sextile.visits import Visits
 
 __all__ = [
-    "Arrival",
     "Handler",
     "Middleware",
+    "Neighbours",
     "Next",
     "PageInfo",
     "PageRequest",
@@ -538,7 +538,7 @@ class Sextile:
         answer letters typed into a field, another a single key such as `F`.
         `moving` joins the first frame and `asking` the second. `items=False`
         leaves `A` and `D` off the compass, for a service that does not wire
-        them to `request.arrival` and so does not answer them.
+        them to `request.neighbours` and so does not answer them.
 
         The row for `0` says "back to the main menu" on a service whose first
         page is called one, and "back to the main index" on a service whose is
@@ -666,7 +666,7 @@ class Sextile:
         self,
         target: str | PageAddress,
         *,
-        arrival: Arrival | None = None,
+        neighbours: Neighbours | None = None,
         session: MutableMapping[str, object] | None = None,
         history: tuple[PageAddress, ...] = (),
     ) -> Page | None:
@@ -681,7 +681,7 @@ class Sextile:
         return await self.respond(
             PageRequest(
                 address=address,
-                arrival=arrival or Arrival(),
+                neighbours=neighbours or Neighbours(),
                 session=session if session is not None else {},
                 history=history,
                 service=self.service,

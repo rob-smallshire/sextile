@@ -31,7 +31,7 @@ application in its first few lines.
 
     Sextile  PageRoute  PageInfo  Handler
     Page  PageFrame  PageAddress  keyed
-    PageRequest  Arrival  Parting  Held  GuideRow
+    PageRequest  Neighbours  Parting  Held  GuideRow
     Middleware  Next
     Converter  UnknownPageError  NoSuchRouteError  RouteError
     Form  Suggest  draw_form

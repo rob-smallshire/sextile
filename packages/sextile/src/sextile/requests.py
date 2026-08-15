@@ -17,17 +17,21 @@ if TYPE_CHECKING:
 
 
 @dataclass(frozen=True)
-class Arrival:
+class Neighbours:
     """The pages either side of this one, in the sequence being read.
 
     Which sequence depends on how the reader got here: a page reached through
     one menu has that menu's pages either side of it, and through another has
     that one's. A page reached by keying its number has neither, and should be
     offered neither.
+
+    Attributes:
+        previous: The page before this one in the sequence, or None.
+        next: The page after this one in the sequence, or None.
     """
 
-    preceding: PageAddress | None = None
-    following: PageAddress | None = None
+    previous: PageAddress | None = None
+    next: PageAddress | None = None
 
 
 @dataclass(frozen=True)
@@ -48,7 +52,9 @@ class PageRequest:
     """What the route's pattern captured. Also passed to the handler as keyword
     arguments, so a handler need not unpack them."""
 
-    arrival: Arrival = Arrival()
+    neighbours: Neighbours = Neighbours()
+    """The pages either side of this one in the sequence the reader is following,
+    or a `Neighbours` of two Nones for a page reached by keying its number."""
 
     session: MutableMapping[str, object] = field(default_factory=dict)
     """What this caller has accumulated over their connection. The connection is

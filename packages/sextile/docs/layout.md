@@ -42,7 +42,8 @@ PageLayout(
 | `parts` | The content, in the order it appears down the frames. |
 | `home` | Where `0` leads from every frame. An address, a `Shortcut` where the footer should call it something other than `index`, or None for no way home. |
 | `shortcuts` | Keys offered on every frame, besides the digits and `0`. |
-| `item` | What `A` and `D` move between, as the footer says it: `item="post"` gives `previous post`. |
+| `neighbours` | The pages either side of this one; given, wires `A`/`D`. Pass `request.neighbours`. |
+| `item_noun` | What `A` and `D` move between, as the footer says it: `item_noun="post"` gives `previous post`. |
 | `furniture` | The bands round the content. `DEFAULT_FURNITURE` unless given; `()` for a page that wants none. |
 | `follows` | Where `#` leads once the frames have run out. Setting it also answers the next-frame keys. |
 | `hang_up` | Whether the line drops once the page has been shown. |
@@ -125,13 +126,17 @@ The prompt names all of them. `render_footer` sheds words when the row is
 tight, so a `Shortcut` should put the short form of its `says` first:
 `"index, or key another page"` shortens to `"index"` and then to `"0"`.
 
-A shortcut on `A` or `D` takes its wording from `viewdata.footer` rather than
-from its own `says`, so that every page describes those keys the same way.
-`arrow=True` makes the matching cursor key lead there as well:
+`A` and `D` step through the pages either side of this one in a sequence, and
+`neighbours=request.neighbours` wires them: it offers whichever of
+`previous`/`next` is not None and names them, with their cursor-key arrows, from
+`viewdata.footer` so that every page describes those keys the same way.
 
 ```python
-Shortcut(key=keys.PREVIOUS_ITEM, destination=arrival.preceding, arrow=True)
+PageLayout(..., neighbours=request.neighbours, item_noun="post").build(request)
 ```
+
+A page that offers some other key on `A` or `D` builds a `Shortcut` for it, and
+`arrow=True` makes the matching cursor key lead there as well.
 
 Whether an arrow should mean what its letter means is for the page to decide,
 which is why `arrow` is a parameter. On a page with a coordinate field it should

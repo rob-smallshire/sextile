@@ -153,27 +153,16 @@ async def one_day(request: PageRequest, day: date) -> Page:
         _in_words(day - _today(request)),
     ]
     #  Whichever menu the reader came through decides what "next" means, and a
-    #  day reached by keying its number came through none. A frame names only
-    #  the keys that do something on it, so a key with nowhere to lead is not
-    #  offered and not named.
-    shortcuts = [
-        Shortcut(key="1", destination=app.address_for("month", day=day), says="month")
-    ]
-    #  `arrow=True` because a reader may reach for the cursor keys instead, and
-    #  on this page they mean what the letters mean. Said here rather than
-    #  assumed by the framework: what an arrow means is for the page to decide.
-    if request.arrival.preceding is not None:
-        shortcuts.append(
-            Shortcut(key=keys.PREVIOUS_ITEM, destination=request.arrival.preceding, arrow=True)
-        )
-    if request.arrival.following is not None:
-        shortcuts.append(
-            Shortcut(key=keys.NEXT_ITEM, destination=request.arrival.following, arrow=True)
-        )
+    #  day reached by keying its number came through none: the layout wires
+    #  `A`/`D` to whichever neighbours the request carries, and names neither
+    #  where there are none.
     return PageLayout(
         title=_month_name(day),
-        shortcuts=shortcuts,
-        item="day",
+        shortcuts=[
+            Shortcut(key="1", destination=app.address_for("month", day=day), says="month")
+        ],
+        neighbours=request.neighbours,
+        item_noun="day",
         parts=[Flowing(Lines(said=lines))],
     ).build(request)
 
@@ -274,7 +263,7 @@ def _month_page(request: PageRequest, day: date) -> Page:
                 arrow=True,
             ),
         ],
-        item="month",
+        item_noun="month",
     ).build(request)
 
 

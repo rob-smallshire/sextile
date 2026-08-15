@@ -29,7 +29,9 @@ from sextile.addressing import FRAMES_PER_PAGE, PageAddress
 from sextile.keys import (
     ARROW_FOR,
     NEXT_FRAME,
+    NEXT_ITEM,
     PREVIOUS_FRAME,
+    PREVIOUS_ITEM,
     arrows_lead_where,
     moving,
 )
@@ -43,7 +45,7 @@ from sextile.viewdata.frame import COLUMNS, ROWS
 from sextile.viewdata.typesetting import TRUNCATION_NOTICE
 
 if TYPE_CHECKING:
-    from sextile.requests import PageRequest
+    from sextile.requests import Neighbours, PageRequest
 
 __all__ = [
     "CHOICES_PER_FRAME",
@@ -654,7 +656,12 @@ class PageLayout:
         numbered: Whether the header shows the page number. `False` for a page
             with a header but no number a reader could key, such as a notice.
         shortcuts: Keys offered on every frame, besides the digits and `0`.
-        item: What `A` and `D` move between, as the footer says it.
+        neighbours: The pages either side of this one in the sequence being
+            read. Given, it wires `A` to `previous` and `D` to `next` (with
+            their cursor-key arrows) wherever each is not None, and the footer
+            names them. Pass `request.neighbours`; a page reached by keying its
+            number carries a `Neighbours` of two Nones and offers neither.
+        item_noun: What `A` and `D` move between, as the footer says it.
         furniture: The bands round the content. Empty for a page that wants
             none, such as a masthead.
         follows: Where `#` leads once the frames have run out. Setting it
@@ -676,10 +683,26 @@ class PageLayout:
     home: "PageAddress | Shortcut | None | _DefaultHome" = _DEFAULT_HOME
     numbered: bool = True
     shortcuts: Sequence[Shortcut] = ()
-    item: str = "item"
+    neighbours: "Neighbours | None" = None
+    item_noun: str = "item"
     furniture: Sequence[Furnishing] = DEFAULT_FURNITURE
     follows: PageAddress | None = None
     hang_up: bool = False
+
+    def _shortcuts(self) -> tuple[Shortcut, ...]:
+        """The page's own shortcuts, and the `A`/`D` keys `neighbours` wires.
+
+        A neighbour is a shortcut on a movement letter, so `_offered` names it
+        through `movement` rather than by itself -- which is how a page built
+        here and a page drawn by hand describe the same key the same way.
+        """
+        wired = []
+        if self.neighbours is not None:
+            if self.neighbours.previous is not None:
+                wired.append(Shortcut(PREVIOUS_ITEM, self.neighbours.previous, arrow=True))
+            if self.neighbours.next is not None:
+                wired.append(Shortcut(NEXT_ITEM, self.neighbours.next, arrow=True))
+        return (*self.shortcuts, *wired)
 
     def build(self, request: "PageRequest") -> Page:
         """Fill the frames with the parts, then furnish them.
@@ -760,10 +783,11 @@ class PageLayout:
         self, filled: Filled, *, home: "PageAddress | Shortcut | None"
     ) -> dict[str, PageAddress]:
         """Every key on this frame that leads somewhere else."""
+        shortcuts = self._shortcuts()
         choices = dict(filled.offer.choices)
-        choices |= {one.key: one.destination for one in self.shortcuts}
+        choices |= {one.key: one.destination for one in shortcuts}
         choices |= arrows_lead_where(
-            {one.key: one.destination for one in self.shortcuts if one.arrow}
+            {one.key: one.destination for one in shortcuts if one.arrow}
         )
         if (way := _way_home(home)) is not None:
             choices[way.key] = way.destination
@@ -773,19 +797,20 @@ class PageLayout:
         self, filled: Filled, *, back: bool, on: bool, home: "PageAddress | Shortcut | None"
     ) -> list[FooterItem]:
         """What the prompt should try to name, most worth saying last off."""
+        shortcuts = self._shortcuts()
         items = list(filled.offer.named)
         #  A shortcut on one of the movement letters is named by `movement`
         #  rather than by itself, so that a page built here and a page drawn by
         #  hand describe the same key the same way.
-        moves = {one.key for one in self.shortcuts if one.key in _MOVEMENT_LETTERS}
+        moves = {one.key for one in shortcuts if one.key in _MOVEMENT_LETTERS}
         items += [
             FooterItem(one.key, one.says, one.priority)
-            for one in self.shortcuts
+            for one in shortcuts
             if one.key not in moves
         ]
         items += movement(
             moves | {key for key, yes in ((PREVIOUS_FRAME, back), (NEXT_FRAME, on)) if yes},
-            item=self.item,
+            item=self.item_noun,
         )
         if (way := _way_home(home)) is not None:
             items.append(

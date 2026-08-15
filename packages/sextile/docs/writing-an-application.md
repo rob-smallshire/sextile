@@ -482,20 +482,26 @@ def describe(address: PageAddress) -> str | None:
 ```python
 async def post(request: PageRequest, post_id: int) -> Page:
     request.address            # the page number asked for
-    request.arrival.following  # the next page in the sequence, if any
+    request.neighbours.next    # the next page in the sequence, if any
     request.session["user"]    # this caller's own state, for as long as the line is up
     request.service["client"]  # what the lifespan opened, for as long as the process
     request.history            # every page visited before this one, oldest first
-    request.application        # the service, for asking where another page is
+    request.app                # the service, for asking where another page is
 ```
 
-`arrival` gives the pages on either side of this one when the reader reached it
-through a sequence such as a menu: `arrival.preceding` and `arrival.following`,
-each a `PageAddress` or `None`. Use them to wire the `A` and `D` keys —
-*previous* and *next* — to the neighbouring pages. A page reached by keying its
-number directly belongs to no sequence, so both are `None`, and it should offer
-neither key. The session computes them from the menu the reader used; the
-handler only decides whether to use them.
+`neighbours` gives the pages on either side of this one when the reader reached
+it through a sequence such as a menu: `neighbours.previous` and
+`neighbours.next`, each a `PageAddress` or `None`. Pass the whole thing to a
+layout, which wires the `A` and `D` keys — *previous* and *next* — to whichever
+is not None and names them:
+
+```python
+PageLayout(..., neighbours=request.neighbours, item_noun="post").build(request)
+```
+
+A page reached by keying its number directly belongs to no sequence, so both
+are `None`, and it offers neither key. The session computes the neighbours from
+the menu the reader used; the handler only passes them on.
 
 `session` is a plain mutable mapping that lasts as long as the connection. The
 terminal holds nothing but the frame on screen, so anything that must outlast a

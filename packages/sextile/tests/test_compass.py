@@ -159,7 +159,7 @@ class TestLeavingTheSidewaysArmOff:
     """`A` and `D` step through the run of pages a menu offered.
 
     The framework does not implement them -- a service wires them to
-    `request.arrival` or has no such thing -- so a service without them must
+    `request.neighbours` or has no such thing -- so a service without them must
     not be shown two keys that do nothing, on the one page a reader goes to to
     find out what the keys do.
     """

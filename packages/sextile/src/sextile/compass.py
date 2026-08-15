@@ -107,7 +107,7 @@ def compass(
 
     **`items=False` leaves the sideways arm off.** `A` and `D` step through the
     run of pages a menu offered, and the framework does not implement them: a
-    service wires them to `request.arrival` or it has no such thing, and one
+    service wires them to `request.neighbours` or it has no such thing, and one
     that has no such thing must not draw two keys that do nothing. The up and
     down arm is always there, being frames, which every page has.
     """

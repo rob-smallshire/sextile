@@ -12,7 +12,7 @@ from datetime import UTC, date, datetime, timedelta
 import pytest
 
 from calendar_viewdata import build_application
-from sextile import Arrival, Page, PageAddress, Sextile, UnknownPageError
+from sextile import Neighbours, Page, PageAddress, Sextile, UnknownPageError
 
 #: A Sunday, so a week boundary falls where it can be seen.
 WHEN = datetime(2026, 8, 2, 14, 30, 15, tzinfo=UTC)
@@ -26,10 +26,10 @@ async def app() -> AsyncIterator[Sextile]:
     await service.shutdown()
 
 
-async def page_at(app: Sextile, digits: str, arrival: Arrival | None = None) -> Page:
+async def page_at(app: Sextile, digits: str, neighbours: Neighbours | None = None) -> Page:
     #  `ask` assembles the request as a session would -- with what the service
     #  holds, and the service itself -- so a test need not remember either.
-    page = await app.ask(digits, arrival=arrival)
+    page = await app.ask(digits, neighbours=neighbours)
     assert page is not None, f"*{digits}# is not a page here"
     return page
 
@@ -124,7 +124,7 @@ class TestTheDaysToCome:
         page = await page_at(
             app,
             "4220260802",
-            Arrival(preceding=PageAddress("4220260801"), following=PageAddress("4220260803")),
+            Neighbours(previous=PageAddress("4220260801"), next=PageAddress("4220260803")),
         )
         assert page.frames[0].destination("D") == PageAddress("4220260803")
         assert page.frames[0].destination("A") == PageAddress("4220260801")

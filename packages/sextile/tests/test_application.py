@@ -17,8 +17,8 @@ import pytest
 
 from sextile.addressing import PageAddress, UnknownPageError
 from sextile.application import (
-    Arrival,
     Middleware,
+    Neighbours,
     Next,
     PageRequest,
     PageRoute,
@@ -195,27 +195,27 @@ class TestSessionState:
         assert state == {"seen": True}
 
 
-class TestArrival:
+class TestNeighbours:
     #  Which post is "next" depends on how the reader got here: from a day's
     #  index it is the next post that day, from a forum the next in that forum.
     #  Arrive by keying a number and there is no sequence, so none is offered.
 
     async def test_a_request_knows_of_no_neighbours_by_default(self) -> None:
         request = request_for(Sextile(), "821")
-        assert request.arrival.preceding is None
-        assert request.arrival.following is None
+        assert request.neighbours.previous is None
+        assert request.neighbours.next is None
 
     async def test_a_handler_can_offer_what_it_was_told_of(self) -> None:
         app = Sextile()
 
         @app.page("82{post_id:int}")
         async def post(request: PageRequest, post_id: int) -> Page:
-            following = request.arrival.following
+            following = request.neighbours.next
             choices = {"N": following} if following else {}
             return Page(frames=(PageFrame(blank(), choices=choices),))
 
         page = await app.ask(
-            "821", arrival=Arrival(following=PageAddress("822"))
+            "821", neighbours=Neighbours(next=PageAddress("822"))
         )
         assert page is not None
         assert page.frames[0].destination("N") == PageAddress("822")
@@ -1202,11 +1202,11 @@ class TestAskingForAPageWithoutASocket:
         seen: list[PageAddress | None] = []
 
         async def main(request: PageRequest) -> Page:
-            seen.append(request.arrival.following)
+            seen.append(request.neighbours.next)
             return Page(frames=(PageFrame(frame=Canvas().frame),))
 
         app = Sextile(pages=[PageRoute("1", main, name="main")])
-        await app.ask("1", arrival=Arrival(following=PageAddress("2")))
+        await app.ask("1", neighbours=Neighbours(next=PageAddress("2")))
         assert seen == [PageAddress("2")]
 
 

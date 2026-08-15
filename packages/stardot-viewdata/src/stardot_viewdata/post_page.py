@@ -10,7 +10,7 @@ the one page that uses all of it; the handler that fetches the post is in
 from collections.abc import Callable
 from typing import Final
 
-from sextile import Arrival, Page, PageRequest, Sextile, keys
+from sextile import Page, PageRequest, Sextile, keys
 from sextile.formatting import Prose
 from sextile.layout import Drawn, Every, Flowing, PageLayout, Shortcut
 from sextile.viewdata.canvas import Canvas
@@ -25,14 +25,10 @@ from stardot_viewdata.store.repository import BOARD_TIMEZONE
 #: Rows a post frame gives to its subject and byline before the body begins.
 _POST_HEADING_ROWS: Final = 3
 
-#  The four movement keys, and the conventional viewdata one. They are named in
-#  sextile.keys, where the BBC's own cursor keys are mapped onto the same four
-#  operations.
-PREVIOUS_FRAME_KEY: Final = keys.PREVIOUS_FRAME
-NEXT_FRAME_KEY: Final = keys.NEXT_FRAME
+#  `#` moves to the next frame as well as `S`, and is the one key a viewdata
+#  reader tries without being told; the title frame names it, so it is named
+#  here rather than spelt out there.
 CONVENTIONAL_NEXT_FRAME_KEY: Final = keys.CONVENTIONAL_NEXT_FRAME
-PREVIOUS_ITEM_KEY: Final = keys.PREVIOUS_ITEM
-NEXT_ITEM_KEY: Final = keys.NEXT_ITEM
 
 
 def post_page(request: PageRequest, post: Post, *, untitled: str) -> Page:
@@ -51,8 +47,9 @@ def post_page(request: PageRequest, post: Post, *, untitled: str) -> Page:
     """
     return PageLayout(
         title=post.forum_name or untitled,
-        item="post",
-        shortcuts=[*_about(request.app, post), *_neighbours(request.arrival)],
+        item_noun="post",
+        shortcuts=_about(request.app, post),
+        neighbours=request.neighbours,
         parts=[
             #  On every frame: a reader three frames into a post should not
             #  have to go back to the first to see whose words these are.
@@ -112,22 +109,6 @@ def _about(app: Sextile, post: Post) -> list[Shortcut]:
     return shortcuts
 
 
-def _neighbours(arrival: Arrival) -> list[Shortcut]:
-    """The keys leading to the posts either side of this one in its list.
-
-    `arrow=True` because a reader may reach for the cursor keys instead, and on
-    a post they mean what the letters mean.
-    """
-    shortcuts = []
-    if arrival.preceding is not None:
-        shortcuts.append(
-            Shortcut(key=PREVIOUS_ITEM_KEY, destination=arrival.preceding, arrow=True)
-        )
-    if arrival.following is not None:
-        shortcuts.append(
-            Shortcut(key=NEXT_ITEM_KEY, destination=arrival.following, arrow=True)
-        )
-    return shortcuts
 
 
 def time_of(post: Post) -> str:

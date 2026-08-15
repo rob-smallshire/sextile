@@ -29,7 +29,7 @@ from sextile.forms import Form, Suggest, draw_form
 from sextile.held import Held
 from sextile.page import Page, PageFrame
 from sextile.pages import farewell_page, menu_page, notice_page, prose_page
-from sextile.requests import Arrival, PageRequest, Parting
+from sextile.requests import Neighbours, PageRequest, Parting
 from sextile.routing import Converter, NoSuchRouteError, RouteError
 
 __version__ = version("sextile")
@@ -39,7 +39,7 @@ __version__ = version("sextile")
 #  public submodules as well -- `layout`, `viewdata` and the rest are too
 #  large to flatten into this list and are public as modules.
 __all__ = [
-    "Arrival",
+    "Neighbours",
     "Converter",
     "Form",
     "GuideRow",

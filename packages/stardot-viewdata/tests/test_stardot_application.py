@@ -16,7 +16,7 @@ from pathlib import Path
 import pytest
 
 from sextile import (
-    Arrival,
+    Neighbours,
     Page,
     PageAddress,
     PageRoute,
@@ -137,12 +137,12 @@ def _moved(name: str, **changed: object) -> tuple[PageRoute, ...]:
 
 
 #: How a reader who keyed a number arrived: from nowhere in particular.
-BY_NUMBER = Arrival()
+BY_NUMBER = Neighbours()
 
 
-async def page_at(app: Sextile, digits: str, arrival: Arrival = BY_NUMBER) -> Page:
+async def page_at(app: Sextile, digits: str, neighbours: Neighbours = BY_NUMBER) -> Page:
     """The page at a number, which for a number the service has is always one."""
-    page = await app.ask(digits, arrival=arrival)
+    page = await app.ask(digits, neighbours=neighbours)
     assert page is not None, f"*{digits}# is not a page here"
     return page
 
@@ -363,7 +363,7 @@ class TestWhereTheKeysLead:
         page = await page_at(
             app,
             "82489001",
-            Arrival(preceding=PageAddress("82489000"), following=PageAddress("82489002")),
+            Neighbours(previous=PageAddress("82489000"), next=PageAddress("82489002")),
         )
         assert page.frames[0].destination(keys.NEXT_ITEM) == PageAddress("82489002")
         assert page.frames[0].destination(keys.PREVIOUS_ITEM) == PageAddress("82489000")

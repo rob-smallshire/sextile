@@ -24,7 +24,7 @@ from dataclasses import dataclass, field
 
 from sextile.addressing import PageAddress
 from sextile.application import Sextile
-from sextile.requests import Arrival, PageRequest
+from sextile.requests import Neighbours, PageRequest
 from sextile.session.session import Session
 
 __all__ = [
@@ -38,7 +38,7 @@ def request_for(
     app: Sextile,
     target: str | PageAddress = "1",
     *,
-    arrival: Arrival | None = None,
+    neighbours: Neighbours | None = None,
     session: MutableMapping[str, object] | None = None,
     history: tuple[PageAddress, ...] = (),
 ) -> PageRequest:
@@ -51,7 +51,7 @@ def request_for(
     Args:
         app: The service the page belongs to, reached as `request.app`.
         target: The page number the request is for, defaulting to `1`.
-        arrival: The pages either side of this one, if the test is about a
+        neighbours: The pages either side of this one, if the test is about a
             sequence.
         session: This caller's own state, if the test reads or writes it.
         history: Where this caller has been, if the test is about that.
@@ -60,7 +60,7 @@ def request_for(
     return PageRequest(
         address=address,
         app=app,
-        arrival=arrival or Arrival(),
+        neighbours=neighbours or Neighbours(),
         session=session if session is not None else {},
         history=history,
     )

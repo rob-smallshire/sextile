@@ -21,7 +21,7 @@ from importlib.metadata import version
 
 from sextile import keys
 from sextile.addressing import PageAddress, UnknownPageError, keyed
-from sextile.application import Middleware, Next, Sextile
+from sextile.application import CallNext, Middleware, Sextile
 from sextile.builtin.guidance import GuideRow
 from sextile.content.transliterate import transliterate
 from sextile.declarations import Handler, PageRoute, PageRouter
@@ -46,7 +46,7 @@ __all__ = [
     "GuideRow",
     "Handler",
     "Middleware",
-    "Next",
+    "CallNext",
     "NoSuchRouteError",
     "Page",
     "PageAddress",

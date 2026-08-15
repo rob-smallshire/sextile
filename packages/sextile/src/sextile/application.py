@@ -64,7 +64,7 @@ __all__ = [
     "Handler",
     "Middleware",
     "Neighbours",
-    "Next",
+    "CallNext",
     "PageRequest",
     "PageRoute",
     "PageRouter",
@@ -79,9 +79,9 @@ type NotFoundHandler = Callable[[PageRequest, str], Awaitable[Page]]
 type PartingHandler = Callable[[PageRequest, int], Awaitable[Page]]
 type FailureHandler = Callable[[PageRequest, Exception], Awaitable[Page]]
 
-type Next = Callable[[PageRequest], Awaitable[Page | None]]
+type CallNext = Callable[[PageRequest], Awaitable[Page | None]]
 
-type Middleware = Callable[[PageRequest, Next], Awaitable[Page | None]]
+type Middleware = Callable[[PageRequest, CallNext], Awaitable[Page | None]]
 """Something wrapped round every page a service builds.
 
 A page handler answers what one page *says*; middleware answers what is true
@@ -306,7 +306,7 @@ class Sextile:
         has already answered something, and a service assembled in pieces does
         not have to know it has finished being assembled.
         """
-        build: Next = self._build
+        build: CallNext = self._build
         #  Reversed, so that the first given is the outermost: a reader of the
         #  list should see a request entering at the top and leaving at the
         #  bottom.
@@ -672,7 +672,7 @@ class Sextile:
         )
 
 
-def _wrap(middleware: Middleware, build: Next) -> Next:
+def _wrap(middleware: Middleware, build: CallNext) -> CallNext:
     """Bind one middleware to the rest of the chain below it.
 
     A function rather than a closure written in place, so that it captures this

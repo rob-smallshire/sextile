@@ -63,6 +63,10 @@ as "was X" so a reader coming from older code or docs can find it.
   sets its own). Index is where the `0` key goes from every frame
   (`Sextile(index=...)`, the same as home unless set apart). The footer word
   `index` is the label for that key.
+- **CallNext** (was `Next`) — the middleware continuation: a piece of middleware
+  is `async (request, build: CallNext) -> Page | None` and calls `build(request)`
+  to reach the rest of the chain. Starlette's `call_next`; renamed off `Next` to
+  stop it colliding with the `*#` `Next` command.
 - **PageRequest** — the request a handler answers. Kept `PageRequest`, not
   renamed to `Request`: the `Page*` family (`PageRoute`, `PageRouter`,
   `PageAddress`, `PageFrame`, `PageLayout`) is consistent, and the prefix keeps

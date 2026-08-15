@@ -16,9 +16,9 @@ import pytest
 
 from sextile.addressing import PageAddress, UnknownPageError
 from sextile.application import (
+    CallNext,
     Middleware,
     Neighbours,
-    Next,
     PageRequest,
     PageRoute,
     Sextile,
@@ -901,7 +901,7 @@ class TestMiddleware:
     async def test_it_sees_a_page_being_built(self) -> None:
         seen: list[PageAddress] = []
 
-        async def watching(request: PageRequest, build: Next) -> Page | None:
+        async def watching(request: PageRequest, build: CallNext) -> Page | None:
             seen.append(request.address)
             return await build(request)
 
@@ -914,14 +914,14 @@ class TestMiddleware:
         #  having an opinion about how anybody logs in.
         instead = Page(frames=(PageFrame(frame=Canvas().frame),))
 
-        async def refusing(request: PageRequest, build: Next) -> Page | None:
+        async def refusing(request: PageRequest, build: CallNext) -> Page | None:
             return instead
 
         app = Sextile(middleware=[refusing], pages=[PageRoute("1", _nothing, name="main")])
         assert await app.fetch("1") is instead
 
     async def test_it_may_change_what_comes_back(self) -> None:
-        async def hanging_up(request: PageRequest, build: Next) -> Page | None:
+        async def hanging_up(request: PageRequest, build: CallNext) -> Page | None:
             page = await build(request)
             return None if page is None else Page(frames=page.frames, hang_up=True)
 
@@ -935,7 +935,7 @@ class TestMiddleware:
         order: list[str] = []
 
         def noting(label: str) -> Middleware:
-            async def note(request: PageRequest, build: Next) -> Page | None:
+            async def note(request: PageRequest, build: CallNext) -> Page | None:
                 order.append(f"into {label}")
                 page = await build(request)
                 order.append(f"out of {label}")
@@ -955,7 +955,7 @@ class TestMiddleware:
         #  that existed, which is not what anybody means by counting requests.
         seen: list[PageAddress] = []
 
-        async def watching(request: PageRequest, build: Next) -> Page | None:
+        async def watching(request: PageRequest, build: CallNext) -> Page | None:
             seen.append(request.address)
             return await build(request)
 

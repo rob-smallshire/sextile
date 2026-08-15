@@ -20,7 +20,7 @@ import time
 from collections.abc import Callable
 from typing import Final
 
-from sextile.application import Middleware, Next, PageRequest
+from sextile.application import CallNext, Middleware, PageRequest
 from sextile.page import Page
 from sextile.state import StateKey
 from sextile.visits import Visits
@@ -55,7 +55,7 @@ def log_pages(
     """
     log = logger or logging.getLogger("sextile.serving")
 
-    async def timing(request: PageRequest, build: Next) -> Page | None:
+    async def timing(request: PageRequest, build: CallNext) -> Page | None:
         began = clock()
         page = await build(request)
         took = clock() - began
@@ -108,7 +108,7 @@ def record_visits(
     what is read back rather than left out of the log.
     """
 
-    async def recording(request: PageRequest, build: Next) -> Page | None:
+    async def recording(request: PageRequest, build: CallNext) -> Page | None:
         page = await build(request)
         log = request.state.get(visits)
         if log is None:

@@ -634,7 +634,7 @@ A handler decides what one page says. **Middleware handles what is true of every
 page** — who is calling, how long a page took, whether the caller is allowed:
 
 ```python
-async def timing(request: PageRequest, build: Next) -> Page | None:
+async def timing(request: PageRequest, build: CallNext) -> Page | None:
     began = time.monotonic()
     page = await build(request)
     log.info("*%s# in %.3fs", request.address, time.monotonic() - began)

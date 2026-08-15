@@ -32,7 +32,7 @@ application in its first few lines.
     Sextile  PageRoute  PageRouter  Handler
     Page  PageFrame  PageAddress  keyed
     PageRequest  Neighbours  StateKey  GuideRow
-    Middleware  Next
+    Middleware  CallNext
     Converter  UnknownPageError  NoSuchRouteError  RouteError
     Form  TypeAhead  draw_form
     menu_page  notice_page  prose_page  farewell_page

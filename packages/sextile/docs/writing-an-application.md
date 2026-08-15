@@ -11,18 +11,22 @@ on nothing but the standard library, and is meant to be read.
 ## The smallest thing that answers
 
 ```python
-from sextile import Page, PageFrame, PageRequest, PageRoute, Sextile
-from sextile.viewdata.canvas import Canvas
-from sextile.viewdata.chrome import CONTENT_FIRST_ROW, draw_chrome
+from sextile import Page, PageRequest, PageRoute, Sextile
+from sextile.formatting import Lines
+from sextile.layout import Flowing, PageLayout
 
 async def main(request: PageRequest) -> Page:
-    canvas = Canvas()
-    draw_chrome(canvas, title="MY SERVICE", page_number="1a", prompt="0 index")
-    canvas.row(CONTENT_FIRST_ROW).text("Hello, 1981.")
-    return Page(frames=(PageFrame(frame=canvas.frame),))
+    return PageLayout(
+        title="MY SERVICE",
+        parts=[Flowing(Lines(said=("Hello, 1981.",)))],
+    ).build(request.address)
 
 app = Sextile(pages=[PageRoute("1", main, name="main")])
 ```
+
+The title, the page number, the rules and the prompt come with `PageLayout`.
+What a page supplies is its title, where its keys lead, and the parts that go
+between the rules — see [layout.md](layout.md).
 
 **A page is a value and a service is a list of them.** Everything about a page
 is on one line of that list — where it is in the numbering, what builds it,
@@ -422,19 +426,20 @@ them is too:
 
 ```python
 from sextile.compass import ROWS, compass
+from sextile.layout import Drawn, Once
 
-compass(Composition(), CONTENT_FIRST_ROW).draw(canvas)
+Once(Drawn(rows=ROWS, draw=lambda canvas, row: compass(Composition(), row).draw(canvas)))
 ```
 
-`ROWS` says how many rows it takes, so it can be centred in what is left of a
-frame. A service that drew its own would be drawing the same thing, and would
+`ROWS` says how many rows it takes, which is what `Drawn` is told, so the
+layout can leave room for it or start it on the next frame. A service that drew its own would be drawing the same thing, and would
 go on drawing it after the keys had moved.
 
 It calls the vertical pair **page up** and **page down**. A frame is what the
 wire calls it, but the frames of a page are the pages of one document to
 whoever is reading — and saying so keeps *previous* and *next* for the other
 axis, where they mean the items. It also says that the cursor keys work, which
-they do: `keys.ARROWS` maps all four.
+they do: `keys.ARROW_KEYS` maps all four.
 
 The arrows are mosaics rather than letters because the character set has only
 three of them — `←`, `→` and `↑`, and no down arrow at all — so one of the four
@@ -556,17 +561,30 @@ service that answers slowly a reader cannot tell the difference.
 ## A page a reader types into
 
 ```python
-from sextile import Suggest, draw_form
+from sextile import Suggest
+from sextile.layout import Once, PageLayout
 
-form = Suggest(look_up=..., field_row=4, first_row=6, label="PLACE:")
-draw_form(canvas.frame, form)
-return Page(frames=(PageFrame(frame=canvas.frame, form=form),))
+return PageLayout(
+    title="FIND A PLACE",
+    home=app.index,
+    parts=[
+        Once(Lines(said=("Key a place name.", ""))),
+        Once(Suggest(look_up=places.matching, label="PLACE:")),
+    ],
+).build(request.address)
 ```
 
 A form answers a keypress by changing part of the frame rather than by going
 anywhere. `Suggest` is a field with the best few matches beneath it, each on a
 digit; `Fields` is several fields moved between with TAB and the arrows. Both
-are `Form`s, and a service wanting a fourth shape subclasses that.
+are `Form`s, and a service wanting a third shape subclasses that.
+
+**A form is a part**, so it is told where it begins and counts its own rows
+from nought. `Suggest` puts its field on its first row and its suggestions two
+below unless told otherwise, and a page that moves it up or down moves the part
+rather than the numbers inside it. The form also says what the prompt should
+call the keys it answers — `A-Z type a name` and `1-9 choose one` — so a page
+carrying one need not name them itself.
 
 **Put the form in the session**, not in the handler: it is one caller's typing
 and lasts exactly as long as their line.

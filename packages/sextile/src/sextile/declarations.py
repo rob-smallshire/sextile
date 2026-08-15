@@ -8,7 +8,7 @@ same declaration to the function or method that builds the page, gathered by
 data makes registration order unobservable.
 """
 
-from collections.abc import Awaitable, Callable, Sequence
+from collections.abc import Awaitable, Callable, Iterable, Iterator, Sequence
 from dataclasses import dataclass
 from types import ModuleType
 from typing import Final
@@ -73,6 +73,114 @@ class PageRoute:
 
     keywords: Sequence[str] = ()
     """Words a reader may key instead of the number."""
+
+
+def declaring[H: Handler](
+    keep: Callable[[PageRoute], object],
+    pattern: str,
+    *,
+    name: str | None,
+    title: str,
+    detail: str,
+    keywords: Sequence[str],
+) -> Callable[[H], H]:
+    """A `@page`-style decorator that hands the `PageRoute` it builds to `keep`.
+
+    The one implementation behind `Sextile.page` and `PageRouter.page`: both
+    build a `PageRoute` from the same arguments and differ only in where it
+    goes, so neither decorator can come to build one differently from the other.
+
+    Args:
+        keep: What to do with the route the decorated handler declares --
+            `Sextile.add_page` for a service, a list's `append` for a router.
+        pattern: The page numbers the handler answers.
+        name: What `address_for` calls it, or None to take the handler's name.
+        title: What to call it where it is listed rather than shown.
+        detail: A second line, wherever the title gets one.
+        keywords: Words a reader may key instead of the number.
+
+    Returns:
+        A decorator that registers its handler and returns it unchanged.
+    """
+
+    def register(handler: H) -> H:
+        keep(
+            PageRoute(
+                pattern=pattern,
+                handler=handler,
+                name=name,
+                title=title,
+                detail=detail,
+                keywords=keywords,
+            )
+        )
+        return handler
+
+    return register
+
+
+class PageRouter:
+    """Pages declared together, in a module of their own, for one service.
+
+    A handler that lives apart from the `Sextile` it serves is declared with
+    `@router.page(...)`, the same call as `@app.page`, and the module's pages
+    reach the service in one spread. Iterating a router yields its `PageRoute`s
+    in the order they were declared, so a service reads the way its source does.
+
+    Example:
+        router = PageRouter()
+
+        @router.page("3", title="By day", keywords=("WHO",))
+        async def days(request: PageRequest) -> Page:
+            ...
+
+        app = Sextile(pages=[*router, *standard_pages(history="92")])
+    """
+
+    def __init__(self) -> None:
+        self._routes: list[PageRoute] = []
+
+    def page[H: Handler](
+        self,
+        pattern: str,
+        *,
+        name: str | None = None,
+        title: str = "",
+        detail: str = "",
+        keywords: Sequence[str] = (),
+    ) -> Callable[[H], H]:
+        """Declare a page beside the function that builds it.
+
+        The same call as `Sextile.page`, for a handler in a module that has no
+        application object to hang it on. The route takes the handler's own name
+        unless given one.
+
+        Args:
+            pattern: The page numbers this answers: literal digits and fields.
+            name: What `address_for` calls it, or None for the handler's name.
+            title: What to call it where it is listed. Untitled is unadvertised.
+            detail: A second line, wherever the title gets one.
+            keywords: Words a reader may key instead of the number.
+
+        Returns:
+            A decorator that collects its handler's route and returns it
+            unchanged, so a service checked strictly stays so past the decorator.
+        """
+        return declaring(
+            self._routes.append,
+            pattern,
+            name=name,
+            title=title,
+            detail=detail,
+            keywords=keywords,
+        )
+
+    def include(self, routes: Iterable[PageRoute]) -> None:
+        """Add every route in `routes`, after the ones this router already has."""
+        self._routes.extend(routes)
+
+    def __iter__(self) -> Iterator[PageRoute]:
+        return iter(self._routes)
 
 
 #: Where a declared page keeps what was said about it until a service is built.

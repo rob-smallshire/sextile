@@ -26,7 +26,14 @@ declaring a page beside its handler is `sextile.declarations`'s. Both are
 re-exported here, `sextile` itself being where a service imports from.
 """
 
-from collections.abc import Awaitable, Callable, Mapping, MutableMapping, Sequence
+from collections.abc import (
+    Awaitable,
+    Callable,
+    Iterable,
+    Mapping,
+    MutableMapping,
+    Sequence,
+)
 from contextlib import AbstractAsyncContextManager
 from datetime import UTC, datetime, timedelta
 from typing import Final
@@ -41,6 +48,8 @@ from sextile.declarations import (
     Handler,
     PageInfo,
     PageRoute,
+    PageRouter,
+    declaring,
     page,
     routes_in,
     routes_on,
@@ -62,6 +71,7 @@ __all__ = [
     "PageInfo",
     "PageRequest",
     "PageRoute",
+    "PageRouter",
     "Parting",
     "Sextile",
     "page",
@@ -107,7 +117,7 @@ class Sextile:
         home: str | PageAddress = "1",
         index: str | PageAddress | None = None,
         converters: Mapping[str, Converter | ConverterFactory] | None = None,
-        pages: Sequence[PageRoute] = (),
+        pages: Iterable[PageRoute] = (),
         middleware: Sequence[Middleware] = (),
         lifespan: Lifespan | None = None,
     ) -> None:
@@ -197,21 +207,17 @@ class Sextile:
         signature away: a service checked strictly should stay checked strictly
         on the far side of the decorator.
         """
-
-        def register(handler: H) -> H:
-            self.add_page(
-                PageRoute(
-                    pattern=pattern,
-                    handler=handler,
-                    name=name,
-                    title=title,
-                    detail=detail,
-                    keywords=keywords,
-                )
-            )
-            return handler
-
-        return register
+        #  The same builder as `PageRouter.page`, so the two decorators cannot
+        #  drift into constructing a route differently. This one registers it
+        #  now; the router's collects it for a later `Sextile(pages=...)`.
+        return declaring(
+            self.add_page,
+            pattern,
+            name=name,
+            title=title,
+            detail=detail,
+            keywords=keywords,
+        )
 
     def _register_declared(self) -> None:
         """Register the pages this class declared with `@page`."""

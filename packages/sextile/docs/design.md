@@ -766,7 +766,7 @@ word lengths, no exception. It follows from the last line
 being free. So text that does not fit is text the region was never going to
 hold; size the region for the longest thing it can be handed.
 
-**A preamble line may be `Run`s rather than a string**, where the colours carry
+**A preamble line may be `Span`s rather than a string**, where the colours carry
 meaning rather than decoration — two clocks side by side, one UTC and one local,
 told apart by colour because a label would cost four cells to repeat what the
 row above said. The rows it costs are counted the same either way.

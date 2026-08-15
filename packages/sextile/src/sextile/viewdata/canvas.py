@@ -23,7 +23,7 @@ from sextile.viewdata.wrapping import wrap_text
 __all__ = [
     "Canvas",
     "RowWriter",
-    "Run",
+    "Span",
 ]
 
 #: Every row begins displaying white alphanumerics.
@@ -35,7 +35,7 @@ _ATTRIBUTE_CELL: Final = 1
 
 
 @dataclass(frozen=True)
-class Run:
+class Span:
     """A stretch of text in one colour.
 
     A row written in a single colour needs no such thing -- `RowWriter.text`
@@ -123,7 +123,7 @@ class RowWriter:
         self._column += cell_count(text)
         return self
 
-    def runs(self, runs: "Iterable[Run]") -> Self:
+    def runs(self, runs: "Iterable[Span]") -> Self:
         """Append several stretches of text, each in its own colour.
 
         What `text` does repeatedly, with the difference that this trims rather

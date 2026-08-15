@@ -82,7 +82,7 @@ Public submodules:
 
 | Module | For |
 |---|---|
-| `canvas` | `Canvas`, `RowWriter`, `Run` — writing on a frame |
+| `canvas` | `Canvas`, `RowWriter`, `Span` — writing on a frame |
 | `frame` | `Frame`, `ROWS`, `COLUMNS`, `FOOTER_ROW` — what a frame is |
 | `controls` | `Colour`, `Attribute`, `is_attribute_code`, and the two colour encoders |
 | `encoding` | `cell_count`, `fitted` — what fits in how many cells |

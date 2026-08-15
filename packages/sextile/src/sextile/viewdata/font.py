@@ -4,15 +4,15 @@ A mosaic font is a bitmap font measured in *blocks* rather than pixels: a letter
 eight blocks tall is two and two-thirds cells tall on the screen, and a banner
 made of them is drawn with `blocks.block_runs` like any other picture.
 
-**The format is this project's own, and a text file, for two reasons.** A vendored font
-is third-party material that has to be reviewed and whose terms have to travel
-with it, which a binary blob makes nobody do; and none of the formats these
-faces arrive in carries the one thing most needed here, an advance for each
-glyph. A row is 78 blocks wide and ten letters at a fixed eight blocks do not
-fit in it, so proportional spacing is a requirement rather than a refinement --
-and the width to advance by is a decision about the face, made once by whoever
-converts it, not something to re-derive on every frame. Deriving it would also
-give a space no width at all.
+The format is this project's own, and a text file. A vendored font is
+third-party material that has to be reviewed and whose terms have to travel with
+it, which a binary blob makes nobody do; and none of the formats these faces
+arrive in carries the one thing most needed here, an advance for each glyph. A
+row is 78 blocks wide and ten letters at a fixed eight blocks do not fit in it,
+so proportional spacing is a requirement rather than a refinement -- and the
+width to advance by is a property of the face, set once by whoever converts it,
+not re-derived on every frame. Deriving it would also give a space no width at
+all.
 
 The file is its own documentation:
 
@@ -31,14 +31,14 @@ The file is its own documentation:
 Glyphs are named by code point rather than by the character itself, so that a
 space, a `#` and a `.` need no quoting in a file whose other lines are pictures
 made of `#` and `.`. The note at the end is for the reader and is ignored. A
-glyph with no picture is blank -- which is what a space is.
+glyph with no picture is blank, as a space is.
 
-The picture is the letter and nothing else: the blank columns either side of it
-are trimmed away, because a proportional setting wants the letter and the gap
-after it is what the advance is for. **The bearing is what makes fixed-width
-setting still possible** -- it says how far in from the left the ink sat in the
-face's own design width, so a fixed setting can put it back where the designer
-had it rather than jamming every letter against the left of its cell.
+The picture is the letter and nothing else: the blank columns either side are
+trimmed away, since proportional setting places the letter and lets the advance
+supply the gap after it. The bearing keeps fixed-width setting possible -- it
+records how far in from the left the ink sat in the face's own design width, so
+a fixed setting can put it back where the designer had it rather than jamming
+every letter against the left of its cell.
 
 Reading it needs nothing but the standard library, deliberately: a font is
 loaded when a page is drawn.
@@ -80,9 +80,9 @@ class FontError(ValueError):
 class Glyph:
     """One letter: the blocks it lights, and how far the next one starts along.
 
-    The advance is not the width. It is the width plus whatever gap the face
-    wants after this letter, and for a space it is a gap and nothing else. The
-    bearing is where the ink sat within the face's design width, kept so that a
+    The advance is not the width. It is the width plus the gap the face leaves
+    after this letter, and for a space it is a gap and nothing else. The bearing
+    is where the ink sat within the face's design width, kept so that a
     fixed-width setting can put a trimmed glyph back where it belongs.
     """
 

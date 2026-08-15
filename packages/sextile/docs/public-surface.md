@@ -34,7 +34,7 @@ application in its first few lines.
     PageRequest  Neighbours  Parting  StateKey  GuideRow
     Middleware  Next
     Converter  UnknownPageError  NoSuchRouteError  RouteError
-    Form  Suggest  draw_form
+    Form  TypeAhead  draw_form
     menu_page  notice_page  prose_page  farewell_page
     standard_pages  transliterate
     keys  handlers  __version__
@@ -137,9 +137,9 @@ this module.
 
 ### `sextile.forms` — a field on a frame
 
-    Form  Field  Fields  Suggest  Complete  Note  Lookup  draw_form  SUGGESTIONS
+    Form  Field  Fields  TypeAhead  Complete  Note  Lookup  draw_form  SUGGESTIONS
 
-`Form`, `Suggest` and `draw_form` are also at the top level, those three being
+`Form`, `TypeAhead` and `draw_form` are also at the top level, those three being
 what a page with one field needs.
 
 The colour constants are the defaults behind the parameters of the same name.

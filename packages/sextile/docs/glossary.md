@@ -66,4 +66,5 @@ as "was X" so a reader coming from older code or docs can find it.
   callers for the life of the service. Service state is `request.state`, a
   read-only view of what the lifespan opened, keyed by `StateKey`.
 - **form** — rows of a frame a reader types into, a field with furniture around
-  it. `forms.Form`, `forms.Field`.
+  it. `forms.Form`, `forms.Field`. `TypeAhead` (was `Suggest`) is a field with
+  the best few matches beneath it, changing as the reader types.

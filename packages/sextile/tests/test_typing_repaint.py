@@ -18,7 +18,7 @@ import pytest
 
 from sextile import Page, PageAddress, PageFrame, PageRequest, PageRoute, Sextile
 from sextile.formatting import Entry, MenuItem
-from sextile.forms import Suggest, draw_form
+from sextile.forms import TypeAhead, draw_form
 from sextile.session.session import Session
 from sextile.viewdata.canvas import Canvas
 from sextile.viewdata.encoding import ScreenControl
@@ -84,8 +84,8 @@ class Cursor:
         return self.row, self.column
 
 
-async def a_session() -> tuple[Session, Suggest, Cursor]:
-    form = Suggest(
+async def a_session() -> tuple[Session, TypeAhead, Cursor]:
+    form = TypeAhead(
         look_up=look_up, field_row=FIELD_ROW, first_row=FIRST_ROW, label="PLACE:"
     )
 

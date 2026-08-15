@@ -12,7 +12,7 @@ import pytest
 
 from sextile import Page, PageAddress, PageFrame, PageRequest, PageRoute, Sextile, keys
 from sextile.formatting import Entry, MenuItem
-from sextile.forms import SUBMIT_MARK, SUGGESTIONS, Suggest, draw_form
+from sextile.forms import SUBMIT_MARK, SUGGESTIONS, TypeAhead, draw_form
 from sextile.session.session import Session
 from sextile.testing import text_of
 from sextile.viewdata.canvas import Canvas
@@ -48,8 +48,8 @@ async def look_up(typed: str) -> Sequence[Entry]:
     ]
 
 
-def a_field(**wanted: object) -> Suggest:
-    return Suggest(
+def a_field(**wanted: object) -> TypeAhead:
+    return TypeAhead(
         look_up=look_up,
         field_row=FIELD_ROW,
         first_row=FIRST_ROW,
@@ -58,13 +58,13 @@ def a_field(**wanted: object) -> Suggest:
     )
 
 
-async def typing(form: Suggest, letters: str) -> Suggest:
+async def typing(form: TypeAhead, letters: str) -> TypeAhead:
     for letter in letters:
         await form.typed(letter)
     return form
 
 
-def field_value(frame: Frame, form: Suggest) -> str:
+def field_value(frame: Frame, form: TypeAhead) -> str:
     """What is in the field, read from where the caret says it ends.
 
     Rather than by counting spaces: the label, the field's background and the
@@ -192,7 +192,7 @@ class TestDrawing:
 class TestThroughASession:
     """What a reader actually experiences, keystroke by keystroke."""
 
-    async def _session(self) -> tuple[Session, Suggest]:
+    async def _session(self) -> tuple[Session, TypeAhead]:
         form = a_field()
 
         async def search(request: PageRequest) -> Page:
@@ -335,7 +335,7 @@ class TestSending:
         await session.receive(b"\x5f")
         assert session.address == PageAddress("1")
 
-    async def _session(self) -> tuple[Session, Suggest]:
+    async def _session(self) -> tuple[Session, TypeAhead]:
         form = a_field()
 
         async def search(request: PageRequest) -> Page:
@@ -433,7 +433,7 @@ class TestTypingANameAsItIsWritten:
         await session.receive(b"NEW YORK")
         assert form.value == "NEW YORK"
 
-    async def _session(self) -> tuple[Session, Suggest]:
+    async def _session(self) -> tuple[Session, TypeAhead]:
         form = a_field()
 
         async def search(request: PageRequest) -> Page:
@@ -456,7 +456,7 @@ class TestWhatAKeystrokeCosts:
     that does not.
     """
 
-    async def _session(self) -> tuple[Session, Suggest]:
+    async def _session(self) -> tuple[Session, TypeAhead]:
         form = a_field()
 
         async def search(request: PageRequest) -> Page:

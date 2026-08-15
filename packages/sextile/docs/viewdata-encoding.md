@@ -90,7 +90,7 @@ background runs on until something stops it and any padding after the attributes
 is coloured too.
 
 Two cells of a bar that nothing can be typed into is what a coloured field costs
-on this hardware. Both `Suggest` and `Fields` incur it.
+on this hardware. Both `TypeAhead` and `Fields` incur it.
 
 ## Verified screen control
 

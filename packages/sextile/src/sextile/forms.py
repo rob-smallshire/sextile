@@ -19,7 +19,7 @@ What the wire affords was measured rather than assumed, on real Commstar in
 `docs/spikes/spike_suggestion_block.py`. Three suggestions cost 121 bytes -- a
 second at 1200 baud -- and the common keystroke, typing on into a list that has
 already settled, costs 40. Nine would cost nearly three seconds a keystroke,
-which is why `Suggest` offers three.
+which is why `TypeAhead` offers three.
 """
 
 from abc import ABC, abstractmethod
@@ -45,7 +45,7 @@ __all__ = [
     "Lookup",
     "Note",
     "SUGGESTIONS",
-    "Suggest",
+    "TypeAhead",
     "draw_form",
 ]
 
@@ -206,7 +206,7 @@ class Form(ABC):
         return next(iter(self.choices().values()), None)
 
 
-class Suggest(Form):
+class TypeAhead(Form):
     """A field, and the best few matches for what is in it.
 
     The shape a viewdata reader already knows -- a short numbered list, chosen

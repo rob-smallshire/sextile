@@ -25,7 +25,7 @@ might be about.
             |
    page        Page, PageFrame                          what an application returns
             |
-   forms       Form, Suggest, Fields                    a page typed into
+   forms       Form, TypeAhead, Fields                    a page typed into
             |
    application Sextile, PageRequest                     the seam
             |  PageRoute, Middleware, Lifespan           what a service is made of
@@ -811,7 +811,7 @@ Two shapes come with the framework:
 
 | | |
 |---|---|
-| `Suggest` | a field, and the best few matches beneath it, each on a digit |
+| `TypeAhead` | a field, and the best few matches beneath it, each on a digit |
 | `Fields` | several fields, one live, moved between with TAB and the arrows |
 
 **The frame is redrawn in place**, so what the terminal shows and what the

@@ -25,7 +25,7 @@ from sextile.application import Middleware, Next, Sextile
 from sextile.builtin.guidance import GuideRow
 from sextile.content.transliterate import transliterate
 from sextile.declarations import Handler, PageRoute, PageRouter
-from sextile.forms import Form, Suggest, draw_form
+from sextile.forms import Form, TypeAhead, draw_form
 from sextile.handlers import standard_pages
 from sextile.page import Page, PageFrame
 from sextile.pages import farewell_page, menu_page, notice_page, prose_page
@@ -58,7 +58,7 @@ __all__ = [
     "RouteError",
     "Sextile",
     "StateKey",
-    "Suggest",
+    "TypeAhead",
     "UnknownPageError",
     "__version__",
     "draw_form",

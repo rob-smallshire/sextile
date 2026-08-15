@@ -111,7 +111,7 @@ rather than sequences:
 | | |
 |---|---|
 | `Custom(rows, draw)` | A part of a stated height, drawn cell by cell by `draw(canvas, row)`. For a picture, a grid, a masthead. |
-| a `Form` | A field the reader types into. `Suggest` and `Fields` are parts, and a frame carries one. |
+| a `Form` | A field the reader types into. `TypeAhead` and `Fields` are parts, and a frame carries one. |
 
 ## The keys a frame answers
 

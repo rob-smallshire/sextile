@@ -570,25 +570,25 @@ cannot tell the two apart.
 ## Forms: Accepting typed input
 
 ```python
-from sextile import Suggest
+from sextile import TypeAhead
 from sextile.layout import OnOneFrame, PageLayout
 
 return PageLayout(
     title="FIND A PLACE",
     parts=[
         OnOneFrame(Lines(("Key a place name.", ""))),
-        OnOneFrame(Suggest(look_up=places.matching, label="PLACE:")),
+        OnOneFrame(TypeAhead(look_up=places.matching, label="PLACE:")),
     ],
 ).build(request)
 ```
 
 A form answers a keypress by redrawing part of the frame rather than by moving
-to another page. `Suggest` is a field with the best few matches beneath it, each
+to another page. `TypeAhead` is a field with the best few matches beneath it, each
 on a digit; `Fields` is several fields moved between with TAB and the arrows.
 Both are `Form`s, and a service that wants a third shape subclasses `Form`.
 
 **A form is a part**, so it is given the row it begins on and counts its own rows
-from zero. `Suggest` puts its field on its first row and its suggestions two rows
+from zero. `TypeAhead` puts its field on its first row and its suggestions two rows
 below unless told otherwise, and a page that moves the form up or down moves the
 part, not the offsets inside it. The form also supplies the prompt's words for
 the keys it answers — `A-Z type a name` and `1-9 choose one` — so a page carrying
@@ -599,8 +599,8 @@ typing and lasts as long as their line.
 
 ```python
 form = request.session.get(SEARCH)
-if not isinstance(form, Suggest):
-    form = Suggest(...)
+if not isinstance(form, TypeAhead):
+    form = TypeAhead(...)
     request.session[SEARCH] = form
 ```
 
@@ -613,7 +613,7 @@ Three constraints the wire imposes, so a service need not rediscover them:
   offer `0` for the index; put `*1#` in the footer instead, rather than a key
   that would swallow a digit.
 - **Say what RETURN will do where it does it**, and only while it would do
-  something. `Suggest` marks the suggestion it would take; `Fields` marks the
+  something. `TypeAhead` marks the suggestion it would take; `Fields` marks the
   last field once every field is filled.
 
 If a page's keys should also answer the cursor keys, say so. The framework knows

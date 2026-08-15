@@ -29,6 +29,20 @@ reference is corrected and marked "fixed here".
 | design.md, name section | `draw_chrome` "has no fallback title" | Rephrased to the `Header` furniture drawing no fallback title. | fixed here |
 | design.md, layout section | "What a template consumes is the `Entry` protocol" | `Template` deleted; `Formatter[E]` consumes `Entry`. Changed to `Formatter`. Also unified the live term to *furniture* where `chrome` was used as a noun. | fixed here |
 
+## Invariant-1 leaks (framework naming application concepts)
+
+CLAUDE.md invariant 1: nothing in `packages/sextile/` may know about a forum,
+phpBB, Stardot, a calendar or the weather — "not in the code, and preferably not
+in the comments". These were found in framework *comments* and genericised in
+place during the docstring sweep. Worth a check that the same concepts have not
+leaked into framework *code* (names, branches), which would be a seam defect
+beyond prose.
+
+| File | Leak | Fixed to |
+|------|------|----------|
+| session/commands.py | "the search page told readers there was no space bar"; "Place names hold spaces, hyphens and apostrophes" (weather concepts) | "a field appeared to have no space bar"; "Text a reader types may hold spaces, hyphens and apostrophes" — fixed here |
+| session/session.py | "hanging up on somebody because one post has an awkward image caption" (Stardot concepts) | "ending it over one page's exception" — fixed here |
+
 ## Structural drift needing a decision
 
 ### page-layout.md — a pre-build proposal, now mostly believed-false

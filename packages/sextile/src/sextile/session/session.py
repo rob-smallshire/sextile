@@ -556,14 +556,14 @@ class Session:
             )
         except Exception as error:
             #  A page that will not build costs its page, not the call. A
-            #  session here is a telephone call: hanging up on somebody because
-            #  one post has an awkward image caption makes them dial back in and
-            #  find their way to where they were, which is minutes of a slow
-            #  line for a fault that was ours.
+            #  session here is a telephone call, so ending it over one page's
+            #  exception would make the caller dial back in and find their way
+            #  to where they were -- minutes of a slow line for a fault that
+            #  was ours.
             #
-            #  Logged with its traceback rather than swallowed. A service that
-            #  quietly says "not here" about a page it has is a service whose
-            #  bugs never get found.
+            #  Logged with its traceback rather than swallowed, so a bug in a
+            #  page the service has is found rather than hidden behind a
+            #  "not here".
             _logger.exception("Page *%s# could not be built", address)
             raise _PageFailed(address) from error
 

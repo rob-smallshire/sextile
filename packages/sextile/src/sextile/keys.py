@@ -24,7 +24,7 @@ from typing import Final
 PREVIOUS_FRAME: Final = "W"
 NEXT_FRAME: Final = "S"
 
-#: Back and forward through the items, like shuffling sideways through a drawer.
+#: Back and forward through the items on either side.
 PREVIOUS_ITEM: Final = "A"
 NEXT_ITEM: Final = "D"
 
@@ -33,9 +33,8 @@ NEXT_ITEM: Final = "D"
 CONVENTIONAL_NEXT_FRAME: Final = "#"
 
 #: The page numbers a session answers itself rather than handing to a service:
-#: keyed as `*0#`, `*00#` and `*09#`. Here as well as in the parser because a
-#: service that explains them in a guide has to name the same ones, and a guide
-#: that has drifted from the thing it describes is worse than none.
+#: keyed as `*0#`, `*00#` and `*09#`. Here as well as in the parser, so a guide
+#: that lists them names the same ones.
 BACK: Final = "0"
 REDISPLAY: Final = "00"
 REFRESH: Final = "09"
@@ -61,7 +60,7 @@ RUB_OUT: Final = "\x7f"
 #: one thing. On a page with a field in it, it does not. W is West and S is
 #: South, so a reader reaching for the up arrow would silently type a letter
 #: into a coordinate. The parser therefore reports which key was pressed, and
-#: the session translates to WASD only where nothing wants the arrow itself.
+#: the session translates to WASD only where no page claims the arrow itself.
 #:
 #: TAB sends 0x09 too, measured against Commstar and indistinguishable from
 #: cursor right. That is a gift rather than a nuisance: tabbing between the
@@ -71,17 +70,16 @@ RIGHT: Final = "\x09"
 DOWN: Final = "\x0a"
 UP: Final = "\x0b"
 
-#: Which byte is which arrow. The framework's whole opinion on the subject.
+#: Which byte is which arrow.
 ARROW_KEYS: Final[dict[int, str]] = {0x08: LEFT, 0x09: RIGHT, 0x0A: DOWN, 0x0B: UP}
 
 #: The arrow a reader would press instead of each letter, for a page that wants
 #: to offer both.
 #:
-#: Offered rather than applied. What an arrow *means* is the page's business:
-#: on most of them it means what the letter means, and on a page with a
-#: coordinate field it does not, W being West and S being South. A framework
-#: that translated arrows to letters before any page could see them would be
-#: deciding that for every service at once, which is not its to decide.
+#: Offered rather than applied. What an arrow means is for the page to decide:
+#: on most pages it means what the letter means, and on a page with a coordinate
+#: field it does not, W being West and S being South. So the arrow-to-letter
+#: choice is left to each page rather than made here for every service at once.
 ARROW_FOR: Final[dict[str, str]] = {
     PREVIOUS_FRAME: UP,
     NEXT_FRAME: DOWN,
@@ -102,7 +100,7 @@ def with_arrows(pressed: Iterable[str]) -> frozenset[str]:
     return frozenset(wanted | {ARROW_FOR[key] for key in wanted if key in ARROW_FOR})
 
 
-#: Which letter each arrow stands for, `ARROW_FOR` read backwards.
+#: Which letter each arrow stands for, the inverse of `ARROW_FOR`.
 LETTER_FOR: Final = {arrow: letter for letter, arrow in ARROW_FOR.items()}
 
 
@@ -110,11 +108,9 @@ def as_letter(key: str) -> str:
     """The letter a key stands for: an arrow becomes the letter it points like.
 
     A page says which keys it answers in letters, because that is what its
-    footer and its compass say to the reader. `with_arrows` then offers the
-    arrows alongside them -- and something has to turn a pressed arrow back
-    into the letter it stands for, or a page offers a key it does not act on.
-    Which is what happened: every multi-frame page in the workspace advertised
-    the cursor keys and none of them moved.
+    footer and its compass show the reader. `with_arrows` offers the arrows
+    alongside them, and this turns a pressed arrow back into the letter it
+    stands for, so a page does not offer a key it fails to act on.
     """
     return LETTER_FOR.get(key, key)
 
@@ -140,7 +136,7 @@ def moving(*, back: bool, on: bool) -> frozenset[str]:
     working for a reader who never learns the rest, and the arrows come along
     with both: a page divided into frames is a page a reader moves through in
     the ordinary way. Said by the page rather than assumed by the session,
-    because what an arrow means is the page's business.
+    since what an arrow means is for the page to decide.
     """
     pressed = set()
     if back:

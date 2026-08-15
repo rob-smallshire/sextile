@@ -36,7 +36,7 @@ DEFAULT_PORT: Final = 6850
 DEFAULT_IDLE_TIMEOUT: Final = 15 * 60.0
 
 #: How much of the idle timeout passes before the warning appears, when nothing
-#: else is said. Half leaves as long to notice it as it took to earn it.
+#: else is said. Half leaves as long to respond as the silence that raised it.
 DEFAULT_WARN_FRACTION: Final = 0.5
 
 #: The bar is redrawn only when a cell changes, but the clock has to be looked
@@ -63,9 +63,8 @@ async def serve(
     all, for a terminal that would rather not be written to unprompted; with no
     idle timeout there is nothing to warn about and none is given either way.
 
-    Starting and stopping the application is the caller's, not this function's:
-    a server that opened an application's database would be a server with an
-    opinion about what an application is.
+    Starting and stopping the application is the caller's job, not this
+    function's: the server does not open or close an application's resources.
     """
     if warn_after is None and idle_timeout is not None:
         warn_after = idle_timeout * DEFAULT_WARN_FRACTION

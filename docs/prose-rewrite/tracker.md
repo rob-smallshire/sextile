@@ -65,26 +65,26 @@ Docs:
 
 Source docstrings + comments (src/sextile):
 - [ ] __init__.py, __main__.py
-- [ ] addressing.py
-- [ ] application.py
+- [x] addressing.py
+- [x] application.py
 - [ ] cli.py
 - [ ] compass.py
 - [ ] content/ (blocks.py, transliterate.py)
-- [ ] declarations.py
+- [x] declarations.py
 - [ ] demo.py
 - [ ] formatting.py
 - [ ] forms.py
 - [ ] handlers.py
-- [ ] held.py
-- [ ] keys.py
+- [x] held.py
+- [x] keys.py
 - [ ] layout.py
-- [ ] middleware.py
+- [x] middleware.py  (already at target; left unchanged)
 - [x] page.py  (source-docstring register sample)
 - [ ] pages/ (contents, guidance, history, names, readership)
-- [ ] requests.py
+- [x] requests.py
 - [x] routing.py
-- [ ] server.py
-- [ ] session/ (commands.py, session.py)
+- [x] server.py
+- [x] session/ (commands.py, session.py)  (fixed 2 Invariant-1 comment leaks)
 - [ ] testing.py
 - [ ] visits.py
 - [ ] viewdata/ (ansi, blocks, canvas, charset, charting, command_line,

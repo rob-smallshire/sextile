@@ -1,0 +1,12 @@
+/* Documentation-only framing for Viewdata frames.
+ *
+ * The frame itself is viewdata.css, shipped with the package. This adds only a
+ * bezel, so the black screen reads as a screen against the page rather than
+ * merging into it -- in dark mode the frame's black is close to the content
+ * background. A mid grey border works in both themes. */
+
+pre.viewdata {
+  border: 1px solid #666;
+  border-radius: 4px;
+  margin: 1rem 0;
+}

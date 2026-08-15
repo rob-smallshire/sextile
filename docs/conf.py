@@ -103,3 +103,8 @@ intersphinx_mapping = {"python": ("https://docs.python.org/3", None)}
 
 html_theme = "furo"
 html_title = f"Sextile {release}"
+
+#  A docs-only bezel around the frames (the frame itself is the package's
+#  viewdata.css, copied into _static by the sextile-frame directive).
+html_static_path = ["_static"]
+html_css_files = ["sextile-docs.css"]

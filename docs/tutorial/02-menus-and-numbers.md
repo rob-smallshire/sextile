@@ -52,9 +52,16 @@ async def one_day(request: PageRequest, day: date) -> Page:
     )
 
 
-@router.page("9", name="about", title="About this service", keywords=("ABOUT",))
+@router.page("9", name="about", title="About this service", keywords=("ABOUT", "HELP"))
 async def about(request: PageRequest) -> Page:
-    return prose_page(request, "A calendar, served as Viewdata frames.")
+    return prose_page(
+        request,
+        "A calendar, served as Viewdata frames.",
+        "It exists to demonstrate that Sextile is a framework and not one "
+        "service: nothing here knows about forums, and nothing in the framework "
+        "knows about calendars.",
+        "Everything it shows comes from the standard library.",
+    )
 
 
 app = Sextile(name=SERVICE_NAME, pages=[*router])

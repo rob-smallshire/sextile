@@ -147,7 +147,7 @@ be a defect.
 
 ## Furniture
 
-`DEFAULT_FURNITURE` is a `Header`, a `Rule` at each end, and a `Prompt`. A
+`DEFAULT_FURNITURE` is a `Header`, a `Rule` at each end, and a `Footer`. A
 service sets its own once and a page overrides it where it has reason — red
 rules on a page that does something irreversible:
 

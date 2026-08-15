@@ -18,12 +18,12 @@ from sextile.layout import (
     HOME_KEY,
     Claim,
     Flow,
+    Footer,
     FrameBreak,
     OnEveryFrame,
     OnFirstFrame,
     PageLayout,
     Placed,
-    Prompt,
     Shortcut,
     Space,
     content_rows,
@@ -292,7 +292,7 @@ class TestTheFurniture:
 
     def test_a_two_row_footer_costs_a_content_row(self) -> None:
         #  The arithmetic says so, rather than a constant needing to be edited.
-        assert content_rows([*DEFAULT_FURNITURE, Prompt()]) == range(2, 21)
+        assert content_rows([*DEFAULT_FURNITURE, Footer()]) == range(2, 21)
 
     def test_the_header_carries_the_title_and_the_page_number(self) -> None:
         layout = PageLayout(title="ITEMS", parts=[OnFirstFrame(Says("x"))])

@@ -64,7 +64,7 @@ __all__ = [
     "Part",
     "Placed",
     "Claim",
-    "Prompt",
+    "Footer",
     "Space",
     "Rule",
     "Shortcut",
@@ -596,7 +596,7 @@ class Rule:
 
 
 @dataclass(frozen=True)
-class Prompt:
+class Footer:
     """Every key that works on this frame, and what each of them does."""
 
     colour: Colour = Colour.YELLOW
@@ -617,7 +617,7 @@ DEFAULT_FURNITURE: Final[tuple[Furnishing, ...]] = (
     Header(),
     Rule(edge=Edge.TOP),
     Rule(edge=Edge.BOTTOM),
-    Prompt(),
+    Footer(),
 )
 
 

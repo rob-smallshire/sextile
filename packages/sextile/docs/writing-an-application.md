@@ -372,7 +372,7 @@ app = Sextile(pages=[
 
 ## Getting page information
 
-A page that names itself in its decorator and again in its own chrome has two
+A page that names itself in its decorator and again in its own furniture has two
 copies to keep in step, and the decorator's is the one shown in menus, on the
 contents page and in the history. So the heading comes from the declaration:
 

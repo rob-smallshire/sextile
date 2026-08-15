@@ -52,7 +52,7 @@ application in its first few lines.
     Drawn                                  a part that draws itself, cell by cell
     Drawable  Space  Claim  Placed         what a part of your own must satisfy
     Edge  FrameContext  Furnishing         what furniture must satisfy
-    Header  Rule  Prompt  DEFAULT_FURNITURE
+    Header  Rule  Footer  DEFAULT_FURNITURE
     Shortcut  HOME_KEY                     a fixed key on every frame
     content_rows  CHOICES_PER_FRAME
 
@@ -74,7 +74,7 @@ over-long words rather than dropping them.
 
 For a page drawing something no layout has a shape for: a picture, a chart, a
 masthead, a form's furniture. **Prefer a layout.** What is here is for drawing
-*within* a page. A page that finds itself drawing chrome or composing a footer
+*within* a page. A page that finds itself drawing furniture or composing a footer
 has gone past the toolkit and is rebuilding the `sextile.layout` layer by hand.
 
 Public submodules:
@@ -110,8 +110,8 @@ share a repository with it: a fourth service drawing its own icons wants
 reason rather than the absence.
 
 That is a different thing from a duplicate implementation, which is what
-`viewdata/chrome.py` turned out to be. It was deleted because `Header`, `Rule`
-and `Prompt` do the job it did, and two implementations of one thing diverge —
+a since-deleted furniture module turned out to be. It went because `Header`,
+`Rule` and `Footer` do the job it did, and two implementations of one thing diverge —
 not because nothing called it.
 
 ### `sextile.keys` — the keys a reader presses
@@ -230,10 +230,10 @@ Everything else, and specifically:
 
 Nowhere, as of 2026-08-14.
 
-The last three crossings were `viewdata.chrome`, `viewdata.footer` and
+The last three crossings were a furniture module, `viewdata.footer` and
 `viewdata.typesetting`, all reached because a page had to draw its own
-furniture. Splitting a page into furniture and parts closed them: `chrome` has
-no reader outside the framework, and `footer` and `typesetting` turned out to
+furniture. Splitting a page into furniture and parts closed them: the furniture
+module had no reader outside the framework, and `footer` and `typesetting` turned out to
 be public rather than crossed. A part says which keys to name, so a service
 writing one needs `FooterItem`; a page made of a document needs `rows_for`.
 Both are listed above.
@@ -244,7 +244,7 @@ were found when this was first written. Three were applications reaching past a
 front door that was already open, and closed the same day. One was a name that
 should have been exported and was not. One was API behind an internal path,
 `guidance.Key`, now `GuideRow` and exported. The last was the interesting one
-and took the longest: three services drawing chrome and composing footers by
+and took the longest: three services drawing furniture and composing footers by
 hand, for want of any way to obtain the furniture of a page without also being
 a formatter of a homogeneous sequence.
 

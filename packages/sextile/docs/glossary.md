@@ -19,9 +19,9 @@ as "was X" so a reader coming from older code or docs can find it.
   (was `Offer`) of the keys claimed, and a `remainder` (was `rest`). Two claims
   merge with `Claim.merged_with` (was `Offer.and_then`).
 - **furniture** — the fixed structure a page is drawn into, around its parts:
-  header, rules and footer. `layout.Furnishing`, `DEFAULT_FURNITURE`. A
-  furnishing is told a `FrameContext` (was `Summary`); its edge is
-  `Edge.TOP`/`Edge.BOTTOM` (was `Edge.FOOT`).
+  a `Header`, `Rule`s and a `Footer` (was `Prompt`). `layout.Furnishing`,
+  `DEFAULT_FURNITURE`. A furnishing is told a `FrameContext` (was `Summary`);
+  its edge is `Edge.TOP`/`Edge.BOTTOM` (was `Edge.FOOT`).
 - **route** — a pattern bound to a handler, carrying the page's name and
   keywords. `PageRoute`.
 - **router** — collects the routes a module of handlers declares with

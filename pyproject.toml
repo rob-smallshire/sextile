@@ -43,6 +43,14 @@ dev = [
     "ruff>=0.6",
     "mypy>=1.11",
 ]
+#  The documentation set builds from the framework's own docstrings, so it needs
+#  the packages installed (the workspace root depends on them) and Sphinx.
+docs = [
+    "sphinx>=8.0",
+    "myst-parser>=4.0",
+    "furo>=2024.8",
+    "sphinx-autodoc-typehints>=2.5",
+]
 
 [tool.pytest.ini_options]
 testpaths = ["packages", "tools"]

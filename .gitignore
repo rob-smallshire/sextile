@@ -18,3 +18,7 @@ wheels/
 # Editors
 .idea/
 .vscode/
+
+# Sphinx build output and autosummary-generated stubs
+docs/_build/
+docs/reference/api/generated/

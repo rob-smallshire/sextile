@@ -15,7 +15,7 @@ offer it at all:
 
     @page("92", name="history", title="Where you have been")
     async def _history(self, request: PageRequest) -> Page:
-        return await self.history(request)
+        return await self.history_page(request)
 
 The page leaves itself out of the list. Visiting it is a move like any other, so
 it enters the history too, and a list of places to go back to should not offer

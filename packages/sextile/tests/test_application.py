@@ -555,7 +555,7 @@ class TestWhereZeroGoes:
 
     async def test_the_framework_s_own_pages_use_the_index(self) -> None:
         app = Sextile(home="0", index="1")
-        page = await app.history(
+        page = await app.history_page(
             PageRequest(address=PageAddress("92"), app=app, history=(PageAddress("8"),))
         )
         assert page.frames[0].destination("0") == PageAddress("1")

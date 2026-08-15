@@ -118,19 +118,19 @@ class TestWhatTheseBuiltInPagesAreCalled:
 
     async def test_a_service_s_own_words_are_used(self) -> None:
         app = Sextile()
-        app.page("93", name="contents", title="Every page")(app.contents)
+        app.page("93", name="contents", title="Every page")(app.contents_page)
         assert "EVERY PAGE" in _shown(await _built(app, "93"))
 
     async def test_and_a_service_that_calls_it_something_else_gets_that(self) -> None:
         app = Sextile()
-        app.page("50", name="contents", title="What is here")(app.contents)
+        app.page("50", name="contents", title="What is here")(app.contents_page)
         shown = _shown(await _built(app, "50"))
         assert "WHAT IS HERE" in shown
         assert TITLE not in shown
 
     async def test_a_service_that_said_nothing_keeps_the_framework_s_name(self) -> None:
         app = Sextile()
-        app.page("50")(app.contents)
+        app.page("50")(app.contents_page)
         assert TITLE in _shown(await _built(app, "50"))
 
 

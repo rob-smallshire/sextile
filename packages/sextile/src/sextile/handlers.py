@@ -27,14 +27,14 @@ __all__ = [
 
 async def history(request: PageRequest) -> Page:
     """Where this caller has been, at whatever number the service gives it."""
-    return await request.app.history(request)
+    return await request.app.history_page(request)
 
 
 async def contents(request: PageRequest) -> Page:
     """Every page the service advertises, at the service's own number."""
-    return await request.app.contents(request)
+    return await request.app.contents_page(request)
 
 
 async def names(request: PageRequest) -> Page:
     """The words a reader can key, at the service's own number."""
-    return await request.app.names(request)
+    return await request.app.keywords_page(request)

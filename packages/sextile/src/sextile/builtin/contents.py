@@ -20,7 +20,7 @@ or does without:
 
     @page("93", name="contents", title="Every page")
     async def _contents(self, request: PageRequest) -> Page:
-        return await self.contents(request)
+        return await self.contents_page(request)
 """
 
 from collections.abc import Sequence

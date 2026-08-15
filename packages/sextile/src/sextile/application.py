@@ -500,13 +500,13 @@ class Sextile:
         """
         return self.describe(address).upper()
 
-    async def history(self, request: PageRequest) -> Page:
+    async def history_page(self, request: PageRequest) -> Page:
         """Where this caller has been, newest first, as a menu of shortcuts.
 
         Not registered anywhere by the framework: a service maps it into its own
         numbering, or does not offer it at all.
 
-            self.page("92", name="history")(self.history)
+            self.page("92", name="history")(self.history_page)
             self.alias("HISTORY", self.address_for("history"))
 
         Key 1 for the page before this one -- the same as `*0#` -- 2 for the one
@@ -519,7 +519,7 @@ class Sextile:
             title=self.heading(request.address, history.TITLE),
         )
 
-    async def guide(
+    async def guide_page(
         self,
         request: PageRequest,
         *,
@@ -553,7 +553,7 @@ class Sextile:
             items=items,
         )
 
-    async def lately_read(
+    async def recent_page(
         self,
         request: PageRequest,
         visits: Visits,
@@ -584,7 +584,7 @@ class Sextile:
             title=self.heading(request.address, readership.RECENT_TITLE),
         )
 
-    async def most_read(
+    async def popular_page(
         self,
         request: PageRequest,
         visits: Visits,
@@ -611,7 +611,7 @@ class Sextile:
             title=self.heading(request.address, readership.POPULAR_TITLE),
         )
 
-    async def who_has_called(
+    async def callers_page(
         self,
         request: PageRequest,
         visits: Visits,
@@ -634,7 +634,7 @@ class Sextile:
             title=self.heading(request.address, readership.CALLERS_TITLE),
         )
 
-    async def names(self, request: PageRequest) -> Page:
+    async def keywords_page(self, request: PageRequest) -> Page:
         """The words a reader can key in place of a page number.
 
         Registered nowhere, like `history` and `contents`. Generated from the
@@ -648,7 +648,7 @@ class Sextile:
             title=self.heading(request.address, names.TITLE),
         )
 
-    async def contents(self, request: PageRequest) -> Page:
+    async def contents_page(self, request: PageRequest) -> Page:
         """Every page this service advertises, with the number that fetches it.
 
         Registered nowhere, like `history`; a service maps it in or does not.

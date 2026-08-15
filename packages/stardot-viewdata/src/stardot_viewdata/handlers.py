@@ -336,7 +336,7 @@ async def guide(request: PageRequest) -> Page:
     keeps its own numbers for.
     """
     app = request.app
-    return await app.guide(
+    return await app.guide_page(
         request,
         asking=[
             GuideRow(keyed(app.address_for("logoff")), "log off"),

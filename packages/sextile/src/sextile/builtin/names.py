@@ -19,7 +19,7 @@ numbering or does without:
 
     @page("94", name="names", title="Words you can key", keywords=("KEYWORDS",))
     async def _names(self, request: PageRequest) -> Page:
-        return await self.names(request)
+        return await self.keywords_page(request)
 """
 
 from collections.abc import Callable, Mapping

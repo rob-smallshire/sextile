@@ -52,9 +52,9 @@ from sextile.viewdata.font import Font, Glyph
 __all__ = [
     "Spacing",
     "boxed",
-    "cells_for",
+    "cells_needed",
     "place",
-    "rows_for",
+    "rows_needed",
     "width",
 ]
 
@@ -380,7 +380,7 @@ def _rows_of(row: Where, deep: int, tall: int) -> tuple[Where, Where]:
     return max(row - above, 0), max(row - above, 0) + above
 
 
-def cells_for(
+def cells_needed(
     text: str,
     font: Font,
     *,
@@ -404,7 +404,7 @@ def cells_for(
         The width in cells, rounded up: a line ending part way into a cell
         still occupies the whole of it.
 
-    The companion of `rows_for`, and what a page needs to draw a stripe behind
+    The companion of `rows_needed`, and what a page needs to draw a stripe behind
     a word without drawing the word first: a panel of this width and the
     lettering, both centred, line up without either knowing about the other.
     """
@@ -412,7 +412,7 @@ def cells_for(
     return -(-across // BLOCKS_ACROSS) + 2 * padding
 
 
-def rows_for(font: Font, *, margin: int = 0) -> int:
+def rows_needed(font: Font, *, margin: int = 0) -> int:
     """How many rows of the frame a face needs at most, with `margin` of border.
 
     The most, not the number a given line takes: a line of capitals is trimmed

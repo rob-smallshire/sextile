@@ -91,7 +91,7 @@ Public submodules:
 | `blocks` | mosaic pictures: `Icon`, `icon`, `block_runs`, `read_bitmap`, `BLOCKS_ACROSS`, `BLOCKS_DOWN` |
 | `charting` | `curve`, `bars` |
 | `composition` | `Composition`, `Panel`, `Align`, `Style`, `DoesNotFit`, `Where` — placing things relative to each other |
-| `lettering` | outsized letters: `place`, `boxed`, `cells_for`, `width`, `rows_for`, `Spacing` |
+| `lettering` | outsized letters: `place`, `boxed`, `cells_needed`, `width`, `rows_needed`, `Spacing` |
 | `font` | `Font`, `load_font`, `font_names`, `read_font`, `Glyph`, `FontError` |
 | `footer` | `FooterItem`, `Priority`, `movement`, `render_footer`, `ROOM` — composing a prompt for a frame drawn by hand |
 | `wrapping` | `wrap_text`, `wrap_within` |
@@ -102,12 +102,12 @@ from, and it draws on a frame after a page has been built rather than while it
 is being built.
 
 **Some of this is offered rather than used.** `read_bitmap`, `boxed`,
-`cells_for` and `is_attribute_code` have no caller among the three services here,
+`cells_needed` and `is_attribute_code` have no caller among the three services here,
 and that is not an argument against them. A framework's surface is justified by
 being useful to a service, not by being used by the services that happen to
 share a repository with it: a fourth service drawing its own icons wants
 `read_bitmap`, and one setting a masthead in a box wants `boxed` and
-`cells_for`. They are listed here so that a sweep for uncalled code finds the
+`cells_needed`. They are listed here so that a sweep for uncalled code finds the
 reason rather than the absence.
 
 That is a different thing from a duplicate implementation, which is what

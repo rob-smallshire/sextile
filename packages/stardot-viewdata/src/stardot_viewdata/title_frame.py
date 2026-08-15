@@ -66,7 +66,7 @@ def draw_masthead(canvas: Canvas, name: str) -> None:
         Align.LEFT,
         colour=BANNER_BACKGROUND,
         width=COLUMNS - 1,
-        rows=lettering.rows_for(face),
+        rows=lettering.rows_needed(face),
     )
     lettering.place(
         layout,

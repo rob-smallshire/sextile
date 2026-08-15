@@ -192,11 +192,11 @@ class TestRefusals:
 class TestIntoCells:
     def test_a_face_of_eight_blocks_needs_three_rows_of_the_frame(self) -> None:
         acorn = load_font("acorn")
-        assert lettering.rows_for(acorn) == 3
+        assert lettering.rows_needed(acorn) == 3
         assert len(lettering.cells("STARDOT", acorn)) == 3
 
     def test_a_margin_can_push_it_to_a_fourth(self) -> None:
-        assert lettering.rows_for(load_font("acorn"), margin=1) == 4
+        assert lettering.rows_needed(load_font("acorn"), margin=1) == 4
 
     def test_the_patterns_are_the_ones_the_wire_wants(self) -> None:
         #  The toy I is one block in the top-left of its cell, three rows down.
@@ -422,7 +422,7 @@ class TestAStripeBehindLetteringIsTwoThings:
         layout.panel(
             7,
             Align.CENTRE,
-            width=lettering.cells_for("VIEWDATA", face, padding=2),
+            width=lettering.cells_needed("VIEWDATA", face, padding=2),
             colour=Colour.BLUE,
         )
         lettering.place(layout, 6, "VIEWDATA", face, Colour.YELLOW)
@@ -455,6 +455,6 @@ class TestAStripeBehindLetteringIsTwoThings:
 
     def test_a_stripe_is_as_wide_as_the_word_and_its_padding(self) -> None:
         face = load_font("acorn")
-        bare = lettering.cells_for("VIEWDATA", face)
-        assert lettering.cells_for("VIEWDATA", face, padding=2) == bare + 4
+        bare = lettering.cells_needed("VIEWDATA", face)
+        assert lettering.cells_needed("VIEWDATA", face, padding=2) == bare + 4
         assert bare == len(lettering.cells("VIEWDATA", face)[0])

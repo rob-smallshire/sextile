@@ -432,7 +432,7 @@ class TestTheTitleFrame:
         frame = (await page_at(app, "0")).frames[0].frame
         face = load_font(BANNER_FACE)
         wanted = lettering.bitmap(SERVICE_NAME, face, spacing=Spacing.KERNED)
-        drawn = _blocks_of(frame, BANNER_ROW, lettering.rows_for(face))
+        drawn = _blocks_of(frame, BANNER_ROW, lettering.rows_needed(face))
         assert _ink_of(drawn) == _ink_of(wanted)
 
     async def test_on_a_stripe_of_colour_across_the_frame(
@@ -459,7 +459,7 @@ class TestTheTitleFrame:
         frame = (await page_at(app, "0")).frames[0].frame
         face = load_font(SUBTITLE_FACE)
         wanted = lettering.bitmap(SERVICE_KIND, face, spacing=Spacing.KERNED)
-        drawn = _blocks_of(frame, SUBTITLE_ROW, lettering.rows_for(face))
+        drawn = _blocks_of(frame, SUBTITLE_ROW, lettering.rows_needed(face))
         assert _ink_of(drawn) == _ink_of(wanted)
 
     async def test_with_a_stripe_a_third_of_its_height_behind_it(

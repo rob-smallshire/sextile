@@ -236,7 +236,7 @@ than the other. It is still widened to cover the runs whatever the padding,
 because a panel stopping short of a run it is behind would leave that run
 turning the background off in the middle of the stripe.
 
-`lettering.cells_for` sizes a panel without the word being drawn first — the
+`lettering.cells_needed` sizes a panel without the word being drawn first — the
 companion of `rows_for` — for the cases where the order has to be the other
 way about.
 
@@ -311,7 +311,7 @@ how every diagonal at this resolution is drawn.
 ## Large lettering
 
 `viewdata/lettering.py` sets a line of text in a mosaic font: `place` and
-`boxed` add it to a `Composition`, `cells_for` and `width` measure it first,
+`boxed` add it to a `Composition`, `cells_needed` and `width` measure it first,
 and `Spacing` chooses between fixed, proportional and kerned advance. The
 requirements, the source formats and the measurements behind the font are in
 [mosaic-fonts.md](mosaic-fonts.md) — including why a format of our own is

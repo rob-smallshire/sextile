@@ -30,10 +30,14 @@ as "was X" so a reader coming from older code or docs can find it.
 - **sequence part** (was `Formatter`/`RowFormatter`) — a part that lays out a
   homogeneous sequence of entries: a menu, a listing, a table of figures.
   Subclass `formatting.SequencePart`, or `RowSequencePart` for one whose entries
-  are written left-to-right along their rows.
+  are written left-to-right along their rows. Its `gap` (was `separation`) is the
+  blank rows between entries, its `choose_hint` (was `selecting_hint`) the footer
+  item shown when the entries can be chosen. `Figures` names its two columns'
+  widths `label_width` and `figure_width` (were `label` and `figure`).
 - **entry** — one item in a sequence a sequence part lays out, such as a line of
   a menu. `formatting.Entry`. `Lines` takes its lines as `entries`, passed first
-  and without a keyword (was the `said=` keyword).
+  and without a keyword (was the `said=` keyword). `PageLayout.item_noun` (was
+  `item`) is what the service calls one, so a heading can read "3 posts".
 - **Custom** (was `Drawn`) — a part of a stated height a page draws itself, cell
   by cell: a picture, a grid, a masthead. `layout.Custom(rows, draw)`.
 - **place** — what a custom part does: `place(canvas, room) -> Placed`, drawing
@@ -52,6 +56,11 @@ as "was X" so a reader coming from older code or docs can find it.
 - **router** — collects the routes a module of handlers declares with
   `@router.page`, spread into a service as `Sextile(pages=[*router, ...])`.
   `PageRouter` (replaced the free `@page` decorator and `routes_in`).
+  `app.add_keyword` (was `alias`) gives a page a second page number under a word;
+  `app.add_converter` (was `converter`) teaches the patterns a new field type.
+- **readership pages** — the framework's own history pages: `Sextile.recent_page`
+  (was `lately_read`), `popular_page` (was `most_read`) and `callers_page` (was
+  `who_has_called`), each built from the visit log.
 - **pattern** — the page-number template a route matches: literal digits and
   named fields, such as `82{post_id:int}`.
 - **address** — a page number a reader is at, resolved from a pattern.
@@ -116,7 +125,8 @@ as "was X" so a reader coming from older code or docs can find it.
 - **form** — rows of a frame a reader types into, a field with furniture around
   it. `forms.Form`, `forms.Field`. `TypeAhead` (was `Suggest`) is a field with
   the best few matches beneath it, changing as the reader types; `FieldSet`
-  (was `Fields`) is a form of several fields at once. Its `on_submit` (was
+  (was `Fields`) is a form of several fields at once. A field `accepts` (was
+  `takes`) the keys a reader may type into it. Its `on_submit` (was
   `complete`), `footnote` (was `note`), `submit_label` (was `sends`) and
   `footer_items` (was `advice`) each say what they are; the handler types are
   `SubmitHandler` (was `Complete`) and `Footnote` (was `Note`). A `Form`

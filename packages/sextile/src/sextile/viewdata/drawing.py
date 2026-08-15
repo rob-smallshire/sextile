@@ -19,6 +19,7 @@ is `blocks.py` and `composition.py`, with `lettering.py` on top for text.
 from typing import Final
 
 from sextile.viewdata.canvas import Canvas, RowWriter
+from sextile.viewdata.charset import mosaic_code
 from sextile.viewdata.composition import Align, Composition, Style
 from sextile.viewdata.controls import Attribute, Colour, graphics_colour
 from sextile.viewdata.frame import COLUMNS
@@ -32,11 +33,8 @@ __all__ = [
     "thin_rule",
 ]
 
-#: The mosaic character with all six blocks lit. Every rule and bar is a run of
-#: these; in the G1 set it is 0x7F.
-SOLID: Final = "▮"
-
-#: The same as a block pattern, for a composition rather than a row writer.
+#: The all-lit mosaic as a block pattern, all six blocks set. Every rule and bar
+#: is a run of these; encoded for a cell it is 0x7F in the G1 set.
 SOLID_BLOCKS: Final = 0b111111
 
 #: The middle row of blocks in a cell, and nothing else: a rule one block thick
@@ -163,4 +161,8 @@ def bar(
     if separated:
         frame.set_attribute(row, column + 1, Attribute.SEPARATED_GRAPHICS)
     solid = room if lit is None else max(min(lit, room), 0)
-    frame.write(row, column + attributes, SOLID * solid + " " * (room - solid))
+    #  By mosaic pattern -- the all-lit block and the empty one -- rather than by
+    #  writing a Unicode character and trusting it to encode to 0x7F.
+    patterns = [SOLID_BLOCKS] * solid + [0] * (room - solid)
+    for offset, pattern in enumerate(patterns):
+        frame.set_cell(row, column + attributes + offset, mosaic_code(pattern))

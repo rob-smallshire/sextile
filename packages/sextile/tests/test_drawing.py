@@ -8,10 +8,9 @@ a heading has.
 import pytest
 
 from sextile.viewdata.canvas import Canvas
-from sextile.viewdata.charset import mosaic_pattern
+from sextile.viewdata.charset import decode_g0, mosaic_pattern
 from sextile.viewdata.controls import Attribute, Colour
 from sextile.viewdata.drawing import (
-    SOLID,
     bar,
     centred,
     centred_double,
@@ -20,6 +19,10 @@ from sextile.viewdata.drawing import (
 )
 from sextile.viewdata.frame import COLUMNS
 from sextile.viewdata.measure import cell_count, fitted
+
+#: The character a fully-lit mosaic cell decodes to, for reading a bar back off
+#: a drawn row. 0x7F is the all-lit block in the G1 set.
+SOLID = decode_g0(0x7F)
 
 
 def rows_of(canvas: Canvas) -> list[str]:

@@ -625,7 +625,7 @@ choices=arrows_lead_where({"A": before, "D": after})
 ```
 
 `PageLayout` does the first for every page it builds, and the second for any
-shortcut given `arrow=True`. A form receives the arrows unmapped, which is what
+shortcut given `with_arrow=True`. A form receives the arrows unmapped, which is what
 lets TAB move between fields without registering a `D`.
 
 ## Middleware: Intercepting every request and response

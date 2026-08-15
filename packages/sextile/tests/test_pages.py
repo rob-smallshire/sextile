@@ -67,7 +67,7 @@ class TestNoticePage:
         page = notice_page(
             request_for(_APP),
             "x",
-            shortcuts=[Shortcut(key="R", destination=PageAddress("7"), says="reply")],
+            shortcuts=[Shortcut(key="R", destination=PageAddress("7"), label="reply")],
         )
         found = page.frame(0)
         assert found is not None

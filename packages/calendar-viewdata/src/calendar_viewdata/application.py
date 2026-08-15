@@ -158,7 +158,7 @@ async def one_day(request: PageRequest, day: date) -> Page:
     return PageLayout(
         title=_month_name(day),
         shortcuts=[
-            Shortcut(key="1", destination=app.address_for("month", day=day), says="month")
+            Shortcut(key="1", destination=app.address_for("month", day=day), label="month")
         ],
         neighbours=request.neighbours,
         item_noun="day",
@@ -250,12 +250,12 @@ def _month_page(request: PageRequest, day: date) -> Page:
             Shortcut(
                 key=keys.PREVIOUS_ITEM,
                 destination=app.address_for("month", day=previous),
-                arrow=True,
+                with_arrow=True,
             ),
             Shortcut(
                 key=keys.NEXT_ITEM,
                 destination=app.address_for("month", day=following),
-                arrow=True,
+                with_arrow=True,
             ),
         ],
         item_noun="month",

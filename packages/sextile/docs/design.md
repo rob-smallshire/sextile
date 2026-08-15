@@ -864,7 +864,7 @@ service at once. On a coordinate form it is wrong twice over: `W` is West and
 into a number. `keys.ARROW_FOR`, `with_arrows` and `arrows_lead_where` offer the
 knowledge; a page decides what to do with it. `PageLayout` offers the arrows
 for the frame keys, which mean the same on every page, and for a `Shortcut`
-only where the page has said `arrow=True`.
+only where the page has said `with_arrow=True`.
 
 ## Middleware
 

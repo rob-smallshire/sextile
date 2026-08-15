@@ -42,7 +42,8 @@ as "was X" so a reader coming from older code or docs can find it.
   offered, so a reader can step along without going back. `request.neighbours`
   is a `Neighbours(previous, next)` (was `Arrival(preceding, following)`).
 - **shortcut** — a key present on every frame that leads to a fixed address.
-  `layout.Shortcut`.
+  `layout.Shortcut`: `label` (was `says`) is how the footer names it,
+  `with_arrow` (was `arrow`) whether the matching cursor key leads there too.
 - **home vs index** — home is where a caller arrives when the line opens
   (`Sextile(home=...)`, page 1 by default; a service opening on a title frame
   sets its own). Index is where the `0` key goes from every frame

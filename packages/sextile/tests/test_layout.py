@@ -329,7 +329,7 @@ class TestWhatAFrameAnswers:
         page = PageLayout(
             title="POSTS",
             home=at("1"),
-            shortcuts=[Shortcut(key="R", destination=at("7"), says="reply")],
+            shortcuts=[Shortcut(key="R", destination=at("7"), label="reply")],
             parts=[Flow(items(12))],
         ).build(request_for(_APP, at("8")))
         for index in range(len(page.frames)):
@@ -399,7 +399,7 @@ class TestTheWayHomeIsAShortcutLikeAnyOther:
         assert "0 index" in rows_of(page)[-1]
 
     def test_a_shortcut_is_taken_as_given(self) -> None:
-        page = self.a_page(Shortcut(key="9", destination=at("1"), says="back to the top"))
+        page = self.a_page(Shortcut(key="9", destination=at("1"), label="back to the top"))
         found = page.frame(0)
         assert found is not None
         assert found.destination("9") == at("1")
@@ -409,7 +409,7 @@ class TestTheWayHomeIsAShortcutLikeAnyOther:
     def test_the_short_form_is_what_stands_before_the_comma(self) -> None:
         #  Rather than a second field saying it twice. The footer sheds words
         #  from the end when the row is tight.
-        page = self.a_page(Shortcut(HOME_KEY, at("1"), says="index, or key another page"))
+        page = self.a_page(Shortcut(HOME_KEY, at("1"), label="index, or key another page"))
         assert "0 index, or key another page" in rows_of(page)[-1]
 
     def test_no_way_home_at_all_names_no_key(self) -> None:
@@ -428,14 +428,14 @@ class TestAShortcutThatAnswersAnArrowToo:
     answers its arrow only where the page has said it should.
     """
 
-    def a_page(self, *, arrow: bool = False) -> Page:
+    def a_page(self, *, with_arrow: bool = False) -> Page:
         return PageLayout(
             title="ONE DAY",
             home=at("1"),
             parts=[OnFirstFrame(Says("Saturday."))],
             shortcuts=[
-                Shortcut(key="A", destination=at("41"), says="prev", arrow=arrow),
-                Shortcut(key="D", destination=at("43"), says="next", arrow=arrow),
+                Shortcut(key="A", destination=at("41"), label="prev", with_arrow=with_arrow),
+                Shortcut(key="D", destination=at("43"), label="next", with_arrow=with_arrow),
             ],
         ).build(request_for(_APP, at("42")))
 
@@ -451,7 +451,7 @@ class TestAShortcutThatAnswersAnArrowToo:
         assert found.destination(RIGHT) is None
 
     def test_asked_for_the_arrow_leads_where_the_letter_does(self) -> None:
-        found = self.a_page(arrow=True).frame(0)
+        found = self.a_page(with_arrow=True).frame(0)
         assert found is not None
         assert found.destination(LEFT) == at("41")
         assert found.destination(RIGHT) == at("43")
@@ -463,7 +463,7 @@ class TestAShortcutThatAnswersAnArrowToo:
             title="POST",
             home=at("1"),
             parts=[OnFirstFrame(Says("A post."))],
-            shortcuts=[Shortcut(key="R", destination=at("7"), says="reply", arrow=True)],
+            shortcuts=[Shortcut(key="R", destination=at("7"), label="reply", with_arrow=True)],
         ).build(request_for(_APP, at("8")))
         found = page.frame(0)
         assert found is not None
@@ -487,8 +487,8 @@ class TestWhatTheItemsAreCalled:
                 item_noun=item,
                 parts=[OnFirstFrame(Says("Saturday."))],
                 shortcuts=[
-                    Shortcut(key="A", destination=at("41"), arrow=True),
-                    Shortcut(key="D", destination=at("43"), arrow=True),
+                    Shortcut(key="A", destination=at("41"), with_arrow=True),
+                    Shortcut(key="D", destination=at("43"), with_arrow=True),
                 ],
             ).build(request_for(_APP, at("42")))
         )[-1]
@@ -538,7 +538,7 @@ class TestWhatTheItemsAreCalled:
                 home=at("1"),
                 item_noun="day",
                 parts=[OnFirstFrame(Says("Saturday."))],
-                shortcuts=[Shortcut(key="1", destination=at("32"), says="month")],
+                shortcuts=[Shortcut(key="1", destination=at("32"), label="month")],
             ).build(request_for(_APP, at("42")))
         )[-1]
         assert "1 month" in footer
@@ -602,7 +602,7 @@ class TestTheRulesAndThePrompt:
         return PageLayout(
             title="T",
             home=at("1"),
-            shortcuts=[Shortcut(key="R", destination=at("7"), says=prompt_from)],
+            shortcuts=[Shortcut(key="R", destination=at("7"), label=prompt_from)],
             parts=[OnFirstFrame(Says("x"))],
         ).build(request_for(_APP, at("1")))
 

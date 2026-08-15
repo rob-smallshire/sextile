@@ -78,7 +78,7 @@ def _about(app: Sextile, post: Post) -> list[Shortcut]:
             Shortcut(
                 key="1",
                 destination=app.address_for("forum", forum_id=post.forum_id),
-                says="forum",
+                label="forum",
             )
         )
     if post.author_id is not None:
@@ -86,7 +86,7 @@ def _about(app: Sextile, post: Post) -> list[Shortcut]:
             Shortcut(
                 key="2",
                 destination=app.address_for("contributor", user_id=post.author_id),
-                says="poster",
+                label="poster",
             )
         )
     shortcuts.append(
@@ -95,7 +95,7 @@ def _about(app: Sextile, post: Post) -> list[Shortcut]:
             destination=app.address_for(
                 "day", day=post.published.astimezone(BOARD_TIMEZONE).date()
             ),
-            says="day",
+            label="day",
         )
     )
     if post.topic_id is not None:
@@ -103,7 +103,7 @@ def _about(app: Sextile, post: Post) -> list[Shortcut]:
             Shortcut(
                 key="4",
                 destination=app.address_for("topic", topic_id=post.topic_id),
-                says="topic",
+                label="topic",
             )
         )
     return shortcuts

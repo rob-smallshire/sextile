@@ -401,7 +401,7 @@ def unknown_page(request: PageRequest, target: str) -> Page:
         home=Shortcut(
             key=HOME_KEY,
             destination=request.app.address_for("main"),
-            says="index, or key another page",
+            label="index, or key another page",
         ),
     )
 

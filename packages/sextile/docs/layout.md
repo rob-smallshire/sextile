@@ -125,7 +125,7 @@ A frame's keys come from four places, and the layout gathers them:
   where there is a frame to go to.
 
 The prompt names all of them. `render_footer` sheds words when the row is
-tight, so a `Shortcut` should put the short form of its `says` first:
+tight, so a `Shortcut` should put the short form of its `label` first:
 `"index, or key another page"` shortens to `"index"` and then to `"0"`.
 
 `A` and `D` step through the pages either side of this one in a sequence, and
@@ -138,10 +138,10 @@ PageLayout(..., neighbours=request.neighbours, item_noun="post").build(request)
 ```
 
 A page that offers some other key on `A` or `D` builds a `Shortcut` for it, and
-`arrow=True` makes the matching cursor key lead there as well.
+`with_arrow=True` makes the matching cursor key lead there as well.
 
 Whether an arrow should mean what its letter means is for the page to decide,
-which is why `arrow` is a parameter. On a page with a coordinate field it should
+which is why `with_arrow` is a parameter. On a page with a coordinate field it should
 not: `W` is West there, and an up arrow that typed a letter into a field would
 be a defect.
 

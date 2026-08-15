@@ -186,11 +186,11 @@ class Shortcut:
     Attributes:
         key: The character the reader presses, such as `*` or `R`.
         destination: The address that key leads to, from every frame.
-        says: How the footer names the key. Put the short form first: the
+        label: How the footer names the key. Put the short form first: the
             footer sheds words from the end when a row is tight, so
             `"index, or key another page"` degrades to `"index"` and then to
             the bare key.
-        arrow: Whether the matching cursor key leads there as well. Only `W`,
+        with_arrow: Whether the matching cursor key leads there as well. Only `W`,
             `A`, `S` and `D` have one; asking on any other key adds nothing
             rather than raising.
         priority: How hard the footer tries to keep it. A key that is the
@@ -203,11 +203,11 @@ class Shortcut:
 
     key: str
     destination: PageAddress
-    says: str = ""
+    label: str = ""
     #  Not assumed, because whether an arrow means what its letter means
     #  depends on what is on the frame: on a page with a coordinate field it
     #  does not, `W` being West and `S` South.
-    arrow: bool = False
+    with_arrow: bool = False
     priority: Priority = Priority.PRIMARY
 
 
@@ -650,7 +650,7 @@ def _way_home(home: "PageAddress | Shortcut | None") -> Shortcut | None:
     """The way home as a shortcut, whichever way the page gave it."""
     if home is None or isinstance(home, Shortcut):
         return home
-    return Shortcut(key=HOME_KEY, destination=home, says="index")
+    return Shortcut(key=HOME_KEY, destination=home, label="index")
 
 
 @dataclass(kw_only=True)
@@ -715,9 +715,9 @@ class PageLayout:
         wired = []
         if self.neighbours is not None:
             if self.neighbours.previous is not None:
-                wired.append(Shortcut(PREVIOUS_ITEM, self.neighbours.previous, arrow=True))
+                wired.append(Shortcut(PREVIOUS_ITEM, self.neighbours.previous, with_arrow=True))
             if self.neighbours.next is not None:
-                wired.append(Shortcut(NEXT_ITEM, self.neighbours.next, arrow=True))
+                wired.append(Shortcut(NEXT_ITEM, self.neighbours.next, with_arrow=True))
         return (*self.shortcuts, *wired)
 
     def build(self, request: "PageRequest") -> Page:
@@ -811,7 +811,7 @@ class PageLayout:
         choices = dict(filled.claim.choices)
         choices |= {one.key: one.destination for one in shortcuts}
         choices |= arrows_lead_where(
-            {one.key: one.destination for one in shortcuts if one.arrow}
+            {one.key: one.destination for one in shortcuts if one.with_arrow}
         )
         if (way := _way_home(home)) is not None:
             choices[way.key] = way.destination
@@ -828,7 +828,7 @@ class PageLayout:
         #  hand describe the same key the same way.
         moves = {one.key for one in shortcuts if one.key in _MOVEMENT_LETTERS}
         items += [
-            FooterItem(one.key, one.says, one.priority)
+            FooterItem(one.key, one.label, one.priority)
             for one in shortcuts
             if one.key not in moves
         ]
@@ -839,7 +839,7 @@ class PageLayout:
         if (way := _way_home(home)) is not None:
             items.append(
                 FooterItem(
-                    way.key, way.says, Priority.ESSENTIAL, brief=way.says.split(",")[0]
+                    way.key, way.label, Priority.ESSENTIAL, brief=way.label.split(",")[0]
                 )
             )
         return items

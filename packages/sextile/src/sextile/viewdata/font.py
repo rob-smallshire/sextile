@@ -73,7 +73,7 @@ _REQUIRED_FIELDS: Final = ("name", "height", "fixed")
 
 
 class FontError(ValueError):
-    """A font file that cannot be read, said as precisely as the file allows."""
+    """A font file that cannot be read or parsed."""
 
 
 @dataclass(frozen=True)

@@ -1,33 +1,16 @@
 """Setting a line of text in a mosaic font: where each letter goes.
 
 The result is a bitmap, which `blocks.block_runs` turns into cells and
-`Composition` places on a frame. This module knows about letters and spacing
-and nothing about attributes.
+`Composition` places on a frame. This module knows about letters and spacing and
+nothing about attributes: `cells` takes a string to mosaic patterns, and `place`
+and `boxed` add it to a `Composition`.
 
-**Three spacings, and all three are wanted.**
-
-`FIXED` gives every letter the face's design width, putting the ink back where
-the designer had it within that -- which is what the glyph's bearing is kept
-for. It is what a column of figures wants, and the only one whose arithmetic a
-page can do in its head.
-
-`PROPORTIONAL` gives every letter its own advance. A row is 78 blocks wide, and
-ten letters at a fixed eight blocks do not fit on one; the same ten set
-proportionally do, with room to spare. So this is the default.
-
-`KERNED` lets a pair close up further where their shapes allow it -- the arm of
-a `T` over the foot of an `L`. It needs no kerning table: the shapes are in the
-bitmaps already, so each pair is fitted by looking at the rows where both have
-ink and closing up until the tightest of them reaches the gap. Rows where
-either is blank have no say, which is exactly where the space to be had is.
-
-Two things bound that fitting, and both are there to stop it eating what it
-should not. A pair may close up by no more than `limit` blocks, and **kerning
-does not cross a blank glyph**: a narrow letter after a space would otherwise
-slide back into the space and run the words together.
-
-`cells` takes it the rest of the way to mosaic patterns, and `place` and
-`centred` add it to a `Composition`, which works out the attributes.
+Three spacings, chosen with `Spacing`. `FIXED` gives every letter the face's
+design width, which a column of figures wants. `PROPORTIONAL` gives each its own
+advance and is the default, since a row of 78 blocks does not hold ten letters
+at a fixed eight. `KERNED` closes a pair up further where their bitmaps allow --
+by no more than `limit` blocks, and never across a blank glyph, or a letter
+after a space would slide back and run the words together.
 
 The lettering is trimmed on the right to the last block of ink, because a
 banner is centred on what it draws rather than on what it advanced past. The

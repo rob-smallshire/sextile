@@ -107,12 +107,16 @@ def _rows_for(blocks: tuple[Block, ...], depth: int) -> list[Row]:
 
 
 def _marked(kind: str, what: str, indent: int, width: int) -> list[Row]:
-    """A picture or a file, named across as many rows as the name needs.
+    """Name a picture or a file across as many rows as the name needs.
 
-    These were the two blocks that built a row without wrapping it, so a
-    picture with a long caption overran the frame and raised where every other
-    kind of block had been wrapped for years. A caption can be as long as a
-    filename like `vlcsnap-2026-08-02-17h29m56s151.png`.
+    Args:
+        kind: The word for what it is, such as `IMAGE`.
+        what: The name to show, a caption or a filename, which may be long.
+        indent: Cells to indent it by.
+        width: The cells a row has for it.
+
+    Returns:
+        The rows, the name wrapped so a long one does not overrun the frame.
     """
     return [
         Row(text, Colour.MAGENTA, indent)

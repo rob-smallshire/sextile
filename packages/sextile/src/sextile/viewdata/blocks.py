@@ -198,11 +198,14 @@ class Icon:
         return -(-self.down // BLOCKS_DOWN)
 
     def turned(self, quarters: int = 1) -> "Icon":
-        """A quarter turn anticlockwise, `quarters` times.
+        """Turn the icon a quarter turn anticlockwise, `quarters` times.
 
-        Which is how a set of four arrows is one arrow: the blocks that make a
-        diagonal lying down make the same diagonal standing up, corner to
-        corner, that being the only diagonal a block grid has.
+        Args:
+            quarters: How many quarter turns to make.
+
+        Returns:
+            The turned icon. A diagonal lying down becomes the same diagonal
+            standing up, corner to corner, the only diagonal a block grid has.
         """
         turned = self
         for _ in range(quarters % 4):

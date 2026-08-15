@@ -29,23 +29,19 @@ __all__ = [
 def curve(
     fractions: Sequence[float | None], *, across: int, down: int
 ) -> list[list[bool]]:
-    """A line through evenly spaced values, drawn as a bitmap.
+    """Draw a line through evenly spaced values as a bitmap.
 
-    **One block to a column, and no more.** A rising line could be drawn with
-    the blocks between two heights filled in, which joins it four ways and
-    makes a staircase of solid treads; leaving them out joins it eight ways,
-    corner to corner, which is thinner and reads as a line rather than as a
-    wall. Blocks laid corner to corner read as the diagonal they are -- the
-    same fact the compass's arrows are drawn on.
+    Args:
+        fractions: The values, each a fraction of the height from 0.0 to 1.0,
+            or None for a gap that breaks the line rather than being crossed.
+        across: The bitmap's width in blocks.
+        down: The bitmap's height in blocks.
 
-    It costs nothing here because the horizontal resolution is the generous
-    one: eight blocks between one value and the next, against nine blocks of
-    height in all, so a line climbing from the floor to the ceiling in a single
-    step still only rises about a block a column.
-
-    A missing value breaks it. There is no interpolating across a gap: a series
-    with a value missing from the middle says nothing about that point, and
-    joining the ends would draw a claim about it.
+    Returns:
+        A `down` by `across` grid of lit blocks. One block to a column, so the
+        line joins corner to corner and reads as a line rather than a filled
+        wall. A missing value breaks it: joining across a gap would draw a
+        claim about a point the series says nothing about.
     """
     grid = [[False] * across for _ in range(down)]
     if not fractions or across < 1 or down < 1:

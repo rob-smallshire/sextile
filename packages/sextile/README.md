@@ -6,18 +6,13 @@ the session, the page numbering and the frames on the wire, and you write what
 the pages say.
 
 ```python
-from sextile import Page, PageRequest, Sextile
-from sextile.formatting import Lines
-from sextile.layout import PageLayout
+from sextile import Page, PageRequest, Sextile, notice_page
 
 app = Sextile(name="My service")
 
 @app.page("1", name="main", keywords=("MAIN",))
 async def main(request: PageRequest) -> Page:
-    return PageLayout(
-        title="MY SERVICE",
-        parts=[Lines(("Hello, 1981.",))],
-    ).build(request)
+    return notice_page(request, "Hello, 1981.")
 ```
 
 ```sh

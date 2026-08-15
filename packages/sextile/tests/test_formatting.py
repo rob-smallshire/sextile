@@ -20,7 +20,6 @@ from sextile.formatting import (
     Menu,
     MenuItem,
     Prose,
-    farewell_page,
 )
 from sextile.layout import CHOICES_PER_FRAME, Flowing, Once, PageLayout, Room
 from sextile.testing import request_for
@@ -221,40 +220,6 @@ class TestProse:
         long = Prose.of(*(f"Paragraph {n} of some length." for n in range(20)))
         placed = long.place(Canvas(), whole_frame())
         assert isinstance(placed.rest, Prose)
-
-
-class TestAFarewell:
-    """The last thing a caller sees, drawn the same way by every service.
-
-    No furniture, and the lower rows left blank: the reader is about to be
-    talking to their modem, and the cursor needs somewhere to be left.
-    """
-
-    def test_the_title_heads_the_frame_and_the_lines_follow(self) -> None:
-        page = farewell_page("GOODBYE", "Thank you for calling.", "", "Ring off.")
-        found = page.frame(0)
-        assert found is not None
-        rows, _ = found.frame.to_grid()
-        assert rows[0].strip() == "GOODBYE"
-        assert "Thank you for calling." in rows[2]
-        assert rows[3].strip() == ""
-        assert "Ring off." in rows[4]
-
-    def test_it_offers_no_keys_at_all(self) -> None:
-        #  A footer naming the index would be a lie on a page there is no
-        #  coming back from.
-        found = farewell_page("GOODBYE", "Thank you.").frame(0)
-        assert found is not None
-        assert not found.choices
-        assert not found.moves
-
-    def test_it_ends_the_call(self) -> None:
-        assert farewell_page("GOODBYE").hang_up
-
-    def test_but_may_be_shown_without_dropping_the_line(self) -> None:
-        #  The involuntary parting: the session drops the line itself, so the
-        #  page need not insist.
-        assert not farewell_page("RINGING OFF", hang_up=False).hang_up
 
 
 class TestAServiceWithItsOwnIdeaOfAnEntry:

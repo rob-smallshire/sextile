@@ -36,6 +36,7 @@ from sextile import (
     PageRequest,
     PageRoute,
     Sextile,
+    farewell_page,
     handlers,
     keyed,
     keys,
@@ -43,7 +44,7 @@ from sextile import (
     notice_page,
     prose_page,
 )
-from sextile.formatting import Lines, MenuItem, farewell_page
+from sextile.formatting import Lines, MenuItem
 from sextile.layout import Drawn, Flowing, Once, PageLayout, Shortcut
 from sextile.viewdata.canvas import Canvas
 from sextile.viewdata.controls import Colour
@@ -188,7 +189,7 @@ async def about(request: PageRequest) -> Page:
 
 async def goodbye(request: PageRequest) -> Page:
     """The farewell frame, after which the line drops."""
-    return farewell_page("GOODBYE", "Thank you for calling.", "", "Ring off.")
+    return farewell_page(request, "GOODBYE", "Thank you for calling.", "", "Ring off.")
 
 
 #: What the service is made of. Everything about a page is on one line of it:

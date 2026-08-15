@@ -12,7 +12,7 @@ from sextile.declarations import PageRoute
 from sextile.formatting import MenuItem
 from sextile.layout import Shortcut
 from sextile.page import Page, PageFrame
-from sextile.pages import menu_page, notice_page, prose_page
+from sextile.pages import farewell_page, menu_page, notice_page, prose_page
 from sextile.testing import request_for
 from sextile.viewdata.canvas import Canvas
 
@@ -137,3 +137,28 @@ class TestProsePage:
         app = _titled("about", "About this")
         page = prose_page(request_for(app, "1"), "Something.")
         assert "ABOUT THIS" in text_of(page).splitlines()[0]
+
+
+class TestFarewellPage:
+    def test_the_title_heads_it_and_the_lines_follow(self) -> None:
+        page = farewell_page(
+            request_for(_APP), "GOODBYE", "Thank you for calling.", "", "Ring off."
+        )
+        rows = text_of(page).splitlines()
+        assert rows[0].strip() == "GOODBYE"
+        assert "Thank you for calling." in rows[2]
+        assert "Ring off." in rows[4]
+
+    def test_it_offers_no_keys(self) -> None:
+        #  A footer naming the index would mislead on a page there is no coming
+        #  back from.
+        found = farewell_page(request_for(_APP), "GOODBYE", "Bye.").frame(0)
+        assert found is not None
+        assert not found.choices
+        assert not found.moves
+
+    def test_it_ends_the_call_by_default(self) -> None:
+        assert farewell_page(request_for(_APP), "GOODBYE").hang_up
+
+    def test_but_may_be_shown_without_dropping_the_line(self) -> None:
+        assert not farewell_page(request_for(_APP), "RINGING OFF", hang_up=False).hang_up

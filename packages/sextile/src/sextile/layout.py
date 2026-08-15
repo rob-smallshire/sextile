@@ -714,15 +714,6 @@ class PageLayout:
             hang_up=self.hang_up,
         )
 
-    def _bare(self) -> Page:
-        """Build a page that answers no request, for the framework's notices.
-
-        A notice is built from a target or a parting, not from a request, so it
-        has no app to default a title or a way home from. It gives both itself,
-        or wants neither.
-        """
-        home = None if isinstance(self.home, _DefaultHome) else self.home
-        return self._render(address=None, title=self.title or "", home=home)
 
     def _frame(
         self,

@@ -34,13 +34,14 @@ from sextile import (
     PageRequest,
     Parting,
     Sextile,
+    farewell_page,
     keyed,
     menu_page,
     notice_page,
     page,
     prose_page,
 )
-from sextile.formatting import MenuItem, farewell_page
+from sextile.formatting import MenuItem
 from sextile.layout import (
     HOME_KEY,
     Drawn,
@@ -319,7 +320,7 @@ async def logoff(request: PageRequest) -> Page:
     """The farewell frame, after which the line drops."""
     app = request.app
     return farewell_page(
-        "GOODBYE", f"Thank you for calling {app.name}.", "", "Ring off."
+        request, "GOODBYE", f"Thank you for calling {app.name}.", "", "Ring off."
     )
 
 
@@ -355,7 +356,10 @@ def ringing_off(app: Sextile, parting: Parting) -> Page:
     Naming the page they were on, because the terminal keeps nothing and a
     reader who dials back in has no other way to pick up where they were.
     """
+    #  No request reaches on_timed_out, so one is built from the app to carry
+    #  the parting's address to farewell_page. The hooks step retires this.
     return farewell_page(
+        PageRequest(address=parting.address, app=app),
         "RINGING OFF",
         "No reply for some time, so the line",
         "has been released for somebody else.",

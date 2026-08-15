@@ -32,6 +32,7 @@ from sextile.requests import PageRequest
 from sextile.viewdata.controls import Colour
 
 __all__ = [
+    "farewell_page",
     "menu_page",
     "notice_page",
     "prose_page",
@@ -165,3 +166,29 @@ def prose_page(
         shortcuts=shortcuts,
         parts=[Flowing(Prose.of(*paragraphs))],
     ).build(request)
+
+
+def farewell_page(
+    request: PageRequest, title: str, *lines: str, hang_up: bool = True
+) -> Page:
+    """The page a caller sees last, after which the line drops.
+
+    A `notice_page` with no furniture and no way home: a footer offering the
+    index would mislead on a page there is no coming back from, and the rows it
+    and the rules would take are the ones worth leaving blank, the reader being
+    about to talk to their modem.
+
+    Args:
+        request: The request this page answers.
+        title: The heading, drawn in cyan on the first row.
+        *lines: What to say, one string a row, beginning two rows below the
+            title.
+        hang_up: Whether the line drops once shown. False for the involuntary
+            parting, where the session drops the line itself.
+
+    Returns:
+        A page of a single frame, offering no keys.
+    """
+    return notice_page(
+        request, *lines, title=title, home=None, furniture=(), hang_up=hang_up
+    )

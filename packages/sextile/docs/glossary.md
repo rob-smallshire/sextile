@@ -17,6 +17,12 @@ as "was X" so a reader coming from older code or docs can find it.
   `controls.Attribute`; `is_attribute_code` (was `is_control_code`) tells one
   from a character. Not to be confused with `encoding.ScreenControl`, the C0
   cursor and screen controls.
+- **span** (was `Run`) — a stretch of cells on one row sharing a background
+  colour, as `RowWriter` lays a coloured band. `canvas.Span`. The composition
+  layer keeps its own `Run` for a different job, which is why this one moved.
+- **outsized letters** — `lettering.place` draws a string in double or quadruple
+  size; `rows_needed` (was `rows_for`) and `cells_needed` (was `cells_for`) say
+  how many rows and cells it will take before it is drawn.
 - **part** — a piece of a page's body between the rules: a menu, some lines, a
   picture, a form. `layout.Part`. A part says which frames it appears on:
   `OnOneFrame` (was `Once`), `OnEveryFrame` (was `Every`), `Flow` (was
@@ -55,6 +61,11 @@ as "was X" so a reader coming from older code or docs can find it.
 - **choices vs moves** — choices are keys that lead somewhere, such as a menu's
   digits; moves are keys that page or step within where the reader already is,
   `W`/`A`/`S`/`D` and `#`.
+- **`#` and frame moves** — `keys.HASH` (was `CONVENTIONAL_NEXT_FRAME`) is the
+  `#` a viewdata reader presses to turn to the next frame of a page.
+  `frame_moves(has_previous, has_next)` (was `moving(back, on)`) gives the keys a
+  page of several frames answers; `with_arrow_choices` (was `arrows_lead_where`)
+  copies each choice onto the arrow that points like its letter.
 - **sequence, neighbours** — the pages either side of this one in a run a menu
   offered, so a reader can step along without going back. `request.neighbours`
   is a `Neighbours(previous, next)` (was `Arrival(preceding, following)`).
@@ -89,6 +100,12 @@ as "was X" so a reader coming from older code or docs can find it.
   frame_index)`: the request is the page they were on, `frame_index` which frame
   of it. There was a `Parting` dataclass here; since it held only the frame it
   was dropped for a bare `int`.
+- **session wire moments** — `viewdata.hangup.hangup_bytes` (was
+  `parting.parting_bytes`) repositions the cursor when the line drops, so a
+  reader talking to their modem again has somewhere to type; `Session.hangup()`
+  (was `parting()`) returns it. `viewdata.idle_warning.idle_warning_bytes` (was
+  `countdown.countdown_bytes`) draws the bar that warns an idle caller before
+  they are released.
 - **session vs service state** — session state is one caller's own, lasting as
   long as the line is up (`request.session`); service state is shared across
   callers for the life of the service. Service state is `request.state`, a

@@ -12,6 +12,7 @@ import logging
 import sys
 from collections.abc import Callable
 from contextlib import suppress
+from html import escape
 from typing import Final
 
 from sextile.application import Sextile
@@ -176,7 +177,14 @@ async def render_page(application: Sextile, arguments: argparse.Namespace) -> in
             f"{keyed(address.frame_number(index))}   choices: {choices}",
             file=sys.stderr,
         )
-        print(rendered(found.frame, arguments.form, colour=not arguments.no_colour))
+        print(
+            rendered(
+                found.frame,
+                arguments.form,
+                colour=not arguments.no_colour,
+                title=keyed(address.frame_number(index)),
+            )
+        )
     finally:
         await application.shutdown()
     return 0
@@ -293,12 +301,20 @@ def run_standard(
     return None
 
 
-def rendered(frame: Frame, form: str, *, colour: bool) -> str:
-    """One frame, in whichever of the forms was asked for."""
+def rendered(frame: Frame, form: str, *, colour: bool, title: str = "") -> str:
+    """One frame, in whichever of the forms was asked for.
+
+    Args:
+        frame: The frame to draw.
+        form: One of `FORMS`.
+        colour: Whether the `ansi` form carries colour.
+        title: What the `html` form names the page in its `<title>`; ignored by
+            the others.
+    """
     if form == "ansi":
         return render_ansi(frame, colour=colour)
     if form == "html":
-        return _html_page(frame)
+        return _html_page(frame, title)
     if form == "grid":
         characters, attributes = frame.to_grid()
         return "\n".join(
@@ -312,10 +328,11 @@ def rendered(frame: Frame, form: str, *, colour: bool) -> str:
     return hex_dump(frame.to_bytes())
 
 
-def _html_page(frame: Frame) -> str:
+def _html_page(frame: Frame, title: str = "") -> str:
     """A frame as a self-contained HTML page: the font, the stylesheet, the frame."""
+    head = f"<title>{escape(title)}</title>\n" if title else ""
     return (
-        '<!doctype html>\n<meta charset="utf-8">\n<style>\n'
+        f'<!doctype html>\n<meta charset="utf-8">\n{head}<style>\n'
         f"{font_face()}\n{stylesheet()}</style>\n{render_html(frame)}\n"
     )
 

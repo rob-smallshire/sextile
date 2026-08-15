@@ -17,6 +17,7 @@ from sextile.cli import (
     add_listening_arguments,
     add_standard_subcommands,
     load_application,
+    rendered,
     run_service,
     run_standard,
 )
@@ -125,6 +126,17 @@ class TestRunningAService:
         monkeypatch.setattr("sextile.cli.serve", fake_serve)
         await run_service(Recording(), parse())
         assert events == ["startup", "serving", "shutdown"]
+
+
+class TestRenderingAFrame:
+    def test_the_html_form_is_a_self_contained_page_with_a_title(self) -> None:
+        from sextile.viewdata.frame import Frame
+
+        page = rendered(Frame(), "html", colour=True, title="*3#")
+        assert page.startswith("<!doctype html>")
+        assert "<title>*3#</title>" in page
+        assert "@font-face" in page  # the font is embedded, so it opens from disk
+        assert '<pre class="viewdata">' in page
 
 
 class TestLoadingAnApplication:

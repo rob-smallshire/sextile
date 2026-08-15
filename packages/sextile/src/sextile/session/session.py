@@ -189,7 +189,7 @@ class Session:
         self._finished = True
         return self._send()
 
-    def parting(self) -> bytes:
+    def hangup(self) -> bytes:
         """Hand the terminal back, after the last frame has gone.
 
         The reader is about to be talking to their modem again, and a terminal

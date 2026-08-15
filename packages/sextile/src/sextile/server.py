@@ -117,7 +117,7 @@ async def _converse(
                 await _write(writer, response)
         #  Whoever ended it, the terminal is handed back usable: the reader has
         #  a modem to talk to next.
-        await _write(writer, session.parting())
+        await _write(writer, session.hangup())
     except (ConnectionError, asyncio.IncompleteReadError):
         #  A caller who pulls the plug is ordinary, not exceptional.
         _logger.info("Call from %s ended abruptly", caller)

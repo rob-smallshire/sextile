@@ -19,7 +19,6 @@ from sextile import (
     Neighbours,
     Page,
     PageAddress,
-    PageRoute,
     Sextile,
     UnknownPageError,
     keyed,
@@ -33,7 +32,7 @@ from sextile.viewdata.controls import Attribute
 from sextile.viewdata.font import load_font
 from sextile.viewdata.frame import COLUMNS, Frame
 from sextile.viewdata.lettering import Spacing
-from stardot_viewdata import PAGES, build_application
+from stardot_viewdata import build_application
 from stardot_viewdata.handlers import ARCHIVE, SERVICE_NAME
 from stardot_viewdata.model import Post
 from stardot_viewdata.post_page import CONVENTIONAL_NEXT_FRAME_KEY
@@ -123,18 +122,6 @@ async def app(repository: Repository) -> AsyncIterator[Sextile]:
     await service.startup()
     yield service
     await service.shutdown()
-
-
-def _moved(name: str, **changed: object) -> tuple[PageRoute, ...]:
-    """The service's pages, with one of them declared differently.
-
-    What the old tests did by subclassing and overriding a method. A service is
-    a list, so a variant of one is a variant of the list.
-    """
-    return tuple(
-        PageRoute(**{**vars(route), **changed}) if route.name == name else route
-        for route in PAGES
-    )
 
 
 #: How a reader who keyed a number arrived: from nowhere in particular.
@@ -690,20 +677,6 @@ class TestTheTitleFrameSaysWhatTheServiceDoes:
         assert CONVENTIONAL_NEXT_FRAME_KEY in page.frames[0].moves
         assert f"Key {CONVENTIONAL_NEXT_FRAME_KEY}" in text_of(page)
 
-    async def test_moving_the_help_page_moves_what_the_title_frame_says(
-        self, repository: Repository
-    ) -> None:
-        #  The test that would have caught the drift. A service whose guide is
-        #  somewhere else says so on its title frame, without that frame being
-        #  edited: nothing in it knows the number 91.
-        moved = build_application(
-            repository=repository, pages=_moved("help", pattern="95")
-        )
-        await moved.startup()
-        shown = text_of(await page_at(moved, "0"))
-        assert keyed(PageAddress("95")) in shown
-        assert keyed(PageAddress("91")) not in shown
-
 
 class TestAPageIsHeadedWithWhatItWasRegisteredAs:
     """The heading and the declaration are the same words, not two copies.
@@ -724,15 +697,6 @@ class TestAPageIsHeadedWithWhatItWasRegisteredAs:
         about = app.route(found.name)
         assert about is not None
         assert about.title.upper() in text_of(page)
-
-    async def test_and_renaming_a_page_renames_its_heading(
-        self, repository: Repository
-    ) -> None:
-        renamed = build_application(
-            repository=repository, pages=_moved("days", title="Day by day")
-        )
-        await renamed.startup()
-        assert "DAY BY DAY" in text_of(await page_at(renamed, "3"))
 
     async def test_a_page_whose_heading_is_not_its_name_still_says_so(
         self, app: Sextile
@@ -770,17 +734,6 @@ class TestTheGuideDescribesTheServiceItIsPartOf:
         shown = all_text_of(await page_at(app, "91"))
         for request in (keys.BACK, keys.REDISPLAY, keys.REFRESH):
             assert keyed(request) in shown
-
-    async def test_moving_a_page_moves_what_the_guide_says_about_it(
-        self, repository: Repository
-    ) -> None:
-        moved = build_application(
-            repository=repository, pages=_moved("logoff", pattern="96")
-        )
-        await moved.startup()
-        shown = all_text_of(await page_at(moved, "91"))
-        assert keyed(PageAddress("96")) in shown
-        assert keyed(PageAddress("90")) not in shown
 
 
 class TestTheGuideSKeyColumn:

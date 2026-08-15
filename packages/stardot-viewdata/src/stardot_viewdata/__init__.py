@@ -2,7 +2,6 @@
 
 from stardot_viewdata.application import (
     DEFAULT_DATABASE_FILEPATH,
-    PAGES,
     SERVICE_NAME,
     build_application,
 )
@@ -14,7 +13,6 @@ app = build_application()
 
 __all__ = [
     "DEFAULT_DATABASE_FILEPATH",
-    "PAGES",
     "SERVICE_NAME",
     "app",
     "build_application",

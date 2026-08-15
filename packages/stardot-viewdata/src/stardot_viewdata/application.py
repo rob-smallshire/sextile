@@ -7,12 +7,12 @@ beside its function.
 """
 
 import asyncio
-from collections.abc import AsyncIterator, Sequence
+from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Final
 
-from sextile import Page, PageRequest, PageRoute, Sextile, standard_pages
+from sextile import Page, PageRequest, Sextile, standard_pages
 from stardot_viewdata import handlers
 from stardot_viewdata.handlers import ARCHIVE, SERVICE_NAME, ringing_off, unknown_page
 from stardot_viewdata.store.repository import Repository
@@ -22,20 +22,11 @@ from stardot_viewdata.store.repository import Repository
 #: the same place.
 DEFAULT_DATABASE_FILEPATH: Final = Path("stardot.sqlite")
 
-#: What the service is made of: its own pages, declared beside the functions
-#: that build them and gathered in the order the numbering runs, and three the
-#: framework builds and hands over as handlers, mapped into this numbering.
-PAGES: Final = (
-    *handlers.router,
-    *standard_pages(history="92", contents="93", keywords="94"),
-)
-
 
 def build_application(
     database_filepath: Path | str = DEFAULT_DATABASE_FILEPATH,
     *,
     repository: Repository | None = None,
-    pages: Sequence[PageRoute] = PAGES,
 ) -> Sextile:
     """Assemble the service, from an archive on disk or one already open.
 
@@ -45,9 +36,6 @@ def build_application(
         repository: An open archive to serve from, for a test or a caller that
             holds one for another purpose. It is left open when the service
             stops, since it belongs to whoever passed it.
-        pages: The service's pages; the default is its own list spread with the
-            framework's. A test passes another to move a page and watch
-            everything that names it follow.
 
     Returns:
         The service, its archive held under `ARCHIVE`, with its own not-found
@@ -73,7 +61,13 @@ def build_application(
         #  is not the same page and never has been sent back to.
         home="0",
         index="1",
-        pages=pages,
+        #  Its own pages, declared beside the functions that build them and
+        #  gathered in numbering order, and the framework's history, contents
+        #  and keywords pages mapped into this numbering.
+        pages=[
+            *handlers.router,
+            *standard_pages(history="92", contents="93", keywords="94"),
+        ],
         lifespan=lifespan,
     )
 
@@ -97,7 +91,6 @@ def build_application(
 
 __all__ = [
     "DEFAULT_DATABASE_FILEPATH",
-    "PAGES",
     "SERVICE_NAME",
     "build_application",
 ]

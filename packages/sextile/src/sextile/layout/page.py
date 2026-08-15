@@ -177,7 +177,7 @@ class PageLayout:
         #  A page that gave no title of its own is headed with the registered
         #  title of its address, shouted, or with its keyed number where the
         #  address is unrouted or untitled. A title the page did give is drawn
-        #  as it is, so a forum name or a place name keeps its own case.
+        #  as it is, so a proper name or a place name keeps its own case.
         if self.title is not None:
             title = self.title
         else:

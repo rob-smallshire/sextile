@@ -21,7 +21,7 @@ need to be told it means the index.
 **A label sheds by steps rather than all at once**, which is the difference
 between a prompt that says what it means and one that does not. An item may
 offer a brief form as well as a full one -- "page down", then "down", then
-nothing -- so a crowded row loses a word where it used to lose the sentence.
+nothing -- so a crowded row loses a word where it would otherwise lose the sentence.
 Without that, a page with room to spare was written for the page that has
 none, and the reader of both got the terse version.
 """

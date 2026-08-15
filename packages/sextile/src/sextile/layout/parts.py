@@ -45,6 +45,11 @@ class Space:
         choices: How many of the digits `1-9` are still unclaimed on this
             frame. A reader chooses with one keypress, so this is a budget the
             whole frame shares however it is divided between parts.
+
+    Example:
+        Twelve rows from row 6, with all nine digits still free::
+
+            Space(first_row=6, rows=12, choices=9)
     """
 
     first_row: int
@@ -62,6 +67,11 @@ class Claim:
         named: What to name in the prompt, such as `1-9 select`. The layout
             adds the shortcuts, the movement keys and the way home.
         form: A field the reader types into, where this part is one.
+
+    Example:
+        A part offering digit 1, named in the prompt::
+
+            Claim(choices={"1": address}, named=[FooterItem("1", "choose")])
     """
 
     choices: Mapping[str, PageAddress] = field(default_factory=dict)
@@ -102,6 +112,12 @@ class Placed:
         remainder: What is left of it for the next frame, or None where it is
             finished. A drawable that returns nought rows and itself is asking
             for a frame of its own.
+
+    Example:
+        Two rows drawn and finished, and a part asking for a fresh frame::
+
+            Placed(rows=2)
+            Placed(rows=0, remainder=self)
     """
 
     rows: int
@@ -116,6 +132,19 @@ class Drawable(Protocol):
     A drawable is a description rather than a position, so placing one does not
     change it and a layout may be built more than once. The exception is a
     form, which holds what has been typed.
+
+    Example:
+        A part one row tall that writes a fixed word and claims no keys::
+
+            class Word:
+                def __init__(self, text: str) -> None:
+                    self._text = text
+
+                def place(self, canvas: Canvas, space: Space) -> Placed:
+                    if space.rows < 1:
+                        return Placed(rows=0, remainder=self)
+                    canvas.row(space.first_row).text(self._text)
+                    return Placed(rows=1)
     """
 
     def place(self, canvas: Canvas, space: Space) -> Placed:
@@ -146,9 +175,9 @@ class Custom:
         draw: Called with the canvas and the row it begins on.
 
     Example:
-        A month as a grid of weeks, which is the whole of a page's content::
+        A picture several rows tall, drawn as the whole of a page's content::
 
-            OnOneFrame(Custom(rows=1 + len(weeks), draw=lambda canvas, row: ...))
+            OnOneFrame(Custom(rows=height, draw=lambda canvas, row: draw_it(canvas, row)))
     """
 
     rows: int

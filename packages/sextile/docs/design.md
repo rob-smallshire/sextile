@@ -258,9 +258,12 @@ word of its own, and could not say a page's keywords beside it. Each was
 registration order showing through. Given as data, the converters, the pages,
 the middleware and the lifespan all arrive in one call and there is no *before*.
 
-`@app.page(...)` and the class-level `@page(...)` remain, both defined in terms
-of `add_page`, so a small service still reads as a small service and a service
-whose handlers are methods may declare them beside those methods.
+A decorator remains for the service that would rather declare a page beside the
+handler than in a list. `@app.page(...)` registers it on the application
+itself; `@router.page(...)` collects it on a `PageRouter`, for handlers in a
+module of their own, spread into the service as `Sextile(pages=[*router, ...])`.
+Both build the same `PageRoute` through one shared decorator, and every route
+reaches the service through `add_page`, so the two forms cannot diverge.
 
 The words are what the page is called wherever it is listed rather than
 shown — in a menu, in the history, in the contents. Saying them once is the

@@ -342,32 +342,28 @@ page as listable, so a title frame or a log-off page stays off the contents page
 without a separate flag. A title and a keyword are independent: a log-off page
 can stay off the contents and still answer `*BYE#`.
 
-A service whose handlers are methods may declare them at the method with the
-class-level `@page(...)`. They are collected when the application is
-constructed, base classes first, in written order. This is the same
-registration by another route.
-
-The same declaration works on module-level functions, gathered with
-`routes_in`, so a service of plain functions keeps each route on the function
-that builds the page rather than in a separate list:
+A handler that lives in a module of its own is declared with `@router.page(...)`,
+the same call as `@app.page`. A `PageRouter` gathers them in written order, and
+the assembly spreads the router into the service, so each route stays on the
+function that builds the page rather than in a separate list:
 
 ```python
-@page("5", title="By user", detail="browse by name",
-      keywords=("WHO", "USERS"))
+router = PageRouter()
+
+@router.page("5", title="By user", detail="browse by name",
+             keywords=("WHO", "USERS"))
 async def users(request: PageRequest) -> Page:
     ...
 
-app = Sextile(pages=routes_in(sys.modules[__name__]))
+app = Sextile(pages=[*router, ...])
 ```
 
-Decorate a function where it is defined, not where it is imported. The
-declaration is stored on the function object, so decorating a borrowed handler
-would declare it for every importer. A route for another module's handler — the
-framework's own pages, say — is one `PageRoute` line:
+A route for another module's handler — the framework's own pages, say — is one
+`PageRoute` line beside the spread:
 
 ```python
 app = Sextile(pages=[
-    *routes_in(pages_module),
+    *pages.router,
     PageRoute("92", handlers.history, title="Where you have been"),
 ])
 ```
@@ -379,9 +375,9 @@ copies to keep in step, and the decorator's is the one shown in menus, on the
 contents page and in the history. So the heading comes from the declaration:
 
 ```python
-@page("3", name="days", title="By day", detail="newest first")
-async def _days(self, request: PageRequest) -> Page:
-    return self._menu(request.address, items=items)   # headed BY DAY
+@router.page("3", name="days", title="By day", detail="newest first")
+async def days(request: PageRequest) -> Page:
+    return menu_page(request, items=items)   # headed BY DAY
 ```
 
 `describe(address)` gives the registered title, and `heading_for(address)` gives

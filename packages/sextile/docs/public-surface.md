@@ -29,14 +29,14 @@ alike, and are not listed.
 What a service is made of, and the types it hands about. Imported by every
 application in its first few lines.
 
-    Sextile  PageRoute  PageInfo  Handler
+    Sextile  PageRoute  PageRouter  Handler
     Page  PageFrame  PageAddress  keyed
     PageRequest  Neighbours  Parting  StateKey  GuideRow
     Middleware  Next
     Converter  UnknownPageError  NoSuchRouteError  RouteError
     Form  Suggest  draw_form
     menu_page  notice_page  prose_page  farewell_page
-    page  routes_in  routes_on  standard_pages  transliterate
+    standard_pages  transliterate
     keys  handlers  __version__
 
 `keys` and `handlers` are modules, re-exported: `keys.BACK`,

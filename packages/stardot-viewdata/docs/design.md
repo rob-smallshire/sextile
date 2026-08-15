@@ -77,15 +77,15 @@ Declared beside the handlers, with the route names that `address_for` uses, so
 no page spells another's number:
 
 ```python
-@page("82{post_id:int}", name="post", title="One post")
+@router.page("82{post_id:int}", name="post", title="One post")
 async def one_post(request: PageRequest, post_id: int) -> Page: ...
 
 app.address_for("post", post_id=post.post_id)
 ```
 
-`handlers.py` holds those declarations and `application.py` gathers them with
-`routes_in`; `title_frame.py` draws the masthead, and `post_page.py` divides one
-post into frames.
+`handlers.py` holds those declarations on a module-level `router = PageRouter()`,
+and `application.py` spreads `*handlers.router` into the service; `title_frame.py`
+draws the masthead, and `post_page.py` divides one post into frames.
 
 Seventeen keywords — `*MAIN#`, `*LATEST#`, `*HELP#`, `*BYE#` and the rest — are
 aliases onto those same routes rather than onto literal numbers.

@@ -15,6 +15,9 @@ as "was X" so a reader coming from older code or docs can find it.
   header, rules and footer. `layout.Furnishing`, `DEFAULT_FURNITURE`.
 - **route** — a pattern bound to a handler, carrying the page's name and
   keywords. `PageRoute`.
+- **router** — collects the routes a module of handlers declares with
+  `@router.page`, spread into a service as `Sextile(pages=[*router, ...])`.
+  `PageRouter` (replaced the free `@page` decorator and `routes_in`).
 - **pattern** — the page-number template a route matches: literal digits and
   named fields, such as `82{post_id:int}`.
 - **address** — a page number a reader is at, resolved from a pattern.

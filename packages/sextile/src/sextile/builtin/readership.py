@@ -74,7 +74,18 @@ def recent_page(
     title: str = RECENT_TITLE,
     now: datetime | None = None,
 ) -> Page:
-    """What has been looked at lately, newest first."""
+    """Build the page of pages looked at lately, newest first.
+
+    Args:
+        request: The request this page answers.
+        visits: The visits to list, newest first.
+        label: What to call each visited address.
+        title: What the header calls the page.
+        now: The current time, for the "how long ago" detail; real time by default.
+
+    Returns:
+        The page, of as many frames as the entries needed.
+    """
     when = now or datetime.now(UTC)
     return _menu(
         request=request,
@@ -94,7 +105,17 @@ def popular_page(
     label: Callable[[PageAddress], str],
     title: str = POPULAR_TITLE,
 ) -> Page:
-    """What has been looked at most, the most read first."""
+    """Build the page of pages looked at most, the most read first.
+
+    Args:
+        request: The request this page answers.
+        visits: The visits to list, the most read first.
+        label: What to call each visited address.
+        title: What the header calls the page.
+
+    Returns:
+        The page, of as many frames as the entries needed.
+    """
     return _menu(
         request=request,
         title=title,
@@ -151,15 +172,17 @@ def callers_page(
     counts: Sequence[tuple[str, int]],
     title: str = CALLERS_TITLE,
 ) -> Page:
-    """How many have called, over each of a few periods.
+    """Build the page of how many have called, over each of a few periods.
 
-    The only figure a service keeps about its readers, and a count of
-    connections rather than of anybody: `record_visits` mints a token per
-    session and stores nothing else.
+    Args:
+        request: The request this page answers.
+        counts: Each period's words and its count of distinct callers.
+        title: What the header calls the page.
 
-    **A period longer than the log is kept for reads low**, and silently. The
-    default periods end at thirty days because that is what the log keeps by
-    default; a service that trims sooner should pass its own.
+    Returns:
+        The page. A count of connections rather than of anybody: `record_visits`
+        mints a token per session and stores nothing else. A period longer than
+        the log is kept for reads low, and silently.
     """
     #  Nought against every period reads as a fault rather than as a service
     #  that has only just been switched on, so it is the empty case too.

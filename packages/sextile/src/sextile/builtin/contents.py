@@ -43,15 +43,19 @@ def contents_page(
     pages: Sequence["PageRoute"],
     title: str = TITLE,
 ) -> Page:
-    """Build the contents page, one row per page, as many frames as it takes.
+    """Build the contents page: one row per advertised page, over as many frames as it needs.
 
-    Ordered by the number rather than by the order a service happens to declare
-    its pages in. Sorting the digits as text puts each namespace root next to
-    its members -- 5 then 52<user_id> -- which is what a scheme whose first
-    digit names a namespace already means.
+    Args:
+        request: The request this page answers.
+        pages: The routes to list.
+        title: What the header calls the page.
 
-    A title too long for the room left after the numbers is carried on to a
-    second row, which the listing does for every page that uses one.
+    Returns:
+        The page, ordered by the number rather than by declaration order.
+        Sorting the digits as text puts each namespace root beside its members
+        (5 then 52<n>), which is what a scheme whose first digit names a
+        namespace means. A title too long for the room left after the numbers
+        carries on to a second row.
     """
     entries = [
         MenuItem(text=keyed(page.keyed), detail=page.title)

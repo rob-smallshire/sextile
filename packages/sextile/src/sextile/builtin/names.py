@@ -42,7 +42,17 @@ def names_page(
     label: Callable[[PageAddress], str],
     title: str = TITLE,
 ) -> Page:
-    """Build the page of named jumps, one row per word."""
+    """Build the page of named jumps, one row per word.
+
+    Args:
+        request: The request this page answers.
+        named: The keyword-to-address jumps to list.
+        label: What to call each address.
+        title: What the header calls the page.
+
+    Returns:
+        The page, of as many frames as the words needed.
+    """
     entries = [
         MenuItem(text=keyed(word), detail=label(named[word])) for word in sorted(named)
     ]

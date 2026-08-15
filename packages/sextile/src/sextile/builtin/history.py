@@ -42,11 +42,18 @@ def history_page(
     label: Callable[[PageAddress], str],
     title: str = TITLE,
 ) -> Page:
-    """Build the history page.
+    """Build the history page: where a caller has been, as a menu of shortcuts.
 
-    ``been`` is oldest first, as the session keeps it; the page shows it newest
-    first, so that key 1 means the same as `*0#` and the numbers count backwards
-    through the call. ``label`` says what to call each visited address.
+    Args:
+        request: The request this page answers.
+        been: The visited addresses, oldest first as the session keeps them.
+            Shown newest first, so key 1 is the same as `*0#` and the numbers
+            count backwards through the call.
+        label: What to call each visited address.
+        title: What the header calls the page.
+
+    Returns:
+        The page, of as many frames as the entries needed.
     """
     address = request.address
     entries = [

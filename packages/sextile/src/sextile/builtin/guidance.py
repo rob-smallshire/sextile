@@ -102,7 +102,7 @@ def guide_page(
     asking_rows: Sequence[GuideRow] = (),
     show_item_keys: bool = True,
 ) -> Page:
-    """The guide, as two frames of keys.
+    """Build the guide, as two frames of the keys this service answers.
 
     Args:
         request: The request this page answers.

@@ -76,7 +76,7 @@ _QUOTED: Final = 30
 
 
 type NotFoundHandler = Callable[[PageRequest, str], Awaitable[Page]]
-type PartingHandler = Callable[[PageRequest, int], Awaitable[Page]]
+type TimeoutHandler = Callable[[PageRequest, int], Awaitable[Page]]
 type FailureHandler = Callable[[PageRequest, Exception], Awaitable[Page]]
 
 type CallNext = Callable[[PageRequest], Awaitable[Page | None]]
@@ -116,7 +116,7 @@ class Sextile:
         self._router: Router[Handler] = Router()
         self._pages: dict[str, PageRoute] = {}
         self._not_found: NotFoundHandler | None = None
-        self._timed_out: PartingHandler | None = None
+        self._timed_out: TimeoutHandler | None = None
         self._failed: FailureHandler | None = None
         self._unresolved: ResolveHandler | None = None
         self._middleware = tuple(middleware)
@@ -262,7 +262,7 @@ class Sextile:
         self._not_found = handler
         return handler
 
-    def on_timed_out[H: PartingHandler](self, handler: H) -> H:
+    def on_timed_out[H: TimeoutHandler](self, handler: H) -> H:
         """Register what this service says as it releases an idle caller."""
         self._timed_out = handler
         return handler

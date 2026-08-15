@@ -28,7 +28,7 @@ _POST_HEADING_ROWS: Final = 3
 #  `#` moves to the next frame as well as `S`, and is the one key a viewdata
 #  reader tries without being told; the title frame names it, so it is named
 #  here rather than spelt out there.
-CONVENTIONAL_NEXT_FRAME_KEY: Final = keys.CONVENTIONAL_NEXT_FRAME
+CONVENTIONAL_NEXT_FRAME_KEY: Final = keys.HASH
 
 
 def post_page(request: PageRequest, post: Post, *, untitled: str) -> Page:

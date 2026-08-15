@@ -119,7 +119,7 @@ not because nothing called it.
 
 The names and codes, and the four helpers that turn one form into another.
 
-    PREVIOUS_FRAME  NEXT_FRAME  CONVENTIONAL_NEXT_FRAME
+    PREVIOUS_FRAME  NEXT_FRAME  HASH
     PREVIOUS_ITEM  NEXT_ITEM  BACK
     REDISPLAY  REFRESH  CANCEL  RUB_OUT
     LEFT  RIGHT  UP  DOWN  ARROW_KEYS  ARROW_FOR  LETTER_FOR

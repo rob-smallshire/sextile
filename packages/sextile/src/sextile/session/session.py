@@ -26,7 +26,7 @@ from sextile.addressing import PageAddress, UnknownPageError
 from sextile.application import Neighbours, PageRequest, Sextile
 from sextile.forms import draw_form
 from sextile.keys import (
-    CONVENTIONAL_NEXT_FRAME,
+    HASH,
     NEXT_FRAME,
     PREVIOUS_FRAME,
     as_letter,
@@ -448,7 +448,7 @@ class Session:
         #  read back as its letter here or the page offers a key it never acts
         #  on.
         key = as_letter(key)
-        if key in (NEXT_FRAME, CONVENTIONAL_NEXT_FRAME):
+        if key in (NEXT_FRAME, HASH):
             return await self._next_frame()
         if key == PREVIOUS_FRAME:
             return self._previous_frame()

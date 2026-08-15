@@ -12,7 +12,7 @@ import pytest
 
 from sextile.addressing import FRAMES_PER_PAGE, PageAddress
 from sextile.application import Neighbours, Sextile
-from sextile.keys import CONVENTIONAL_NEXT_FRAME, DOWN, LEFT, NEXT_FRAME, RIGHT, UP
+from sextile.keys import DOWN, HASH, LEFT, NEXT_FRAME, RIGHT, UP
 from sextile.layout import (
     DEFAULT_FURNITURE,
     HOME_KEY,
@@ -364,7 +364,7 @@ class TestWhereAPageLeads:
         assert found is not None
         assert page.next_page == at("1")
         assert NEXT_FRAME in found.moves
-        assert CONVENTIONAL_NEXT_FRAME in found.moves
+        assert HASH in found.moves
 
     def test_ringing_off_is_said_by_the_page(self) -> None:
         assert PageLayout(title="GOODBYE", hang_up=True).build(request_for(_APP, at("1"))).hang_up

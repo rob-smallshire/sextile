@@ -341,7 +341,7 @@ class TestSayingWhatReturnWillDo:
         await typing(form, "1.1W")
         frame = Frame()
         draw_form(frame, form)
-        assert f"{keys.CONVENTIONAL_NEXT_FRAME} forecast" in (
+        assert f"{keys.HASH} forecast" in (
             text_of(frame).splitlines()[FIRST_ROW + 1]
         )
 

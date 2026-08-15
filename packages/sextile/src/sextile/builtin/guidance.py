@@ -152,7 +152,7 @@ def _moving(home_label: str) -> list[GuideRow]:
         GuideRow(keys.BACK, f"back to the {home_label}"),
         GuideRow(keyed("<number>"), "go straight to a page"),
         GuideRow(keyed("<keyword>"), "go to a named page"),
-        GuideRow(keys.CONVENTIONAL_NEXT_FRAME, "next frame of a page"),
+        GuideRow(keys.HASH, "next frame of a page"),
         GuideRow(_RUB_OUT, "rub out a character"),
     ]
 

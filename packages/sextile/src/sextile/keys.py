@@ -25,7 +25,7 @@ __all__ = [
     "ARROW_KEYS",
     "BACK",
     "CANCEL",
-    "CONVENTIONAL_NEXT_FRAME",
+    "HASH",
     "DOWN",
     "LEFT",
     "LETTER_FOR",
@@ -52,9 +52,10 @@ NEXT_FRAME: Final = "S"
 PREVIOUS_ITEM: Final = "A"
 NEXT_ITEM: Final = "D"
 
-#: The conventional viewdata key, kept working alongside `S` because it is the
-#: one key a viewdata reader will try without being told.
-CONVENTIONAL_NEXT_FRAME: Final = "#"
+#: `#`, which moves to the next frame of a page by viewdata convention. Kept
+#: working alongside `S` because it is the one key a reader will try without
+#: being told.
+HASH: Final = "#"
 
 #: The page numbers a session answers itself rather than handing to a service:
 #: keyed as `*0#`, `*00#` and `*09#`. Here as well as in the parser, so a guide
@@ -166,5 +167,5 @@ def moving(*, back: bool, on: bool) -> frozenset[str]:
     if back:
         pressed.add(PREVIOUS_FRAME)
     if on:
-        pressed.update({NEXT_FRAME, CONVENTIONAL_NEXT_FRAME})
+        pressed.update({NEXT_FRAME, HASH})
     return with_arrows(pressed)

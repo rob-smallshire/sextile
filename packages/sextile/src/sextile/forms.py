@@ -88,7 +88,7 @@ _MARK_CELLS: Final = 3
 #:
 #: At the *end* of the entry. In front of the digit it abutted it, and `#1`
 #: reads as "number 1" rather than as two keys that do the same thing.
-SUBMIT_MARK: Final = keys.CONVENTIONAL_NEXT_FRAME
+SUBMIT_MARK: Final = keys.HASH
 
 #: A hint is advice and a note is a finding, and they are not the same thing to
 #: a reader: the advice under a field says the same words on every frame and is

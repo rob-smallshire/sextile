@@ -154,12 +154,10 @@ class CommandParser:
             #  any key it does not offer.
             return Select(_DELETE)
         if _PRINTABLE_FIRST <= character <= _PRINTABLE_LAST:
-            #  Every printable character, not merely the alphanumeric ones.
-            #  A space used to be dropped here, so a field appeared to have no
-            #  space bar -- there is one, and it transmits 0x20 like anything
-            #  else; `spike_editing_keys.py` measured it. Text a reader types
-            #  may hold spaces, hyphens and apostrophes, and none of them
-            #  should be silently swallowed.
+            #  Every printable character, not merely the alphanumeric ones. The
+            #  space bar transmits 0x20 like anything else (`spike_editing_keys.py`
+            #  measured it), and text a reader types may hold spaces, hyphens and
+            #  apostrophes, so none of them is swallowed here.
             #
             #  A frame that offers no such key ignores it, exactly as it
             #  ignores every other key it does not offer.

@@ -6,17 +6,15 @@ other viewdata board is:
 
     tcpser -v 25232 -s 9600 -l 4 -t sS -n 1=localhost:6850
 
-Two things a real board taught us. A caller who walks away must eventually be
-released, because a single-line service held open locks everyone else out. And a
-caller who vanishes mid-request must not take the service with them, which is
-why every connection is handled in isolation and its failures are logged rather
-than raised.
+Two constraints, both measured against a real board. A caller who walks away is
+released after a silence, or a single-line service held open locks everyone else
+out. A caller who vanishes mid-request must not take the service down, so every
+connection is handled in isolation and its failures are logged, not raised.
 
-Releasing a caller is not enough on its own, though: a reader who has been on
-one frame for ten minutes cannot know it is about to happen. So a read is raced
-against a timer rather than merely being given a deadline, which is what lets
-the service speak first -- the only place it does. After a period of silence the
-footer becomes a draining bar, and the next key dismisses it.
+Releasing a caller is not enough on its own: a reader on one frame for ten
+minutes cannot know it is about to happen. A read is raced against a timer, not
+merely given a deadline, so the service can speak first -- the one place it does.
+After a silence the footer becomes a draining bar, and the next key dismisses it.
 """
 
 import asyncio

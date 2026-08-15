@@ -82,18 +82,40 @@ class Visits(Protocol):
     async def record(
         self, page: PageAddress, *, caller: str, found: bool, at: datetime | None = None
     ) -> None:
-        """Note that a page was fetched."""
+        """Note that a page was fetched.
+
+        Args:
+            page: The address that was fetched.
+            caller: The opaque token naming the connection.
+            found: Whether the address named a page, so a miss is not read back.
+            at: When it was fetched, or the current time.
+        """
 
     async def recent(self, limit: int, *, prefix: str = "") -> Sequence[Visit]:
-        """The pages fetched most recently, newest first, one entry apiece."""
+        """Return the pages fetched most recently, newest first, one apiece.
+
+        Args:
+            limit: The most to return.
+            prefix: Only pages whose number begins with it, a namespace filter.
+        """
 
     async def popular(
         self, limit: int, *, prefix: str = "", since: datetime | None = None
     ) -> Sequence[Visit]:
-        """The pages fetched most often, the most read first."""
+        """Return the pages fetched most often, the most read first.
+
+        Args:
+            limit: The most to return.
+            prefix: Only pages whose number begins with it, a namespace filter.
+            since: Count only fetches since then, or over the whole log.
+        """
 
     async def callers(self, *, since: datetime | None = None) -> int:
-        """How many distinct callers have been seen."""
+        """Return how many distinct callers have been seen.
+
+        Args:
+            since: Count only callers seen since then, or over the whole log.
+        """
 
 
 class SqliteVisits:

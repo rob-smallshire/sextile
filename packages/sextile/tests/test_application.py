@@ -30,8 +30,13 @@ from sextile.application import (
 from sextile.page import Page, PageFrame
 from sextile.routing import Converter, NoSuchRouteError
 from sextile.session.session import Session
+from sextile.state import StateKey
 from sextile.viewdata.canvas import Canvas
 from sextile.viewdata.frame import Frame
+
+#: A key a lifespan writes and a handler reads, standing in for whatever a real
+#: service opens: an archive, an index, a clock.
+ARCHIVE = StateKey[str]("archive")
 
 
 def blank() -> Frame:
@@ -828,29 +833,31 @@ class TestWhatAServiceHoldsWhileItRuns:
         await app.shutdown()
         assert done == ["opened", "closed"]
 
-    async def test_what_it_yields_is_what_the_service_holds(self) -> None:
+    async def test_what_it_writes_is_what_the_service_holds(self) -> None:
         @asynccontextmanager
-        async def lifespan(app: Sextile) -> AsyncIterator[dict[str, object]]:
-            yield {"archive": "an archive"}
+        async def lifespan(app: Sextile) -> AsyncIterator[None]:
+            app.state[ARCHIVE] = "an archive"
+            yield
 
         app = Sextile(lifespan=lifespan)
         await app.startup()
-        assert app.service["archive"] == "an archive"
+        assert app.state[ARCHIVE] == "an archive"
 
     async def test_a_page_is_handed_it(self) -> None:
         #  Which is the point: a handler reaches what the service opened
         #  without the service having to be a class holding it.
-        seen: list[object] = []
+        seen: list[str] = []
 
         @asynccontextmanager
-        async def lifespan(app: Sextile) -> AsyncIterator[dict[str, object]]:
-            yield {"archive": "an archive"}
+        async def lifespan(app: Sextile) -> AsyncIterator[None]:
+            app.state[ARCHIVE] = "an archive"
+            yield
 
         app = Sextile(lifespan=lifespan)
 
         @app.page("1", name="main")
         async def main(request: PageRequest) -> Page:
-            seen.append(request.service["archive"])
+            seen.append(request.state[ARCHIVE])
             return Page(frames=(PageFrame(frame=Canvas().frame),))
 
         await app.startup()
@@ -873,18 +880,19 @@ class TestWhatAServiceHoldsWhileItRuns:
     async def test_a_service_with_no_lifespan_still_starts(self) -> None:
         app = Sextile()
         await app.startup()
-        assert app.service == {}
+        assert ARCHIVE not in app.state
         await app.shutdown()
 
     async def test_and_lets_go_of_it_afterwards(self) -> None:
         @asynccontextmanager
-        async def lifespan(app: Sextile) -> AsyncIterator[dict[str, object]]:
-            yield {"archive": "an archive"}
+        async def lifespan(app: Sextile) -> AsyncIterator[None]:
+            app.state[ARCHIVE] = "an archive"
+            yield
 
         app = Sextile(lifespan=lifespan)
         await app.startup()
         await app.shutdown()
-        assert app.service == {}
+        assert ARCHIVE not in app.state
 
 
 class TestATargetTheNumberingDoesNotName:
@@ -1182,14 +1190,15 @@ class TestAskingForAPageWithoutASocket:
         assert await app.ask("7") is None
 
     async def test_the_page_is_handed_what_the_service_holds(self) -> None:
-        seen: list[object] = []
+        seen: list[str] = []
 
         @asynccontextmanager
-        async def lifespan(app: Sextile) -> AsyncIterator[dict[str, object]]:
-            yield {"archive": "an archive"}
+        async def lifespan(app: Sextile) -> AsyncIterator[None]:
+            app.state[ARCHIVE] = "an archive"
+            yield
 
         async def main(request: PageRequest) -> Page:
-            seen.append(request.service["archive"])
+            seen.append(request.state[ARCHIVE])
             return Page(frames=(PageFrame(frame=Canvas().frame),))
 
         app = Sextile(lifespan=lifespan, pages=[PageRoute("1", main, name="main")])
@@ -1251,11 +1260,3 @@ class TestBetterWordsForAPage:
     def test_a_service_without_one_is_unaffected(self) -> None:
         app = Sextile(pages=[PageRoute("1", _nothing, name="main", title="Main index")])
         assert app.describe(PageAddress("1")) == "Main index"
-
-
-_seen: list[tuple[object, str]] = []
-
-
-async def _remembering(request: PageRequest) -> Page:
-    _seen.append((request.service.get("held"), request.app.name))
-    return Page(frames=(PageFrame(frame=Canvas().frame),))

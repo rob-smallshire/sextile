@@ -12,14 +12,24 @@ import logging
 
 import pytest
 
-from sextile import Page, PageAddress, PageFrame, PageRequest, PageRoute, Sextile
+from sextile import Page, PageAddress, PageFrame, PageRequest, PageRoute, Sextile, StateKey
 from sextile.application import Middleware
-from sextile.middleware import held_in, log_pages, record_visits
+from sextile.middleware import log_pages, record_visits
+from sextile.state import State
 from sextile.viewdata.canvas import Canvas
-from sextile.visits import SqliteVisits
+from sextile.visits import SqliteVisits, Visits
 
 #: Any page at all, for a middleware that does not look at one.
 _SOMETHING = Page(frames=(PageFrame(frame=Canvas().frame),))
+
+#: The key the visit log is held under, as a service would key it.
+VISITS = StateKey[Visits]("visits")
+
+
+def _holding(log: Visits) -> State:
+    state = State()
+    state[VISITS] = log
+    return state
 
 
 class Clock:
@@ -127,30 +137,30 @@ class TestRecordingVisits:
 
     async def test_every_page_is_recorded(self) -> None:
         log = SqliteVisits.open(":memory:")
-        await _through(record_visits(log), PageAddress("3"))
+        await _through(record_visits(VISITS), PageAddress("3"), state=_holding(log))
         assert [visit.page.digits for visit in await log.recent(9)] == ["3"]
 
     async def test_a_page_that_was_not_there_is_recorded_too(self) -> None:
         #  A count of pages fetched that quietly omitted the ones nobody could
         #  reach would be the wrong count.
         log = SqliteVisits.open(":memory:")
-        await _through(record_visits(log), PageAddress("9999"), page=None)
+        await _through(record_visits(VISITS), PageAddress("9999"), page=None, state=_holding(log))
         assert await log.recent(9) == []
         assert await log.callers() == 1
 
     async def test_one_caller_is_one_token_however_many_pages(self) -> None:
         log = SqliteVisits.open(":memory:")
-        recording = record_visits(log)
+        recording = record_visits(VISITS)
         session: dict[str, object] = {}
         for number in ("1", "3", "4"):
-            await _through(recording, PageAddress(number), session=session)
+            await _through(recording, PageAddress(number), session=session, state=_holding(log))
         assert await log.callers() == 1
 
     async def test_and_two_sessions_are_two_callers(self) -> None:
         log = SqliteVisits.open(":memory:")
-        recording = record_visits(log)
+        recording = record_visits(VISITS)
         for _ in range(2):
-            await _through(recording, PageAddress("1"), session={})
+            await _through(recording, PageAddress("1"), session={}, state=_holding(log))
         assert await log.callers() == 2
 
     async def test_the_token_says_nothing_about_who(self) -> None:
@@ -158,7 +168,9 @@ class TestRecordingVisits:
         #  that keeps what it does not need has to be trusted about it.
         log = SqliteVisits.open(":memory:")
         session: dict[str, object] = {}
-        await _through(record_visits(log), PageAddress("1"), session=session)
+        await _through(
+            record_visits(VISITS), PageAddress("1"), session=session, state=_holding(log)
+        )
         (token,) = session.values()
         assert isinstance(token, str)
         assert token.isalnum()
@@ -166,15 +178,15 @@ class TestRecordingVisits:
     async def test_a_service_holding_no_log_still_gets_its_page(self) -> None:
         #  The page has been built and the reader is owed it, so the visit goes
         #  unrecorded rather than the page going unsent.
-        page = await _through(record_visits(held_in("visits")), PageAddress("1"))
+        page = await _through(record_visits(VISITS), PageAddress("1"))
         assert page is not None
 
     async def test_and_one_that_holds_one_has_it_found(self) -> None:
         log = SqliteVisits.open(":memory:")
         await _through(
-            record_visits(held_in("visits")),
+            record_visits(VISITS),
             PageAddress("1"),
-            service={"visits": log},
+            state=_holding(log),
         )
         assert [visit.page.digits for visit in await log.recent(9)] == ["1"]
 
@@ -185,7 +197,7 @@ async def _through(
     *,
     page: Page | None = _SOMETHING,
     session: dict[str, object] | None = None,
-    service: dict[str, object] | None = None,
+    state: State | None = None,
 ) -> Page | None:
     async def build(request: PageRequest) -> Page | None:
         return page
@@ -195,7 +207,7 @@ async def _through(
             address=address,
             app=Sextile(),
             session=session if session is not None else {},
-            service=service if service is not None else {},
+            state=state if state is not None else State(),
         ),
         build,
     )

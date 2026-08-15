@@ -27,7 +27,6 @@ from sextile.content.transliterate import transliterate
 from sextile.declarations import Handler, PageInfo, PageRoute, page, routes_in, routes_on
 from sextile.forms import Form, Suggest, draw_form
 from sextile.handlers import standard_pages
-from sextile.held import Held
 from sextile.page import Page, PageFrame
 from sextile.pages import farewell_page, menu_page, notice_page, prose_page
 from sextile.requests import Neighbours, PageRequest, Parting
@@ -46,7 +45,6 @@ __all__ = [
     "Form",
     "GuideRow",
     "Handler",
-    "Held",
     "Middleware",
     "Next",
     "NoSuchRouteError",

@@ -8,15 +8,20 @@ own words: what the pages show is tested where they are built.
 
 import pytest
 
-from sextile import PageRequest, PageRoute, Sextile, handlers, standard_pages
+from sextile import PageRequest, PageRoute, Sextile, StateKey, handlers, standard_pages
 from sextile.addressing import PageAddress
-from sextile.middleware import held_in
-from sextile.visits import SqliteVisits
+from sextile.state import State
+from sextile.visits import SqliteVisits, Visits
+
+VISITS = StateKey[Visits]("visits")
 
 
-def _asking(app: Sextile, number: str, **held: object) -> PageRequest:
-    """A request for a page on a service holding `held`, as a session would build."""
-    return PageRequest(address=PageAddress(number), app=app, service=held)
+def _asking(app: Sextile, number: str, log: Visits | None = None) -> PageRequest:
+    """A request for a page on a service, optionally holding a visit log."""
+    state = State()
+    if log is not None:
+        state[VISITS] = log
+    return PageRequest(address=PageAddress(number), app=app, state=state)
 
 
 class TestStandardPages:
@@ -45,11 +50,11 @@ class TestReadershipPages:
         app = Sextile()
         log = SqliteVisits.open(":memory:")
         for factory in (handlers.recent, handlers.popular, handlers.callers):
-            page = await factory(held_in("visits"))(_asking(app, "96", visits=log))
+            page = await factory(VISITS)(_asking(app, "96", log))
             assert page is not None
 
     async def test_they_say_so_when_there_is_no_log(self) -> None:
-        page = await handlers.recent(held_in("visits"))(_asking(Sextile(), "96"))
+        page = await handlers.recent(VISITS)(_asking(Sextile(), "96"))
         assert page is not None
         rows, _ = page.frames[0].frame.to_grid()
         assert any("No log" in row for row in rows)
@@ -57,7 +62,7 @@ class TestReadershipPages:
     def test_standard_pages_routes_them_when_a_finder_is_given(self) -> None:
         app = Sextile(
             pages=list(
-                standard_pages(recent="96", popular="97", callers="98", visits=held_in("visits"))
+                standard_pages(recent="96", popular="97", callers="98", visits=VISITS)
             )
         )
         assert app.address_for("recent") == PageAddress("96")

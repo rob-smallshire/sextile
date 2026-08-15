@@ -550,7 +550,7 @@ class Session:
                     neighbours=sequence.neighbours() if sequence else Neighbours(),
                     session=self._state,
                     history=been,
-                    service=self._application.service,
+                    state=self._application.state,
                     app=self._application,
                 )
             )

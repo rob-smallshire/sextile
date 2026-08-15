@@ -284,10 +284,10 @@ class TestTheArchiveIsOpenedWhenTheServiceStarts:
     ) -> None:
         service = build_application(tmp_path / "archive.sqlite")
         await service.startup()
-        held = ARCHIVE.of(service.service)
+        held = service.state[ARCHIVE]
         assert held.count_posts() == 0
         await service.shutdown()
-        assert service.service == {}
+        assert ARCHIVE not in service.state
 
     async def test_asking_before_starting_says_so_rather_than_failing_obscurely(
         self,
@@ -295,7 +295,7 @@ class TestTheArchiveIsOpenedWhenTheServiceStarts:
         #  A page reached before the lifespan has run says which thing is
         #  missing, rather than failing somewhere inside SQLite.
         service = build_application()
-        with pytest.raises(RuntimeError, match="archive"):
+        with pytest.raises(KeyError, match="archive"):
             await service.ask("1")
 
 

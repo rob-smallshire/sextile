@@ -11,6 +11,7 @@ from dataclasses import dataclass, field
 from typing import TYPE_CHECKING
 
 from sextile.addressing import PageAddress
+from sextile.state import State, StateReader
 
 if TYPE_CHECKING:
     from sextile.application import Sextile
@@ -66,14 +67,14 @@ class PageRequest:
     keeps. The terminal remembers none of it, so a service wanting to offer a
     way back through the call has to be handed the way back."""
 
-    service: Mapping[str, object] = field(default_factory=dict)
+    state: StateReader = field(default_factory=State)
     """What the service opened, for as long as it is running -- an archive, a
-    client, an index.
+    client, an index -- read back through the `StateKey` it was written under.
 
     The counterpart of `session`: `session` is one caller's and lasts as long as
-    the line, `service` is shared and lasts as long as the process. Read-only
-    here, because a change would reach every other caller at once. Holds
-    whatever the application's `lifespan` yielded."""
+    the line, `state` is shared and lasts as long as the process. A read-only
+    view here, because a change would reach every other caller at once; the
+    lifespan writes it through `app.state`."""
 
 @dataclass(frozen=True)
 class Parting:

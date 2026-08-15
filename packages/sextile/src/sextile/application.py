@@ -51,6 +51,7 @@ from sextile.page import Page
 from sextile.pages import notice_page
 from sextile.requests import Neighbours, PageRequest, Parting
 from sextile.routing import Converter, ConverterFactory, Match, Router
+from sextile.state import State
 from sextile.visits import Visits
 
 __all__ = [
@@ -91,7 +92,7 @@ why it does not need one: a service that wants it wraps its pages.
 """
 
 
-type Lifespan = Callable[["Sextile"], AbstractAsyncContextManager[Mapping[str, object] | None]]
+type Lifespan = Callable[["Sextile"], AbstractAsyncContextManager[None]]
 type ResolveHandler = Callable[[str], PageAddress | None]
 type DescribeHandler = Callable[[PageAddress], str | None]
 
@@ -120,8 +121,8 @@ class Sextile:
         self._describing: DescribeHandler | None = None
         self._middleware = tuple(middleware)
         self._lifespan = lifespan
-        self._running: AbstractAsyncContextManager[Mapping[str, object] | None] | None = None
-        self._service: dict[str, object] = {}
+        self._running: AbstractAsyncContextManager[None] | None = None
+        self._state = State()
         self._home = home if isinstance(home, PageAddress) else PageAddress(home)
         wanted = self._home if index is None else index
         self._index = wanted if isinstance(wanted, PageAddress) else PageAddress(wanted)
@@ -470,16 +471,19 @@ class Sextile:
     # -- lifespan -----------------------------------------------------------
 
     @property
-    def service(self) -> Mapping[str, object]:
-        """What the lifespan yielded, for as long as the service is running."""
-        return self._service
+    def state(self) -> State:
+        """What the service holds while running, written by the lifespan.
+
+        A page is given the read-only view of this as `request.state`; the
+        writable store is the lifespan's, which sets a `StateKey` on it before
+        yielding.
+        """
+        return self._state
 
     async def startup(self) -> None:
         if self._lifespan is not None:
             self._running = self._lifespan(self)
-            held = await self._running.__aenter__()
-            if held is not None:
-                self._service.update(held)
+            await self._running.__aenter__()
 
     async def shutdown(self) -> None:
         if self._running is not None:
@@ -489,7 +493,7 @@ class Sextile:
             #  cannot drift apart when they are two halves of one function.
             await self._running.__aexit__(None, None, None)
             self._running = None
-        self._service.clear()
+        self._state.clear()
 
     def heading_for(self, address: PageAddress) -> str:
         """What to head a page with: what it was registered as, in upper case.
@@ -684,7 +688,7 @@ class Sextile:
                 neighbours=neighbours or Neighbours(),
                 session=session if session is not None else {},
                 history=history,
-                service=self.service,
+                state=self._state,
                 app=self,
             )
         )

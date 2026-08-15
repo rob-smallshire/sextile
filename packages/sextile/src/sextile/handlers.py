@@ -12,17 +12,18 @@ title, detail and keywords so a service need not retype them.
     Sextile(pages=[*my_pages, *standard_pages(history="92", contents="93", keywords="94")])
 
 The readership pages -- what has been read lately, most, and how many have
-called -- read the service's own visit log, so they are given a `Finder` for
-it, the same `held_in(name)` a service already hands `record_visits`.
+called -- read the service's own visit log, so they are given the `StateKey`
+the log is held under, the same key a service hands `record_visits`.
 """
 
 from collections.abc import Callable
 
 from sextile.declarations import Handler, PageRoute
-from sextile.middleware import Finder
 from sextile.page import Page
 from sextile.pages import notice_page
 from sextile.requests import PageRequest
+from sextile.state import StateKey
+from sextile.visits import Visits
 
 __all__ = [
     "callers",
@@ -55,11 +56,11 @@ async def keywords(request: PageRequest) -> Page:
     return await request.app.keywords_page(request)
 
 
-def recent(visits: Finder) -> Handler:
+def recent(visits: StateKey[Visits]) -> Handler:
     """A handler for the pages looked at lately, reading `visits` from the log."""
 
     async def handler(request: PageRequest) -> Page:
-        log = visits(request)
+        log = request.state.get(visits)
         if log is None:
             return notice_page(request, _NO_LOG)
         return await request.app.recent_page(request, log)
@@ -67,11 +68,11 @@ def recent(visits: Finder) -> Handler:
     return handler
 
 
-def popular(visits: Finder) -> Handler:
+def popular(visits: StateKey[Visits]) -> Handler:
     """A handler for the pages looked at most, reading `visits` from the log."""
 
     async def handler(request: PageRequest) -> Page:
-        log = visits(request)
+        log = request.state.get(visits)
         if log is None:
             return notice_page(request, _NO_LOG)
         return await request.app.popular_page(request, log)
@@ -79,11 +80,11 @@ def popular(visits: Finder) -> Handler:
     return handler
 
 
-def callers(visits: Finder) -> Handler:
+def callers(visits: StateKey[Visits]) -> Handler:
     """A handler for how many have called, reading `visits` from the log."""
 
     async def handler(request: PageRequest) -> Page:
-        log = visits(request)
+        log = request.state.get(visits)
         if log is None:
             return notice_page(request, _NO_LOG)
         return await request.app.callers_page(request, log)
@@ -99,7 +100,7 @@ _PLAIN: dict[str, tuple[Handler, str, str, tuple[str, ...]]] = {
     "contents": (contents, "Every page", "and the number that fetches it", ("PAGES", "CONTENTS")),
     "keywords": (keywords, "Words you can key", "instead of a page number", ("KEYWORDS", "WORDS")),
 }
-_LOGGED: dict[str, tuple[Callable[[Finder], Handler], str, str, tuple[str, ...]]] = {
+_LOGGED: dict[str, tuple[Callable[[StateKey[Visits]], Handler], str, str, tuple[str, ...]]] = {
     "recent": (recent, "Pages lately read", "this call and before", ("READ",)),
     "popular": (popular, "Pages read most", "the most read first", ("POPULAR",)),
     "callers": (callers, "Who has called", "over the last few periods", ("CALLERS",)),
@@ -114,7 +115,7 @@ def standard_pages(
     recent: str | None = None,
     popular: str | None = None,
     callers: str | None = None,
-    visits: Finder | None = None,
+    visits: StateKey[Visits] | None = None,
 ) -> tuple[PageRoute, ...]:
     """Routes for the framework's own pages, at whatever numbers a service gives.
 
@@ -129,9 +130,9 @@ def standard_pages(
         recent: What has been looked at lately.
         popular: What has been looked at most.
         callers: How many have called.
-        visits: How to find the visit log from a request, which `recent`,
-            `popular` and `callers` read. The `held_in(name)` a service hands
-            `record_visits` is one.
+        visits: The `StateKey` the visit log is held under, which `recent`,
+            `popular` and `callers` read; the same key a service hands
+            `record_visits`.
 
     Returns:
         A `PageRoute` for each page given a number, in the order named above.
@@ -143,7 +144,7 @@ def standard_pages(
     numbered_logs = {"recent": recent, "popular": popular, "callers": callers}
     if any(numbered_logs.values()) and visits is None:
         raise ValueError(
-            "recent, popular and callers each need a visits finder; pass visits="
+            "recent, popular and callers each need the visit-log key; pass visits="
         )
     routes = []
     for name, number in (("history", history), ("contents", contents), ("keywords", keywords)):

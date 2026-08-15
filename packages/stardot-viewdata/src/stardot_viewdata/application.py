@@ -13,7 +13,7 @@ mapped into the numbering, and the words it uses for a page it has not got.
 """
 
 import asyncio
-from collections.abc import AsyncIterator, Mapping, Sequence
+from collections.abc import AsyncIterator, Sequence
 from contextlib import asynccontextmanager
 from datetime import date
 from pathlib import Path
@@ -56,13 +56,15 @@ def build_application(
     """
 
     @asynccontextmanager
-    async def lifespan(app: Sextile) -> AsyncIterator[Mapping[str, object]]:
+    async def lifespan(app: Sextile) -> AsyncIterator[None]:
         if repository is not None:
-            yield ARCHIVE.holding(repository)
+            app.state[ARCHIVE] = repository
+            yield
             return
         ours = await asyncio.to_thread(Repository.open, database_filepath)
         try:
-            yield ARCHIVE.holding(ours)
+            app.state[ARCHIVE] = ours
+            yield
         finally:
             await asyncio.to_thread(ours.close)
 

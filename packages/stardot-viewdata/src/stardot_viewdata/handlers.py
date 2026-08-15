@@ -29,11 +29,11 @@ from typing import Final
 
 from sextile import (
     GuideRow,
-    Held,
     Page,
     PageRequest,
     Parting,
     Sextile,
+    StateKey,
     farewell_page,
     keyed,
     menu_page,
@@ -67,7 +67,7 @@ SERVICE_NAME: Final = "STARDOT"
 #: What the archive is held under, in what the service holds. A key rather
 #: than a string, so every page narrows what it takes in the same call and a
 #: mistyped key fails by name.
-ARCHIVE: Final = Held("archive", Repository)
+ARCHIVE: Final = StateKey[Repository]("archive")
 
 
 async def _read[T](request: PageRequest, query: Callable[[Repository], T]) -> T:
@@ -76,7 +76,7 @@ async def _read[T](request: PageRequest, query: Callable[[Repository], T]) -> T:
     SQLite is synchronous, and a caller waiting on a query should not be every
     caller waiting on it.
     """
-    return await asyncio.to_thread(query, ARCHIVE.of(request.service))
+    return await asyncio.to_thread(query, request.state[ARCHIVE])
 
 
 @page("0")

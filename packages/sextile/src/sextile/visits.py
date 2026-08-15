@@ -33,7 +33,7 @@ from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
-from typing import Final, Protocol, Self, runtime_checkable
+from typing import Final, Protocol, Self
 
 from sextile.addressing import PageAddress
 
@@ -72,7 +72,6 @@ class Visit:
     """How often, over whatever period was asked for."""
 
 
-@runtime_checkable
 class Visits(Protocol):
     """A log of what has been read.
 

@@ -21,19 +21,14 @@ from collections.abc import Callable
 from typing import Final
 
 from sextile.application import Middleware, Next, PageRequest
-from sextile.held import Held
 from sextile.page import Page
+from sextile.state import StateKey
 from sextile.visits import Visits
 
 __all__ = [
-    "Finder",
-    "held_in",
     "log_pages",
     "record_visits",
 ]
-
-#: A way of finding the log, for a service that opens it after this is made.
-type Finder = Callable[[PageRequest], Visits | None]
 
 #: Longer than this and the page is worth naming in the log by itself. A frame
 #: takes eight seconds to send at 1200 baud, so a page that takes a second to
@@ -92,14 +87,14 @@ CALLER: Final = "sextile.caller"
 
 
 def record_visits(
-    visits: "Visits | Finder", *, token: Callable[[], str] = _token
+    visits: StateKey[Visits], *, token: Callable[[], str] = _token
 ) -> Middleware:
     """Note every page a service builds, for the pages that read the log back.
 
-    Takes the log, or a way of finding it. A service that opens its log in its
-    lifespan -- which is where a thing that has to be closed belongs -- has no
-    log to hand over at the moment the middleware is made, so it hands over
-    `held_in("visits")` instead and the lookup happens per page.
+    Takes the `StateKey` the service's log is held under. A service opens its
+    log in its lifespan -- where a thing that has to be closed belongs -- so
+    there is no log to hand over when the middleware is made; it hands over the
+    key, and the log is read from `request.state` per page.
 
     The caller is a token minted the first time this middleware sees a session
     and kept in the session after -- so counting readers can say how many and
@@ -115,7 +110,7 @@ def record_visits(
 
     async def recording(request: PageRequest, build: Next) -> Page | None:
         page = await build(request)
-        log = visits(request) if callable(visits) else visits
+        log = request.state.get(visits)
         if log is None:
             #  A service that offered a lookup and holds nothing under it. The
             #  page has already been built and the reader is owed it, so the
@@ -131,14 +126,5 @@ def record_visits(
     return recording
 
 
-def held_in(name: str) -> "Finder":
-    """The log a service put in what it holds, under this name.
-
-    `Held.checking(name, Visits).find` said for a service that has not made a
-    key of its own: the framework knows what a log looks like, so the name
-    alone is enough.
-    """
-    key: Held[Visits] = Held.checking(name, Visits)
-    return key.find
 
 

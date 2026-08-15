@@ -106,13 +106,13 @@ class Form(ABC):
     holds what has been typed, so a layout carrying one is built for the
     request it answers rather than kept and built again.
 
-    A subclass numbers its rows from nought, and `at` is where the layout put
+    A subclass numbers its rows from nought, and `top_row` is where the layout put
     it. Everything a form draws or reports is offset by that, so a form need not
     track where the content of a frame begins.
     """
 
     #: The row this form was placed on. Nought until it has been.
-    at: int = 0
+    top_row: int = 0
 
     def place(self, canvas: "Canvas", room: "Space") -> "Placed":
         """Draw this form where the layout has put it, and claim its keys.
@@ -126,13 +126,13 @@ class Form(ABC):
             as the frame's form. A form is drawn whole or not at all, so a
             frame without room for it is asked to begin another.
         """
-        self.at = room.first_row
+        self.top_row = room.first_row
         if len(self.rows) > room.rows:
             return Placed(rows=0, remainder=self)
         self.draw(canvas)
         return Placed(
             rows=len(self.rows),
-            claim=Claim(choices=self.choices(), named=self.named(), form=self),
+            claim=Claim(choices=self.choices(), named=self.footer_items(), form=self),
         )
 
     @property
@@ -183,7 +183,7 @@ class Form(ABC):
         """
         return {}
 
-    def named(self) -> Sequence[FooterItem]:
+    def footer_items(self) -> Sequence[FooterItem]:
         """What the prompt should say about the keys this form answers.
 
         Empty unless a form says otherwise. A form is the only part that
@@ -269,7 +269,10 @@ class TypeAhead(Form):
 
     @property
     def rows(self) -> range:
-        return range(self.at + self._field_row, self.at + self._suggestions_row + self._limit)
+        return range(
+            self.top_row + self._field_row,
+            self.top_row + self._suggestions_row + self._limit,
+        )
 
     @property
     def caret(self) -> tuple[int, int]:
@@ -278,7 +281,7 @@ class TypeAhead(Form):
         #  cells to the left of where the next letter actually lands, which on
         #  the one row of a service where the cursor means anything is exactly
         #  the wrong place for it.
-        return self.at + self._field_row, self._field_column + len(self._value)
+        return self.top_row + self._field_row, self._field_column + len(self._value)
 
     @property
     def _field_column(self) -> int:
@@ -314,7 +317,7 @@ class TypeAhead(Form):
         #  nothing has asked nothing.
         self._found = await self._lookup(self._value) if self._value else ()
 
-    def named(self) -> Sequence[FooterItem]:
+    def footer_items(self) -> Sequence[FooterItem]:
         #  What `#` does is marked against the suggestion it would take, which
         #  is where a reader is looking anyway, so the row has the room to say
         #  the rest in words. A range rather than a count: with one match on
@@ -333,7 +336,7 @@ class TypeAhead(Form):
         }
 
     def draw(self, canvas: Canvas) -> None:
-        field = canvas.row(self.at + self._field_row)
+        field = canvas.row(self.top_row + self._field_row)
         if self._label:
             field.text(self._label, Colour.CYAN)
         #  A bar of colour to the end of the row, so a reader can see where
@@ -346,7 +349,7 @@ class TypeAhead(Form):
         field.background(self._field_colour, text=self._text_colour)
         field.text(fitted(self._value, field.remaining), self._text_colour)
         for offset in range(self._limit):
-            row = canvas.row(self.at + self._suggestions_row + offset)
+            row = canvas.row(self.top_row + self._suggestions_row + offset)
             if offset < len(self._found):
                 self._draw_one(row, offset, self._found[offset])
             elif offset == 0 and self._value and self._no_match:
@@ -497,7 +500,7 @@ class FieldSet(Form):
         self._live = 0
         self._said = ""
 
-    def named(self) -> Sequence[FooterItem]:
+    def footer_items(self) -> Sequence[FooterItem]:
         #  Not `#`. It moves to the next field from every field but the last,
         #  so a footer saying "# go there" is false wherever the reader most
         #  likely is. What it does on the last field is marked against that
@@ -524,11 +527,11 @@ class FieldSet(Form):
         rows += [field.hint_row for field in self._fields if field.hint_row is not None]
         if self._footnote_row is not None:
             rows.append(self._footnote_row)
-        return range(self.at + min(rows), self.at + max(rows) + 1)
+        return range(self.top_row + min(rows), self.top_row + max(rows) + 1)
 
     @property
     def caret(self) -> tuple[int, int]:
-        return self.at + self.live.row, self._column_of(self.live) + len(self.live.value)
+        return self.top_row + self.live.row, self._column_of(self.live) + len(self.live.value)
 
     def accepts(self, key: str) -> bool:
         return (
@@ -571,7 +574,7 @@ class FieldSet(Form):
 
     def draw(self, canvas: Canvas) -> None:
         for offset, field in enumerate(self._fields):
-            row = canvas.row(self.at + field.row)
+            row = canvas.row(self.top_row + field.row)
             #  Labels padded to the widest, so the values line up as a column
             #  rather than each starting wherever its own label happened to end.
             row.text(field.label.ljust(self._widest), Colour.CYAN)
@@ -594,11 +597,11 @@ class FieldSet(Form):
                 row.text(f"  {fitted(field.value, field.width)}", Colour.WHITE)
             self._mark_sending(row, offset)
             if field.hint_row is not None and field.hint:
-                canvas.row(self.at + field.hint_row).text(
+                canvas.row(self.top_row + field.hint_row).text(
                     fitted(field.hint, COLUMNS - 1), HINT_COLOUR
                 )
         if self._footnote_row is not None and self._said:
-            canvas.row(self.at + self._footnote_row).text(
+            canvas.row(self.top_row + self._footnote_row).text(
                 fitted(self._said, COLUMNS - 1), NOTE_COLOUR
             )
 

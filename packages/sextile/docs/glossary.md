@@ -71,4 +71,6 @@ as "was X" so a reader coming from older code or docs can find it.
   (was `Fields`) is a form of several fields at once. Its `on_submit` (was
   `complete`), `footnote` (was `note`), `submit_label` (was `sends`) and
   `footer_items` (was `advice`) each say what they are; the handler types are
-  `SubmitHandler` (was `Complete`) and `Footnote` (was `Note`).
+  `SubmitHandler` (was `Complete`) and `Footnote` (was `Note`). A `Form`
+  subclass overrides `footer_items()` (was `named()`) and reads `top_row` (was
+  `at`), the row the layout placed it on.

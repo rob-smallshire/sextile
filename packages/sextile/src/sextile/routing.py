@@ -1,11 +1,11 @@
 """Dispatching a page number to whatever answers it.
 
-A pattern is literal digits and named fields. `82{post_id:int}` answers every
-page number beginning 82 and hands the rest over as `post_id`, so a page builder
-is written in terms of the post it shows rather than the digits that named it.
-The scheme lives in one place, and `address_for` builds an address from a
-pattern and named values, which stops a page number being respelled at every
-site that links to one.
+A pattern is literal digits and named fields. `82{n:int}` answers every page
+number beginning 82 and hands the rest to a handler as `n`, so a handler is
+written in terms of the value rather than the digits that named it. The scheme
+lives in one place, and `address_for` builds an address from a pattern and named
+values, which stops a page number being respelled at every site that links to
+one.
 
 Because a viewdata request is terminated -- `*8#` and `*82489493#` are
 unambiguously different -- page numbers need not be prefix-free, only distinct.
@@ -23,8 +23,8 @@ can only be told apart if all but the last has a width known in advance.
 `{year:int(4)}{month:int(2)}` is fine; two bare `int` fields running together
 are refused at registration rather than matched arbitrarily.
 
-This module maps addresses to targets; `sextile.application` decides that a
-target builds a page. It also holds the page *declaration*: `PageRoute` is
+This module maps addresses to targets; `sextile.application` is what makes a
+target build a page. It also holds the page *declaration*: `PageRoute` is
 everything about a page stated as a value, and `PageRouter` collects those from
 `@router.page` for a handler in a module of its own. A service is a list of
 `PageRoute`s, which is what makes registration order unobservable.
@@ -195,7 +195,7 @@ class Route[T]:
     parts: tuple[str | _Field, ...]
     literals: int
     """How many characters of the pattern are fixed digits, which is what
-    decides the order candidates are tried in."""
+    sets the order candidates are tried in."""
 
     @property
     def fields(self) -> tuple[str, ...]:
@@ -203,7 +203,7 @@ class Route[T]:
 
     @property
     def keyed(self) -> str:
-        """The pattern as a reader would see it: `82<post_id>`.
+        """The pattern as a reader would see it: `82<n>`.
 
         For a page that lists pages. The converter is left out: what a field
         accepts is internal, and the reader keys only the value.
@@ -258,7 +258,7 @@ class Router[T]:
 
         Either a converter, used wherever `{field:name}` appears, or a factory
         taking whatever was written in brackets, so that `{field:name(3)}` can
-        mean something the application decides.
+        mean something the service defines.
         """
         if name in self._converters:
             raise RouteError(f"{name!r} is already a converter")
@@ -340,7 +340,7 @@ class Router[T]:
         return PageAddress(digits)
 
     def keywords(self) -> dict[str, PageAddress]:
-        """The named jumps, for a page that wants to list them."""
+        """Return the keyword-to-address jumps, for a page that lists them."""
         return dict(self._keywords)
 
     def routes(self) -> tuple[Route[T], ...]:
@@ -484,16 +484,16 @@ class PageRoute:
 
     label: str | Callable[..., str] | None = None
     """What to call the page in a list of *visited* pages, where the listed
-    title is wrong because the number carried a field: "One post" names the kind
-    of page, "Post 489493" names the one a reader was on. A `str.format` template
-    over the route's captured fields (`label="Post {post_id}"`), or a callable
-    taking them as keyword arguments (`label=lambda day: day_title(day)`). None
-    leaves `Sextile.label_for` to build one from the title and the fields."""
+    title is wrong because the number carried a field: the title names the kind
+    of page, the label names the one a reader was on. A `str.format` template
+    over the route's captured fields (`label="Item {n}"`), or a callable taking
+    them as keyword arguments (`label=lambda n: title_of(n)`). None leaves
+    `Sextile.label_for` to build one from the title and the fields."""
 
     keyed: str = ""
-    """The number a reader keys, fields shown as `<name>`: `52<user_id>`. Filled
-    in when a service registers the route, from the numbering it registers it
-    into; empty on a route a caller has only constructed."""
+    """The number a reader keys, fields shown as `<name>`: `52<n>`. Filled in
+    when a service registers the route, from the numbering it registers it into;
+    empty on a route a caller has only constructed."""
 
 
 def declaring[H: Handler](

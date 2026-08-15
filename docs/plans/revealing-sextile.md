@@ -154,6 +154,11 @@ ranges in `canvas.py` and `ansi.py`; `charting.ACROSS_A_CELL/DOWN_A_CELL`;
 Deferred from 1.8: `RowWriter` column offset and run trimming to a budget,
 taken with the centring/double-height/mosaic triplicate collapse onto
 `Composition`.
+Deferred from Phase 2 batch 1: rename the `place(canvas, room: Space)`
+parameter `room` -> `space`. Blocked by a second sense of `room` -- an int
+of available cells/rows in formatting, forms, drawing, wrapping and lettering
+(`room = COLUMNS - ...`, `wrap_within(cells=room)`) -- so the int-`room` wants
+its own name (`width`/`cells`?) before the `Space` parameter can take `room`'s.
 
 ### Phase 5: docstrings and CLAUDE.md
 

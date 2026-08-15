@@ -415,9 +415,9 @@ of them:
 
 ```python
 from sextile.compass import ROWS, compass
-from sextile.layout import Custom, OnFirstFrame
+from sextile.layout import Custom, OnOneFrame
 
-OnFirstFrame(Custom(rows=ROWS, draw=lambda canvas, row: compass(Composition(), row).draw(canvas)))
+OnOneFrame(Custom(rows=ROWS, draw=lambda canvas, row: compass(Composition(), row).draw(canvas)))
 ```
 
 `ROWS` is how many rows it occupies, which is what `Custom` is given, so the
@@ -571,13 +571,13 @@ cannot tell the two apart.
 
 ```python
 from sextile import Suggest
-from sextile.layout import OnFirstFrame, PageLayout
+from sextile.layout import OnOneFrame, PageLayout
 
 return PageLayout(
     title="FIND A PLACE",
     parts=[
-        OnFirstFrame(Lines(said=("Key a place name.", ""))),
-        OnFirstFrame(Suggest(look_up=places.matching, label="PLACE:")),
+        OnOneFrame(Lines(said=("Key a place name.", ""))),
+        OnOneFrame(Suggest(look_up=places.matching, label="PLACE:")),
     ],
 ).build(request)
 ```

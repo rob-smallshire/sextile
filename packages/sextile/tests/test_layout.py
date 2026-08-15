@@ -21,7 +21,7 @@ from sextile.layout import (
     Footer,
     FrameBreak,
     OnEveryFrame,
-    OnFirstFrame,
+    OnOneFrame,
     PageLayout,
     Placed,
     Shortcut,
@@ -124,7 +124,7 @@ def lines(count: int) -> Recites:
 
 class TestOnePartOnOneFrame:
     def test_a_part_that_fits_gives_one_frame(self) -> None:
-        filled = fill([OnFirstFrame(Says("hello"))], CONTENT)
+        filled = fill([OnOneFrame(Says("hello"))], CONTENT)
         assert len(filled) == 1
         assert said_on([one.canvas for one in filled], 0) == ["hello"]
 
@@ -179,14 +179,14 @@ class TestABareDrawableIsFlowing:
         ]
 
     def test_it_follows_a_once_the_way_a_flowing_would(self) -> None:
-        filled = fill([OnFirstFrame(Says("lead-in")), items(12)], CONTENT)
+        filled = fill([OnOneFrame(Says("lead-in")), items(12)], CONTENT)
         assert said_on([one.canvas for one in filled], 0)[0] == "lead-in"
         assert len(filled) == 2
 
 
 class TestOnceAndEvery:
     def test_once_is_drawn_on_the_first_frame_only(self) -> None:
-        filled = fill([OnFirstFrame(Says("lead-in")), Flow(items(12))], CONTENT)
+        filled = fill([OnOneFrame(Says("lead-in")), Flow(items(12))], CONTENT)
         assert said_on([one.canvas for one in filled], 0)[0] == "lead-in"
         assert "lead-in" not in said_on([one.canvas for one in filled], 1)
 
@@ -208,7 +208,7 @@ class TestOnceAndEvery:
 
     def test_once_after_a_flow_lands_where_the_flow_finished(self) -> None:
         #  `once` means once, not first.
-        filled = fill([Flow(items(12)), OnFirstFrame(Says("and that is all"))], CONTENT)
+        filled = fill([Flow(items(12)), OnOneFrame(Says("and that is all"))], CONTENT)
         assert "and that is all" not in said_on([one.canvas for one in filled], 0)
         assert "and that is all" in said_on([one.canvas for one in filled], 1)
 
@@ -231,14 +231,14 @@ class TestABreak:
 class TestAPartTooTallForWhatIsLeft:
     def test_it_begins_the_next_frame_rather_than_being_split(self) -> None:
         #  Eighteen rows gone of twenty, and four wanted: it goes over whole.
-        filled = fill([Flow(lines(18)), OnFirstFrame(Says("four rows", rows=4))], CONTENT)
+        filled = fill([Flow(lines(18)), OnOneFrame(Says("four rows", rows=4))], CONTENT)
         assert len(filled) == 2
         assert "four rows" not in said_on([one.canvas for one in filled], 0)
         assert "four rows" in said_on([one.canvas for one in filled], 1)
 
     def test_a_part_taller_than_a_frame_is_refused(self) -> None:
         with pytest.raises(ValueError, match="never be placed"):
-            fill([OnFirstFrame(Says("far too tall", rows=30))], CONTENT)
+            fill([OnOneFrame(Says("far too tall", rows=30))], CONTENT)
 
 
 class TestSeveralPartsOnEveryFrame:
@@ -295,7 +295,7 @@ class TestTheFurniture:
         assert content_rows([*DEFAULT_FURNITURE, Footer()]) == range(2, 21)
 
     def test_the_header_carries_the_title_and_the_page_number(self) -> None:
-        layout = PageLayout(title="ITEMS", parts=[OnFirstFrame(Says("x"))])
+        layout = PageLayout(title="ITEMS", parts=[OnOneFrame(Says("x"))])
         shown = rows_of(layout.build(request_for(_APP, at("8"))))
         assert shown[0].strip().startswith("ITEMS")
         assert shown[0].strip().endswith("8a")
@@ -308,7 +308,7 @@ class TestTheFurniture:
 
     def test_a_page_may_do_without_furniture_altogether(self) -> None:
         shown = rows_of(
-            PageLayout(title="STARDOT", furniture=(), parts=[OnFirstFrame(Says("masthead"))])
+            PageLayout(title="STARDOT", furniture=(), parts=[OnOneFrame(Says("masthead"))])
             .build(request_for(_APP, at("8")))
         )
         assert shown[0].strip() == "masthead"
@@ -358,7 +358,7 @@ class TestWhereAPageLeads:
         #  The session tries the next frame and falls through to `follows`, so
         #  the key has to be answered for that to happen at all.
         page = PageLayout(
-            title="STARDOT", furniture=(), parts=[OnFirstFrame(Says("masthead"))], next_page=at("1")
+            title="STARDOT", furniture=(), parts=[OnOneFrame(Says("masthead"))], next_page=at("1")
         ).build(request_for(_APP, at("8")))
         found = page.frame(0)
         assert found is not None
@@ -388,7 +388,7 @@ class TestTheWayHomeIsAShortcutLikeAnyOther:
 
     def a_page(self, home: PageAddress | Shortcut | None = None) -> Page:
         return PageLayout(
-            title="NOTICE", home=home, parts=[OnFirstFrame(Says("Said."))]
+            title="NOTICE", home=home, parts=[OnOneFrame(Says("Said."))]
         ).build(request_for(_APP, at("2")))
 
     def test_an_address_puts_it_on_nought_and_calls_it_the_index(self) -> None:
@@ -432,7 +432,7 @@ class TestAShortcutThatAnswersAnArrowToo:
         return PageLayout(
             title="ONE DAY",
             home=at("1"),
-            parts=[OnFirstFrame(Says("Saturday."))],
+            parts=[OnOneFrame(Says("Saturday."))],
             shortcuts=[
                 Shortcut(key="A", destination=at("41"), label="prev", with_arrow=with_arrow),
                 Shortcut(key="D", destination=at("43"), label="next", with_arrow=with_arrow),
@@ -462,7 +462,7 @@ class TestAShortcutThatAnswersAnArrowToo:
         page = PageLayout(
             title="POST",
             home=at("1"),
-            parts=[OnFirstFrame(Says("A post."))],
+            parts=[OnOneFrame(Says("A post."))],
             shortcuts=[Shortcut(key="R", destination=at("7"), label="reply", with_arrow=True)],
         ).build(request_for(_APP, at("8")))
         found = page.frame(0)
@@ -485,7 +485,7 @@ class TestWhatTheItemsAreCalled:
                 title="ONE DAY",
                 home=at("1"),
                 item_noun=item,
-                parts=[OnFirstFrame(Says("Saturday."))],
+                parts=[OnOneFrame(Says("Saturday."))],
                 shortcuts=[
                     Shortcut(key="A", destination=at("41"), with_arrow=True),
                     Shortcut(key="D", destination=at("43"), with_arrow=True),
@@ -507,7 +507,7 @@ class TestWhatTheItemsAreCalled:
             home=at("1"),
             neighbours=neighbours,
             item_noun="day",
-            parts=[OnFirstFrame(Says("Saturday."))],
+            parts=[OnOneFrame(Says("Saturday."))],
         ).build(request_for(_APP, at("42")))
 
     def test_neighbours_wire_the_item_keys_with_their_arrows(self) -> None:
@@ -537,7 +537,7 @@ class TestWhatTheItemsAreCalled:
                 title="ONE DAY",
                 home=at("1"),
                 item_noun="day",
-                parts=[OnFirstFrame(Says("Saturday."))],
+                parts=[OnOneFrame(Says("Saturday."))],
                 shortcuts=[Shortcut(key="1", destination=at("32"), label="month")],
             ).build(request_for(_APP, at("42")))
         )[-1]
@@ -562,7 +562,7 @@ class TestTheHeader:
     """The title, and the page number at the right of the same row."""
 
     def a_frame(self, title: str, address: PageAddress) -> Page:
-        layout = PageLayout(title=title, parts=[OnFirstFrame(Says("x"))])
+        layout = PageLayout(title=title, parts=[OnOneFrame(Says("x"))])
         return layout.build(request_for(_APP, address))
 
     def test_the_title_appears(self) -> None:
@@ -603,7 +603,7 @@ class TestTheRulesAndThePrompt:
             title="T",
             home=at("1"),
             shortcuts=[Shortcut(key="R", destination=at("7"), label=prompt_from)],
-            parts=[OnFirstFrame(Says("x"))],
+            parts=[OnOneFrame(Says("x"))],
         ).build(request_for(_APP, at("1")))
 
     def test_the_rules_are_drawn_in_mosaic_graphics(self) -> None:

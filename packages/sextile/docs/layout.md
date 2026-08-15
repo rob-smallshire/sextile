@@ -59,23 +59,23 @@ above what:
 
 | | |
 |---|---|
-| `OnFirstFrame(part)` | Drawn one time, at its place in the order. |
+| `OnOneFrame(part)` | Drawn one time, at its place in the order. |
 | `OnEveryFrame(part)` | Drawn on every frame. |
 | `Flow(part)` | Broken across as many frames as it takes. |
 | `FrameBreak()` | Whatever follows begins on a new frame. |
 
 ```python
 parts=[
-    OnFirstFrame(Lines(said=("Stardot, for users of Acorn computers.", ""))),
+    OnOneFrame(Lines(said=("Stardot, for users of Acorn computers.", ""))),
     OnEveryFrame(Lines(said=("DAY   MAX   MIN",), colour=Colour.CYAN)),
     Flow(Menu(entries=posts)),
 ]
 ```
 
-`OnFirstFrame` draws once, at its place in the order rather than always on
-frame `a`: a fixed part before any flowing part lands on the first frame, but
-one after a flowing part lands on whichever frame that flow finished on. The
-name is the common case; the order is what settles it.
+`OnOneFrame` draws once, at its place in the order; that is the first frame only
+when nothing flows before it. A fixed part before any flowing part lands on the
+first frame; one after a flowing part lands on whichever frame that flow
+finished on.
 
 `OnEveryFrame` parts before the first flowing part are drawn where they stand.
 Those after it have their rows reserved at the foot before the flowing part is
@@ -152,7 +152,7 @@ service sets its own once and a page overrides it where it has reason — red
 rules on a page that does something irreversible:
 
 ```python
-PageLayout(furniture=(), parts=[OnFirstFrame(Custom(rows=ROWS, draw=masthead))])
+PageLayout(furniture=(), parts=[OnOneFrame(Custom(rows=ROWS, draw=masthead))])
 ```
 
 Two levels, and no cascade. A reader learns where the page number sits once, so
@@ -160,7 +160,7 @@ the site-wide setting is the one to set, and a per-page override needs a reason.
 
 ## Writing a part of your own
 
-The content inside an `OnFirstFrame`, `OnEveryFrame` or `Flow` is a `Drawable`:
+The content inside an `OnOneFrame`, `OnEveryFrame` or `Flow` is a `Drawable`:
 it draws as much as the space allows and says what is left over.
 
 ```python

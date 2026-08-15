@@ -45,7 +45,7 @@ from sextile import (
     standard_pages,
 )
 from sextile.formatting import Lines, MenuItem
-from sextile.layout import Custom, OnFirstFrame, PageLayout, Shortcut
+from sextile.layout import Custom, OnOneFrame, PageLayout, Shortcut
 from sextile.viewdata.canvas import Canvas
 from sextile.viewdata.controls import Colour
 
@@ -239,7 +239,7 @@ def _month_page(request: PageRequest, day: date) -> Page:
         #  A grid is placed by cell rather than written along its rows. It is
         #  the whole of the page's content, and needs no flowing part at all.
         parts=[
-            OnFirstFrame(
+            OnOneFrame(
                 Custom(
                     rows=1 + len(weeks),
                     draw=lambda canvas, row: _draw_month(canvas, row, day, weeks),

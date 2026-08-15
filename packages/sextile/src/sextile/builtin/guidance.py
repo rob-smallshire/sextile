@@ -34,7 +34,7 @@ from sextile.addressing import keyed
 from sextile.compass import ROWS as COMPASS_ROWS
 from sextile.compass import compass
 from sextile.formatting import RowFormatter
-from sextile.layout import Custom, Flow, FrameBreak, OnFirstFrame, PageLayout
+from sextile.layout import Custom, Flow, FrameBreak, OnOneFrame, PageLayout
 from sextile.page import Page
 from sextile.viewdata.canvas import RowWriter
 from sextile.viewdata.composition import Composition
@@ -133,7 +133,7 @@ def guide_page(
             #  about where one particular part sits is the beginning of a
             #  layout language, and this is a few rows of graphics like any
             #  other few rows of graphics.
-            OnFirstFrame(
+            OnOneFrame(
                 Custom(
                     rows=COMPASS_ROWS,
                     draw=lambda canvas, row: compass(

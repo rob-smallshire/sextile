@@ -15,7 +15,7 @@ Example:
     goes on for as long as it goes on::
 
         fill(
-            [OnFirstFrame(preamble), OnEveryFrame(headings), Flow(Menu(items))],
+            [OnOneFrame(preamble), OnEveryFrame(headings), Flow(Menu(items))],
             content_rows(DEFAULT_FURNITURE),
         )
 """
@@ -61,7 +61,7 @@ __all__ = [
     "Furnishing",
     "HOME_KEY",
     "Header",
-    "OnFirstFrame",
+    "OnOneFrame",
     "PageLayout",
     "Part",
     "Placed",
@@ -227,7 +227,7 @@ class Custom:
     Example:
         A month as a grid of weeks, which is the whole of a page's content::
 
-            OnFirstFrame(Custom(rows=1 + len(weeks), draw=lambda canvas, row: ...))
+            OnOneFrame(Custom(rows=1 + len(weeks), draw=lambda canvas, row: ...))
     """
 
     rows: int
@@ -241,7 +241,7 @@ class Custom:
 
 
 @dataclass(frozen=True)
-class OnFirstFrame:
+class OnOneFrame:
     """A drawable drawn one time, at its place in the order.
 
     On the first frame where nothing flowing comes before it, and otherwise on
@@ -287,20 +287,20 @@ class FrameBreak:
 
 
 #: One of a page's parts: a `Drawable` with the frames it appears on
-#: (`OnFirstFrame`, `OnEveryFrame` or `Flow`), a `FrameBreak`, or a bare `Drawable`, which means
+#: (`OnOneFrame`, `OnEveryFrame` or `Flow`), a `FrameBreak`, or a bare `Drawable`, which means
 #: `Flow` -- flowing across as many frames as it takes is what a part does
 #: unless it says otherwise, and it is the only sensible reading of one given
 #: without a wrapper.
-type Part = OnFirstFrame | OnEveryFrame | Flow | FrameBreak | Drawable
+type Part = OnOneFrame | OnEveryFrame | Flow | FrameBreak | Drawable
 
 #: A part once a bare drawable has been read as `Flow`: what the filling
 #: works in, every part carrying its own `drawable`.
-_Placed = OnFirstFrame | OnEveryFrame | Flow | FrameBreak
+_Placed = OnOneFrame | OnEveryFrame | Flow | FrameBreak
 
 
 def _placed(part: Part) -> _Placed:
     """Read a bare drawable in a parts list as a flowing part."""
-    if isinstance(part, OnFirstFrame | OnEveryFrame | Flow | FrameBreak):
+    if isinstance(part, OnOneFrame | OnEveryFrame | Flow | FrameBreak):
         return part
     return Flow(part)
 
@@ -365,7 +365,7 @@ class _State:
     """How far through the list the filling has got.
 
     `pending` is what is left to draw of each item, by its position in the
-    list: a `OnFirstFrame` that has been drawn and a `Flow` that has run out are
+    list: a `OnOneFrame` that has been drawn and a `Flow` that has run out are
     both absent from it.
     """
 
@@ -665,7 +665,7 @@ class PageLayout:
         title: What the header calls the page. `None` takes the registered
             title of `request.address`, upper-cased; `""` heads it with nothing.
         parts: The content, in the order it appears down the frames. A bare
-            `Drawable` means `Flow(drawable)`; `OnFirstFrame`, `OnEveryFrame` and `FrameBreak`
+            `Drawable` means `Flow(drawable)`; `OnOneFrame`, `OnEveryFrame` and `FrameBreak`
             say the frames a part appears on where they are not the default.
         home: Where `0` leads from every frame. Unset takes `request.app.index`;
             `None` offers no way home; a `PageAddress` leads there under the
@@ -692,7 +692,7 @@ class PageLayout:
 
             PageLayout(
                 title="LATEST POSTS",
-                parts=[OnFirstFrame(preamble), Flow(Menu(entries=posts))],
+                parts=[OnOneFrame(preamble), Flow(Menu(entries=posts))],
             ).build(request)
     """
 

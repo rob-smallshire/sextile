@@ -105,14 +105,14 @@ class SequencePart[E](ABC):
     out how many fit in the room it is given, draws them, and hands back what
     is left.
 
-    Class attributes, overridden by a subclass to describe its shape:
-        rows_per_entry: Rows one entry occupies.
-        gap: Blank rows between one entry and the next, and not after
-            the last of them.
-        numbered: Whether entries take a digit, and so whether the reader can
-            choose them.
-        choose_hint: What the prompt says about choosing, on frames with
-            something to choose.
+    The class attributes a subclass overrides to describe its shape:
+
+    * ``rows_per_entry``: rows one entry occupies.
+    * ``gap``: blank rows between one entry and the next, and not after the last.
+    * ``numbered``: whether entries take a digit, and so whether the reader can
+      choose them.
+    * ``choose_hint``: what the prompt says about choosing, on frames with
+      something to choose.
 
     Attributes:
         entries: The values to draw, in the order they are to appear.

@@ -4,7 +4,7 @@ A service's tests want to press keys and read the screen, which is what a
 reader does and what nothing else can stand in for: a handler returns a `Page`,
 but whether `*3#` reaches it, whether the field kept what was typed, and what
 `0` does from three pages in are all questions about the session rather than
-about any one page.
+about any one page::
 
     async with connect(app) as caller:
         await caller.press("*3#")

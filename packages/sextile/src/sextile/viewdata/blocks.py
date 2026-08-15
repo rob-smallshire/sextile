@@ -3,7 +3,7 @@
 **A small picture is written in the source as the picture it is**, which is
 what `icon` is for: an arrow, a symbol, a rule end, anything a page wants that
 the character set has not got. Six-bit patterns typed as numbers are write-only,
-and a picture drawn in a comment beside them is a copy that goes stale.
+and a picture drawn in a comment beside them is a copy that goes stale::
 
     ARROW = icon(\"\"\"
            #

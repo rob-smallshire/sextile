@@ -1,6 +1,6 @@
 """The keys that move a reader about.
 
-Movement is two-dimensional, and there are two ways to express it:
+Movement is two-dimensional, and there are two ways to express it::
 
            W                          up          the frames of this item
       A    ·    D                left    right    the items either side

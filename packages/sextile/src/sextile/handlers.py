@@ -10,7 +10,7 @@ maps each into its own numbering or does without.
 the rows to add to it. The rest are routed through `standard_pages`, the one
 line most services want: it returns the routes for whichever of these the
 service gives a number, carrying the framework's own title, detail and keywords
-so a service need not retype them.
+so a service need not retype them::
 
     Sextile(pages=[*my_pages, *standard_pages(history="92", contents="93", keywords="94")])
 

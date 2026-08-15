@@ -8,7 +8,7 @@ the pages say.
 ```python
 from sextile import Page, PageRequest, Sextile
 from sextile.formatting import Lines
-from sextile.layout import Flowing, PageLayout
+from sextile.layout import PageLayout
 
 app = Sextile(name="My service")
 
@@ -16,7 +16,7 @@ app = Sextile(name="My service")
 async def main(request: PageRequest) -> Page:
     return PageLayout(
         title="MY SERVICE",
-        parts=[Flowing(Lines(said=("Hello, 1981.",)))],
+        parts=[Lines(("Hello, 1981.",))],
     ).build(request)
 ```
 

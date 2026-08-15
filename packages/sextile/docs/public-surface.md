@@ -16,7 +16,7 @@ break.
 
 A set of submodules rather than one flat namespace, because the framework is
 large enough that a single top level would say nothing about what belongs with
-what. `sextile.templates` and `sextile.viewdata` are the two an application
+what. `sextile.layout` and `sextile.viewdata` are the two an application
 spends its time in, and they are different subjects.
 
 Names beginning with an underscore are private everywhere, module and package

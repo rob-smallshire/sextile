@@ -135,29 +135,42 @@ names a page some other way.
 
 ## Menus and listings
 
-Most pages are a list of things, so the framework builds those:
+Every page is a `PageLayout`: furniture round the edge of each frame, and a
+list of parts down the middle. Most pages are a list of things, so the framework
+formats those.
 
 ```python
-from sextile.templates import Listing, Menu, MenuItem
+from sextile.formatting import Menu, MenuItem
+from sextile.layout import Flowing, Once, PageLayout
 
-Menu(
+PageLayout(
     title="BY CONTRIBUTOR",
-    entries=[MenuItem(text=name, detail=f"{count} posts", destination=where) ...],
     home=self.index,
-    preamble=["Everyone who has posted."],   # first frame only
-    empty="NO POSTS held yet.",              # said instead of an empty frame
+    parts=[
+        Once(Lines(said=("Everyone who has posted.", ""))),   # first frame only
+        Flowing(
+            Menu(
+                entries=[MenuItem(text=name, detail=f"{count} posts", destination=where) ...],
+                empty="NO POSTS held yet.",   # said instead of an empty frame
+            )
+        ),
+    ],
 ).build(request.address)
 ```
 
-`Menu` numbers its entries 1–9 and puts nine on a frame, each with a line
-of detail beneath. `Listing` is the same mechanism for a reference page: twenty
-to a frame, nothing selectable, the detail in a second column. Both draw the
-chrome, build the prompt from what the frame actually offers, wire up `W`/`S`/`#`
-and send `0` home.
+`Menu` numbers its entries 1–9 and puts nine on a frame, each with a line of
+detail beneath. `Listing` is the same mechanism for a reference page: nothing
+selectable, the detail in a second column. `Figures` is a label and a
+right-aligned figure, `Lines` is lines drawn as given, and `Prose` is running
+text. The layout draws the furniture, builds the prompt from what the frame
+actually offers, wires up `W`, `S` and `#`, and sends `0` home.
+
+[layout.md](layout.md) describes the whole of it. What follows is what a
+service reaches for most.
 
 **Entries are a protocol, not a type.** Anything with `text`, `detail` and
-`destination` will do, so a service with its own richer entry — carrying the post,
-the timestamp, whatever it needs — hands that over directly:
+`destination` will do, so a service with its own richer entry — carrying the
+post, the timestamp, whatever it needs — hands that over directly:
 
 ```python
 @dataclass(frozen=True)
@@ -172,34 +185,42 @@ class Line:
     def destination(self) -> PageAddress: return app.address_for("post", post_id=...)
 ```
 
-For running text, don't break your own lines:
+For running text, do not break your own lines:
 
 ```python
-Prose.of(
-    "A Viewdata service carrying posts from stardot.org.uk, for users of "
-    "Acorn computers and emulators.",
-    f"{held} posts held.",
+PageLayout(
     title="ABOUT STARDOT",
     home=self.index,
+    parts=[
+        Flowing(
+            Prose.of(
+                "A Viewdata service carrying posts from stardot.org.uk, for "
+                "users of Acorn computers and emulators.",
+                f"{held} posts held.",
+            )
+        )
+    ],
 ).build(request.address)
 ```
 
-Each argument is a paragraph; the framework wraps them, spaces them, and pages
-them. It also takes rendered rows rather than plain paragraphs, which is how a
-notice gets a quotation or a code listing rendered exactly as a forum post's
-would be:
+Each argument to `Prose.of` is a paragraph; the framework wraps them, spaces
+them, and divides them between frames. `Prose` also takes rendered rows rather
+than plain paragraphs, which is how a notice gets a quotation or a code listing
+rendered exactly as a forum post's would be:
 
 ```python
-Prose(title="...", entries=rows_for(document), home=self.index)
+Flowing(Prose(entries=rows_for(document)))
 ```
 
-For a shape none of the three has, subclass `RowTemplate` and say how tall an
-entry is and how to draw its rows; the pagination, chrome and keys come with
-it. A shape placed by cell rather than written along its rows — a mosaic
-picture several rows tall — subclasses `Template` itself and writes
-`draw_entry`, which gets the canvas and the row the entry starts on. Both are
-dataclasses, so a subclass adding something an entry needs — a date to mark,
-a column to size — declares a field rather than writing a constructor.
+For a shape none of these has, subclass `Formatter` and say how tall an entry
+is and how to draw one; the arithmetic, the frames and the keys come with it. A
+shape written along its rows subclasses `RowFormatter` instead and writes
+`draw` and `draw_detail`. Both are dataclasses, so a subclass needing something
+an entry does not carry — a date to mark against, a column to size — declares a
+field rather than writing a constructor.
+
+For content that is not a sequence at all — a grid, a masthead, a picture —
+`Drawn(rows, draw)` is a part of a stated height that the page draws itself.
 
 ## Pages, frames and keys
 
@@ -230,8 +251,9 @@ Two conventions worth keeping, because readers rely on them across services:
 
 ### The prompt at the foot of a frame
 
-A template writes its own. A frame built by hand composes one from items, and
-does **not** write it as a string:
+`PageLayout` writes its own, from what the parts claimed and what the page
+offers. A frame drawn some other way composes one from items, and does **not**
+write it as a string:
 
 ```python
 from sextile.viewdata.footer import ROOM, FooterItem, Priority, movement, render_footer
@@ -291,7 +313,8 @@ Both are the last thing a reader sees, so **draw them without a footer and leave
 the lower rows blank**. A key offering the index would be a key that does
 nothing, and the framework puts the cursor two rows below the last thing said
 and turns it on, so that the reader has somewhere to type to their modem.
-`farewell_page` in `sextile.templates` draws exactly that frame:
+`farewell_page` in `sextile.formatting` draws exactly that frame, being a
+page with no furniture:
 
 ```python
 return farewell_page("GOODBYE", f"Thank you for calling {app.name}.", "", "Ring off.")
@@ -576,7 +599,8 @@ moves=with_arrows({PREVIOUS_FRAME, NEXT_FRAME})
 choices=arrows_lead_where({"A": before, "D": after})
 ```
 
-`Template` already does this for every page it builds. A form receives the
+`PageLayout` does the first for every page it builds, and the second for any
+shortcut given `arrow=True`. A form receives the
 arrows as themselves, which is what lets TAB move between fields without
 typing a `D`.
 

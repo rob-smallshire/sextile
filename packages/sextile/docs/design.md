@@ -508,37 +508,70 @@ Mixing text and blocks on one row, placing things at coordinates, and drawing
 pictures are all in [graphics.md](graphics.md) — the block grid, the compositor
 that works out where the attributes go, and the plan for large lettering.
 
-## Templates
+## Laying out a page
 
 Five places had grown their own version of the same six steps — take a list,
 divide it between frames, draw the chrome, write the rows, wire up the keys,
-return a
-`Page`. About 275 lines, and they had drifted: two disagreed about how much room
-a preamble costs, and one advertised a `1-9 select` on a frame with nothing to
-select.
+return a `Page`. About 275 lines, and they had drifted: two disagreed about how
+much room a lead-in costs, and one advertised a `1-9 select` on a frame with
+nothing to select.
 
-`Template` does the six steps; a subclass says how tall an entry is, how to draw
-one, and whether entries take a digit. Two come with the framework:
+That became `Template`, which did the six steps and had a subclass say how tall
+an entry was. It did two jobs, and only one of them was available on its own:
+the furniture round a frame came with being a formatter of a homogeneous
+sequence, so a page whose content was a grid, a form or a masthead had to draw
+its own chrome. Six pages did.
+
+`PageLayout` is the two jobs separated. A page is furniture round the edge of
+each frame and a list of parts down the middle, and the parts need not be
+sequences. [layout.md](layout.md) is the reference; [page-layout.md](page-layout.md)
+is why it is built this way and what was rejected. In brief:
+
+**Filled, then furnished.** The prompt of a frame names `S page down` only
+where there is a frame to page down to, so it cannot be drawn until the count
+is known. The content occupies rows 2 to 21 and the furniture rows 0, 1, 22 and
+23, and they never touch — so the parts are drawn first, onto as many canvases
+as they need, and the furniture goes on afterwards when the count is settled.
+
+**A part is drawn once, on every frame, or across as many as it takes**, and a
+`Break` divides a page where it means to rather than where the rows run out.
+That last is what the guide wanted: its two frames are two lists split by what
+a reader is doing.
+
+**Content parts claim and furniture reports.** A part says which keys lead
+where and what the prompt should call them; a furnishing is handed the
+assembled list and draws it. That is the same division as the two passes, seen
+from the other side.
+
+**The frame geometry is derived.** `content_rows(furniture)` returns what the
+furniture leaves, so a page with none has the whole frame and a two-row prompt
+costs a content row. `CONTENT_FIRST_ROW` and `CONTENT_ROWS` were constants and
+are not needed.
+
+The shapes that come with the framework are in `formatting.py`:
 
 | | |
 |---|---|
 | `Menu` | nine to a frame, numbered, a line of detail beneath each |
-| `Listing` | twenty to a frame, nothing numbered, detail in a second column |
-| `Prose` | running text, wrapped, in as many rows as it takes |
+| `Listing` | two columns, nothing numbered |
+| `Figures` | a label and a right-aligned figure |
+| `Lines` | lines drawn as given |
+| `Prose` | running text, wrapped |
 
-An application wanting a fourth shape subclasses `Template` rather than starting
-again — which is the point of it being a class rather than three functions. The
-base is generic in *what* it divides: menus and listings divide entries, prose
-divides
-rendered rows.
+A service wanting another subclasses `Formatter` and says how tall an entry is
+and how to draw one. The base is generic in what it divides: most of them
+divide `Entry` values, `Prose` divides rendered rows.
 
 **A shape that is not written along a row overrides `draw_entry` instead.**
-`draw` and `draw_detail` are handed a `RowWriter`, which walks one row from left
-to right — the right shape for text and the wrong one for a mosaic picture,
-which is placed by cell and may be three rows tall. `draw_entry` gets the canvas
-and the row the entry starts on, and its default is exactly what the text shapes
-want, so it is the unusual thing to override. The weather service's page of
-weather symbols is what asked for it.
+`draw` and `draw_detail` are handed a `RowWriter`, which walks one row from
+left to right — the right shape for text and the wrong one for a mosaic
+picture, which is placed by cell and may be three rows tall. The weather
+service's page of weather symbols is what asked for it.
+
+**A form is a part.** It occupies a row range, draws itself, contributes the
+keys its suggestions answer, and says what the prompt should call them. It is
+the one part that is not a description — it holds what has been typed — so a
+layout carrying one is built for the request it answers rather than kept.
 
 **`charting.py`** turns a run of numbers into a bitmap for the block grid:
 `curve` for a line and `bars` for columns standing on the floor. Values arrive
@@ -816,8 +849,9 @@ made into an opinion about what pressing them should do, imposed on every
 service at once. On a coordinate form it is wrong twice over: `W` is West and
 `S` is South, so a reader reaching for the up arrow would silently type a letter
 into a number. `keys.ARROW_FOR`, `with_arrows` and `arrows_lead_where` offer the
-knowledge; a page decides what to do with it, and `Template` does it for every
-page it builds.
+knowledge; a page decides what to do with it. `PageLayout` offers the arrows
+for the frame keys, which mean the same on every page, and for a `Shortcut`
+only where the page has said `arrow=True`.
 
 ## Middleware
 

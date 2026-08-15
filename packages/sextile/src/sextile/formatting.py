@@ -363,9 +363,10 @@ class Figures(RowSequencePart[Entry]):
     figure, written out as the page wants it read.
 
     Attributes:
-        label: How wide the labels' column is, and `figure` how wide the
-            figures'. Worked out once and carried, as a `Listing`'s is.
-        figure: See `label`.
+        label_width: How wide the labels' column is, in cells, and
+            `figure_width` how wide the figures'. Worked out once and carried,
+            as a `Listing`'s column is.
+        figure_width: See `label_width`.
     """
 
     #: Two cells of margin before the label. A table of figures reads as a
@@ -379,26 +380,26 @@ class Figures(RowSequencePart[Entry]):
     #: One cell for the colour attribute of each column.
     ATTRIBUTES: ClassVar[int] = 2
 
-    label: int | None = None
-    figure: int | None = None
+    label_width: int | None = None
+    figure_width: int | None = None
 
     def __post_init__(self) -> None:
-        if self.label is not None:
+        if self.label_width is not None:
             return
         figure = max((cell_count(one.detail) for one in self.entries), default=0)
         widest = max((cell_count(one.text) for one in self.entries), default=0)
         room = COLUMNS - self.INDENT - figure - self.ATTRIBUTES
-        object.__setattr__(self, "figure", figure)
-        object.__setattr__(self, "label", min(widest + self._GAP, room))
+        object.__setattr__(self, "figure_width", figure)
+        object.__setattr__(self, "label_width", min(widest + self._GAP, room))
 
     def draw(self, row: RowWriter, entry: Entry, digit: str | None = None) -> None:
-        assert self.label is not None and self.figure is not None
+        assert self.label_width is not None and self.figure_width is not None
         row.skip(self.INDENT)
         #  The label is padded rather than the figure indented, so that one
         #  long label pushes the whole column of figures right and no figure
         #  ends up under a label.
-        row.text(fitted(entry.text, self.label).ljust(self.label), Colour.WHITE)
-        row.text(entry.detail.rjust(self.figure), Colour.CYAN)
+        row.text(fitted(entry.text, self.label_width).ljust(self.label_width), Colour.WHITE)
+        row.text(entry.detail.rjust(self.figure_width), Colour.CYAN)
 
 
 @dataclass(frozen=True, kw_only=True)

@@ -197,7 +197,10 @@ class TestFigures:
         figures = Figures(entries=self.counts() * 15)
         placed = figures.place(Canvas(), whole_frame())
         assert isinstance(placed.remainder, Figures)
-        assert (placed.remainder.label, placed.remainder.figure) == (figures.label, figures.figure)
+        assert (placed.remainder.label_width, placed.remainder.figure_width) == (
+            figures.label_width,
+            figures.figure_width,
+        )
 
 
 class TestProse:

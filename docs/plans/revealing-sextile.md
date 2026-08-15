@@ -159,6 +159,10 @@ parameter `room` -> `space`. Blocked by a second sense of `room` -- an int
 of available cells/rows in formatting, forms, drawing, wrapping and lettering
 (`room = COLUMNS - ...`, `wrap_within(cells=room)`) -- so the int-`room` wants
 its own name (`width`/`cells`?) before the `Space` parameter can take `room`'s.
+Deferred from Phase 2 batch 2: spare non-numbering sequence parts the `digit`
+parameter, via a `Numbered` intermediate whose `draw` owns the digit-taking
+signature (only `Menu` subclasses it), or the base drawing the digit column
+itself -- the latter is the `RowWriter` column-offset arithmetic above.
 
 ### Phase 5: docstrings and CLAUDE.md
 

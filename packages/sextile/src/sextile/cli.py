@@ -46,11 +46,19 @@ class ApplicationSpecError(ValueError):
 
 
 def load_application(spec: str) -> Sextile:
-    """The application a `module:name` specification names.
+    """Load the application a `module:name` specification names.
 
-    The same shape as a WSGI or ASGI server's, and for the same reason: the
-    thing being served is chosen when the server is started, not when it is
-    written. A callable is called, so a factory works as well as an instance.
+    Args:
+        spec: A `module:name`, the same shape a WSGI or ASGI server takes: what
+            is served is chosen when the server starts, not when it is written.
+
+    Returns:
+        The application. A callable is called, so a factory works as well as an
+        instance.
+
+    Raises:
+        ApplicationSpecError: If the spec is malformed, the module will not
+            import, the name is absent, or the value is not a `Sextile`.
     """
     module_name, separator, attribute = spec.partition(":")
     if not module_name or not separator or not attribute:
@@ -71,14 +79,23 @@ def load_application(spec: str) -> Sextile:
 
 
 def add_form_arguments(parser: argparse.ArgumentParser) -> None:
-    """The arguments deciding how a frame is shown."""
+    """Add to a parser the arguments that choose how a frame is shown.
+
+    Args:
+        parser: The parser to add `--frame`, `--form` and `--no-colour` to.
+    """
     parser.add_argument("--frame", type=int, default=0, help="Which frame of it (0 for the first)")
     parser.add_argument("--form", choices=FORMS, default="ansi", help=_FORM_HELP)
     parser.add_argument("--no-colour", action="store_true", help="Suppress ANSI colour")
 
 
 def add_listening_arguments(parser: argparse.ArgumentParser) -> None:
-    """The arguments deciding where a service answers, and for how long."""
+    """Add to a parser the arguments for where a service answers and for how long.
+
+    Args:
+        parser: The parser to add `--host`, `--port`, `--idle-timeout` and
+            `--warn-after` to.
+    """
     parser.add_argument("--host", default="127.0.0.1", help="Address to listen on")
     parser.add_argument(
         "--port", type=int, default=DEFAULT_PORT, help=f"Port to listen on (default {DEFAULT_PORT})"
@@ -119,7 +136,16 @@ def _seconds(text: str) -> float:
 
 
 async def render_page(application: Sextile, arguments: argparse.Namespace) -> int:
-    """Draw one frame of one page, and say where its keys lead."""
+    """Render one frame of one page to standard output, its keys to standard error.
+
+    Args:
+        application: The service to fetch the page from.
+        arguments: The parsed `--page`, `--frame`, `--form` and `--no-colour`.
+
+    Returns:
+        A process exit code: 0 drawn, 2 where the page, frame or number is not
+        there.
+    """
     try:
         address = PageAddress(arguments.page)
     except UnknownPageError as error:
@@ -151,7 +177,15 @@ async def render_page(application: Sextile, arguments: argparse.Namespace) -> in
 
 
 async def run_service(application: Sextile, arguments: argparse.Namespace) -> int:
-    """Answer calls until interrupted."""
+    """Serve the application until interrupted.
+
+    Args:
+        application: The service to serve.
+        arguments: The parsed listening arguments.
+
+    Returns:
+        A process exit code, 0 once interrupted.
+    """
     #  Zero means hold the line indefinitely, which is what `asyncio.wait_for`
     #  spells as no timeout at all. Zero seconds would otherwise mean releasing
     #  a caller the instant they stopped typing.

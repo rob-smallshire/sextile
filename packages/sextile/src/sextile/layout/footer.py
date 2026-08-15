@@ -33,7 +33,7 @@ from typing import Final
 
 from sextile import keys
 from sextile.viewdata.frame import COLUMNS
-from sextile.viewdata.measure import cell_count
+from sextile.viewdata.measure import cell_count, fitted
 
 __all__ = [
     "FooterItem",
@@ -90,7 +90,9 @@ def render_footer(items: Sequence[FooterItem], width: int) -> str:
         line = _joined([items[index] for index in kept], [said[index] for index in kept])
         if cell_count(line) <= width:
             return line
-    return _cut(line, width)
+    #  Nothing fit whole, so shorten the fullest wording to the width. render_footer
+    #  has already refused width <= 0, which is the case fitted guards against.
+    return fitted(line, width)
 
 
 def _wordings(
@@ -153,18 +155,6 @@ def _joined(items: Sequence[FooterItem], said: Sequence[int]) -> str:
     return _SEPARATOR.join(
         item.wordings()[step] for item, step in zip(items, said, strict=True)
     )
-
-
-def _cut(line: str, width: int) -> str:
-    """Shorten to fit, measured in cells rather than characters.
-
-    Transliteration can lengthen a string -- an ellipsis becomes three
-    characters -- so counting characters would overflow the row. The text is
-    left untransliterated: the canvas does that when it writes.
-    """
-    while line and cell_count(line) > width:
-        line = line[:-1]
-    return line
 
 
 #: What each of the movement keys does, said fully and briefly. The item axis

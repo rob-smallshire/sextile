@@ -119,6 +119,15 @@ class SequencePart[E](ABC):
         empty: Said in place of the entries where there are none. A service
             that answers slowly cannot let a frame come up empty and
             unexplained, because a reader cannot tell that from a fault.
+
+    Example:
+        A part three rows tall that draws each entry by cell::
+
+            class Pictures(SequencePart[Picture]):
+                rows_per_entry: ClassVar[int] = 3
+
+                def draw_entry(self, canvas: Canvas, row: int, entry: Picture) -> None:
+                    entry.draw(canvas, row)
     """
 
     rows_per_entry: ClassVar[int] = 1
@@ -217,6 +226,13 @@ class RowSequencePart[E](SequencePart[E]):
     `draw_detail` for its second, each with a `RowWriter` that runs from left
     to right. A shape positioned by cell, a picture several rows tall among
     them, should subclass `SequencePart` and implement `draw_entry` itself.
+
+    Example:
+        A one-row listing that writes each entry as text::
+
+            class Names(RowSequencePart[str]):
+                def draw(self, row: RowWriter, entry: str) -> None:
+                    row.text(entry)
     """
 
     @abstractmethod
@@ -243,6 +259,16 @@ class NumberedRowSequencePart[E](RowSequencePart[E]):
     `draw` writes the entry after it, in the room the digit has left. `Menu` is
     the one shape built on it; a service numbering its own entries subclasses
     this rather than reaching for the digit itself.
+
+    Example:
+        Entries a reader chooses by digit, the digit drawn for you::
+
+            class Choices(NumberedRowSequencePart[Entry]):
+                def destination(self, entry: Entry) -> PageAddress | None:
+                    return entry.destination
+
+                def draw(self, row: RowWriter, entry: Entry) -> None:
+                    row.text(entry.text)
     """
 
     numbered: ClassVar[bool] = True

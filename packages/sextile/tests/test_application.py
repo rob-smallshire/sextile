@@ -292,7 +292,7 @@ class TestWhatAServiceIsCalled:
         #  to thank the reader for calling the framework.
         app = Sextile()
         page = await app.timed_out(request_for(app, "1"), 0)
-        assert "calling" not in "".join(
+        assert "connect" not in "".join(
             page.frames[0].frame.to_grid()[0]
         )
 

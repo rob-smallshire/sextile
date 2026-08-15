@@ -83,6 +83,9 @@ as "was X" so a reader coming from older code or docs can find it.
   long as the line is up (`request.session`); service state is shared across
   callers for the life of the service. Service state is `request.state`, a
   read-only view of what the lifespan opened, keyed by `StateKey`.
+- **connect** (was `calling`) — `sextile.testing.connect(app)` opens a service,
+  rings it up and closes it, yielding a `Caller`. The caller presses keys with
+  `caller.press(...)` (was `key`) and reads `caller.screen` (was `shown`).
 - **form** — rows of a frame a reader types into, a field with furniture around
   it. `forms.Form`, `forms.Field`. `TypeAhead` (was `Suggest`) is a field with
   the best few matches beneath it, changing as the reader types; `FieldSet`

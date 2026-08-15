@@ -6,12 +6,12 @@ but whether `*3#` reaches it, whether the field kept what was typed, and what
 `0` does from three pages in are all questions about the session rather than
 about any one page.
 
-    async with calling(app) as caller:
-        await caller.key("*3#")
-        await caller.key("ABC")
-        assert "ABC" in caller.shown
+    async with connect(app) as caller:
+        await caller.press("*3#")
+        await caller.press("ABC")
+        assert "ABC" in caller.screen
 
-`calling` opens the service and closes it again, so a lifespan that holds a
+`connect` opens the service and closes it again, so a lifespan that holds a
 database opens one for the test as it would for a call.
 
 For testing a service, not the framework. The framework's own tests drive
@@ -31,7 +31,7 @@ from sextile.viewdata.frame import Frame
 
 __all__ = [
     "Caller",
-    "calling",
+    "connect",
     "request_for",
     "text_of",
 ]
@@ -109,7 +109,7 @@ class Caller:
     session: Session
     sent: list[bytes] = field(default_factory=list)
 
-    async def key(self, pressed: str | bytes) -> None:
+    async def press(self, pressed: str | bytes) -> None:
         r"""Press one key, or several.
 
         Args:
@@ -128,7 +128,7 @@ class Caller:
         return self.session.address
 
     @property
-    def shown(self) -> str:
+    def screen(self) -> str:
         """What is on the screen, as rows of text.
 
         The characters only. Colour and the control codes that carry it are
@@ -143,7 +143,7 @@ class Caller:
 
 
 @asynccontextmanager
-async def calling(
+async def connect(
     application: Sextile, *, start: str | PageAddress | None = None
 ) -> AsyncIterator[Caller]:
     """Open the service, ring it up, and close it again afterwards.

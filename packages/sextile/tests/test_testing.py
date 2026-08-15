@@ -9,7 +9,7 @@ can be read, and that the service is opened and closed around the call.
 from sextile import Page, PageAddress, PageRequest, PageRoute, Sextile
 from sextile.formatting import Lines, Menu, MenuItem
 from sextile.layout import Flow, PageLayout
-from sextile.testing import calling
+from sextile.testing import connect
 
 
 async def index(request: PageRequest) -> Page:
@@ -50,40 +50,40 @@ def service() -> Sextile:
 
 class TestCallingAService:
     async def test_the_first_frame_is_shown_without_asking(self) -> None:
-        async with calling(service()) as caller:
-            assert "INDEX" in caller.shown
+        async with connect(service()) as caller:
+            assert "INDEX" in caller.screen
 
     async def test_a_digit_chooses(self) -> None:
-        async with calling(service()) as caller:
-            await caller.key("1")
+        async with connect(service()) as caller:
+            await caller.press("1")
             assert caller.address == PageAddress("2")
-            assert "Rain, mostly." in caller.shown
+            assert "Rain, mostly." in caller.screen
 
     async def test_a_page_can_be_keyed_by_number(self) -> None:
-        async with calling(service()) as caller:
-            await caller.key("*2#")
+        async with connect(service()) as caller:
+            await caller.press("*2#")
             assert caller.address == PageAddress("2")
 
     async def test_keys_may_be_sent_one_at_a_time_or_together(self) -> None:
-        async with calling(service()) as caller:
+        async with connect(service()) as caller:
             for character in "*2#":
-                await caller.key(character)
+                await caller.press(character)
             assert caller.address == PageAddress("2")
 
     async def test_a_code_no_keyboard_spells_is_sent_as_bytes(self) -> None:
         #  RETURN is 0x5F on this wire, which is not what a keyboard's return
         #  key sends and not something a string can carry unambiguously.
-        async with calling(service()) as caller:
-            await caller.key(b"*2\x5f")
+        async with connect(service()) as caller:
+            await caller.press(b"*2\x5f")
             assert caller.address == PageAddress("2")
 
     async def test_the_call_may_start_anywhere(self) -> None:
-        async with calling(service(), start="2") as caller:
+        async with connect(service(), start="2") as caller:
             assert caller.address == PageAddress("2")
 
     async def test_what_the_service_sent_is_kept(self) -> None:
-        async with calling(service()) as caller:
-            await caller.key("1")
+        async with connect(service()) as caller:
+            await caller.press("1")
             assert caller.sent, "nothing was sent to the terminal"
 
 
@@ -101,8 +101,8 @@ class TestTheServiceIsOpenedAndClosedAroundTheCall:
                 await super().shutdown()
 
         app = Watched(pages=[PageRoute("1", index, name="index", title="Index")])
-        async with calling(app) as caller:
+        async with connect(app) as caller:
             assert opened
             assert not closed
-            assert caller.shown
+            assert caller.screen
         assert closed

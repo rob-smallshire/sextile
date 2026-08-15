@@ -1,10 +1,10 @@
 """A calendar, as a Viewdata service.
 
-It exists to be a second application. Sextile claims to be a framework rather
-than one service with the serial numbers filed off, and the way to find out is
-to write something that has nothing whatever to do with the first one and see
-what the framework asks for. Everything here comes out of the standard library:
-no archive, no network, nothing to configure.
+It exists to be a second application. Sextile is meant to be a general framework,
+not the first service reworked to look like one, and the way to test that is to
+write something with nothing in common with the first and see what the framework
+asks for. Everything here comes out of the standard library: no archive, no
+network, nothing to configure.
 
 It is also the worked example the framework's documentation is written against,
 so it is meant to be read.
@@ -161,7 +161,7 @@ async def one_day(request: PageRequest, day: date) -> Page:
     ]
     #  `arrow=True` because a reader may reach for the cursor keys instead, and
     #  on this page they mean what the letters mean. Said here rather than
-    #  assumed by the framework: what an arrow means is the page's business.
+    #  assumed by the framework: what an arrow means is for the page to decide.
     if request.arrival.preceding is not None:
         shortcuts.append(
             Shortcut(key=keys.PREVIOUS_ITEM, destination=request.arrival.preceding, arrow=True)

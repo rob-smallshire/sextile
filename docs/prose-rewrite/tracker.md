@@ -93,7 +93,7 @@ Source docstrings + comments (src/sextile):
 
 ### Phase 2 — applications
 
-- [ ] calendar-viewdata (docs + src)
+- [x] calendar-viewdata (docs + src)  (pilot; Template->PageLayout drift fixed)
 - [ ] stardot-viewdata (docs + src)
 - [ ] weather-viewdata (docs + src)
 

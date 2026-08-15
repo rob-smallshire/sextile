@@ -20,10 +20,10 @@ nc localhost 6850
 
 ## Why it exists
 
-To be a *second* application. Sextile claims to be a framework rather than one
-service with the serial numbers filed off, and the only way to find out is to
-write something with nothing whatever in common with the first one and see what
-the framework asks for.
+To be a *second* application. Sextile is meant to be a general framework, not the
+first service reworked to look like one, and the only way to test that is to
+write something with nothing in common with the first and see what the framework
+asks for.
 
 It is deliberately small and depends on nothing but the standard library and
 Sextile: no archive, no network, nothing to configure. That makes it the worked

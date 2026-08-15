@@ -5,11 +5,11 @@ only one of which is telling you the date.
 
 ## Why it exists
 
-**To hold the framework to its claim.** Sextile says it is a framework rather
-than one service with the serial numbers filed off. That was unfalsifiable while
-there was one application, and that application was the one the framework had
-been cut out of. A second service with nothing whatever in common with a forum
-is the test, and this is it.
+**To hold the framework to its claim.** Sextile is meant to be a general
+framework, not the first service reworked to look like one. That could not be
+tested while there was one application, and that application was the one the
+framework had been cut out of. A second service with nothing whatever in common
+with a forum is the test, and this is it.
 
 The result of the test, recorded here because it will not be obvious later: it
 needed **no change to the framework**, and its tests passed the first time they
@@ -82,7 +82,7 @@ the months either side and nothing else.
 ## What it duplicates
 
 Nothing, now. The menu builder it once shared with Stardot became the
-framework's `Menu`, and the six steps both were repeating became `Template`.
+framework's `Menu`, and the six steps both were repeating became `PageLayout`.
 
 ## What it is written as
 

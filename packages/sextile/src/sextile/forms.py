@@ -90,7 +90,7 @@ NOTE_COLOUR: Final = Colour.CYAN
 class Form(ABC):
     """Rows of a frame that answer keypresses by redrawing themselves.
 
-    A form is a `layout.Part`, and the one part that is not a description: it
+    A form is a `layout.Drawable`, and the one that is not a description: it
     holds what has been typed, so a layout carrying one is built for the
     request it answers rather than kept and built again.
 

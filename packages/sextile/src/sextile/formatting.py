@@ -1,6 +1,6 @@
 """Sequences formatted as parts of a page.
 
-A formatter is a `layout.Part` that lays out a homogeneous sequence: it takes
+A formatter is a `layout.Drawable` that lays out a homogeneous sequence: it takes
 as many entries as the room allows, says which of them can be chosen, and hands
 back the rest for the next frame. It deals only with the entries; titles, rules
 and keys are the layout's.

@@ -44,8 +44,9 @@ rest of [`sextile.keys`](#sextilekeys--the-keys-a-reader-presses).
 ### `sextile.layout` — a page as furniture and parts
 
     PageLayout  build                     what a service constructs
-    Once  Every  Flowing  Break  Drawn    the kinds of part
-    Part  Room  Offer  Placement          what a part of its own must satisfy
+    Part  Once  Every  Flowing  Break     a page's parts, and the four kinds
+    Drawn                                  a part that draws itself, cell by cell
+    Drawable  Room  Offer  Placement       what a part of your own must satisfy
     Edge  Summary  Furnishing             what furniture must satisfy
     Header  Rule  Prompt  DEFAULT_FURNITURE
     content_rows  CHOICES_PER_FRAME

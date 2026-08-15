@@ -66,7 +66,7 @@ internals; the surface is stated in public-surface.md.
 
 | Finding | Detail |
 |---------|--------|
-| `weather-viewdata/forecast_page.py` imports `Laid` from `sextile.layout` | `Laid` (= `Once | Every | Flowing | Break`, layout.py:258) is used as `list[Laid]` but is **not listed in public-surface.md**'s `sextile.layout` names. Either the surface omits a name it should export (likely — it sits beside the public `Once`/`Every`/`Flowing`/`Break`/`Drawn`), or the app is crossing the surface. NEEDS a decision + `test_public_surface.py` update; code left untouched. |
+| `weather-viewdata/forecast_page.py` imports `Laid` from `sextile.layout` | **RESOLVED with a rename.** `Laid` was the false-erudite name (past participle of "lay out") for the element type of `PageLayout.parts`, while the inner drawable protocol held the name `Part` — the inversion `parts: Sequence[Laid]`. Renamed the union `Laid` → **`Part`** (so `parts: Sequence[Part]`) and the protocol `Part` → **`Drawable`** (`place()`; implemented by Menu/Lines/Drawn/Form), with the wrapper field `part` → `drawable`. Both `Part` and `Drawable` are now documented in public-surface.md's `sextile.layout` block. The test checks module membership only (`sextile.layout` is public), so it was always green; now the doc lists the names too. mypy clean, 3044 tests pass. |
 
 Also, `handlers.py` (weather) carried a dead `#:` doc-comment describing a
 removed constant (nothing followed it); removed as prose cruft.

@@ -154,10 +154,11 @@ the site-wide setting is the one to set, and a per-page override needs a reason.
 
 ## Writing a part of your own
 
-A part draws as much as the room allows and says what is left over:
+The content inside a `Once`, `Every` or `Flowing` is a `Drawable`: it draws as
+much as the room allows and says what is left over.
 
 ```python
-class Part(Protocol):
+class Drawable(Protocol):
     def place(self, canvas: Canvas, room: Room) -> Placement: ...
 ```
 
@@ -165,15 +166,16 @@ class Part(Protocol):
 are still unclaimed on this frame, which the whole frame shares however many
 parts divide it.
 
-`Placement` carries the `rows` used, an `Offer` of what the part claims, and
-`rest`: what is left of the part for the next frame, or None when it is finished.
-Returning nought rows and `self` requests a fresh frame, which is how a part too
-tall for the room left is carried to the next frame whole rather than split.
+`Placement` carries the `rows` used, an `Offer` of what the drawable claims, and
+`rest`: what is left of the drawable for the next frame, or None when it is
+finished. Returning nought rows and `self` requests a fresh frame, which is how
+a drawable too tall for the room left is carried to the next frame whole rather
+than split.
 
 `Offer` carries `choices` — keys that lead somewhere — `named`, what the prompt
-should say about them, and `form` where the part is one.
+should say about them, and `form` where the drawable is one.
 
-Most parts are a sequence, and `Formatter` does the arithmetic for those. A
+Most drawables are a sequence, and `Formatter` does the arithmetic for those. A
 subclass says how tall an entry is and how to draw one:
 
 ```python

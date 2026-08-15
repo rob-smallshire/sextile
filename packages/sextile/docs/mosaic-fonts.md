@@ -272,7 +272,7 @@ Roughly in order, each committable on its own.
    they touch its edge.
 4. **Wrapping** in blocks, reusing the balanced algorithm in `wrapping.py`
    (measure in blocks rather than cells; the last line is free).
-5. **A part**, `Banner` or similar, built on `PageLayout` (a `Part`, or a
+5. **A part**, `Banner` or similar, built on `PageLayout` (a `Drawable`, or a
    `Formatter` subclass), so a page places large lettering the way it places a
    menu.
 6. **The ZX Origins importer**, beside `tools/mdfs_font.py`. A font is

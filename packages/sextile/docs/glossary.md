@@ -13,8 +13,15 @@ as "was X" so a reader coming from older code or docs can find it.
   `Flowing`, and what a bare drawable means), or `FrameBreak` (was `Break`).
 - **entry** — one item in a sequence a formatter lays out, such as a line of a
   menu. `formatting.Entry`.
+- **place** — what a custom part does: `place(canvas, room) -> Placed`, drawing
+  as much as fits and saying what is left. `Space` (was `Room`) is what the
+  frame has left; `Placed` (was `Placement`) carries the rows used, a `Claim`
+  (was `Offer`) of the keys claimed, and a `remainder` (was `rest`). Two claims
+  merge with `Claim.merged_with` (was `Offer.and_then`).
 - **furniture** — the fixed structure a page is drawn into, around its parts:
-  header, rules and footer. `layout.Furnishing`, `DEFAULT_FURNITURE`.
+  header, rules and footer. `layout.Furnishing`, `DEFAULT_FURNITURE`. A
+  furnishing is told a `FrameContext` (was `Summary`); its edge is
+  `Edge.TOP`/`Edge.BOTTOM` (was `Edge.FOOT`).
 - **route** — a pattern bound to a handler, carrying the page's name and
   keywords. `PageRoute`.
 - **router** — collects the routes a module of handlers declares with

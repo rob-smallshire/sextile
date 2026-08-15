@@ -50,8 +50,8 @@ application in its first few lines.
     PageLayout                            what a service constructs (.build)
     Part  OnFirstFrame  OnEveryFrame  Flow  FrameBreak   a page's parts, and the four kinds
     Drawn                                  a part that draws itself, cell by cell
-    Drawable  Room  Offer  Placement       what a part of your own must satisfy
-    Edge  Summary  Furnishing             what furniture must satisfy
+    Drawable  Space  Claim  Placed         what a part of your own must satisfy
+    Edge  FrameContext  Furnishing         what furniture must satisfy
     Header  Rule  Prompt  DEFAULT_FURNITURE
     Shortcut  HOME_KEY                     a fixed key on every frame
     content_rows  CHOICES_PER_FRAME

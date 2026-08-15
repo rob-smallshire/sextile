@@ -420,7 +420,7 @@ class TestApplicationConverters:
         #  Which is what lets a variable field follow it.
         router: Router[str] = Router()
         router.converter("pair", Converter(field_pattern="[0-9]{2}", width=2))
-        router.add("7{code:pair}{rest:int}", "coded")
+        router.add("7{code:pair}{remainder:int}", "coded")
 
     def test_the_same_converter_name_twice_is_refused(self) -> None:
         router: Router[str] = Router()

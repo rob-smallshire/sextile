@@ -21,7 +21,7 @@ from sextile.formatting import (
     MenuItem,
     Prose,
 )
-from sextile.layout import CHOICES_PER_FRAME, Flow, OnFirstFrame, PageLayout, Room
+from sextile.layout import CHOICES_PER_FRAME, Flow, OnFirstFrame, PageLayout, Space
 from sextile.testing import request_for
 from sextile.viewdata.canvas import Canvas
 from sextile.viewdata.controls import Colour
@@ -49,8 +49,8 @@ def said(canvas: Canvas) -> list[str]:
     return [row.strip() for row in characters if row.strip()]
 
 
-def whole_frame() -> Room:
-    return Room(first_row=CONTENT.start, rows=len(CONTENT), choices=CHOICES_PER_FRAME)
+def whole_frame() -> Space:
+    return Space(first_row=CONTENT.start, rows=len(CONTENT), choices=CHOICES_PER_FRAME)
 
 
 class TestAMenuAsAPart:
@@ -59,40 +59,40 @@ class TestAMenuAsAPart:
         #  chooses with one keypress.
         placed = Menu(entries=items(12)).place(Canvas(), whole_frame())
         assert placed.rows == CHOICES_PER_FRAME * 2
-        assert len(placed.offer.choices) == CHOICES_PER_FRAME
+        assert len(placed.claim.choices) == CHOICES_PER_FRAME
 
     def test_and_hands_back_what_is_left(self) -> None:
         placed = Menu(entries=items(12)).place(Canvas(), whole_frame())
         #  The same shape, carrying what is left, so the next frame draws it
         #  the same way.
-        assert isinstance(placed.rest, Menu)
-        assert list(placed.rest.entries) == items(12)[9:]
+        assert isinstance(placed.remainder, Menu)
+        assert list(placed.remainder.entries) == items(12)[9:]
 
     def test_it_takes_no_more_than_the_choices_it_is_given(self) -> None:
         placed = Menu(entries=items(12)).place(
-            Canvas(), Room(first_row=2, rows=20, choices=4)
+            Canvas(), Space(first_row=2, rows=20, choices=4)
         )
-        assert len(placed.offer.choices) == 4
+        assert len(placed.claim.choices) == 4
         assert placed.rows == 8
 
     def test_the_digits_lead_where_the_entries_do(self) -> None:
         placed = Menu(entries=items(3)).place(Canvas(), whole_frame())
-        assert placed.offer.choices == {"1": at("81"), "2": at("82"), "3": at("83")}
+        assert placed.claim.choices == {"1": at("81"), "2": at("82"), "3": at("83")}
 
     def test_an_entry_leading_nowhere_takes_no_digit(self) -> None:
         entries = [MenuItem(text="Just words"), *items(1)]
         placed = Menu(entries=entries).place(Canvas(), whole_frame())
-        assert placed.offer.choices == {"2": at("81")}
+        assert placed.claim.choices == {"2": at("81")}
 
     def test_it_says_it_offers_a_choice(self) -> None:
         placed = Menu(entries=items(3)).place(Canvas(), whole_frame())
-        assert [one.key for one in placed.offer.named] == ["1-9"]
+        assert [one.key for one in placed.claim.named] == ["1-9"]
 
     def test_nothing_to_show_says_so(self) -> None:
         placed = Menu(entries=[], empty="Nothing yet.").place(Canvas(), whole_frame())
         assert placed.rows == 1
-        assert placed.rest is None
-        assert not placed.offer.named
+        assert placed.remainder is None
+        assert not placed.claim.named
 
     def test_and_nothing_to_say_about_it_takes_no_rows(self) -> None:
         assert Menu(entries=[]).place(Canvas(), whole_frame()).rows == 0
@@ -136,15 +136,15 @@ class TestLinesAsAPart:
 
     def test_it_chooses_nothing(self) -> None:
         placed = Lines(said=("first",)).place(Canvas(), whole_frame())
-        assert not placed.offer.choices
+        assert not placed.claim.choices
 
     def test_more_lines_than_rows_go_on_to_the_next_frame(self) -> None:
         placed = Lines(said=tuple(f"line {n}" for n in range(30))).place(
             Canvas(), whole_frame()
         )
         assert placed.rows == 20
-        assert isinstance(placed.rest, Lines)
-        assert len(placed.rest.said) == 10
+        assert isinstance(placed.remainder, Lines)
+        assert len(placed.remainder.said) == 10
 
 
 class TestAListing:
@@ -156,7 +156,7 @@ class TestAListing:
     def test_two_columns_and_nothing_to_choose(self) -> None:
         canvas = Canvas()
         placed = Listing(entries=self.WIDE).place(canvas, whole_frame())
-        assert not placed.offer.choices
+        assert not placed.claim.choices
         assert "*3#" in said(canvas)[0]
         assert "Forecast by name" in said(canvas)[0]
 
@@ -165,8 +165,8 @@ class TestAListing:
         #  and a table would step sideways part way down.
         listing = Listing(entries=self.WIDE * 15)
         placed = listing.place(Canvas(), whole_frame())
-        assert isinstance(placed.rest, Listing)
-        assert placed.rest.column == listing.column
+        assert isinstance(placed.remainder, Listing)
+        assert placed.remainder.column == listing.column
 
     def test_a_detail_too_long_for_its_room_is_carried_on(self) -> None:
         canvas = Canvas()
@@ -196,8 +196,8 @@ class TestFigures:
     def test_the_columns_are_set_once_and_carried(self) -> None:
         figures = Figures(entries=self.counts() * 15)
         placed = figures.place(Canvas(), whole_frame())
-        assert isinstance(placed.rest, Figures)
-        assert (placed.rest.label, placed.rest.figure) == (figures.label, figures.figure)
+        assert isinstance(placed.remainder, Figures)
+        assert (placed.remainder.label, placed.remainder.figure) == (figures.label, figures.figure)
 
 
 class TestProse:
@@ -219,7 +219,7 @@ class TestProse:
     def test_it_goes_on_to_as_many_frames_as_it_takes(self) -> None:
         long = Prose.of(*(f"Paragraph {n} of some length." for n in range(20)))
         placed = long.place(Canvas(), whole_frame())
-        assert isinstance(placed.rest, Prose)
+        assert isinstance(placed.remainder, Prose)
 
 
 class TestAServiceWithItsOwnIdeaOfAnEntry:
@@ -249,7 +249,7 @@ class TestAServiceWithItsOwnIdeaOfAnEntry:
     def test_it_needs_no_conversion(self) -> None:
         canvas = Canvas()
         placed = Menu(entries=[self.Post(489493)]).place(canvas, whole_frame())
-        assert placed.offer.choices == {"1": at("82489493")}
+        assert placed.claim.choices == {"1": at("82489493")}
         assert "Post 489493" in said(canvas)[0]
 
     def test_and_satisfies_the_protocol_at_runtime(self) -> None:
@@ -284,9 +284,9 @@ class TestAServiceWithItsOwnShape:
 
     def test_and_what_will_not_fit_is_handed_back(self) -> None:
         placed = self.Blocks(entries=list("abcdefg")).place(
-            Canvas(), Room(first_row=2, rows=10, choices=CHOICES_PER_FRAME)
+            Canvas(), Space(first_row=2, rows=10, choices=CHOICES_PER_FRAME)
         )
         #  Ten rows holds two whole entries and the blank between them.
         assert placed.rows == 7
-        assert isinstance(placed.rest, self.Blocks)
-        assert list(placed.rest.entries) == list("cdefg")
+        assert isinstance(placed.remainder, self.Blocks)
+        assert list(placed.remainder.entries) == list("cdefg")

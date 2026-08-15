@@ -8,7 +8,7 @@ same post, and reading the signature of what survived — is worth remembering.
 A defect in phpBB's feed generation, found while building Sextile. Written up so
 it could be passed to the Stardot administrators, and upstream if they wish.
 
-## Summary
+## FrameContext
 
 phpBB's syndication feed removes every control character from a post body,
 including newlines. For ordinary prose this is invisible, because phpBB has

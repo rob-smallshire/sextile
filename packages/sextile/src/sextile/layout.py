@@ -62,13 +62,13 @@ __all__ = [
     "OnFirstFrame",
     "PageLayout",
     "Part",
-    "Placement",
-    "Offer",
+    "Placed",
+    "Claim",
     "Prompt",
-    "Room",
+    "Space",
     "Rule",
     "Shortcut",
-    "Summary",
+    "FrameContext",
     "content_rows",
 ]
 
@@ -77,7 +77,7 @@ if TYPE_CHECKING:
 
 
 @dataclass(frozen=True)
-class Room:
+class Space:
     """What is left of a frame when a part is asked to draw on it.
 
     Attributes:
@@ -94,7 +94,7 @@ class Room:
 
 
 @dataclass(frozen=True)
-class Offer:
+class Claim:
     """What a part claims on the frame it has drawn on.
 
     Attributes:
@@ -109,8 +109,8 @@ class Offer:
     named: Sequence[FooterItem] = ()
     form: "Form | None" = None
 
-    def and_then(self, other: "Offer") -> "Offer":
-        """This offer and another, as one.
+    def merged_with(self, other: "Claim") -> "Claim":
+        """This claim and another, as one.
 
         Args:
             other: What a later part on the same frame claimed.
@@ -126,7 +126,7 @@ class Offer:
         """
         if self.form is not None and other.form is not None:
             raise ValueError("a frame can carry only one form")
-        return Offer(
+        return Claim(
             choices={**self.choices, **other.choices},
             named=[*self.named, *other.named],
             form=self.form or other.form,
@@ -134,20 +134,20 @@ class Offer:
 
 
 @dataclass(frozen=True)
-class Placement:
+class Placed:
     """What placing a drawable on one frame came to.
 
     Attributes:
         rows: The rows it used, which is nought where it would not begin here.
-        offer: What it claims on this frame.
-        rest: What is left of it for the next frame, or None where it is
+        claim: What it claims on this frame.
+        remainder: What is left of it for the next frame, or None where it is
             finished. A drawable that returns nought rows and itself is asking
             for a frame of its own.
     """
 
     rows: int
-    offer: Offer = Offer()
-    rest: "Drawable | None" = None
+    claim: Claim = Claim()
+    remainder: "Drawable | None" = None
 
 
 @runtime_checkable
@@ -159,7 +159,7 @@ class Drawable(Protocol):
     form, which holds what has been typed.
     """
 
-    def place(self, canvas: Canvas, room: Room) -> Placement:
+    def place(self, canvas: Canvas, room: Space) -> Placed:
         """Draw as much as `room` allows, and say what is left over.
 
         Args:
@@ -231,11 +231,11 @@ class Drawn:
     rows: int
     draw: "Callable[[Canvas, int], None]"
 
-    def place(self, canvas: Canvas, room: Room) -> Placement:
+    def place(self, canvas: Canvas, room: Space) -> Placed:
         if room.rows < self.rows:
-            return Placement(rows=0, rest=self)
+            return Placed(rows=0, remainder=self)
         self.draw(canvas, room.first_row)
-        return Placement(rows=self.rows)
+        return Placed(rows=self.rows)
 
 
 @dataclass(frozen=True)
@@ -304,17 +304,17 @@ def _placed(part: Part) -> _Placed:
 
 
 @dataclass
-class Filled:
+class _FilledFrame:
     """One frame's content, before any furniture is drawn on it.
 
     Attributes:
         canvas: The frame, with the content drawn and the furniture rows left
             alone.
-        offer: Everything the parts on this frame claimed, merged.
+        claim: Everything the parts on this frame claimed, merged.
     """
 
     canvas: Canvas
-    offer: Offer = field(default_factory=Offer)
+    claim: Claim = field(default_factory=Claim)
 
 
 #: The four letters that move about, which are the ones an arrow stands for.
@@ -326,7 +326,7 @@ _MOVEMENT_LETTERS: Final = frozenset(ARROW_FOR)
 CHOICES_PER_FRAME = 9
 
 
-def fill(parts: Sequence[Part], rows: range) -> list[Filled]:
+def fill(parts: Sequence[Part], rows: range) -> list[_FilledFrame]:
     """Draw the parts onto as many frames as they take.
 
     Args:
@@ -335,7 +335,7 @@ def fill(parts: Sequence[Part], rows: range) -> list[Filled]:
             taken the rest.
 
     Returns:
-        One `Filled` a frame, in order, and never none: a page that answered
+        One `_FilledFrame` a frame, in order, and never none: a page that answered
         with no frames could not be shown. Stops at `FRAMES_PER_PAGE`, a page
         having frames `a` to `z` and no more, and says so on the last row of
         the last of them rather than ending without explanation.
@@ -345,7 +345,7 @@ def fill(parts: Sequence[Part], rows: range) -> list[Filled]:
             frame, or if two parts on one frame both carry a form.
     """
     state = _State([_placed(part) for part in parts])
-    frames: list[Filled] = []
+    frames: list[_FilledFrame] = []
     while True:
         frames.append(_frame(state, rows))
         if state.finished:
@@ -421,13 +421,13 @@ def _height(drawable: Drawable, rows: range) -> int:
     the one that counts -- draws the same thing in the row it belongs on.
     """
     return drawable.place(
-        Canvas(), Room(rows.start, len(rows), CHOICES_PER_FRAME)
+        Canvas(), Space(rows.start, len(rows), CHOICES_PER_FRAME)
     ).rows
 
 
-def _frame(state: _State, rows: range) -> Filled:
+def _frame(state: _State, rows: range) -> _FilledFrame:
     """Fill one frame, taking as much of what is pending as will go on it."""
-    filled = Filled(canvas=Canvas())
+    filled = _FilledFrame(canvas=Canvas())
     #  A part at the end of the list that is drawn on every frame is charged
     #  its rows before anything flowing is asked for its, or the flow takes
     #  them and the note beneath it is written over.
@@ -449,21 +449,21 @@ def _frame(state: _State, rows: range) -> Filled:
         drawable = state.pending.get(index)
         if drawable is None:
             continue
-        placed = drawable.place(filled.canvas, Room(at, left, choices))
-        if placed.rows == 0 and placed.rest is drawable:
+        placed = drawable.place(filled.canvas, Space(at, left, choices))
+        if placed.rows == 0 and placed.remainder is drawable:
             if not drawn:
                 raise ValueError(f"{drawable!r} can never be placed: it is taller than a frame")
             break
         drawn = True
-        filled.offer = filled.offer.and_then(placed.offer)
+        filled.claim = filled.claim.merged_with(placed.claim)
         at, left = at + placed.rows, left - placed.rows
-        choices -= len(placed.offer.choices)
+        choices -= len(placed.claim.choices)
         if isinstance(part, OnEveryFrame):
             continue
-        if placed.rest is None:
+        if placed.remainder is None:
             del state.pending[index]
         else:
-            state.pending[index] = placed.rest
+            state.pending[index] = placed.remainder
             break
 
     _draw_kept_back(state, filled, at)
@@ -483,7 +483,7 @@ def _reserved(state: _State, rows: range) -> int:
     return total
 
 
-def _draw_kept_back(state: _State, filled: Filled, at: int) -> None:
+def _draw_kept_back(state: _State, filled: _FilledFrame, at: int) -> None:
     """Draw the parts whose rows were kept back, under what they follow.
 
     Kept back from the foot so that a flowing part cannot take them, but drawn
@@ -492,8 +492,8 @@ def _draw_kept_back(state: _State, filled: Filled, at: int) -> None:
     figures belongs under the table and not thirteen rows beneath it.
     """
     for drawable in state.at_foot.values():
-        placed = drawable.place(filled.canvas, Room(at, ROWS - at, CHOICES_PER_FRAME))
-        filled.offer = filled.offer.and_then(placed.offer)
+        placed = drawable.place(filled.canvas, Space(at, ROWS - at, CHOICES_PER_FRAME))
+        filled.claim = filled.claim.merged_with(placed.claim)
         at += placed.rows
 
 
@@ -501,11 +501,11 @@ class Edge(Enum):
     """Which end of a frame a furnishing is docked to."""
 
     TOP = auto()
-    FOOT = auto()
+    BOTTOM = auto()
 
 
 @dataclass(frozen=True)
-class Summary:
+class FrameContext:
     """What a furnishing is told about the frame it is drawing on.
 
     Attributes:
@@ -552,7 +552,7 @@ class Furnishing(Protocol):
         """How many rows it takes, on every frame."""
         ...
 
-    def draw(self, canvas: Canvas, at: int, page: Summary) -> None:
+    def draw(self, canvas: Canvas, at: int, page: FrameContext) -> None:
         """Draw this band in the rows the layout has reserved for it."""
         ...
 
@@ -570,7 +570,7 @@ class Header:
     _ATTRIBUTES: Final = 2
     _GAP: Final = 1
 
-    def draw(self, canvas: Canvas, at: int, page: Summary) -> None:
+    def draw(self, canvas: Canvas, at: int, page: FrameContext) -> None:
         #  Not everything drawn is a page a reader could have keyed. A notice
         #  answering a number that names nothing has none to show, and the
         #  title may have the whole row.
@@ -590,7 +590,7 @@ class Rule:
     colour: Colour = Colour.BLUE
     rows: int = 1
 
-    def draw(self, canvas: Canvas, at: int, page: Summary) -> None:
+    def draw(self, canvas: Canvas, at: int, page: FrameContext) -> None:
         del page  # a rule says nothing about the page it is on
         rule(canvas, at, self.colour)
 
@@ -600,10 +600,10 @@ class Prompt:
     """Every key that works on this frame, and what each of them does."""
 
     colour: Colour = Colour.YELLOW
-    edge: Edge = Edge.FOOT
+    edge: Edge = Edge.BOTTOM
     rows: int = 1
 
-    def draw(self, canvas: Canvas, at: int, page: Summary) -> None:
+    def draw(self, canvas: Canvas, at: int, page: FrameContext) -> None:
         said = render_footer(page.offered, ROOM)
         if said:
             canvas.row(at).text(fitted(said, COLUMNS - 1), self.colour)
@@ -616,7 +616,7 @@ class Prompt:
 DEFAULT_FURNITURE: Final[tuple[Furnishing, ...]] = (
     Header(),
     Rule(edge=Edge.TOP),
-    Rule(edge=Edge.FOOT),
+    Rule(edge=Edge.BOTTOM),
     Prompt(),
 )
 
@@ -633,7 +633,7 @@ def content_rows(furniture: Sequence[Furnishing]) -> range:
         furniture at all.
     """
     above = sum(one.rows for one in furniture if one.edge is Edge.TOP)
-    below = sum(one.rows for one in furniture if one.edge is Edge.FOOT)
+    below = sum(one.rows for one in furniture if one.edge is Edge.BOTTOM)
     return range(above, ROWS - below)
 
 
@@ -764,7 +764,7 @@ class PageLayout:
 
     def _frame(
         self,
-        filled: Filled,
+        filled: _FilledFrame,
         index: int,
         frames: int,
         address: PageAddress | None,
@@ -774,7 +774,7 @@ class PageLayout:
     ) -> PageFrame:
         """One frame, furnished, with the keys it answers gathered onto it."""
         back, on = index > 0, index + 1 < frames or self.follows is not None
-        page = Summary(
+        page = FrameContext(
             title=title,
             address=address,
             index=index,
@@ -787,28 +787,28 @@ class PageLayout:
             frame=filled.canvas.frame,
             choices=self._choices(filled, home=home),
             moves=moving(back=back, on=on),
-            form=filled.offer.form,
+            form=filled.claim.form,
         )
 
-    def _furnish(self, canvas: Canvas, page: Summary) -> None:
+    def _furnish(self, canvas: Canvas, page: FrameContext) -> None:
         """Draw the bands, downwards from the top and upwards from the foot."""
         at = 0
         for one in self.furniture:
             if one.edge is Edge.TOP:
                 one.draw(canvas, at, page)
                 at += one.rows
-        at = ROWS - sum(one.rows for one in self.furniture if one.edge is Edge.FOOT)
+        at = ROWS - sum(one.rows for one in self.furniture if one.edge is Edge.BOTTOM)
         for one in self.furniture:
-            if one.edge is Edge.FOOT:
+            if one.edge is Edge.BOTTOM:
                 one.draw(canvas, at, page)
                 at += one.rows
 
     def _choices(
-        self, filled: Filled, *, home: "PageAddress | Shortcut | None"
+        self, filled: _FilledFrame, *, home: "PageAddress | Shortcut | None"
     ) -> dict[str, PageAddress]:
         """Every key on this frame that leads somewhere else."""
         shortcuts = self._shortcuts()
-        choices = dict(filled.offer.choices)
+        choices = dict(filled.claim.choices)
         choices |= {one.key: one.destination for one in shortcuts}
         choices |= arrows_lead_where(
             {one.key: one.destination for one in shortcuts if one.arrow}
@@ -818,11 +818,11 @@ class PageLayout:
         return choices
 
     def _offered(
-        self, filled: Filled, *, back: bool, on: bool, home: "PageAddress | Shortcut | None"
+        self, filled: _FilledFrame, *, back: bool, on: bool, home: "PageAddress | Shortcut | None"
     ) -> list[FooterItem]:
         """What the prompt should try to name, most worth saying last off."""
         shortcuts = self._shortcuts()
-        items = list(filled.offer.named)
+        items = list(filled.claim.named)
         #  A shortcut on one of the movement letters is named by `movement`
         #  rather than by itself, so that a page built here and a page drawn by
         #  hand describe the same key the same way.

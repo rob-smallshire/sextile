@@ -6,7 +6,7 @@ answers one by *changing what is on the screen without moving*.
 The shape is deliberately narrow. A form owns some rows of a frame, says which
 keys are typing rather than navigating, redraws its rows when the value changes,
 and says where its digits lead as the value now stands. The session does the
-rest: it keeps the frame in step, sends the changed rows, and treats a digit
+remainder: it keeps the frame in step, sends the changed rows, and treats a digit
 that leads somewhere exactly as it treats a digit on a menu -- so history,
 sequences and the back key all go on working with nothing added.
 
@@ -30,7 +30,7 @@ from typing import Final
 from sextile import keys
 from sextile.addressing import PageAddress
 from sextile.formatting import Entry
-from sextile.layout import Offer, Placement, Room
+from sextile.layout import Claim, Placed, Space
 from sextile.viewdata.canvas import Canvas, RowWriter
 from sextile.viewdata.controls import Colour
 from sextile.viewdata.encoding import fitted
@@ -114,7 +114,7 @@ class Form(ABC):
     #: The row this form was placed on. Nought until it has been.
     at: int = 0
 
-    def place(self, canvas: "Canvas", room: "Room") -> "Placement":
+    def place(self, canvas: "Canvas", room: "Space") -> "Placed":
         """Draw this form where the layout has put it, and claim its keys.
 
         Args:
@@ -128,11 +128,11 @@ class Form(ABC):
         """
         self.at = room.first_row
         if len(self.rows) > room.rows:
-            return Placement(rows=0, rest=self)
+            return Placed(rows=0, remainder=self)
         self.draw(canvas)
-        return Placement(
+        return Placed(
             rows=len(self.rows),
-            offer=Offer(choices=self.choices(), named=self.named(), form=self),
+            claim=Claim(choices=self.choices(), named=self.named(), form=self),
         )
 
     @property

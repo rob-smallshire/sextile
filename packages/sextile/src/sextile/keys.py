@@ -100,7 +100,7 @@ ARROW_KEYS: Final[dict[int, str]] = {0x08: LEFT, 0x09: RIGHT, 0x0A: DOWN, 0x0B: 
 #: The arrow a reader would press instead of each letter, for a page that wants
 #: to offer both.
 #:
-#: Offered rather than applied. What an arrow means is for the page to decide:
+#: Claimed rather than applied. What an arrow means is for the page to decide:
 #: on most pages it means what the letter means, and on a page with a coordinate
 #: field it does not, W being West and S being South. So the arrow-to-letter
 #: choice is left to each page rather than made here for every service at once.

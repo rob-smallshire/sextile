@@ -16,16 +16,16 @@ from sextile.keys import CONVENTIONAL_NEXT_FRAME, DOWN, LEFT, NEXT_FRAME, RIGHT,
 from sextile.layout import (
     DEFAULT_FURNITURE,
     HOME_KEY,
+    Claim,
     Flow,
     FrameBreak,
-    Offer,
     OnEveryFrame,
     OnFirstFrame,
     PageLayout,
-    Placement,
+    Placed,
     Prompt,
-    Room,
     Shortcut,
+    Space,
     content_rows,
     fill,
 )
@@ -51,12 +51,12 @@ class Says:
     said: str
     rows: int = 1
 
-    def place(self, canvas: Canvas, room: Room) -> Placement:
+    def place(self, canvas: Canvas, room: Space) -> Placed:
         if room.rows < self.rows:
-            return Placement(rows=0, rest=self)
+            return Placed(rows=0, remainder=self)
         for offset in range(self.rows):
             canvas.row(room.first_row + offset).text(self.said, Colour.WHITE)
-        return Placement(rows=self.rows)
+        return Placed(rows=self.rows)
 
 
 @dataclass(frozen=True)
@@ -65,18 +65,18 @@ class Counts:
 
     items: tuple[str, ...]
 
-    def place(self, canvas: Canvas, room: Room) -> Placement:
+    def place(self, canvas: Canvas, room: Space) -> Placed:
         taken = min(room.rows, room.choices, len(self.items))
         for offset, item in enumerate(self.items[:taken]):
             canvas.row(room.first_row + offset).text(item, Colour.WHITE)
         rest = self.items[taken:]
-        return Placement(
+        return Placed(
             rows=taken,
-            offer=Offer(
+            claim=Claim(
                 choices={str(n + 1): PageAddress(f"8{n}") for n in range(taken)},
                 named=[FooterItem("1-9", "select", Priority.PRIMARY)] if taken else [],
             ),
-            rest=Counts(rest) if rest else None,
+            remainder=Counts(rest) if rest else None,
         )
 
 
@@ -90,12 +90,12 @@ class Recites:
 
     lines: tuple[str, ...]
 
-    def place(self, canvas: Canvas, room: Room) -> Placement:
+    def place(self, canvas: Canvas, room: Space) -> Placed:
         taken = min(room.rows, len(self.lines))
         for offset, line in enumerate(self.lines[:taken]):
             canvas.row(room.first_row + offset).text(line, Colour.WHITE)
         rest = self.lines[taken:]
-        return Placement(rows=taken, rest=Recites(rest) if rest else None)
+        return Placed(rows=taken, remainder=Recites(rest) if rest else None)
 
 
 def at(digits: str) -> PageAddress:
@@ -134,7 +134,7 @@ class TestOnePartOnOneFrame:
 
     def test_a_part_claims_what_it_offers(self) -> None:
         filled = fill([Flow(items(3))], CONTENT)
-        assert filled[0].offer.choices == {
+        assert filled[0].claim.choices == {
             "1": PageAddress("80"),
             "2": PageAddress("81"),
             "3": PageAddress("82"),
@@ -152,8 +152,8 @@ class TestAPartThatFlows:
 
     def test_the_digits_begin_again_on_each_frame(self) -> None:
         filled = fill([Flow(items(12))], CONTENT)
-        assert set(filled[0].offer.choices) == {str(n) for n in range(1, 10)}
-        assert set(filled[1].offer.choices) == {"1", "2", "3"}
+        assert set(filled[0].claim.choices) == {str(n) for n in range(1, 10)}
+        assert set(filled[1].claim.choices) == {"1", "2", "3"}
 
     def test_two_flowing_parts_follow_one_another(self) -> None:
         #  Concatenation: the second begins in the row after the first has

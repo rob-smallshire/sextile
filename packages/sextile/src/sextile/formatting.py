@@ -33,7 +33,7 @@ from typing import ClassVar, Protocol, runtime_checkable
 
 from sextile.addressing import PageAddress
 from sextile.content.blocks import Document, Paragraph
-from sextile.layout import Offer, Placement, Room
+from sextile.layout import Claim, Placed, Space
 from sextile.viewdata.canvas import Canvas, RowWriter
 from sextile.viewdata.controls import Colour
 from sextile.viewdata.drawing import key_row
@@ -150,13 +150,13 @@ class Formatter[E](ABC):
         del entry
         return None
 
-    def place(self, canvas: Canvas, room: Room) -> Placement:
+    def place(self, canvas: Canvas, room: Space) -> Placed:
         """Draw as many entries as the room allows, and hand back the rest."""
         if not self.entries:
             return self._nothing(canvas, room)
         taking = self._fitting(room)
         if taking == 0:
-            return Placement(rows=0, rest=self)
+            return Placed(rows=0, remainder=self)
         choices: dict[str, PageAddress] = {}
         row = room.first_row
         for offset, entry in enumerate(self.entries[:taking]):
@@ -167,16 +167,16 @@ class Formatter[E](ABC):
             self.draw_entry(canvas, row, entry, digit)
             row += self.rows_per_entry + self.separation
         rest = self.entries[taking:]
-        return Placement(
+        return Placed(
             rows=taking * (self.rows_per_entry + self.separation) - self.separation,
-            offer=Offer(
+            claim=Claim(
                 choices=choices,
                 named=[self.selecting_hint] if choices and self.selecting_hint else [],
             ),
-            rest=replace(self, entries=rest) if rest else None,
+            remainder=replace(self, entries=rest) if rest else None,
         )
 
-    def _fitting(self, room: Room) -> int:
+    def _fitting(self, room: Space) -> int:
         """How many entries go in this room.
 
         The separation falls between entries and not after the last of them, so
@@ -189,14 +189,14 @@ class Formatter[E](ABC):
             fits = min(fits, room.choices)
         return max(min(fits, len(self.entries)), 0)
 
-    def _nothing(self, canvas: Canvas, room: Room) -> Placement:
+    def _nothing(self, canvas: Canvas, room: Space) -> Placed:
         """What to draw where there are no entries: a reason, or nothing."""
         if not self.empty:
-            return Placement(rows=0)
+            return Placed(rows=0)
         if room.rows < 1:
-            return Placement(rows=0, rest=self)
+            return Placed(rows=0, remainder=self)
         canvas.row(room.first_row).text(fitted(self.empty, COLUMNS - 1), Colour.WHITE)
-        return Placement(rows=1)
+        return Placed(rows=1)
 
 
 @dataclass(frozen=True, kw_only=True)

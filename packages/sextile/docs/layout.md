@@ -160,25 +160,25 @@ the site-wide setting is the one to set, and a per-page override needs a reason.
 
 ## Writing a part of your own
 
-The content inside a `OnFirstFrame`, `OnEveryFrame` or `Flow` is a `Drawable`: it draws as
-much as the room allows and says what is left over.
+The content inside an `OnFirstFrame`, `OnEveryFrame` or `Flow` is a `Drawable`:
+it draws as much as the space allows and says what is left over.
 
 ```python
 class Drawable(Protocol):
-    def place(self, canvas: Canvas, room: Room) -> Placement: ...
+    def place(self, canvas: Canvas, room: Space) -> Placed: ...
 ```
 
-`Room` carries `first_row`, `rows` and `choices` — how many of the digits `1-9`
+`Space` carries `first_row`, `rows` and `choices` — how many of the digits `1-9`
 are still unclaimed on this frame, which the whole frame shares however many
 parts divide it.
 
-`Placement` carries the `rows` used, an `Offer` of what the drawable claims, and
-`rest`: what is left of the drawable for the next frame, or None when it is
+`Placed` carries the `rows` used, a `claim` of what the drawable claimed, and a
+`remainder`: what is left of the drawable for the next frame, or None when it is
 finished. Returning nought rows and `self` requests a fresh frame, which is how
-a drawable too tall for the room left is carried to the next frame whole rather
+a drawable too tall for the space left is carried to the next frame whole rather
 than split.
 
-`Offer` carries `choices` — keys that lead somewhere — `named`, what the prompt
+`Claim` carries `choices` — keys that lead somewhere — `named`, what the prompt
 should say about them, and `form` where the drawable is one.
 
 Most drawables are a sequence, and `Formatter` does the arithmetic for those. A
@@ -217,10 +217,10 @@ class Furnishing(Protocol):
     def edge(self) -> Edge: ...
     @property
     def rows(self) -> int: ...
-    def draw(self, canvas: Canvas, at: int, page: Summary) -> None: ...
+    def draw(self, canvas: Canvas, at: int, page: FrameContext) -> None: ...
 ```
 
-`Summary` carries the `title`, the `address`, which frame this is (`index`),
+`FrameContext` carries the `title`, the `address`, which frame this is (`index`),
 how many there are (`frames`), and `offered` — every key that works on this
 frame, assembled and in the order the prompt should try to name them.
 

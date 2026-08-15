@@ -40,13 +40,10 @@ type CallNext = Callable[[PageRequest], Awaitable[Page | None]]
 type Middleware = Callable[[PageRequest, CallNext], Awaitable[Page | None]]
 """Something wrapped round every page a service builds.
 
-A page handler answers what one page *says*; middleware answers what is true
-of every page -- who is asking, how long it took, whether they may. It is
-given the request and the rest of the chain, and may look, may change what
-comes back, or may answer instead and never call it at all.
-
-The framework deliberately has no opinion about authentication, and this is
-why it does not need one: a service that wants it wraps its pages.
+Given the request and `CallNext`, the rest of the chain. It may read the
+request, call `CallNext` and change what comes back, or answer instead and never
+call it. A handler answers what one page builds; middleware answers what is true
+of every page -- who is asking, how long it took, whether they may.
 """
 
 
@@ -74,10 +71,8 @@ def chained(build: CallNext, middleware: Sequence[Middleware]) -> CallNext:
         A `CallNext` that enters the outermost middleware and reaches `build`
         at the bottom.
 
-    Composed per request rather than once, which costs a closure apiece and
-    buys the obvious thing: middleware may be added to an application that has
-    already answered something, and a service assembled in pieces does not have
-    to know it has finished being assembled.
+    Composed per request rather than once, so middleware may be added to an
+    application that has already answered something.
     """
     #  Reversed, so that the first given is the outermost: a reader of the list
     #  should see a request entering at the top and leaving at the bottom.
@@ -97,16 +92,18 @@ def log_pages(
     slow: float = SLOW,
     clock: Callable[[], float] = time.monotonic,
 ) -> Middleware:
-    """Log every page a service builds, and how long it took.
+    """Return middleware that logs every page a service builds and its build time.
 
-    On a board where a frame takes eight seconds to reach the reader, "it felt
-    slow" is not evidence: the wire and the page are indistinguishable from the
-    far end of a telephone line. This separates them. Anything past ``slow`` is
-    logged as a warning, since a page that is slow to build is slow before the
-    wire has been asked to do anything at all.
+    Args:
+        logger: Where to write, or the `sextile.serving` logger by default.
+        slow: Seconds past which a build is logged as a warning rather than
+            info. It separates a slow build from a slow wire, which the far end
+            of a telephone line cannot tell apart.
+        clock: What reads the time, for a test to control.
 
-    A page that is not there is logged too. A count of pages built that quietly
-    omitted the ones nobody could reach would be the wrong count.
+    Returns:
+        A `Middleware`. A page that is not there is logged too, so the count is
+        not quietly short of the numbers nobody could reach.
     """
     log = logger or logging.getLogger("sextile.serving")
 
@@ -144,23 +141,20 @@ CALLER: Final = "sextile.caller"
 def record_visits(
     visits: StateKey[Visits], *, token: Callable[[], str] = _token
 ) -> Middleware:
-    """Note every page a service builds, for the pages that read the log back.
+    """Return middleware that records every page built, for the readership pages.
 
-    Takes the `StateKey` the service's log is held under. A service opens its
-    log in its lifespan -- where a thing that has to be closed belongs -- so
-    there is no log to hand over when the middleware is made; it hands over the
-    key, and the log is read from `request.state` per page.
+    Args:
+        visits: The `StateKey` the log is held under, the same key
+            `handlers.recent`/`popular`/`callers` read. The log is read from
+            `request.state` per page, not held here, so a service can open it in
+            its lifespan where a thing that must be closed belongs.
+        token: What mints a caller's opaque name, for a test to control. Minted
+            the first time a session is seen and kept in it after, so a count of
+            readers says how many and nothing about who.
 
-    The caller is a token minted the first time this middleware sees a session
-    and kept in the session after -- so counting readers can say how many and
-    nothing about who. Nothing identifying is asked for and nothing is stored:
-    a service that keeps what it does not need is a service that has to be
-    trusted about it.
-
-    A page that was not there is recorded too. A count of pages fetched that
-    quietly omitted the ones nobody could reach would be the wrong count, and
-    the numbers readers key wrongly are worth knowing; they are left out of
-    what is read back rather than left out of the log.
+    Returns:
+        A `Middleware`. A page that was not there is recorded too, and left out
+        of what is read back rather than out of the log.
     """
 
     async def recording(request: PageRequest, build: CallNext) -> Page | None:

@@ -44,11 +44,15 @@ _ATTRIBUTE_CELL: Final = 1
 class Span:
     """A stretch of text in one colour.
 
-    A row written in a single colour needs no such thing -- `RowWriter.text`
-    takes the colour with the words. This is for a line whose colours are the meaning
-    rather than the decoration: two clocks side by side, one in UTC and one
-    local, told apart by colour because a label saying which would cost four
-    cells to repeat what the row above already said.
+    Attributes:
+        text: The characters to write.
+        colour: The colour to write them in, or None to keep the one in force.
+
+    For `RowWriter.runs`, a line whose colours carry meaning rather than
+    decoration: several values side by side, told apart by colour rather than by
+    a label that would cost cells to repeat what the row above already said. A
+    row in one colour needs no `Span`; `RowWriter.text` takes the colour with the
+    words.
     """
 
     text: str
@@ -226,15 +230,15 @@ class RowWriter:
     def background(self, colour: Colour, *, text: Colour) -> Self:
         """Colour the rest of this row's background, and what is written on it.
 
-        **Three cells**, and the hardware's arrangement rather than a choice: a
-        background can only be taken from a foreground, so the colour has to be
-        chosen, made the background, and then the text colour chosen again.
+        Args:
+            colour: The background colour, which runs to the end of the row
+                unless `end_background` stops it.
+            text: The colour of what is written on it.
 
-        The background runs to the end of the row, attributes being in force
-        until something changes them or the row ends. That is what makes a
-        field look like a field: a bar of colour a reader can see the extent
-        of, which is how the command line has always marked the one other place
-        on a service where typing goes.
+        Three cells, the hardware's arrangement rather than a choice: a
+        background can only be taken from a foreground, so the colour is chosen,
+        made the background, and the text colour chosen again. The bar of colour
+        a reader can see the extent of is what makes a field look like a field.
         """
         if self.remaining < _BACKGROUND_CELLS:
             raise ValueError(

@@ -64,8 +64,8 @@ class PageRequest:
 
     history: tuple[PageAddress, ...] = ()
     """Where this caller has been, oldest first, as far back as the session
-    keeps. The terminal remembers none of it, so a service wanting to offer a
-    way back through the call has to be handed the way back."""
+    keeps. The terminal keeps only the frame on screen, so a service offering a
+    way back through the call reads it from here."""
 
     state: StateReader = field(default_factory=State)
     """What the service opened, for as long as it is running -- an archive, a

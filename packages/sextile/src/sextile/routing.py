@@ -458,7 +458,7 @@ class PageRoute:
     A route also carries what the service reads back about the page it declared:
     `Sextile.route` and `Sextile.routes` return these, with `keyed` filled
     in. On a route a caller constructs, `keyed` is empty until a service
-    registers it, there being no numbering to read it against yet.
+    registers it: there is no numbering to read it against yet.
     """
 
     pattern: str

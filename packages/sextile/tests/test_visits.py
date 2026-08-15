@@ -96,7 +96,7 @@ class TestWhatIsKept:
     """Thirty days by default, and a setting rather than a rule."""
 
     async def test_what_is_past_keeping_goes(self) -> None:
-        log = SqliteVisits.open(":memory:", kept=timedelta(days=7))
+        log = SqliteVisits.open(":memory:", retention=timedelta(days=7))
         await seen(log, "1", at=NOON - timedelta(days=8))
         #  Trimmed on the next write, since a delete on every fetch is a write
         #  nobody asked for.
@@ -104,14 +104,14 @@ class TestWhatIsKept:
         assert [visit.page.digits for visit in await log.recent(9)] == ["3"]
 
     async def test_and_what_is_not_stays(self) -> None:
-        log = SqliteVisits.open(":memory:", kept=timedelta(days=7))
+        log = SqliteVisits.open(":memory:", retention=timedelta(days=7))
         await seen(log, "1", at=NOON - timedelta(days=6))
         await seen(log, "3", at=NOON)
         assert len(await log.recent(9)) == 2
 
     async def test_the_trimming_happens_once_a_day_and_not_once_a_page(self) -> None:
         #  Two writes in the same day, and the second does not pay for it.
-        log = SqliteVisits.open(":memory:", kept=timedelta(days=7))
+        log = SqliteVisits.open(":memory:", retention=timedelta(days=7))
         await seen(log, "1", at=NOON - timedelta(days=8))
         await seen(log, "3", at=NOON)
         #  A row older than the window, written after the trim for that day has

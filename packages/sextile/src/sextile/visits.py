@@ -104,17 +104,17 @@ class SqliteVisits:
     only copy of what it holds.
     """
 
-    def __init__(self, connection: sqlite3.Connection, *, kept: timedelta = RETENTION) -> None:
+    def __init__(self, connection: sqlite3.Connection, *, retention: timedelta = RETENTION) -> None:
         self._connection = connection
-        self._kept = kept
+        self._retention = retention
         self._trimmed: datetime | None = None
 
     @classmethod
-    def open(cls, filepath: Path | str, *, kept: timedelta = RETENTION) -> Self:
+    def open(cls, filepath: Path | str, *, retention: timedelta = RETENTION) -> Self:
         connection = sqlite3.connect(filepath, check_same_thread=False)
         connection.executescript(_SCHEMA)
         connection.commit()
-        return cls(connection, kept=kept)
+        return cls(connection, retention=retention)
 
     def close(self) -> None:
         self._connection.close()
@@ -151,7 +151,7 @@ class SqliteVisits:
         if self._trimmed is not None and self._trimmed.date() == when.date():
             return
         self._connection.execute(
-            "delete from visits where at < ?", ((when - self._kept).isoformat(),)
+            "delete from visits where at < ?", ((when - self._retention).isoformat(),)
         )
         self._trimmed = when
 

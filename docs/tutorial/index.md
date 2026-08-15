@@ -14,9 +14,9 @@ worked example, line for line.
 
 01-hello-frame
 02-menus-and-numbers
-03-frames-and-keys
-04-sequences
-05-state-and-lifespan
+03-state-and-lifespan
+04-frames-and-keys
+05-sequences
 06-framework-pages
 07-testing
 ```

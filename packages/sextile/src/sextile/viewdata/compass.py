@@ -9,7 +9,7 @@ The G0 set has `←`, `→` and `↑` at 0x5B, 0x5D and 0x5E, and no down arrow 
 all -- so one of the four would have had to be drawn whatever happened, and
 three drawn letters beside one drawn picture look like a mistake. All four are
 drawn, on the block grid, which is 2x3 to a cell and so has the resolution for
-a head and a shaft.
+a head and a shaft::
 
        page up
           W
@@ -60,10 +60,10 @@ _DOWN: Final = _LEFT.turned()
 #: redrawn. Two rows of cells, which is what the arrows leave between them.
 _SHAFT: Final = Icon(bitmap=(_UP.bitmap[-1],) * (2 * BLOCKS_DOWN))
 
-#: Rows the whole thing takes: a word, a key, two of arrow, the middle row and
-#: its labels, two more of arrow, a key, a word, and the line about the cursor
-#: keys. Every arrow is three cells across and two rows down, whichever way it
-#: points.
+#: How many rows the whole thing takes. It is a word, a key, two of arrow, the
+#: middle row and its labels, two more of arrow, a key, a word, and the line
+#: about the cursor keys. Every arrow is three cells across and two rows down,
+#: whichever way it points.
 #:
 #: The down arrow starts on the row the "item" labels are on, as the up arrow
 #: ends on the row above the middle one: that is what puts the two of them the

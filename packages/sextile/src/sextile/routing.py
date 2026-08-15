@@ -462,7 +462,7 @@ class PageRoute:
     """
 
     pattern: str
-    """The page numbers this answers: literal digits and named fields."""
+    """The page numbers this answers, as literal digits and named fields."""
 
     handler: Handler
     """What builds the page. `None` rather than a page means there is no such
@@ -549,17 +549,19 @@ class PageRouter:
 
     A handler that lives apart from the `Sextile` it serves is declared with
     `@router.page(...)`, the same call as `@app.page`, and the module's pages
-    reach the service in one spread. Iterating a router yields its `PageRoute`s
+    reach the service in one spread. Iterating a router yields each `PageRoute`
     in the order they were declared, so a service reads the way its source does.
 
     Example:
-        router = PageRouter()
+        A module's pages, gathered and spread into a service::
 
-        @router.page("3", title="By day", keywords=("WHO",))
-        async def days(request: PageRequest) -> Page:
-            ...
+            router = PageRouter()
 
-        app = Sextile(pages=[*router, *standard_pages(history="92")])
+            @router.page("3", title="By day", keywords=("WHO",))
+            async def days(request: PageRequest) -> Page:
+                ...
+
+            app = Sextile(pages=[*router, *standard_pages(history="92")])
     """
 
     def __init__(self) -> None:

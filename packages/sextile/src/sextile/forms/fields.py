@@ -46,8 +46,8 @@ class Field:
     """What the form calls it when it hands the values over."""
 
     label: str
-    """Shown before it. Should not end in a space: the attributes that follow
-    occupy cells and show as spaces already."""
+    """Shown before the value. It should not end in a space, since the
+    attributes that follow occupy cells and show as spaces already."""
 
     row: int
 

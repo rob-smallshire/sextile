@@ -128,7 +128,7 @@ async def render_page(application: Sextile, arguments: argparse.Namespace) -> in
 
     await application.startup()
     try:
-        page = await application.ask(address)
+        page = await application.fetch(address)
         if page is None:
             print(f"{keyed(address)} is not a page there.", file=sys.stderr)
             return 2

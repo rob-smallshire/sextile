@@ -61,6 +61,9 @@ as "was X" so a reader coming from older code or docs can find it.
   sets its own). Index is where the `0` key goes from every frame
   (`Sextile(index=...)`, the same as home unless set apart). The footer word
   `index` is the label for that key.
+- **fetch** (was `ask`) — `Sextile.fetch(target)` builds a request for a page
+  and answers it in process, for a test, a renderer or a tool with no socket.
+  "fetch" is what a browser calls it; there is no HTTP verb to borrow.
 - **idle timeout** — an idle caller is released with `on_timed_out(request,
   frame_index)`: the request is the page they were on, `frame_index` which frame
   of it. There was a `Parting` dataclass here; since it held only the frame it

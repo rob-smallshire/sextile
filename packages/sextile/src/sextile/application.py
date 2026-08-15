@@ -644,7 +644,7 @@ class Sextile:
             title=(self.title_for(request.address) or contents.TITLE).upper(),
         )
 
-    async def ask(
+    async def fetch(
         self,
         target: str | PageAddress,
         *,
@@ -652,7 +652,7 @@ class Sextile:
         session: MutableMapping[str, object] | None = None,
         history: tuple[PageAddress, ...] = (),
     ) -> Page | None:
-        """Answer a page number, the way a session would ask it.
+        """Fetch a page by its number, in process, as a session would request it.
 
         A request carries more than the number: what the service holds, and the
         service itself. Assembling one by hand at each call site is easy to get

@@ -99,12 +99,12 @@ class TestAServiceBuiltFromARouter:
 
     async def test_a_spread_router_routes_its_pages(self) -> None:
         app = Sextile(pages=[*self._router()])
-        assert await app.ask("3") is not None
+        assert await app.fetch("3") is not None
 
     async def test_a_router_passed_whole_routes_its_pages(self) -> None:
         #  `pages` takes any iterable, so the router need not be spread.
         app = Sextile(pages=self._router())
-        assert await app.ask("3") is not None
+        assert await app.fetch("3") is not None
 
     def test_the_service_carries_the_declared_words(self) -> None:
         app = Sextile(pages=self._router())

@@ -144,7 +144,7 @@ class TestWhatTheseBuiltInPagesAreCalled:
 
 
 async def _built(app: Sextile, digits: str) -> Page:
-    page = await app.ask(digits)
+    page = await app.fetch(digits)
     assert page is not None
     return page
 

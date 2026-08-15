@@ -192,7 +192,7 @@ each by whatever is running the application. The server does not call them: a
 server that opened an application's database would encode an assumption about
 what an application is. `sextile.cli.run_service` calls them instead.
 
-**`Sextile.ask`** assembles a request as a session would, with what the
+**`Sextile.fetch`** assembles a request as a session would, with what the
 service holds and the service itself, so that a test, a renderer or a tool need
 not. Assembling it by hand at each call site is a step easily forgotten, and a
 page reached without it fails in a way unrelated to what was under test.

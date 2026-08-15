@@ -30,9 +30,9 @@ class TestStandardPages:
         return Sextile(pages=list(standard_pages(history="92", contents="93", keywords="94")))
 
     async def test_each_answers_at_the_number_it_was_given(self, app: Sextile) -> None:
-        assert await app.ask("92") is not None
-        assert await app.ask("93") is not None
-        assert await app.ask("94") is not None
+        assert await app.fetch("92") is not None
+        assert await app.fetch("93") is not None
+        assert await app.fetch("94") is not None
 
     def test_the_route_carries_the_framework_s_own_words(self, app: Sextile) -> None:
         (history,) = (page for page in app.pages() if page.name == "history")
@@ -76,5 +76,5 @@ class TestReadershipPages:
 class TestTheHandlersDirectly:
     async def test_a_plain_handler_reaches_the_application_s_page(self) -> None:
         app = Sextile(pages=[PageRoute("92", handlers.history, title="Been")])
-        assert await app.ask("92") is not None
+        assert await app.fetch("92") is not None
         assert app.address_for("history") == PageAddress("92")

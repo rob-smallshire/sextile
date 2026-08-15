@@ -67,7 +67,7 @@ class TestRouting:
         async def main(request: PageRequest) -> Page:
             return saying("MAIN")
 
-        assert row_of(await app.ask("1")) == "MAIN"
+        assert row_of(await app.fetch("1")) == "MAIN"
 
     async def test_a_handler_is_given_what_the_pattern_captured(self) -> None:
         app = Sextile()
@@ -76,7 +76,7 @@ class TestRouting:
         async def post(request: PageRequest, post_id: int) -> Page:
             return saying(f"POST {post_id}")
 
-        assert row_of(await app.ask("82489493")) == "POST 489493"
+        assert row_of(await app.fetch("82489493")) == "POST 489493"
 
     async def test_a_handler_is_given_the_request_it_answers(self) -> None:
         app = Sextile()
@@ -85,7 +85,7 @@ class TestRouting:
         async def post(request: PageRequest, post_id: int) -> Page:
             return saying(str(request.address))
 
-        assert row_of(await app.ask("82489493")) == "82489493"
+        assert row_of(await app.fetch("82489493")) == "82489493"
 
     async def test_the_decorator_gives_the_function_back(self) -> None:
         app = Sextile()
@@ -125,7 +125,7 @@ class TestSayingSo:
 
     async def test_an_unrouted_page_is_not_answered(self) -> None:
         app = Sextile()
-        assert await app.ask("6") is None
+        assert await app.fetch("6") is None
 
     async def test_a_word_that_names_nothing_says_so(self) -> None:
         app = Sextile()
@@ -180,7 +180,7 @@ class TestSessionState:
         async def main(request: PageRequest) -> Page:
             return saying(str(request.session["user"]))
 
-        page = await app.ask("1", session=state)
+        page = await app.fetch("1", session=state)
         assert row_of(page) == "komadori"
 
     async def test_a_handler_can_leave_something_behind(self) -> None:
@@ -192,7 +192,7 @@ class TestSessionState:
             request.session["seen"] = True
             return one_frame()
 
-        await app.ask("1", session=state)
+        await app.fetch("1", session=state)
         assert state == {"seen": True}
 
 
@@ -215,7 +215,7 @@ class TestNeighbours:
             choices = {"N": following} if following else {}
             return Page(frames=(PageFrame(blank(), choices=choices),))
 
-        page = await app.ask(
+        page = await app.fetch(
             "821", neighbours=Neighbours(next=PageAddress("822"))
         )
         assert page is not None
@@ -351,7 +351,7 @@ class TestWhereTheReaderHasBeen:
         async def main(request: PageRequest) -> Page:
             return saying(" ".join(str(been) for been in request.history))
 
-        page = await app.ask(
+        page = await app.fetch(
             "1", history=(PageAddress("8"), PageAddress("82489493"))
         )
         assert row_of(page) == "8 82489493"
@@ -906,7 +906,7 @@ class TestMiddleware:
             return await build(request)
 
         app = Sextile(middleware=[watching], pages=[PageRoute("1", _nothing, name="main")])
-        await app.ask("1")
+        await app.fetch("1")
         assert seen == [PageAddress("1")]
 
     async def test_it_may_answer_instead_of_the_page(self) -> None:
@@ -918,7 +918,7 @@ class TestMiddleware:
             return instead
 
         app = Sextile(middleware=[refusing], pages=[PageRoute("1", _nothing, name="main")])
-        assert await app.ask("1") is instead
+        assert await app.fetch("1") is instead
 
     async def test_it_may_change_what_comes_back(self) -> None:
         async def hanging_up(request: PageRequest, build: Next) -> Page | None:
@@ -926,7 +926,7 @@ class TestMiddleware:
             return None if page is None else Page(frames=page.frames, hang_up=True)
 
         app = Sextile(middleware=[hanging_up], pages=[PageRoute("1", _nothing, name="main")])
-        page = await app.ask("1")
+        page = await app.fetch("1")
         assert page is not None and page.hang_up
 
     async def test_the_first_given_is_the_outermost(self) -> None:
@@ -947,7 +947,7 @@ class TestMiddleware:
             middleware=[noting("first"), noting("second")],
             pages=[PageRoute("1", _nothing, name="main")],
         )
-        await app.ask("1")
+        await app.fetch("1")
         assert order == ["into first", "into second", "out of second", "out of first"]
 
     async def test_a_page_that_is_not_there_still_reaches_it(self) -> None:
@@ -960,12 +960,12 @@ class TestMiddleware:
             return await build(request)
 
         app = Sextile(middleware=[watching])
-        assert await app.ask("7") is None
+        assert await app.fetch("7") is None
         assert seen == [PageAddress("7")]
 
     async def test_a_service_with_none_is_unaffected(self) -> None:
         app = Sextile(pages=[PageRoute("1", _nothing, name="main")])
-        assert await app.ask("1") is not None
+        assert await app.fetch("1") is not None
 
 
 class TestAPageKnowingItsService:
@@ -1041,11 +1041,11 @@ class TestAskingForAPageWithoutASocket:
 
     async def test_a_page_number_is_answered(self) -> None:
         app = Sextile(pages=[PageRoute("1", _nothing, name="main")])
-        assert await app.ask("1") is not None
+        assert await app.fetch("1") is not None
 
     async def test_a_page_number_it_has_not_got_is_not(self) -> None:
         app = Sextile()
-        assert await app.ask("7") is None
+        assert await app.fetch("7") is None
 
     async def test_the_page_is_handed_what_the_service_holds(self) -> None:
         seen: list[str] = []
@@ -1061,7 +1061,7 @@ class TestAskingForAPageWithoutASocket:
 
         app = Sextile(lifespan=lifespan, pages=[PageRoute("1", main, name="main")])
         await app.startup()
-        await app.ask("1")
+        await app.fetch("1")
         assert seen == ["an archive"]
 
     async def test_where_the_reader_came_from_may_be_said(self) -> None:
@@ -1073,5 +1073,5 @@ class TestAskingForAPageWithoutASocket:
             return Page(frames=(PageFrame(frame=Canvas().frame),))
 
         app = Sextile(pages=[PageRoute("1", main, name="main")])
-        await app.ask("1", neighbours=Neighbours(next=PageAddress("2")))
+        await app.fetch("1", neighbours=Neighbours(next=PageAddress("2")))
         assert seen == [PageAddress("2")]

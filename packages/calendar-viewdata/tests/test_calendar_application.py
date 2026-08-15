@@ -30,7 +30,7 @@ async def app() -> AsyncIterator[Sextile]:
 async def page_at(app: Sextile, digits: str, neighbours: Neighbours | None = None) -> Page:
     #  `ask` assembles the request as a session would -- with what the service
     #  holds, and the service itself -- so a test need not remember either.
-    page = await app.ask(digits, neighbours=neighbours)
+    page = await app.fetch(digits, neighbours=neighbours)
     assert page is not None, f"*{digits}# is not a page here"
     return page
 
@@ -42,13 +42,13 @@ class TestThePages:
     async def test_every_page_number_is_answered(
         self, digits: str, app: Sextile
     ) -> None:
-        assert await app.ask(digits) is not None
+        assert await app.fetch(digits) is not None
 
     @pytest.mark.parametrize("digits", ["5", "6", "0", "33", "3220261301"])
     async def test_a_number_the_service_has_not_got_is_not_answered(
         self, digits: str, app: Sextile
     ) -> None:
-        assert await app.ask(digits) is None
+        assert await app.fetch(digits) is None
 
     async def test_the_index_says_what_day_it_is(self, app: Sextile) -> None:
         assert "Sunday 02 August 2026" in text_of(await page_at(app, "1"))

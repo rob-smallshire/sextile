@@ -143,14 +143,14 @@ BY_NUMBER = Neighbours()
 
 async def page_at(app: Sextile, digits: str, neighbours: Neighbours = BY_NUMBER) -> Page:
     """The page at a number, which for a number the service has is always one."""
-    page = await app.ask(digits, neighbours=neighbours)
+    page = await app.fetch(digits, neighbours=neighbours)
     assert page is not None, f"*{digits}# is not a page here"
     return page
 
 
 async def what_a_reader_sees(app: Sextile, digits: str) -> Page:
     """The page, or the notice shown in its place -- as the session would."""
-    page = await app.ask(digits)
+    page = await app.fetch(digits)
     if page is not None:
         return page
     return await app.not_found(request_for(app, app.index), digits)
@@ -197,7 +197,7 @@ class TestTheNumbering:
     async def test_every_page_number_is_answered(
         self, digits: str, app: Sextile
     ) -> None:
-        assert await app.ask(digits) is not None
+        assert await app.fetch(digits) is not None
 
     def test_a_page_number_is_built_from_the_board_s_own_identifier(
         self, app: Sextile
@@ -292,7 +292,7 @@ class TestTheArchiveIsOpenedWhenTheServiceStarts:
         #  missing, rather than failing somewhere inside SQLite.
         service = build_application()
         with pytest.raises(KeyError, match="archive"):
-            await service.ask("1")
+            await service.fetch("1")
 
 
 class TestSayingWhatIsMissing:

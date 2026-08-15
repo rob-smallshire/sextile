@@ -14,6 +14,7 @@ from contextlib import asynccontextmanager
 
 import pytest
 
+from sextile import handlers
 from sextile.application import (
     Neighbours,
     PageRequest,
@@ -552,7 +553,7 @@ class TestWhereZeroGoes:
 
     async def test_the_framework_s_own_pages_use_the_index(self) -> None:
         app = Sextile(home="0", index="1")
-        page = await app.history_page(
+        page = await handlers.history_page(
             PageRequest(address=PageAddress("92"), app=app, history=(PageAddress("8"),))
         )
         assert page.frames[0].destination("0") == PageAddress("1")

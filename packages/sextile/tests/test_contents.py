@@ -5,6 +5,7 @@ user on a screen; everybody holding a user number can be told
 where to put it, and only the framework knows the patterns well enough to say.
 """
 
+from sextile import handlers
 from sextile.application import Sextile
 from sextile.builtin.contents import TITLE, contents_page
 from sextile.page import Page, PageAddress, PageFrame
@@ -126,19 +127,19 @@ class TestWhatTheseBuiltInPagesAreCalled:
 
     async def test_a_service_s_own_words_are_used(self) -> None:
         app = Sextile()
-        app.page("93", name="contents", title="Every page")(app.contents_page)
+        app.page("93", name="contents", title="Every page")(handlers.contents_page)
         assert "EVERY PAGE" in text_of(await _built(app, "93"))
 
     async def test_and_a_service_that_calls_it_something_else_gets_that(self) -> None:
         app = Sextile()
-        app.page("50", name="contents", title="What is here")(app.contents_page)
+        app.page("50", name="contents", title="What is here")(handlers.contents_page)
         shown = text_of(await _built(app, "50"))
         assert "WHAT IS HERE" in shown
         assert TITLE not in shown
 
     async def test_a_service_that_said_nothing_keeps_the_framework_s_name(self) -> None:
         app = Sextile()
-        app.page("50")(app.contents_page)
+        app.page("50")(handlers.contents_page)
         assert TITLE in text_of(await _built(app, "50"))
 
 

@@ -35,6 +35,7 @@ from sextile import (
     PageRouter,
     StateKey,
     farewell_page,
+    handlers,
     keyed,
     menu_page,
     notice_page,
@@ -349,7 +350,7 @@ async def guide(request: PageRequest) -> Page:
     keeps its own numbers for.
     """
     app = request.app
-    return await app.guide_page(
+    return await handlers.guide_page(
         request,
         asking_rows=[
             GuideRow(keyed(app.address_for("logoff")), "log off"),

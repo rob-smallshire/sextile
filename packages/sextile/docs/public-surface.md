@@ -168,14 +168,22 @@ answers. Also at the top level, those being what most services reach for first.
     standard_pages
     history  contents  keywords
     recent  popular  callers
+    guide_page
+    history_page  contents_page  keywords_page
+    recent_page  popular_page  callers_page
 
 `standard_pages(history="92", ...)` is the one line most services want: it
 returns the routes for whichever pages a service gives a number, carrying the
 framework's own title, detail and keywords. It is also at the top level. The
 individual handlers are there for a service that wants finer control; the
 readership three (`recent`, `popular`, `callers`) take the `StateKey` the visit
-log is held under. The pages behind them are `sextile.builtin`, which is
-internal.
+log is held under.
+
+The `*_page` functions build one framework page each from `request.app`, and
+were methods on `Sextile`. `guide_page` is the one a service calls itself, since
+only the service knows the rows to add to a guide; the rest are what the routed
+handlers above delegate to, exposed for a service routing one at a number of its
+own. The pure builders behind them are `sextile.builtin`, which is internal.
 
 ### `sextile.state` — what a service holds while it runs
 

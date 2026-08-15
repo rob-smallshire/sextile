@@ -1,13 +1,69 @@
 # Revealing Sextile: the comprehensibility plan
 
-Status: approved 2026-08-15. This file is the working reference for the rework;
-the architect session owns it and the developer session executes against it.
+Status: approved 2026-08-15; Phases 0-3, 5 and 6 complete 2026-08-15, Phase 4
+deferred to the Sphinx rewrite. This file is the working reference for the
+rework; the architect session owns it and the developer session executes
+against it.
 
 **Documentation is deferred.** The Markdown docs will be rewritten from scratch
 under Sphinx (with a Markdown extension). Until then: do not invest in the
 legacy `docs/*.md` beyond keeping them from stating falsehoods about code that
 has changed. Phase 4 below is therefore parked; phase 5's CLAUDE.md work still
 applies.
+
+## Final status
+
+150 commits since approval; the gate (`ruff`, `mypy --strict` with tests,
+`pytest`) is green at every one. Framework src grew 10448 -> 11744 as behaviour
+moved out of the apps into it; each app shrank (calendar 381 -> 312, stardot
+2331 -> 2174, weather 4424 -> 4312). Tests 3043 -> 3112.
+
+- **Phase 0 -- done.** Stale doc claims fixed; `test_public_surface.py` pins
+  each public module's `__all__` against `public-surface.md`; `docs/prose-rewrite/`
+  deleted; glossary stub started.
+- **Phase 1 -- done.** One `Sextile` with `request.app`; `PageLayout.build(request)`
+  defaults title/home/number; one-call shapes (`menu_page`/`notice_page`/`prose_page`/
+  `farewell_page`); `request.neighbours` and `standard_pages`; `StateKey`/`request.state`;
+  `PageRouter`/`@router.page`; per-route `label=`.
+- **Phase 2 -- done.** The rename families above landed one commit each, no shims.
+- **Phase 3 -- done.** Module splits and duplicate collapses as recorded in the
+  Phase 3 section.
+- **Phase 4 -- DEFERRED to the Sphinx rewrite** (see below).
+- **Phase 5 -- done.** Docstrings contract-first; CLAUDE.md to 117 lines with the
+  document-level rules.
+- **Phase 6 -- done.** Calendar the canonical example (312 src lines); one factory
+  shape; explicit `home`/`index` where a title frame exists; `title_page`; shared
+  `render`/`serve` CLI assembly; the three apps converged on the calendar's shape.
+  Deviations from the plan:
+  1. `title_page` gained a `shortcuts` parameter beyond the stated signature, to
+     carry stardot's `1`->main shortcut; default `()` keeps the plain call plain.
+  2. `fetch` added to `sextile.testing` (three suites had the same local helper).
+  3. `SequencePart.empty` widened to `str | Sequence[str]` for multi-line empty
+     states; two callers.
+  4. `serve` now configures logging and `render` now guards a missing `--page`,
+     both closing gaps the CLI lift exposed against stardot's behaviour.
+  5. Cosmetic: stardot's subcommand help lists render/serve before ingest/archive.
+
+### What Sphinx inherits (Phase 4)
+
+The rewrite starts from a truthful base, not a blank one:
+
+- Docstrings are contract-first and autodoc-ready -- what a thing is, what goes
+  in, what comes out, what a subclass overrides -- and are the framework's
+  primary documentation.
+- `glossary.md` is the rename ledger: every renamed term, old to new.
+- `public-surface.md` lists follow each module's `__all__`, enforced by
+  `test_public_surface.py`, so an autodoc surface can be generated from them.
+- The legacy `docs/*.md` have been kept truthful sentence by sentence but not
+  rewritten; treat them as source material to supersede, not to port.
+
+## Next
+
+- The Sphinx documentation set (Phase 4): the rewrite proper, from the base above.
+- The `sextile.viewdata` facade question in `docs/open-questions.md`: whether the
+  wire/drawing internals want a single public facade or stay a set of submodules.
+- A decision log for the design rationale, per decision 7, replacing the argue-
+  don't-instruct prose the Sphinx rewrite removes.
 
 ## Diagnosis
 

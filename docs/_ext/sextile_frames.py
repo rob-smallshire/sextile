@@ -39,6 +39,7 @@ from typing import TYPE_CHECKING, Any
 
 from docutils import nodes
 from docutils.parsers.rst import directives
+from sphinx.util import parselinenos
 from sphinx.util.docutils import SphinxDirective
 
 from sextile.application import Sextile
@@ -103,6 +104,7 @@ class SextileFrame(SphinxDirective):
         "frame": directives.nonnegative_int,
         "keys": directives.unchanged,
         "show-code": directives.flag,
+        "hide-lines": directives.unchanged,
     }
 
     def run(self) -> list[nodes.Node]:
@@ -112,10 +114,23 @@ class SextileFrame(SphinxDirective):
             raise self.severe(f"sextile-frame could not render: {error}") from error
         produced: list[nodes.Node] = []
         if "show-code" in self.options and self.content:
-            source = "\n".join(self.content)
+            source = self._shown_source()
             produced.append(nodes.literal_block(source, source, language="python"))
         produced.append(nodes.raw("", render_html(frame), format="html"))
         return produced
+
+    def _shown_source(self) -> str:
+        """The snippet as shown, with `:hide-lines:` removed but still executed.
+
+        The lines hide from the reader without leaving the run, so an accumulating
+        file can show only the lines a step adds while the whole of it draws the
+        frame -- the shown code and the drawn frame cannot drift.
+        """
+        spec = self.options.get("hide-lines")
+        hidden = set(parselinenos(spec, len(self.content))) if spec else set()
+        return "\n".join(
+            line for number, line in enumerate(self.content) if number not in hidden
+        )
 
     def _frame(self) -> Frame:
         if self.content:

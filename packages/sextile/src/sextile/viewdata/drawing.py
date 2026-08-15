@@ -59,9 +59,14 @@ def centred(
 ) -> None:
     """Write text across the middle of a row.
 
-    The middle is the composition's to work out, here and in `centred_double`
-    and `rule`: what a style costs in cells decides where the middle is, and
-    that is its accounting rather than this module's.
+    Args:
+        canvas: The frame to draw on.
+        row: The row to write on.
+        text: The text, fitted to the row if it is too wide.
+        colour: The colour, white by default.
+
+    The middle is the composition's to work out: what a style costs in cells
+    decides where the middle is.
     """
     _place(canvas, row, fitted(text, COLUMNS - 1), colour)
 
@@ -69,7 +74,14 @@ def centred(
 def centred_double(
     canvas: Canvas, row: int, text: str, colour: Colour | None = None
 ) -> None:
-    """The same at twice the height, which costs the row below as well."""
+    """Write text centred at twice the height, which costs the row below too.
+
+    Args:
+        canvas: The frame to draw on.
+        row: The top row; the bottom halves are drawn on the row below.
+        text: The text, fitted to the row.
+        colour: The colour, white by default.
+    """
     _place(canvas, row, fitted(text, COLUMNS - 2), colour, double_height=True)
 
 
@@ -89,12 +101,15 @@ def _place(
 
 
 def rule(canvas: Canvas, row: int, colour: Colour = Colour.BLUE) -> None:
-    """A rule in separated mosaic graphics, across the middle of a row.
+    """Draw a rule in separated mosaic graphics across the middle of a row.
 
-    A run of blocks cannot begin before the attributes that colour it, so the
-    widest a rule can be *and be centred* is the row less those two cells at
-    each end. A rule inset at one end and flush at the other reads as a
-    mistake, and sets a different middle from everything else on the frame.
+    Args:
+        canvas: The frame to draw on.
+        row: The row to rule.
+        colour: The colour, blue by default.
+
+    The widest a rule can be and stay centred is the row less the two attribute
+    cells at each end; inset at one end and flush at the other reads as a mistake.
     """
     cells = COLUMNS - 2 * _SEPARATED_ATTRIBUTES
     Composition().blocks(
@@ -103,19 +118,15 @@ def rule(canvas: Canvas, row: int, colour: Colour = Colour.BLUE) -> None:
 
 
 def key_row(row: "RowWriter", key: str, meaning: str, *, column: int) -> None:
-    """A key on the left and what it does on the right, in two columns.
+    """Write a key on the left and what it does on the right, in two columns.
 
-    The shape every reference page in a viewdata service turns out to want: a
-    guide, a contents page, a list of the words a reader may key. The column is
-    the caller's, so that several frames of one table line up with each other
-    and none of them is set by hand.
-
-    An empty key indents to where the meaning goes without writing anything,
-    which is how a meaning too long for one row is carried on to the next.
-    That indent counts the two attribute cells the row above spent -- one to
-    colour the key and one to colour the meaning -- since a row with no key
-    spends neither and would otherwise start two cells to the left of the
-    words it is continuing.
+    Args:
+        row: The row writer to draw on.
+        key: The key, in yellow, or empty to indent to the meaning column and
+            carry a meaning too long for one row onto the next.
+        meaning: What the key does, in white.
+        column: The cell the meaning column begins at, given so several frames
+            of one table line up.
     """
     if key:
         row.text(fitted(key, column), Colour.YELLOW)
@@ -127,12 +138,15 @@ def key_row(row: "RowWriter", key: str, meaning: str, *, column: int) -> None:
 
 
 def thin_rule(canvas: Canvas, row: int, colour: Colour = Colour.BLUE) -> None:
-    """A lighter rule: one block thick, across the middle of the row.
+    """Draw a lighter rule, one block thick, across the middle of a row.
 
-    The furniture's `rule` is a bar, and a bar is what the top and bottom of a
-    frame want -- it is where the page ends. A rule *inside* a page is dividing
-    two things that are both content, and a bar there reads as a second frame
-    beginning. This is the same construction with a sixth of the ink.
+    Args:
+        canvas: The frame to draw on.
+        row: The row to rule.
+        colour: The colour, blue by default.
+
+    A sixth of the ink of `rule`: a bar reads as a page edge, so a divider
+    inside a page, between two things that are both content, is drawn lighter.
     """
     cells = COLUMNS - 2 * _SEPARATED_ATTRIBUTES
     Composition().blocks(
@@ -150,11 +164,23 @@ def bar(
     lit: int | None = None,
     separated: bool = False,
 ) -> None:
-    """A run of mosaic cells, ``lit`` of them solid and the rest blank.
+    """Draw a run of mosaic cells, ``lit`` of them solid and the rest blank.
 
-    A rule is the whole run lit; a gauge is some of it. Unlit cells are written
-    as spaces rather than left alone, so that a bar drawn over one already on
-    screen shortens rather than merely failing to lengthen.
+    Args:
+        canvas: The frame to draw on.
+        row: The row to draw on.
+        colour: The colour of the lit cells.
+        column: The cell the run begins at, after its colour attribute.
+        cells: How many cells the run has, or the rest of the row from `column`.
+        lit: How many are solid, from the left, or all of them.
+        separated: Whether the blocks are drawn separated, not contiguous.
+
+    Raises:
+        ValueError: If there is no room for the run.
+
+    A rule is the whole run lit; a gauge some of it. Unlit cells are written
+    blank, not left alone, so a bar drawn over a longer one shortens rather than
+    failing to lengthen.
     """
     attributes = _SEPARATED_ATTRIBUTES if separated else _CONTIGUOUS_ATTRIBUTES
     width = (COLUMNS - column - attributes) if cells is None else cells

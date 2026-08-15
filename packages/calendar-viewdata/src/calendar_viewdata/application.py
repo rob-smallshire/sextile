@@ -37,12 +37,12 @@ from sextile import (
     PageRoute,
     Sextile,
     farewell_page,
-    handlers,
     keyed,
     keys,
     menu_page,
     notice_page,
     prose_page,
+    standard_pages,
 )
 from sextile.formatting import Lines, MenuItem
 from sextile.layout import Drawn, Flowing, Once, PageLayout, Shortcut
@@ -204,15 +204,10 @@ PAGES: Final = (
     #  and a reader looking for how to ring off should find it there.
     PageRoute("90", goodbye, name="goodbye", title="Log off",
               keywords=("BYE",)),
-    #  Three the framework builds and hands over as handlers, mapped into this
-    #  service's numbering. They are here as much to show what a service gets
+    #  Three the framework builds and hands over, mapped into this service's
+    #  numbering by one call. They are here as much to show what a service gets
     #  for nothing as to be useful: the calendar wrote none of them.
-    PageRoute("92", handlers.history, title="Where you have been",
-              detail="this call, newest first", keywords=("HISTORY",)),
-    PageRoute("93", handlers.contents, title="Every page",
-              detail="and the number that fetches it", keywords=("PAGES",)),
-    PageRoute("94", handlers.names, title="Words you can key",
-              detail="instead of a page number", keywords=("KEYWORDS", "WORDS")),
+    *standard_pages(history="92", contents="93", keywords="94"),
 )
 
 

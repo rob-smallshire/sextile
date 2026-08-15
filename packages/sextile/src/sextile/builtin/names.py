@@ -17,7 +17,7 @@ find it rather than to learn that it has synonyms.
 Registered nowhere, like `history` and `contents`. A service maps it into its
 numbering or does without:
 
-    @page("94", name="names", title="Words you can key", keywords=("KEYWORDS",))
+    @page("94", name="keywords", title="Words you can key", keywords=("KEYWORDS",))
     async def _names(self, request: PageRequest) -> Page:
         return await self.keywords_page(request)
 """

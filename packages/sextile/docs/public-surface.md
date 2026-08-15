@@ -36,7 +36,7 @@ application in its first few lines.
     Converter  UnknownPageError  NoSuchRouteError  RouteError
     Form  Suggest  draw_form
     menu_page  notice_page  prose_page  farewell_page
-    page  routes_in  routes_on  transliterate
+    page  routes_in  routes_on  standard_pages  transliterate
     keys  handlers  __version__
 
 `keys` and `handlers` are modules, re-exported: `keys.BACK`,
@@ -154,11 +154,16 @@ answers. Also at the top level, those being what most services reach for first.
 
 ### `sextile.handlers` — the framework's pages, as handlers
 
-    history  contents  names
+    standard_pages
+    history  contents  keywords
+    recent  popular  callers
 
-One line apiece in a service's routes. The pages behind them are
-`sextile.builtin`, which is internal: a service reaches them through these
-handlers or through the `Sextile` methods they call.
+`standard_pages(history="92", ...)` is the one line most services want: it
+returns the routes for whichever pages a service gives a number, carrying the
+framework's own title, detail and keywords. It is also at the top level. The
+individual handlers are there for a service that wants finer control; the
+readership three (`recent`, `popular`, `callers`) take a `Finder` for the visit
+log. The pages behind them are `sextile.builtin`, which is internal.
 
 ### `sextile.middleware` — what wraps every page
 

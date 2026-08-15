@@ -1,57 +1,75 @@
-"""Handlers naming the framework's own pages, for a route to point at.
+"""The framework's own pages, routed into a service by one call.
 
-`history`, `contents` and `names` are methods on the application, which a
-`PageRoute` cannot name without an instance to bind them to -- so every
-service was writing the same three-line passthrough, three times over. These
-handlers are those passthroughs written once, and the tests say only that
-each reaches the application's own page: what the pages show is tested where
-they are built.
+`standard_pages` returns the routes for whichever framework pages a service
+gives a number, so every service stops writing the same passthroughs. The tests
+say only that each reaches the application's own page and carries the framework's
+own words: what the pages show is tested where they are built.
 """
 
 import pytest
 
-from sextile import PageRoute, Sextile, handlers
+from sextile import PageRequest, PageRoute, Sextile, handlers, standard_pages
 from sextile.addressing import PageAddress
+from sextile.middleware import held_in
+from sextile.visits import SqliteVisits
 
 
-class TestRoutingStraightToAFrameworkPage:
+def _asking(app: Sextile, number: str, **held: object) -> PageRequest:
+    """A request for a page on a service holding `held`, as a session would build."""
+    return PageRequest(address=PageAddress(number), app=app, service=held)
+
+
+class TestStandardPages:
     @pytest.fixture
     def app(self) -> Sextile:
-        return Sextile(
-            pages=[
-                PageRoute("92", handlers.history, name="history",
-                          title="Where you have been"),
-                PageRoute("93", handlers.contents, name="contents",
-                          title="Every page"),
-                PageRoute("94", handlers.names, name="names",
-                          title="Words you can key", keywords=("KEYWORDS",)),
-            ]
+        return Sextile(pages=list(standard_pages(history="92", contents="93", keywords="94")))
+
+    async def test_each_answers_at_the_number_it_was_given(self, app: Sextile) -> None:
+        assert await app.ask("92") is not None
+        assert await app.ask("93") is not None
+        assert await app.ask("94") is not None
+
+    def test_the_route_carries_the_framework_s_own_words(self, app: Sextile) -> None:
+        (history,) = (page for page in app.pages() if page.name == "history")
+        assert history.title == "Where you have been"
+        assert app.resolve("HISTORY") == PageAddress("92")
+
+    def test_a_page_left_out_is_not_routed(self) -> None:
+        app = Sextile(pages=list(standard_pages(history="92")))
+        assert app.address_for("history") == PageAddress("92")
+        assert [page.name for page in app.pages()] == ["history"]
+
+
+class TestReadershipPages:
+    async def test_they_read_the_log_when_it_is_there(self) -> None:
+        app = Sextile()
+        log = SqliteVisits.open(":memory:")
+        for factory in (handlers.recent, handlers.popular, handlers.callers):
+            page = await factory(held_in("visits"))(_asking(app, "96", visits=log))
+            assert page is not None
+
+    async def test_they_say_so_when_there_is_no_log(self) -> None:
+        page = await handlers.recent(held_in("visits"))(_asking(Sextile(), "96"))
+        assert page is not None
+        rows, _ = page.frames[0].frame.to_grid()
+        assert any("No log" in row for row in rows)
+
+    def test_standard_pages_routes_them_when_a_finder_is_given(self) -> None:
+        app = Sextile(
+            pages=list(
+                standard_pages(recent="96", popular="97", callers="98", visits=held_in("visits"))
+            )
         )
+        assert app.address_for("recent") == PageAddress("96")
+        assert app.address_for("callers") == PageAddress("98")
 
-    async def test_history_answers_at_the_service_s_number(
-        self, app: Sextile
-    ) -> None:
-        page = await app.ask("92")
+    def test_a_readership_page_without_a_finder_is_refused(self) -> None:
+        with pytest.raises(ValueError, match="visits"):
+            standard_pages(recent="96")
 
-        assert page is not None
 
-    async def test_contents_answers_at_the_service_s_number(
-        self, app: Sextile
-    ) -> None:
-        page = await app.ask("93")
-
-        assert page is not None
-
-    async def test_names_answers_at_the_service_s_number(
-        self, app: Sextile
-    ) -> None:
-        page = await app.ask("94")
-
-        assert page is not None
-
-    async def test_the_route_needs_no_name_of_its_own(self) -> None:
-        #  The handler's own name is the route's, as for any handler -- which
-        #  is what lets the line in the service's list stay short.
+class TestTheHandlersDirectly:
+    async def test_a_plain_handler_reaches_the_application_s_page(self) -> None:
         app = Sextile(pages=[PageRoute("92", handlers.history, title="Been")])
-
+        assert await app.ask("92") is not None
         assert app.address_for("history") == PageAddress("92")

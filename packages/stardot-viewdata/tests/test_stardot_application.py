@@ -754,7 +754,7 @@ class TestTheGuideDescribesTheServiceItIsPartOf:
     wrong. So none of it is written out.
     """
 
-    @pytest.mark.parametrize("name", ["logoff", "contents", "names"])
+    @pytest.mark.parametrize("name", ["logoff", "contents", "keywords"])
     async def test_the_numbers_it_gives_are_the_ones_the_router_builds(
         self, name: str, app: Sextile
     ) -> None:

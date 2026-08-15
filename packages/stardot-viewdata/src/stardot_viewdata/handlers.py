@@ -342,7 +342,7 @@ async def guide(request: PageRequest) -> Page:
             GuideRow(keyed(app.address_for("logoff")), "log off"),
             GuideRow(),
             GuideRow(keyed(app.address_for("contents")), "every page and its number"),
-            GuideRow(keyed(app.address_for("names")), "every word you can key"),
+            GuideRow(keyed(app.address_for("keywords")), "every word you can key"),
         ],
     )
 

@@ -442,20 +442,31 @@ shows directions, and `#` belongs in a list of keys to press.
 
 ## Built-in pages
 
-Three of the framework's own pages come as handlers, registered nowhere, so a
-service maps them into its own numbering or does without. Each is a handler
-already, so the mapping is one line:
+The framework builds several of its own pages — the history, the contents, the
+list of keywords, and three that read the visit log — and registers them
+nowhere: a service gives each a number or does without. `standard_pages` maps
+whichever it names into the service's numbering in one line, carrying the
+framework's own title, detail and keywords:
 
 ```python
-from sextile import handlers
+from sextile import standard_pages
 
-PageRoute("92", handlers.history, title="Where you have been", keywords=("HISTORY",))
-PageRoute("93", handlers.contents, title="Every page", keywords=("PAGES",))
-PageRoute("94", handlers.names, title="Words you can key", keywords=("KEYWORDS",))
+Sextile(pages=[
+    *my_pages,
+    *standard_pages(history="92", contents="93", keywords="94"),
+])
 ```
 
-Each calls the application method of the same name, so a service that wants to
-change what one shows overrides the method and keeps the route.
+The readership pages read the visit log, so they take a `Finder` for it — the
+same `held_in(name)` a service hands `record_visits`:
+
+```python
+*standard_pages(recent="96", popular="97", callers="98", visits=held_in("visits"))
+```
+
+Each calls the application method of the same name (`history_page`,
+`contents_page`, ...), so a service that wants to change what one shows
+overrides the method and keeps the route.
 
 Each is generated from what the framework already holds — where the caller has
 been, which patterns are registered, which words are aliased — so none can drift

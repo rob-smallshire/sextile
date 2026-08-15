@@ -15,15 +15,17 @@ Pages are built when they are reached and kept until the reader leaves, so `*00`
 sends what is already in hand and `*09` builds it again. That is the whole
 difference between the two commands, and it is the difference a reader wants
 when the board has moved on since they arrived.
+
+The session coordinates. Where the reader has been and the run of pages a menu
+offered are `sextile.session.navigation`; the bytes that bring the terminal's
+display up to date, and the little display state they depend on, are
+`sextile.session.screen`. What is left here is deciding, per command, which of
+those to reach for.
 """
 
-import copy
 import logging
-from dataclasses import dataclass
-from typing import Final
 
 from sextile.application import Neighbours, PageRequest, Sextile
-from sextile.forms import draw_form
 from sextile.keys import (
     HASH,
     NEXT_FRAME,
@@ -42,57 +44,11 @@ from sextile.session.commands import (
     Refresh,
     Select,
 )
-from sextile.viewdata.command_line import (
-    command_line_bytes,
-    footer_bytes,
-    incremental_bytes,
-)
+from sextile.session.navigation import History, _Sequence
+from sextile.session.screen import Screen
 from sextile.viewdata.frame import Frame
-from sextile.viewdata.hangup import hangup_bytes
-from sextile.viewdata.idle_warning import idle_warning_bytes, lit_cells
-from sextile.viewdata.repaint import (
-    NOTHING,
-    caret_bytes,
-    changed_rows,
-    rows_bytes,
-    typed_bytes,
-)
 
 _logger = logging.getLogger(__name__)
-
-#: How far back a reader can retrace their steps.
-HISTORY_LIMIT: Final = 32
-
-
-@dataclass(frozen=True)
-class _Sequence:
-    """The run of pages a menu offered, and where in it the reader is.
-
-    This is what makes "next" mean something: it is the next of whatever the
-    menu the reader came through was listing. Arrive by keying a page number and
-    there is no sequence, so nothing is offered.
-    """
-
-    destinations: tuple[PageAddress, ...]
-    position: int
-
-    @property
-    def next(self) -> PageAddress | None:
-        after = self.position + 1
-        return self.destinations[after] if after < len(self.destinations) else None
-
-    @property
-    def previous(self) -> PageAddress | None:
-        return self.destinations[self.position - 1] if self.position > 0 else None
-
-    def neighbours(self) -> Neighbours:
-        return Neighbours(previous=self.previous, next=self.next)
-
-    def moved_to(self, address: PageAddress) -> "_Sequence | None":
-        """The same sequence, repositioned, if it contains the destination."""
-        if address not in self.destinations:
-            return None
-        return _Sequence(self.destinations, self.destinations.index(address))
 
 
 class _PageFailed(Exception):
@@ -108,26 +64,15 @@ class _PageFailed(Exception):
         self.error = error
 
 
-@dataclass(frozen=True)
-class _Place:
-    """A page and the frame of it that was showing."""
-
-    address: PageAddress
-    frame_index: int
-
-
 class Session:
     """One terminal's conversation with a service."""
 
     def __init__(self, application: Sextile, *, start: PageAddress | None = None) -> None:
         self._application = application
         self._parser = CommandParser()
-        self._history: list[_Place] = []
+        self._history = History()
+        self._screen = Screen()
         self._finished = False
-        #  What the footer row is currently showing of a request being typed,
-        #  or "" when it is showing the page's own prompt. Kept so that a
-        #  keystroke which merely extends it can be sent as one byte.
-        self._displayed = ""
         self._address: PageAddress = start or application.home
         self._sequence: _Sequence | None = None
         self._state: dict[str, object] = {}
@@ -135,9 +80,6 @@ class Session:
         #  asked, and asking is something that has to be awaited.
         self._page: Page | None = None
         self._frame_index = 0
-        #  How much of the idle-warning bar is lit, or None when it is not
-        #  showing. Kept so an unchanged bar costs nothing on the wire.
-        self._warning_cells: int | None = None
 
     # -- where we are -------------------------------------------------------
 
@@ -189,14 +131,8 @@ class Session:
         return self._send()
 
     def hangup(self) -> bytes:
-        """Hand the terminal back, after the last frame has gone.
-
-        The reader is about to be talking to their modem again, and a terminal
-        with the cursor hidden under a full screen of somebody else's frame
-        gives them nothing to type at.
-        """
-        frame = self.current_frame()
-        return hangup_bytes(frame) if frame is not None else b""
+        """Hand the terminal back, after the last frame has gone."""
+        return self._screen.handback(self.current_frame())
 
     # -- the idle warning ---------------------------------------------------
     #
@@ -206,40 +142,23 @@ class Session:
     #
     #  Three things want that row: the page's own prompt, a request being typed,
     #  and this. The bar wins while it is up, and whichever of the other two
-    #  belongs there is put back when it goes.
+    #  belongs there is put back when it goes. The bar itself is the screen's;
+    #  the session only says when it should go up and come down.
 
     @property
     def warning_showing(self) -> bool:
-        return self._warning_cells is not None
+        return self._screen.warning_showing
 
     def warn(self, remaining: float) -> bytes | None:
         """Draw or update the warning bar, or None if the row would not change.
 
         ``remaining`` is the fraction of the warning period left.
-
-        The bar covers a request being typed, which shares the row. Nothing is
-        lost by that: what was keyed is held in the parser rather than on the
-        screen, and comes back the moment the reader touches anything. Leaving
-        them unwarned and then cutting them off mid-request would be the rudest
-        thing this service could do.
         """
-        cells = lit_cells(remaining)
-        if cells == self._warning_cells:
-            return None
-        self._warning_cells = cells
-        return idle_warning_bytes(remaining)
+        return self._screen.warn(remaining)
 
     def dismiss(self) -> bytes | None:
         """Put back whatever the row should show, or None if no bar was up."""
-        if self._warning_cells is None:
-            return None
-        self._warning_cells = None
-        entry = self._parser.entry
-        if entry:
-            self._displayed = entry
-            return command_line_bytes(entry)
-        frame = self.current_frame()
-        return footer_bytes(frame) if frame is not None else None
+        return self._screen.dismiss(self._parser.entry, self.current_frame())
 
     # -- being spoken to ----------------------------------------------------
 
@@ -264,7 +183,7 @@ class Session:
         #  navigates there -- digits accumulate, `*` cancels, DELETE rubs out --
         #  so every key can safely go on meaning what it always means, and the
         #  reader picks up where they left off.
-        swallowing = self._warning_cells is not None and not self._parser.entry
+        swallowing = self._screen.warning_showing and not self._parser.entry
         for command in self._parser.feed(data):
             if swallowing:
                 swallowing = False
@@ -274,45 +193,8 @@ class Session:
                 responses.append(reply)
             if self._finished:
                 break
-        self._show_entry(responses)
+        self._screen.echo(self._parser.entry, self._showing(), responses)
         return responses
-
-    def _show_entry(self, responses: list[bytes]) -> None:
-        """Keep the footer row showing whatever the reader is doing.
-
-        A request being typed replaces the footer; finishing or cancelling one
-        puts it back, and so does dismissing the idle warning. A whole frame
-        going out has the page's own footer in it already, so nothing more is
-        needed then.
-
-        A keystroke that only adds or removes a character changes the row by
-        a byte or three rather than repainting it, which is visible as a
-        flicker once the cursor is on.
-        """
-        entry = self._parser.entry
-        warned, self._warning_cells = self._warning_cells is not None, None
-        if entry:
-            #  A bar covering the command line makes the byte-at-a-time trick a
-            #  lie: what is on the row is not what was displayed before.
-            change = None if warned else incremental_bytes(entry, self._displayed)
-            responses.append(change or command_line_bytes(entry))
-        elif responses:
-            #  A whole frame went out, and it carries the page's own footer.
-            pass
-        elif self._displayed or warned:
-            frame = self.current_frame()
-            if frame is not None:
-                responses.append(footer_bytes(frame))
-                #  Putting the footer back begins by hiding the cursor, which
-                #  is right -- something is about to be drawn over the row it
-                #  was on. On a page with a field, it has to come back: a
-                #  reader who thought better of a page number is otherwise left
-                #  in a field with no cursor in it and nothing to say where
-                #  their next letter would go.
-                showing = self._showing()
-                if showing is not None and showing.form is not None:
-                    responses.append(caret_bytes(*showing.form.caret))
-        self._displayed = entry
 
     async def _act(self, command: Command) -> bytes | None:
         match command:
@@ -356,7 +238,9 @@ class Session:
             #  It exists and we could not draw it, which is a different thing to
             #  say and not the reader's doing. They stay where they are either
             #  way.
-            return await self._show(await self._application.failed(broke.request, broke.error))
+            return self._screen.first_frame(
+                await self._application.failed(broke.request, broke.error)
+            )
         if page is None:
             #  Say so, and leave the reader where they were. Silence would be
             #  indistinguishable from a line fault, and moving them to a page
@@ -385,51 +269,10 @@ class Session:
         if destination is not None:
             return await self._go_to(destination, self._sequence_towards(destination))
         if found.form is not None and found.form.accepts(key):
-            return await self._type(found, key)
+            return await self._screen.type_into(found, key)
         #  A key the frame does not offer does nothing. Guessing would take the
         #  reader somewhere they did not ask to go.
         return None
-
-    async def _type(self, showing: PageFrame, key: str) -> bytes | None:
-        """Let a form take a keypress, and send back only what it changed.
-
-        The frame is redrawn **in place**, so what the terminal is showing and
-        what the session holds stay the same thing: `*00#` sends the frame in
-        hand, and it has to be the frame with the reader's typing on it.
-
-        Only the form's own rows are compared, so a form cannot disturb the
-        page around it however wrong it is about its own contents. And only the
-        rows that differ are sent -- typing narrows a list of suggestions, so
-        the common keystroke leaves the top of it alone and costs forty bytes
-        rather than a hundred and twenty.
-        """
-        form = showing.form
-        assert form is not None, "only asked of a frame that has one"
-        was = copy.deepcopy(showing.frame)
-        caret = form.caret
-        await form.typed(key)
-        draw_form(showing.frame, form)
-        moved = changed_rows(was, showing.frame, form.rows)
-        #  The cursor is still where the last repaint left it, which is where
-        #  the next character goes. So if the only thing that changed is the
-        #  cell under it -- which is every keystroke that does not change what
-        #  is on offer, and most of them do not -- the whole repaint is that
-        #  one character, and the cursor need not even be moved back.
-        field = caret[0]
-        if moved == [field]:
-            typed = typed_bytes(was, showing.frame, field, at=caret[1])
-            if typed is not None:
-                return typed
-        if not moved:
-            #  A keystroke that draws nothing and still moves the cursor: a
-            #  space is a blank cell over a blank cell, so the frame comes out
-            #  identical and there are no rows to send. Sending nothing leaves
-            #  the cursor a cell behind where the form now thinks it is, and
-            #  every keystroke after it lands one cell out -- which is how
-            #  `ULAN BATOR` came to be typed with its space in the wrong place
-            #  and rubbed out leaving characters behind.
-            return caret_bytes(*form.caret) if form.caret != caret else NOTHING
-        return rows_bytes(showing.frame, moved, was=was, caret=form.caret)
 
     def _sequence_towards(self, destination: PageAddress) -> "_Sequence | None":
         """The run of pages the reader is walking, once they step into it."""
@@ -461,19 +304,13 @@ class Session:
             #  A reader who has typed something presses RETURN without being
             #  told to. Before the frames, because a page with a field on it is
             #  a page they are typing into rather than reading through.
-            was = copy.deepcopy(showing.frame)
             sending = showing.form.submit()
             if sending is not None:
                 return await self._go_to(sending, self._sequence_towards(sending))
-            #  It kept the reader here and may have moved the caret -- a form
-            #  of several fields finishes one and starts the next. So the frame
-            #  is redrawn and the cursor put where it now belongs, which
-            #  nothing else would do: the rows may not have changed at all.
-            draw_form(showing.frame, showing.form)
-            moved = changed_rows(was, showing.frame, showing.form.rows)
-            return rows_bytes(
-                showing.frame, moved, was=was, caret=showing.form.caret
-            ) or caret_bytes(*showing.form.caret)
+            #  It kept the reader here and may have moved the caret -- a form of
+            #  several fields finishes one and starts the next. The screen
+            #  redraws the form's rows and puts the cursor where it now belongs.
+            return self._screen.repaint_form(showing)
         if self._frame_index + 1 < len(self._page.frames):
             self._frame_index += 1
             return self._send()
@@ -493,12 +330,14 @@ class Session:
     async def _back(self) -> bytes | None:
         if not self._history:
             return None
-        place = self._history[-1]
+        place = self._history.last()
         #  Without the place being returned to: it is about to be popped.
         try:
             page = await self._build(place.address, None, self._been()[:-1])
         except _PageFailed as broke:
-            return await self._show(await self._application.failed(broke.request, broke.error))
+            return self._screen.first_frame(
+                await self._application.failed(broke.request, broke.error)
+            )
         if page is None:
             #  The page has gone since the reader was on it. Staying put is
             #  better than unwinding to somewhere they did not ask for.
@@ -515,7 +354,9 @@ class Session:
         try:
             page = await self._build(self._address, self._sequence, self._been())
         except _PageFailed as broke:
-            return await self._show(await self._application.failed(broke.request, broke.error))
+            return self._screen.first_frame(
+                await self._application.failed(broke.request, broke.error)
+            )
         if page is None:
             return None
         self._page = page
@@ -582,11 +423,10 @@ class Session:
 
     def _been(self) -> tuple[PageAddress, ...]:
         """Where the reader has been, oldest first, as the history stands."""
-        return tuple(place.address for place in self._history)
+        return self._history.been()
 
     def _remember(self) -> None:
-        self._history.append(_Place(self._address, self._frame_index))
-        del self._history[:-HISTORY_LIMIT]
+        self._history.remember(self._address, self._frame_index)
 
     # -- sending ------------------------------------------------------------
 
@@ -596,25 +436,11 @@ class Session:
     def _send(self) -> bytes:
         found = self._showing()
         assert found is not None, "a page always has the frame it is showing"
-        frame = found.frame.to_bytes()
-        if found.form is None:
-            return frame
-        #  A frame begins by hiding the cursor, which is right everywhere but
-        #  here: a reader who has arrived at a field needs to see where their
-        #  typing will go before they have typed anything. Without this the
-        #  caret appears only on the first repaint, which is to say only after
-        #  the reader has guessed correctly.
-        return frame + caret_bytes(*found.form.caret)
+        return self._screen.full_frame(found)
 
     async def _unknown(self, target: str) -> bytes:
         #  The reader stays where they are; the notice is shown over the way, so
         #  the request is theirs -- the page they are on -- and the target is
         #  what they keyed that led nowhere.
         request = self._request(self._address)
-        return await self._show(await self._application.not_found(request, target))
-
-    async def _show(self, page: Page) -> bytes:
-        """Send a page without going to it: something said, not somewhere gone."""
-        first = page.frame(0)
-        assert first is not None, "a page must have at least one frame"
-        return first.frame.to_bytes()
+        return self._screen.first_frame(await self._application.not_found(request, target))

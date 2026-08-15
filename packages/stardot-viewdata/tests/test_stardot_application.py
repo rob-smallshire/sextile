@@ -654,9 +654,9 @@ class TestEveryPage:
         #  than none, and this one is built from the registrations so it cannot.
         #  Parameterised numbers are shown as patterns, so only the plain ones
         #  can be built and looked up.
-        for about in app.pages():
+        for about in app.routes():
             if "<" not in about.keyed:
-                assert app.route(PageAddress(about.keyed)) is not None
+                assert app.match(PageAddress(about.keyed)) is not None
 
 
 class TestTheTitleFrameSaysWhatTheServiceDoes:
@@ -679,7 +679,7 @@ class TestTheTitleFrameSaysWhatTheServiceDoes:
     ) -> None:
         shown = text_of(await page_at(app, "0"))
         for name in ("main", "help"):
-            about = app.page_info(name)
+            about = app.route(name)
             assert about is not None
             assert about.title.lower() in shown
 
@@ -719,9 +719,9 @@ class TestAPageIsHeadedWithWhatItWasRegisteredAs:
         self, digits: str, app: Sextile
     ) -> None:
         page = await page_at(app, digits)
-        found = app.route(PageAddress(digits))
+        found = app.match(PageAddress(digits))
         assert found is not None and found.name is not None
-        about = app.page_info(found.name)
+        about = app.route(found.name)
         assert about is not None
         assert about.title.upper() in text_of(page)
 

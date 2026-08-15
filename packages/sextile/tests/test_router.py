@@ -108,7 +108,7 @@ class TestAServiceBuiltFromARouter:
 
     def test_the_service_carries_the_declared_words(self) -> None:
         app = Sextile(pages=self._router())
-        (page_info,) = app.pages()
+        (page_info,) = app.routes()
         assert page_info.title == "By day"
         assert app.resolve("WHO") == PageAddress("3")
 
@@ -121,7 +121,7 @@ class TestAServiceBuiltFromARouter:
 
         app = Sextile(pages=router)
         assert app.address_for("post", post_id=489493) == PageAddress("82489493")
-        assert app.route(PageAddress("82489493")) is not None
+        assert app.match(PageAddress("82489493")) is not None
 
     def test_a_page_with_no_title_is_routed_but_not_advertised(self) -> None:
         router = PageRouter()
@@ -131,8 +131,8 @@ class TestAServiceBuiltFromARouter:
             return await _blank(request)
 
         app = Sextile(pages=router)
-        assert app.route(PageAddress("90")) is not None
-        assert app.pages() == ()
+        assert app.match(PageAddress("90")) is not None
+        assert app.routes() == ()
 
 
 class TestTheTwoDecoratorsCannotDiverge:

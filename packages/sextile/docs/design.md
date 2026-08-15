@@ -271,8 +271,8 @@ point: a service that names each page in its menu, again wherever one is
 listed, and again in its own guide has three copies which do not stay in step,
 and that is exactly what Stardot had.
 
-`Sextile.title_for` and `Sextile.label_for` read them, `Sextile.pages()` lists
-them, and `Sextile.page_info(name)` fetches one. **A page given no title is not
+`Sextile.title_for` and `Sextile.label_for` read them, `Sextile.routes()`
+lists them, and `Sextile.route(name)` fetches one. **A page given no title is not
 advertised** — which is how a title frame or a logoff page stays off the
 contents without a flag of its own.
 
@@ -332,7 +332,7 @@ What it lists are addresses, and what it *calls* them comes from
 "One post 489493" — so the labels come out in the application's vocabulary
 without the framework knowing what a service is about. A route whose number
 carries a field says better words with `PageRoute(..., label=...)`, and
-`Sextile.route(address)` is the numbering read backwards for anything else that
+`Sextile.match(address)` is the numbering read backwards for anything else that
 needs it.
 
 Two details that took a live walk to get right. Keys run 1–9 on *every* frame,

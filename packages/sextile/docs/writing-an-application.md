@@ -333,10 +333,10 @@ than shown — a menu offering it, the history, the contents page. Declared once
 here, they need no second copy downstream:
 
 ```python
-app.page_info("users").title             # "By user"
+app.route("users").title             # "By user"
 app.title_for(PageAddress("5"))          # "By user"
 app.label_for(PageAddress("5"))          # "By user", or "Post 489493" for a field page
-app.pages()                              # every page that has a title
+app.routes()                             # every page that has a title
 ```
 
 **A page with no title is not advertised.** A title is how a service marks a

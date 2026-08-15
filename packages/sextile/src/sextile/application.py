@@ -153,7 +153,7 @@ class Sextile:
         name = route.name or route.handler.__name__
         self._router.add(route.pattern, route.handler, name=name)
         if route.title:
-            #  What `pages()` and `page_info` read back: the route as declared,
+            #  What `routes()` and `route()` read back: the route as declared,
             #  its name resolved and its keyed form read off the numbering it
             #  has just been registered into.
             self._pages[name] = replace(
@@ -209,7 +209,7 @@ class Sextile:
             label=label,
         )
 
-    def page_info(self, name: str) -> PageRoute | None:
+    def route(self, name: str) -> PageRoute | None:
         """The registered route named `name`, with its `keyed` form filled in.
 
         None where no advertised page was registered under `name`: a page given
@@ -233,14 +233,14 @@ class Sextile:
         Raises:
             ValueError: If no page is registered under `name`.
         """
-        about = self.page_info(name)
+        about = self.route(name)
         if about is None:
             raise ValueError(f"{name!r} is not a page that says what it is")
         return MenuItem(
             text=about.title, detail=about.detail, destination=self.address_for(name)
         )
 
-    def pages(self) -> tuple[PageRoute, ...]:
+    def routes(self) -> tuple[PageRoute, ...]:
         """Every page this service advertises, in the order it registered them.
 
         Registration order rather than the router's match order, which would put
@@ -408,7 +408,7 @@ class Sextile:
         """The address a named route answers, built from its own pattern."""
         return self._router.address_for(name, **params)
 
-    def route(self, address: PageAddress) -> Match[Handler] | None:
+    def match(self, address: PageAddress) -> Match[Handler] | None:
         """What answers this address, and what its pattern captured.
 
         The numbering read backwards, for an application that has an address and
@@ -424,7 +424,7 @@ class Sextile:
         upper-cased: the layout shouts it as it draws the heading, and a listing
         reads it as it is.
         """
-        found = self.route(address)
+        found = self.match(address)
         about = self._pages.get(found.name) if found and found.name else None
         return about.title if about and about.title else None
 
@@ -439,7 +439,7 @@ class Sextile:
         With no `label`, the registered title followed by the field values, or
         the keyed number for a page that is unrouted or untitled.
         """
-        found = self.route(address)
+        found = self.match(address)
         if found is None or found.name is None:
             return keyed(address)
         about = self._pages.get(found.name)
@@ -640,7 +640,7 @@ class Sextile:
         """
         return contents_page(
             request=request,
-            pages=self.pages(),
+            pages=self.routes(),
             title=(self.title_for(request.address) or contents.TITLE).upper(),
         )
 

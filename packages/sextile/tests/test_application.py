@@ -371,13 +371,13 @@ class TestAskingWhatAnAddressIs:
         async def post(request: PageRequest, post_id: int) -> Page:
             return one_frame()
 
-        found = app.route(PageAddress("82489493"))
+        found = app.match(PageAddress("82489493"))
         assert found is not None
         assert found.name == "post"
         assert found.params == {"post_id": 489493}
 
     def test_an_address_with_no_route_gives_nothing(self) -> None:
-        assert Sextile().route(PageAddress("6")) is None
+        assert Sextile().match(PageAddress("6")) is None
 
 
 class TestLabellingAPage:
@@ -453,7 +453,7 @@ class TestSayingWhatAPageIsAtRegistration:
         async def users(request: PageRequest) -> Page:
             return one_frame()
 
-        found = app.page_info("users")
+        found = app.route("users")
         assert found is not None
         assert found.title == "By user"
 
@@ -464,7 +464,7 @@ class TestSayingWhatAPageIsAtRegistration:
         async def users(request: PageRequest) -> Page:
             return one_frame()
 
-        found = app.page_info("users")
+        found = app.route("users")
         assert found is not None
         assert found.detail == "who registered"
 
@@ -496,7 +496,7 @@ class TestSayingWhatAPageIsAtRegistration:
         assert app.label_for(PageAddress("5")) == "users"
 
     def test_asking_about_a_page_there_is_not(self) -> None:
-        assert Sextile().page_info("nothing") is None
+        assert Sextile().route("nothing") is None
 
 
 class TestListingThePages:
@@ -515,7 +515,7 @@ class TestListingThePages:
         return app
 
     def test_titled_pages_are_listed(self) -> None:
-        assert [page.name for page in self.build().pages()] == [
+        assert [page.name for page in self.build().routes()] == [
             "main",
             "users",
             "user",
@@ -524,16 +524,16 @@ class TestListingThePages:
     def test_a_page_with_no_title_is_left_out(self) -> None:
         #  Giving one a title is how a service says it may be advertised, so a
         #  logoff page or a title frame stays off the list without a flag.
-        assert "logoff" not in [page.name for page in self.build().pages()]
+        assert "logoff" not in [page.name for page in self.build().routes()]
 
     def test_each_carries_the_number_a_reader_would_key(self) -> None:
-        listed = {page.name: page.keyed for page in self.build().pages()}
+        listed = {page.name: page.keyed for page in self.build().routes()}
         assert listed["users"] == "5"
         assert listed["user"] == "52<user_id>"
 
     def test_they_come_in_the_order_they_were_registered(self) -> None:
         #  Not the order the router tries them in, which is about matching.
-        assert [page.keyed for page in self.build().pages()] == ["1", "5", "52<user_id>"]
+        assert [page.keyed for page in self.build().routes()] == ["1", "5", "52<user_id>"]
 
 
 class TestWhereZeroGoes:
@@ -643,7 +643,7 @@ class TestFieldShapesOfAnApplicationsOwn:
             pages=[PageRoute("7{count:tens}", counted, name="counted")],
         )
         assert app.address_for("counted", count=420) == PageAddress("742")
-        assert app.route(PageAddress("742")) is not None
+        assert app.match(PageAddress("742")) is not None
 
     def test_registering_one_afterwards_still_works(self) -> None:
         #  For a service built round a module-level application, where the
@@ -655,7 +655,7 @@ class TestFieldShapesOfAnApplicationsOwn:
         async def paired(request: PageRequest, n: int) -> Page:
             return Page(frames=(PageFrame(frame=Canvas().frame),))
 
-        assert app.route(PageAddress("842")) is not None
+        assert app.match(PageAddress("842")) is not None
 
 
 class TestWhatAServiceHoldsWhileItRuns:
@@ -820,7 +820,7 @@ class TestSayingAPagesKeywordsWhereItIsDeclared:
         app = Sextile()
         app.page("90", name="goodbye", keywords=("BYE",))(_nothing)
         assert app.resolve("BYE") == PageAddress("90")
-        assert app.page_info("goodbye") is None
+        assert app.route("goodbye") is None
 
 
 class TestDeclaringPagesAsData:
@@ -838,7 +838,7 @@ class TestDeclaringPagesAsData:
 
     def test_a_page_given_to_the_constructor_answers(self) -> None:
         app = Sextile(pages=[PageRoute("1", _nothing, name="main")])
-        assert app.route(PageAddress("1")) is not None
+        assert app.match(PageAddress("1")) is not None
 
     def test_it_takes_the_handler_s_own_name_unless_told_one(self) -> None:
         async def users(request: PageRequest) -> Page:
@@ -854,7 +854,7 @@ class TestDeclaringPagesAsData:
                           detail="browse by name")
             ]
         )
-        about = app.page_info("who")
+        about = app.route("who")
         assert about is not None
         assert (about.title, about.detail) == ("By user", "browse by name")
 
@@ -873,7 +873,7 @@ class TestDeclaringPagesAsData:
             converters={"tens": tens},
             pages=[PageRoute("7{count:tens}", _nothing, name="counted")],
         )
-        assert app.route(PageAddress("742")) is not None
+        assert app.match(PageAddress("742")) is not None
 
     def test_the_decorator_still_works_beside_it(self) -> None:
         app = Sextile(pages=[PageRoute("1", _nothing, name="main")])
@@ -882,11 +882,11 @@ class TestDeclaringPagesAsData:
         async def about(request: PageRequest) -> Page:
             return Page(frames=(PageFrame(frame=Canvas().frame),))
 
-        assert app.route(PageAddress("1")) is not None
-        assert app.route(PageAddress("9")) is not None
+        assert app.match(PageAddress("1")) is not None
+        assert app.match(PageAddress("9")) is not None
 
     def test_a_service_declaring_nothing_is_still_a_service(self) -> None:
-        assert Sextile().pages() == ()
+        assert Sextile().routes() == ()
 
 
 class TestMiddleware:

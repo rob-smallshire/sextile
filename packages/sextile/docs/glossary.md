@@ -30,7 +30,9 @@ as "was X" so a reader coming from older code or docs can find it.
   `DEFAULT_FURNITURE`. A furnishing is told a `FrameContext` (was `Summary`);
   its edge is `Edge.TOP`/`Edge.BOTTOM` (was `Edge.FOOT`).
 - **route** — a pattern bound to a handler, carrying the page's name and
-  keywords. `PageRoute`.
+  keywords. `PageRoute`. `app.route(name)` (was `page_info`) is the declared
+  route by name, `app.routes()` (was `pages()`) all of them, and
+  `app.match(address)` (was `route(address)`) what a page number matched.
 - **router** — collects the routes a module of handlers declares with
   `@router.page`, spread into a service as `Sextile(pages=[*router, ...])`.
   `PageRouter` (replaced the free `@page` decorator and `routes_in`).

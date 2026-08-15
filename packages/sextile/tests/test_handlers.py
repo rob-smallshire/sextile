@@ -35,14 +35,14 @@ class TestStandardPages:
         assert await app.fetch("94") is not None
 
     def test_the_route_carries_the_framework_s_own_words(self, app: Sextile) -> None:
-        (history,) = (page for page in app.pages() if page.name == "history")
+        (history,) = (page for page in app.routes() if page.name == "history")
         assert history.title == "Where you have been"
         assert app.resolve("HISTORY") == PageAddress("92")
 
     def test_a_page_left_out_is_not_routed(self) -> None:
         app = Sextile(pages=list(standard_pages(history="92")))
         assert app.address_for("history") == PageAddress("92")
-        assert [page.name for page in app.pages()] == ["history"]
+        assert [page.name for page in app.routes()] == ["history"]
 
 
 class TestReadershipPages:

@@ -10,9 +10,9 @@ of a row rather than twice.
 
 Rows are independent -- each begins in alpha, white, contiguous graphics -- so a
 frame composition is a row composition done for each row, and nothing here
-concerns the frame as a whole. This module decides *where* things go; what
-colour they come out is `viewdata.attributes`, which it drives once a row's runs
-and panels are placed.
+concerns the frame as a whole. It settles *where* things go; the colour they
+come out in is `viewdata.attributes`, which it drives once a row's runs and
+panels are placed.
 """
 
 from collections.abc import Sequence
@@ -57,18 +57,16 @@ __all__ = [
 
 
 class Align(Enum):
-    """Where to put something along an axis, for a caller that would rather not count.
+    """Where to put something along an axis, without counting cells.
 
     `START` and `END` are spelled for the axis: the left or right edge where the
     axis is a row's columns, the top or bottom where it is the frame's rows.
-    Spelling them so rather than `LEFT`/`RIGHT` is what lets one enum place a
-    thing across a row and down a frame without `LEFT` having to mean "top".
+    Naming them for the axis rather than `LEFT`/`RIGHT` lets one enum place a
+    thing across a row and down a frame, without `LEFT` having to mean "top".
 
-    Given instead of a coordinate because centring is accounting about
-    attributes: what a style costs in cells decides whether the middle is
-    reachable at all, and that accounting is what a composition is for. A caller
-    doing it must know the cost before the coordinate, and three callers who did
-    came out a cell and a half apart.
+    Passed instead of a coordinate because placing at the middle depends on what
+    the row's attributes cost in cells, which the composition works out; a caller
+    computing the coordinate would have to find that cost first.
     """
 
     START = "start"

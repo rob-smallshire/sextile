@@ -2,15 +2,14 @@
 
 A pattern is literal digits and named fields. `82{post_id:int}` answers every
 page number beginning 82 and hands the rest over as `post_id`, so a page builder
-is written in terms of the post it is showing rather than in terms of the digits
-that named it. The scheme then lives in one place, and `address_for` reads it
-backwards, which is what stops a page number being respelled at every site that
-links to one.
+is written in terms of the post it shows rather than the digits that named it.
+The scheme lives in one place, and `address_for` builds an address from a
+pattern and named values, which stops a page number being respelled at every
+site that links to one.
 
 Because a viewdata request is terminated -- `*8#` and `*82489493#` are
 unambiguously different -- page numbers need not be prefix-free, only distinct.
-That is what lets fields vary in width and stay short, and it is the whole
-reason this is not simply a dictionary of numbers.
+That is what lets fields vary in width and stay short.
 
 Two rules keep matching predictable:
 
@@ -24,8 +23,8 @@ can only be told apart if all but the last has a width known in advance.
 `{year:int(4)}{month:int(2)}` is fine; two bare `int` fields running together
 are refused at registration rather than matched arbitrarily.
 
-Nothing here knows what a page is. The router maps addresses to targets, and
-`sextile.application` decides that a target is something that builds a page.
+This module maps addresses to targets; `sextile.application` decides that a
+target builds a page.
 """
 
 import re
@@ -117,11 +116,10 @@ DATE: Final = Converter(field_pattern=r"[0-9]{8}", width=8, parse=_to_date, form
 def fixed_integer(width: int) -> Converter:
     """A whole number written in exactly ``width`` digits, padded with zeros.
 
-    The leading-zero rule inverts here, and for the same reason it exists. A
-    variable-width field refuses a leading zero because `0042` and `42` would be
-    two numbers for one page; a fixed-width field *requires* the padding,
-    because with the width settled there is again only one spelling of each
-    value.
+    The leading-zero rule inverts here. A variable-width field refuses a leading
+    zero because `0042` and `42` would be two numbers for one page; a fixed-width
+    field *requires* the padding, because with the width settled each value again
+    has one spelling.
 
     Fixed widths are what let fields sit next to one another. A page number has
     no separators, so two fields can only be told apart if all but the last is
@@ -148,9 +146,8 @@ def _padded(value: object, width: int) -> str:
 type ConverterFactory = Callable[[str | None], Converter]
 """How a converter is made from whatever was written in its brackets.
 
-Given `None` where the pattern named the converter with no brackets at all, so
-that `int` and `int()` are not the same thing: the second is somebody who meant
-to say a width and did not.
+Given `None` when the pattern named the converter with no brackets, so `int` and
+`int()` differ: `int()` is a width omitted by mistake, and is rejected.
 """
 
 
@@ -199,8 +196,7 @@ class Route[T]:
         """The pattern as a reader would see it: `82<post_id>`.
 
         For a page that lists pages. The converter is left out: what a field
-        accepts is the router's business, and what the reader has in their hand
-        is a post number.
+        accepts is internal, and the reader keys only the value.
         """
         return "".join(
             part if isinstance(part, str) else f"<{part.name}>" for part in self.parts
@@ -263,10 +259,8 @@ class Router[T]:
     def alias(self, keyword: str, address: str | PageAddress) -> None:
         """Let ``keyword`` be keyed in place of a page number.
 
-        Prestel was almost entirely numeric, but other viewdata services took
-        keywords and there is no reason to be bound by Prestel's database
-        conventions. `*MAIN#` is easier to remember than `*1#` and costs
-        nothing to offer beside it.
+        `*MAIN#` is easier to remember than `*1#` and costs nothing to offer
+        beside it. Prestel was almost entirely numeric; viewdata need not be.
         """
         wanted = keyword.strip().upper()
         if not wanted:
@@ -288,8 +282,8 @@ class Router[T]:
     def resolve(self, target: str) -> PageAddress:
         """The page a typed request names, whether by number or by keyword.
 
-        Says what the reader meant. Whether anything answers it is the next
-        question, and has the same answer for keywords and numbers alike.
+        Returns the address the reader meant. Whether anything answers it is a
+        separate question, the same for keywords and numbers.
         """
         typed = target.strip()
         if typed.isascii() and typed.isdigit():

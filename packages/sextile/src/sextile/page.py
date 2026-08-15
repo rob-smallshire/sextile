@@ -1,15 +1,9 @@
-"""What an application hands back.
+"""The value an application returns: a page of one or more frames.
 
-A page is more than a list of frames. On a menu, pressing a digit goes
-somewhere, and where it goes depends on which frame is showing -- frame b of a
-listing offers a different nine choices from frame a. So the choices belong
-to the frame, not to the page. That is the whole reason this type exists rather
-than an application simply returning frames: the session needs to know what `3`
-means right now.
-
-A page does not carry its own number. The address is what the reader asked for
-and the session is already holding it; a page that named itself as well would be
-one more thing that could disagree.
+Each `PageFrame` carries its own key-to-destination mapping, because the
+destination of a digit depends on which frame is showing: frame b of a listing
+offers different choices from frame a. A page does not carry its own address;
+the session holds what the reader asked for.
 """
 
 from collections.abc import Mapping
@@ -30,32 +24,30 @@ class PageFrame:
     frame: Frame
 
     choices: Mapping[str, PageAddress] = field(default_factory=dict)
-    """Keys that go to another page. Keyed by character rather than by digit so
-    that a page can offer `N` for next or `R` for reply without this type
-    changing."""
+    """Keys that lead to another page, keyed by character rather than digit so a
+    page can offer `N` for next or `R` for reply."""
 
     moves: frozenset[str] = frozenset()
-    """Keys that move within this page, to another of its frames. Kept apart
-    from the choices because they name no destination: the session moves within
-    the page it is already showing."""
+    """Keys that move to another frame of this page. Separate from `choices`
+    because they name no destination; the session stays on the page already
+    showing."""
 
     form: "Form | None" = None
-    """A field on this frame that the reader types into, if it has one.
+    """A field on this frame that the reader types into, or None.
 
-    A form answers a keypress by redrawing part of the frame rather than by
-    going anywhere, which is the one thing a viewdata page could not previously
-    do. Its digits lead somewhere and change as the reader types, so
-    `destination` asks it before the frame's own fixed choices -- and the
-    session then treats what comes back exactly as it treats a digit on a menu.
+    A form answers a keypress by redrawing part of the frame rather than leading
+    elsewhere. Its digits change as the reader types, so `destination` consults
+    it before the frame's fixed `choices`; the session then treats the result as
+    it treats a digit on a menu.
     """
 
     def destination(self, key: str) -> PageAddress | None:
         """Where a key leads, or None if it leads nowhere here.
 
-        A form's choices come first and shadow the frame's own, since they are
-        the ones that reflect what the reader has just typed. A frame carrying
-        a form should not offer a fixed digit as well; if it does, the form
-        wins while it has something to offer.
+        A form's choices are consulted first and shadow the frame's fixed
+        `choices`, since they reflect what the reader has just typed. A frame
+        carrying a form should not also offer a fixed digit; if it does, the
+        form's choice wins while it has one.
         """
         if self.form is not None:
             found = self.form.choices().get(key)
@@ -79,17 +71,14 @@ class Page:
     frames: tuple[PageFrame, ...]
 
     hang_up: bool = False
-    """Whether the line should drop once this page has been shown. A framework
-    that knew which number meant goodbye would be a framework with an opinion
-    about numbering, so the page says so instead."""
+    """Whether the line should drop once this page has been shown. Which page
+    ends the call is the application's choice, not the framework's."""
 
     follows: PageAddress | None = None
     """Where `#` leads once this page's frames have run out.
 
-    Prestel's `#` advanced through a route as well as through the frames of one
-    long page, and some pages are nothing but an invitation to press it -- a
-    title frame, or the last page of a guide. Without this they are dead ends
-    under the one key a viewdata reader tries first."""
+    A title frame or the last page of a guide is an invitation to press `#`;
+    without this they would be dead ends under that key."""
 
     def __post_init__(self) -> None:
         if not self.frames:
@@ -102,9 +91,9 @@ class Page:
         Across all frames, so a menu's ninth choice is followed by the first of
         its next frame. This is the sequence the next and previous keys walk.
 
-        Only the digits, and not 0: the way back to the index is on every page,
-        and counting it would make `next` mean something other than what the
-        menu appeared to offer.
+        Only the digit keys, and not `0`: the way back to the index is on every
+        page, and including it would make `next` mean something other than what
+        the menu offered.
         """
         seen: list[PageAddress] = []
         for page_frame in self.frames:

@@ -79,10 +79,10 @@ Source docstrings + comments (src/sextile):
 - [ ] keys.py
 - [ ] layout.py
 - [ ] middleware.py
-- [ ] page.py
+- [x] page.py  (source-docstring register sample)
 - [ ] pages/ (contents, guidance, history, names, readership)
 - [ ] requests.py
-- [ ] routing.py
+- [x] routing.py
 - [ ] server.py
 - [ ] session/ (commands.py, session.py)
 - [ ] testing.py

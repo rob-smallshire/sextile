@@ -12,8 +12,8 @@ from datetime import UTC, date, datetime, timedelta
 import pytest
 
 from calendar_viewdata import build_application
-from sextile import Neighbours, Page, PageAddress, Sextile, UnknownPageError
-from sextile.testing import text_of
+from sextile import Neighbours, PageAddress, Sextile, UnknownPageError
+from sextile.testing import fetch, text_of
 
 #: A Sunday, so a week boundary falls where it can be seen.
 WHEN = datetime(2026, 8, 2, 14, 30, 15, tzinfo=UTC)
@@ -25,14 +25,6 @@ async def app() -> AsyncIterator[Sextile]:
     await service.startup()
     yield service
     await service.shutdown()
-
-
-async def page_at(app: Sextile, digits: str, neighbours: Neighbours | None = None) -> Page:
-    #  `ask` assembles the request as a session would -- with what the service
-    #  holds, and the service itself -- so a test need not remember either.
-    page = await app.fetch(digits, neighbours=neighbours)
-    assert page is not None, f"*{digits}# is not a page here"
-    return page
 
 
 class TestThePages:
@@ -51,13 +43,13 @@ class TestThePages:
         assert await app.fetch(digits) is None
 
     async def test_the_index_says_what_day_it_is(self, app: Sextile) -> None:
-        assert "Sunday 02 August 2026" in text_of(await page_at(app, "1"))
+        assert "Sunday 02 August 2026" in text_of(await fetch(app, "1"))
 
     async def test_the_time_is_shown_to_the_second(self, app: Sextile) -> None:
-        assert "14:30:15" in text_of(await page_at(app, "2"))
+        assert "14:30:15" in text_of(await fetch(app, "2"))
 
     async def test_a_month_is_drawn_as_a_grid(self, app: Sextile) -> None:
-        shown = text_of(await page_at(app, "3"))
+        shown = text_of(await fetch(app, "3"))
         assert "AUGUST 2026" in shown
         #  August 2026 begins on a Saturday and has 31 days.
         assert "31" in shown
@@ -72,53 +64,55 @@ class TestMovingAboutTheYear:
     async def test_a_month_offers_the_one_before_and_the_one_after(
         self, app: Sextile
     ) -> None:
-        page = await page_at(app, "3220260802")
+        page = await fetch(app, "3220260802")
         assert page.frames[0].destination("A") == PageAddress("3220260701")
         assert page.frames[0].destination("D") == PageAddress("3220260901")
 
     async def test_stepping_back_past_january_lands_in_december(
         self, app: Sextile
     ) -> None:
-        page = await page_at(app, "3220260115")
+        page = await fetch(app, "3220260115")
         assert page.frames[0].destination("A") == PageAddress("3220251201")
 
     async def test_stepping_on_past_december_lands_in_january(
         self, app: Sextile
     ) -> None:
-        page = await page_at(app, "3220261215")
+        page = await fetch(app, "3220261215")
         assert page.frames[0].destination("D") == PageAddress("3220270101")
 
     async def test_a_day_leads_to_its_own_month(self, app: Sextile) -> None:
-        page = await page_at(app, "4220260802")
+        page = await fetch(app, "4220260802")
         assert page.frames[0].destination("1") == PageAddress("3220260802")
 
 
 class TestTheDaysToCome:
     async def test_the_menu_begins_today(self, app: Sextile) -> None:
-        page = await page_at(app, "4")
+        page = await fetch(app, "4")
         assert page.destinations[0] == PageAddress("4220260802")
 
     async def test_it_runs_across_several_frames(self, app: Sextile) -> None:
         #  Twenty-eight days will not fit nine to a frame.
-        assert len((await page_at(app, "4")).frames) == 4
+        assert len((await fetch(app, "4")).frames) == 4
 
     async def test_the_sequence_runs_on_across_frames(self, app: Sextile) -> None:
-        page = await page_at(app, "4")
+        page = await fetch(app, "4")
         assert page.destinations[9] == PageAddress("4220260811")
 
     async def test_a_day_reached_by_number_offers_no_neighbours(
         self, app: Sextile
     ) -> None:
-        page = await page_at(app, "4220260802")
+        page = await fetch(app, "4220260802")
         assert page.frames[0].destination("D") is None
 
     async def test_a_day_reached_through_the_menu_offers_them(
         self, app: Sextile
     ) -> None:
-        page = await page_at(
+        page = await fetch(
             app,
             "4220260802",
-            Neighbours(previous=PageAddress("4220260801"), next=PageAddress("4220260803")),
+            neighbours=Neighbours(
+                previous=PageAddress("4220260801"), next=PageAddress("4220260803")
+            ),
         )
         assert page.frames[0].destination("D") == PageAddress("4220260803")
         assert page.frames[0].destination("A") == PageAddress("4220260801")
@@ -138,18 +132,18 @@ class TestSayingWhenThingsAre:
     async def test_a_day_says_how_far_off_it_is(
         self, day: date, expected: str, app: Sextile
     ) -> None:
-        page = await page_at(app, f"42{day:%Y%m%d}")
+        page = await fetch(app, f"42{day:%Y%m%d}")
         assert expected in text_of(page)
 
     async def test_a_day_says_where_it_falls_in_the_year(
         self, app: Sextile
     ) -> None:
-        shown = text_of(await page_at(app, "4220260802"))
+        shown = text_of(await fetch(app, "4220260802"))
         assert "Day 214 of 365" in shown
         assert "Week 31" in shown
 
     async def test_a_leap_year_has_a_day_more(self, app: Sextile) -> None:
-        assert "of 366" in text_of(await page_at(app, "4220240301"))
+        assert "of 366" in text_of(await fetch(app, "4220240301"))
 
 
 class TestNamedJumps:
@@ -169,11 +163,11 @@ class TestNamedJumps:
 
 class TestRingingOff:
     async def test_the_goodbye_page_drops_the_line(self, app: Sextile) -> None:
-        assert (await page_at(app, "90")).hang_up
+        assert (await fetch(app, "90")).hang_up
 
     async def test_no_other_page_does(self, app: Sextile) -> None:
         for digits in ["1", "2", "3", "4", "9"]:
-            assert not (await page_at(app, digits)).hang_up
+            assert not (await fetch(app, digits)).hang_up
 
 
 class TestTheClock:
@@ -183,8 +177,8 @@ class TestTheClock:
         moments = iter([WHEN, WHEN + timedelta(hours=1)])
         app = build_application(now=lambda: next(moments))
         await app.startup()
-        first = text_of(await page_at(app, "2"))
-        second = text_of(await page_at(app, "2"))
+        first = text_of(await fetch(app, "2"))
+        second = text_of(await fetch(app, "2"))
         assert "14:30:15" in first
         assert "15:30:15" in second
 
@@ -192,7 +186,7 @@ class TestTheClock:
 class TestEveryPageOffersTheWayBack:
     async def test_zero_returns_to_the_index(self, app: Sextile) -> None:
         for digits in ["1", "2", "3", "3220260802", "4", "4220260802", "9"]:
-            page = await page_at(app, digits)
+            page = await fetch(app, digits)
             for frame in page.frames:
                 assert frame.destination("0") == PageAddress("1")
 
@@ -201,7 +195,7 @@ class TestEveryPageOffersTheWayBack:
     ) -> None:
         #  There is no coming back from it, so a key saying otherwise would do
         #  nothing -- and a frame names only the keys that do something.
-        page = await page_at(app, "90")
+        page = await fetch(app, "90")
         assert page.frames[0].choices == {}
 
 
@@ -213,11 +207,11 @@ class TestThePagesThatComeFree:
     """
 
     async def test_where_you_have_been(self, app: Sextile) -> None:
-        page_shown = await page_at(app, "92")
+        page_shown = await fetch(app, "92")
         assert "WHERE YOU HAVE BEEN" in text_of(page_shown)
 
     async def test_every_page(self, app: Sextile) -> None:
-        shown = text_of(await page_at(app, "93"))
+        shown = text_of(await fetch(app, "93"))
         assert "The days to come" in shown
         assert "*42<day>#" in shown
 
@@ -227,14 +221,14 @@ class TestThePagesThatComeFree:
         assert app.label_for(PageAddress("4")) == "The days to come"
 
     async def test_the_words_you_can_key(self, app: Sextile) -> None:
-        shown = text_of(await page_at(app, "94"))
+        shown = text_of(await fetch(app, "94"))
         assert "*MONTH#" in shown
         assert "This month" in shown
 
     async def test_the_word_list_is_generated_and_cannot_drift(
         self, app: Sextile
     ) -> None:
-        shown = text_of(await page_at(app, "94"))
+        shown = text_of(await fetch(app, "94"))
         for word in app.keywords():
             assert f"*{word}#" in shown
 

@@ -59,7 +59,7 @@ application in its first few lines.
 
 ### `sextile.formatting` — sequences laid out as parts
 
-    Formatter  RowFormatter              to subclass
+    SequencePart  RowSequencePart        to subclass
     Menu  Listing  Figures  Lines  Prose  the shapes
     Entry  MenuItem                       what a shape is given
 
@@ -247,7 +247,7 @@ should have been exported and was not. One was API behind an internal path,
 `guidance.Key`, now `GuideRow` and exported. The last was the interesting one
 and took the longest: three services drawing furniture and composing footers by
 hand, for want of any way to obtain the furniture of a page without also being
-a formatter of a homogeneous sequence.
+a sequence part of a homogeneous sequence.
 
 ## How it is checked
 

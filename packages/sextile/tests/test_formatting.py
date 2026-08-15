@@ -14,12 +14,12 @@ from sextile.application import Sextile
 from sextile.formatting import (
     Entry,
     Figures,
-    Formatter,
     Lines,
     Listing,
     Menu,
     MenuItem,
     Prose,
+    SequencePart,
 )
 from sextile.layout import CHOICES_PER_FRAME, Flow, OnOneFrame, PageLayout, Space
 from sextile.testing import request_for
@@ -264,7 +264,7 @@ class TestAServiceWithItsOwnShape:
     """
 
     @dataclass(frozen=True, kw_only=True)
-    class Blocks(Formatter[str]):
+    class Blocks(SequencePart[str]):
         rows_per_entry: ClassVar[int] = 3
         separation: ClassVar[int] = 1
 

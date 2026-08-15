@@ -273,7 +273,7 @@ Roughly in order, each committable on its own.
 4. **Wrapping** in blocks, reusing the balanced algorithm in `wrapping.py`
    (measure in blocks rather than cells; the last line is free).
 5. **A part**, `Banner` or similar, built on `PageLayout` (a `Drawable`, or a
-   `Formatter` subclass), so a page places large lettering the way it places a
+   `SequencePart` subclass), so a page places large lettering the way it places a
    menu.
 6. **The ZX Origins importer**, beside `tools/mdfs_font.py`. A font is
    converted once and the result vendored, so the framework carries no parser

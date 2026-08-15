@@ -323,7 +323,7 @@ class _FilledFrame:
 _MOVEMENT_LETTERS: Final = frozenset(ARROW_FOR)
 
 #: The digits a frame can offer, a reader choosing with one keypress. Held here
-#: rather than in a formatter because it is a fact about the keypad and the
+#: rather than in a sequence part because it is a fact about the keypad and the
 #: whole frame shares it, however many parts divide it up.
 CHOICES_PER_FRAME = 9
 

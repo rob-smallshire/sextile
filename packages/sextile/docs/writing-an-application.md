@@ -211,9 +211,9 @@ rendered exactly as a forum post's would be:
 Flow(Prose(entries=rows_for(document)))
 ```
 
-For a shape none of these covers, subclass `Formatter`: give the height of one
+For a shape none of these covers, subclass `SequencePart`: give the height of one
 entry and the code to draw it, and the arithmetic, the frames and the keys come
-with it. A shape laid out along its rows subclasses `RowFormatter` instead and
+with it. A shape laid out along its rows subclasses `RowSequencePart` instead and
 writes `draw` and `draw_detail`. Both are dataclasses, so a subclass that needs
 something an entry does not carry — a date to mark against, a column width —
 declares a field rather than writing a constructor.

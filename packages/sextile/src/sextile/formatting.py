@@ -1,6 +1,6 @@
 """Sequences formatted as parts of a page.
 
-A formatter is a `layout.Drawable` that lays out a homogeneous sequence: it takes
+A sequence part is a `layout.Drawable` that lays out a homogeneous sequence: it takes
 as many entries as the room allows, says which of them can be chosen, and hands
 back the rest for the next frame. It deals only with the entries; titles, rules
 and keys are the layout's.
@@ -14,8 +14,8 @@ each one is drawn:
     Lines      lines drawn as given, for a page that simply says something
     Prose      running text, wrapped, in as many rows as it takes
 
-A service needing a shape that is not here subclasses `Formatter` or
-`RowFormatter` and says how tall an entry is and how to draw one.
+A service needing a shape that is not here subclasses `SequencePart` or
+`RowSequencePart` and says how tall an entry is and how to draw one.
 
 Example:
     Twelve entries, nine on the first frame and three on the second::
@@ -46,20 +46,20 @@ from sextile.viewdata.wrapping import wrap_within
 __all__ = [
     "Entry",
     "Figures",
-    "Formatter",
+    "SequencePart",
     "Lines",
     "Listing",
     "Menu",
     "MenuItem",
     "Prose",
-    "RowFormatter",
+    "RowSequencePart",
 ]
 
 
 
 @runtime_checkable
 class Entry(Protocol):
-    """What a formatter over `Entry` values requires of them.
+    """What a sequence part over `Entry` values requires of them.
 
     A protocol rather than a base class, so that a service with its own richer
     entry type, carrying whatever it needs, can pass that value directly rather
@@ -97,8 +97,8 @@ class MenuItem:
 
 
 @dataclass(frozen=True, kw_only=True)
-class Formatter[E](ABC):
-    """Abstract base for the formatters: a sequence, laid out as a part.
+class SequencePart[E](ABC):
+    """Abstract base for the sequence parts: a sequence, laid out as a part.
 
     A subclass says how tall an entry is and how to draw one; this class works
     out how many fit in the room it is given, draws them, and hands back what
@@ -200,13 +200,13 @@ class Formatter[E](ABC):
 
 
 @dataclass(frozen=True, kw_only=True)
-class RowFormatter[E](Formatter[E]):
-    """Abstract base for formatters whose entries are written along their rows.
+class RowSequencePart[E](SequencePart[E]):
+    """Abstract base for sequence parts whose entries are written along their rows.
 
     Implements `draw_entry` by calling `draw` for an entry's first row and
     `draw_detail` for its second, each with a `RowWriter` that runs from left
     to right. A shape positioned by cell, a picture several rows tall among
-    them, should subclass `Formatter` and implement `draw_entry` itself.
+    them, should subclass `SequencePart` and implement `draw_entry` itself.
     """
 
     @abstractmethod
@@ -227,7 +227,7 @@ class RowFormatter[E](Formatter[E]):
 
 
 @dataclass(frozen=True, kw_only=True)
-class Menu(RowFormatter[Entry]):
+class Menu(RowSequencePart[Entry]):
     """Numbered choices, each with a line of detail beneath it.
 
     The shape most viewdata pages take. A reader chooses with a single
@@ -255,7 +255,7 @@ class Menu(RowFormatter[Entry]):
 
 
 @dataclass(frozen=True, kw_only=True)
-class Lines(Formatter[str]):
+class Lines(SequencePart[str]):
     """Lines drawn as given, one to a row, for a page that says something.
 
     Not prose, which wraps running text and puts a blank row between one
@@ -275,7 +275,7 @@ class Lines(Formatter[str]):
     colour: Colour = Colour.WHITE
 
     def __post_init__(self) -> None:
-        #  `said` is what a caller writes, `entries` what a formatter divides.
+        #  `said` is what a caller writes, `entries` what a sequence part divides.
         #  They are one sequence under two names, the second being the word
         #  that means something on a page of prose.
         if self.said and not self.entries:
@@ -291,7 +291,7 @@ class Lines(Formatter[str]):
 
 
 @dataclass(frozen=True, kw_only=True)
-class Listing(RowFormatter[Entry]):
+class Listing(RowSequencePart[Entry]):
     """Two columns, nothing to choose, for a page that is a reference.
 
     What a service is made of, which words it answers to. The left column is
@@ -366,7 +366,7 @@ class Listing(RowFormatter[Entry]):
 
 
 @dataclass(frozen=True, kw_only=True)
-class Figures(RowFormatter[Entry]):
+class Figures(RowSequencePart[Entry]):
     """A label and a figure a row, the figures right-aligned in one column.
 
     For a page that reports rather than offers: how many callers, how much is
@@ -414,7 +414,7 @@ class Figures(RowFormatter[Entry]):
 
 
 @dataclass(frozen=True, kw_only=True)
-class Prose(Formatter[Row]):
+class Prose(SequencePart[Row]):
     """Running text, wrapped, in as many rows as it takes.
 
     Its entries are rendered `Row` values rather than `Entry` values. Laying

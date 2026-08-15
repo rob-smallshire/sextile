@@ -181,12 +181,12 @@ than split.
 `Claim` carries `choices` — keys that lead somewhere — `named`, what the prompt
 should say about them, and `form` where the drawable is one.
 
-Most drawables are a sequence, and `Formatter` does the arithmetic for those. A
+Most drawables are a sequence, and `SequencePart` does the arithmetic for those. A
 subclass says how tall an entry is and how to draw one:
 
 ```python
 @dataclass(frozen=True, kw_only=True)
-class ForecastTable(Formatter[Day]):
+class ForecastTable(SequencePart[Day]):
     rows_per_entry: ClassVar[int] = PICTURE_ROWS
     separation: ClassVar[int] = 1
     numbered: ClassVar[bool] = False
@@ -200,10 +200,10 @@ class ForecastTable(Formatter[Day]):
 `separation` is blank rows between entries and not after the last of them.
 `numbered` says whether entries take a digit, and `selecting_hint` what the
 prompt says about choosing. A shape written along its rows subclasses
-`RowFormatter` instead and writes `draw` and `draw_detail`, each given a
+`RowSequencePart` instead and writes `draw` and `draw_detail`, each given a
 `RowWriter`.
 
-A formatter that computes a column width from its entries must fix it once and
+A sequence part that computes a column width from its entries must fix it once and
 carry it into what it returns, or the columns will shift partway down the table.
 `Listing` and `Figures` do this by computing the width only when they have none.
 

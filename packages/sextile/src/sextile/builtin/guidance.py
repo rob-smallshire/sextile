@@ -33,7 +33,7 @@ from sextile import keys
 from sextile.addressing import keyed
 from sextile.compass import ROWS as COMPASS_ROWS
 from sextile.compass import compass
-from sextile.formatting import RowFormatter
+from sextile.formatting import RowSequencePart
 from sextile.layout import Custom, Flow, FrameBreak, OnOneFrame, PageLayout
 from sextile.page import Page
 from sextile.viewdata.canvas import RowWriter
@@ -80,7 +80,7 @@ class GuideRow:
 
 
 @dataclass(frozen=True, kw_only=True)
-class _Keys(RowFormatter[GuideRow]):
+class _Keys(RowSequencePart[GuideRow]):
     """The rows of the guide: a key on the left, what it does on the right.
 
     The column is given rather than worked out, because both frames of the

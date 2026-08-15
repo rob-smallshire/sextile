@@ -522,7 +522,7 @@ nothing to select.
 
 That became `Template`, which did the six steps and had a subclass say how tall
 an entry was. It did two jobs, and only one of them was available on its own:
-the furniture round a frame came with being a formatter of a homogeneous
+the furniture round a frame came with being a sequence part of a homogeneous
 sequence, so a page whose content was a grid, a form or a masthead had to draw
 its own furniture. Six pages did.
 
@@ -571,7 +571,7 @@ The shapes that come with the framework are in `formatting.py`:
 | `Lines` | lines drawn as given |
 | `Prose` | running text, wrapped |
 
-A service wanting another subclasses `Formatter` and says how tall an entry is
+A service wanting another subclasses `SequencePart` and says how tall an entry is
 and how to draw one. The base is generic in what it divides: most of them
 divide `Entry` values, `Prose` divides rendered rows.
 
@@ -779,7 +779,7 @@ strings for the gaps, which has to be redone by hand whenever a word changes.
 `Prose.of("...", "...")` reaches the machinery that was already there, and the
 wrapped output is identical to what the hand-broken literals produced.
 
-**What a `Formatter` consumes is the `Entry` protocol** — `text`, `detail`, and a
+**What a `SequencePart` consumes is the `Entry` protocol** — `text`, `detail`, and a
 `destination` that may be `None` — so a service with a richer notion of a menu
 entry passes that instead of copying into somebody else's dataclass. `MenuItem`
 is there for services with no such notion, and `MenuItem.for_page(app, name)`

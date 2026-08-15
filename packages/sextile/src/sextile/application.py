@@ -45,6 +45,7 @@ from sextile.declarations import (
     routes_in,
     routes_on,
 )
+from sextile.formatting import MenuItem
 from sextile.layout import CHOICES_PER_FRAME, HOME_KEY
 from sextile.page import Page
 from sextile.pages import notice_page
@@ -219,6 +220,29 @@ class Sextile:
     def page_info(self, name: str) -> PageInfo | None:
         """What was said about a named page when it was registered."""
         return self._pages.get(name)
+
+    def menu_item(self, name: str) -> MenuItem:
+        """A menu entry for a registered page, from what it said about itself.
+
+        The text and detail are the page's own, registered words, so a menu
+        offering the page and a listing naming it cannot drift apart.
+
+        Args:
+            name: The name the page was registered under.
+
+        Returns:
+            An item carrying the page's title and detail, leading to its
+            address.
+
+        Raises:
+            ValueError: If no page is registered under `name`.
+        """
+        about = self.page_info(name)
+        if about is None:
+            raise ValueError(f"{name!r} is not a page that says what it is")
+        return MenuItem(
+            text=about.title, detail=about.detail, destination=self.address_for(name)
+        )
 
     def pages(self) -> tuple[PageInfo, ...]:
         """Every page this service advertises, in the order it registered them.

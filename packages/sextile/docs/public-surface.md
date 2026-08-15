@@ -146,10 +146,11 @@ Pass a parameter rather than reading a constant.
 
 ### `sextile.pages` — the commonest pages, said in one call
 
-    notice_page
+    menu_page  notice_page
 
 The one-call shapes, each building a `PageLayout` from the request the page
 answers. Also at the top level, those being what most services reach for first.
+`app.menu_item(name)` builds a menu entry from a registered page's own words.
 
 ### `sextile.handlers` — the framework's pages, as handlers
 

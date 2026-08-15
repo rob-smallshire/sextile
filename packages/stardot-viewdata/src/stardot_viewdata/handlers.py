@@ -35,10 +35,11 @@ from sextile import (
     Parting,
     Sextile,
     keyed,
+    menu_page,
     notice_page,
     page,
 )
-from sextile.formatting import Lines, Menu, MenuItem, Prose, farewell_page
+from sextile.formatting import MenuItem, Prose, farewell_page
 from sextile.layout import (
     HOME_KEY,
     Drawn,
@@ -90,7 +91,7 @@ async def title(request: PageRequest) -> Page:
     #  frame actually answers, so neither can come to say something the service
     #  no longer does. The words are the ones the pages were registered with,
     #  and the numbers are the ones the router would build.
-    index, guide_item = MenuItem.for_page(app, "main"), MenuItem.for_page(app, "help")
+    index, guide_item = app.menu_item("main"), app.menu_item("help")
     main_page, about = app.address_for("main"), app.address_for("help")
 
     def draw(canvas: Canvas, row: int) -> None:
@@ -128,7 +129,7 @@ async def main_index(request: PageRequest) -> Page:
     app = request.app
     held = await _read(request, lambda repository: repository.count_posts())
     items = [
-        MenuItem.for_page(app, name)
+        app.menu_item(name)
         for name in (
             "posts",
             "topics",
@@ -141,7 +142,7 @@ async def main_index(request: PageRequest) -> Page:
             "about",
         )
     ]
-    return _menu(
+    return menu_page(
         request,
         title=SERVICE_NAME,
         items=items,
@@ -164,7 +165,7 @@ async def days_index(request: PageRequest) -> Page:
         )
         for day, count in days
     ]
-    return _menu(request, items=items)
+    return menu_page(request, items=items)
 
 
 @page("32{day:date}", name="day", title="One day")
@@ -190,7 +191,7 @@ async def forums_index(request: PageRequest) -> Page:
         )
         for forum_id, name, count in forums
     ]
-    return _menu(request, items=items)
+    return menu_page(request, items=items)
 
 
 @page("42{forum_id:int}", name="forum", title="One forum")
@@ -222,7 +223,7 @@ async def contributors_index(request: PageRequest) -> Page:
         )
         for user_id, name, count in contributors
     ]
-    return _menu(request, items=items)
+    return menu_page(request, items=items)
 
 
 @page("52{user_id:int}", name="contributor", title="One contributor")
@@ -263,7 +264,7 @@ async def topics_index(request: PageRequest) -> Page:
         )
         for topic_id, title, count in topics
     ]
-    return _menu(request, items=items)
+    return menu_page(request, items=items)
 
 
 @page("72{topic_id:int}", name="topic", title="One topic")
@@ -422,25 +423,9 @@ def _posts_menu(
         )
         for post in posts
     ]
-    return _menu(request, title=title, items=items)
+    return menu_page(request, title=title, items=items)
 
 
-def _menu(
-    request: PageRequest,
-    *,
-    title: str | None = None,
-    items: list[MenuItem],
-    preamble: list[str] | None = None,
-    empty: str = "",
-) -> Page:
-    """A menu, dealt nine to a frame by the framework's `Menu`."""
-    return PageLayout(
-        title=title,
-        parts=[
-            *([Once(Lines(said=(*preamble, "")))] if preamble else []),
-            Flowing(Menu(entries=items, empty=empty)),
-        ],
-    ).build(request)
 
 
 

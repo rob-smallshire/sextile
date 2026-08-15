@@ -9,9 +9,10 @@ layout underneath.
 from sextile.addressing import PageAddress
 from sextile.application import Sextile
 from sextile.declarations import PageRoute
+from sextile.formatting import MenuItem
 from sextile.layout import Shortcut
 from sextile.page import Page, PageFrame
-from sextile.pages import notice_page
+from sextile.pages import menu_page, notice_page
 from sextile.testing import request_for
 from sextile.viewdata.canvas import Canvas
 
@@ -76,3 +77,50 @@ class TestNoticePage:
         found = page.frame(0)
         assert found is not None
         assert found.destination("R") == PageAddress("7")
+
+
+def _items(count: int) -> list[MenuItem]:
+    return [MenuItem(f"Item {n}", f"detail {n}", PageAddress(f"8{n}")) for n in range(count)]
+
+
+class TestMenuPage:
+    def test_it_numbers_the_entries(self) -> None:
+        page = menu_page(request_for(_APP, "8"), items=_items(3))
+        found = page.frame(0)
+        assert found is not None
+        assert found.destination("1") == PageAddress("80")
+        assert found.destination("3") == PageAddress("82")
+
+    def test_nine_to_a_frame(self) -> None:
+        page = menu_page(request_for(_APP, "8"), items=_items(12))
+        assert len(page.frames) == 2
+
+    def test_a_preamble_is_shown_on_the_first_frame_only(self) -> None:
+        page = menu_page(
+            request_for(_APP, "8"), items=_items(12), preamble=("Everything here.",)
+        )
+        assert "Everything here." in text_of(page, 0)
+        assert "Everything here." not in text_of(page, 1)
+
+    def test_an_empty_menu_says_why(self) -> None:
+        page = menu_page(request_for(_APP), items=[], empty="Nothing yet.")
+        assert "Nothing yet." in text_of(page)
+
+    def test_its_header_comes_from_the_registration(self) -> None:
+        app = _titled("posts", "Latest posts", "8")
+        page = menu_page(request_for(app, "8"), items=_items(1))
+        assert "LATEST POSTS" in text_of(page).splitlines()[0]
+
+
+class TestMenuItem:
+    def test_it_carries_a_registered_page_s_words(self) -> None:
+        app = _titled("news", "The news")
+        item = app.menu_item("news")
+        assert item.text == "The news"
+        assert item.destination == PageAddress("1")
+
+    def test_an_unregistered_name_is_refused(self) -> None:
+        import pytest
+
+        with pytest.raises(ValueError, match="not a page"):
+            _APP.menu_item("nowhere")

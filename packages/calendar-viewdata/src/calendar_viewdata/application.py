@@ -33,16 +33,16 @@ from typing import Final, Protocol, runtime_checkable
 from sextile import (
     Held,
     Page,
-    PageAddress,
     PageRequest,
     PageRoute,
     Sextile,
     handlers,
     keyed,
     keys,
+    menu_page,
     notice_page,
 )
-from sextile.formatting import Lines, Menu, MenuItem, Prose, farewell_page
+from sextile.formatting import Lines, MenuItem, Prose, farewell_page
 from sextile.layout import Drawn, Flowing, Once, PageLayout, Shortcut
 from sextile.viewdata.canvas import Canvas
 from sextile.viewdata.controls import Colour
@@ -83,15 +83,15 @@ async def main(request: PageRequest) -> Page:
     """The index: today's date, and the four pages the service offers."""
     app = request.app
     today = _today(request)
-    return _menu(
+    return menu_page(
         request,
         title=SERVICE_NAME,
         preamble=[_long_date(today), ""],
         items=[
-            ("The time now", "to the second", app.address_for("now")),
-            ("This month", _month_name(today), app.address_for("this_month")),
-            ("The days to come", f"the next {DAYS_AHEAD}", app.address_for("ahead")),
-            ("About this service", "", app.address_for("about")),
+            MenuItem("The time now", "to the second", app.address_for("now")),
+            MenuItem("This month", _month_name(today), app.address_for("this_month")),
+            MenuItem("The days to come", f"the next {DAYS_AHEAD}", app.address_for("ahead")),
+            MenuItem("About this service", "", app.address_for("about")),
         ],
     )
 
@@ -125,10 +125,10 @@ async def ahead(request: PageRequest) -> Page:
     app = request.app
     today = _today(request)
     days = [today + timedelta(days=offset) for offset in range(DAYS_AHEAD)]
-    return _menu(
+    return menu_page(
         request,
         items=[
-            (_long_date(day), _in_words(day - today), app.address_for("day", day=day))
+            MenuItem(_long_date(day), _in_words(day - today), app.address_for("day", day=day))
             for day in days
         ],
     )
@@ -292,28 +292,6 @@ def _draw_month(
         canvas.row(row + 1 + offset).text(cells.rstrip(), colour)
 
 
-def _menu(
-    request: PageRequest,
-    *,
-    title: str | None = None,
-    items: list[tuple[str, str, PageAddress]],
-    preamble: list[str] | None = None,
-) -> Page:
-    """A menu, nine to a frame, divided by the framework's layout."""
-    return PageLayout(
-        title=title,
-        parts=[
-            *([Once(Lines(said=(*preamble, "")))] if preamble else []),
-            Flowing(
-                Menu(
-                    entries=[
-                        MenuItem(text=text, detail=detail, destination=where)
-                        for text, detail, where in items
-                    ]
-                )
-            ),
-        ],
-    ).build(request)
 
 
 

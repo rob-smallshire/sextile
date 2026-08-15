@@ -149,22 +149,16 @@ list of parts down the middle. Most present a list of items, so the framework
 formats those.
 
 ```python
-from sextile.formatting import Menu, MenuItem
-from sextile.layout import Flowing, Once, PageLayout
+from sextile import menu_page
+from sextile.formatting import MenuItem
 
-PageLayout(
+menu_page(
+    request,
     title="BY USER",
-    home=self.index,
-    parts=[
-        Once(Lines(said=("Everyone registered.", ""))),   # first frame only
-        Flowing(
-            Menu(
-                entries=[MenuItem(text=name, detail=f"{count} entries", destination=where) ...],
-                empty="NONE held yet.",   # said instead of an empty frame
-            )
-        ),
-    ],
-).build(request)
+    preamble=("Everyone registered.",),               # first frame only
+    items=[MenuItem(text=name, detail=f"{count} entries", destination=where) ...],
+    empty="NONE held yet.",                            # said instead of an empty frame
+)
 ```
 
 `Menu` numbers its entries 1–9, nine to a frame, each with a line of detail
@@ -404,12 +398,12 @@ numbering with a title and the page uses it, or keeps its own if none is given.
 ## Obtaining page addresses
 
 `addressing.keyed` renders a page number as a reader keys it — `*91#` — and
-`MenuItem.for_page(app, name)` gives the words the page was registered with.
+`app.menu_item(name)` gives the words the page was registered with.
 Together they let a page that tells a reader what to press avoid spelling out
 either:
 
 ```python
-guide = MenuItem.for_page(self, "help")
+guide = self.menu_item("help")
 canvas.row(19).text("Key", Colour.WHITE).text(
     keyed(self.address_for("help")), Colour.YELLOW
 ).text(f"for {guide.text.lower()}.", Colour.WHITE)

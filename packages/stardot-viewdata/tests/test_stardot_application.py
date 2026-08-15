@@ -25,7 +25,6 @@ from sextile import (
     keyed,
     keys,
 )
-from sextile.formatting import MenuItem
 from sextile.viewdata import lettering
 from sextile.viewdata.blocks import BLOCKS_ACROSS, BLOCKS_DOWN
 from sextile.viewdata.charset import mosaic_pattern
@@ -587,7 +586,7 @@ class TestThePagesSayWhatTheyAre:
     def test_a_menu_item_is_taken_from_the_page_it_offers(
         self, app: Sextile
     ) -> None:
-        item = MenuItem.for_page(app, "contributors")
+        item = app.menu_item("contributors")
         assert item.text == "By contributor"
         assert item.detail == "browse by poster"
         assert item.destination == PageAddress("5")
@@ -597,7 +596,7 @@ class TestThePagesSayWhatTheyAre:
     ) -> None:
         #  The title frame has no title, deliberately: it cannot be keyed.
         with pytest.raises(ValueError):
-            MenuItem.for_page(app, "title")
+            app.menu_item("title")
 
     async def test_the_main_index_offers_what_the_pages_call_themselves(
         self, app: Sextile

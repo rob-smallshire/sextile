@@ -16,7 +16,7 @@ The framework's own notices are these too: `Sextile.not_found`, `.failed` and
 from collections.abc import Sequence
 
 from sextile.addressing import PageAddress
-from sextile.formatting import Lines
+from sextile.formatting import Entry, Lines, Menu
 from sextile.layout import (
     _DEFAULT_HOME,
     DEFAULT_FURNITURE,
@@ -32,6 +32,7 @@ from sextile.requests import PageRequest
 from sextile.viewdata.controls import Colour
 
 __all__ = [
+    "menu_page",
     "notice_page",
 ]
 
@@ -90,4 +91,46 @@ def notice_page(
         hang_up=hang_up,
         furniture=(),
         parts=[*heading, Once(Lines(said=("", *lines)))],
+    ).build(request)
+
+
+def menu_page(
+    request: PageRequest,
+    *,
+    items: Sequence[Entry],
+    title: str | None = None,
+    home: _Home = _DEFAULT_HOME,
+    preamble: Sequence[str] = (),
+    empty: str | None = None,
+    shortcuts: Sequence[Shortcut] = (),
+    item: str = "item",
+) -> Page:
+    """A menu: a list of choices, nine to a frame, each numbered 1-9.
+
+    Args:
+        request: The request this page answers.
+        items: The choices, anything satisfying `Entry`; `MenuItem` is the
+            ready-made one. A service with a richer type of its own passes it
+            directly.
+        title: The header, or None to take the registered title of the page.
+        home: Where `0` leads; unset takes `request.app.index`, `None` offers
+            no way home.
+        preamble: Lines shown once on the first frame, above the entries, with
+            a blank row between.
+        empty: Said in place of the entries where there are none, so an empty
+            menu explains itself rather than looking like a fault. None leaves
+            the frame blank.
+        shortcuts: Keys offered on every frame besides the digits and `0`.
+        item: What `A` and `D` move between, as the footer names it.
+
+    Returns:
+        The page, of as many frames as the entries needed.
+    """
+    lead = [Once(Lines(said=(*preamble, "")))] if preamble else []
+    return PageLayout(
+        title=title,
+        home=home,
+        shortcuts=shortcuts,
+        item=item,
+        parts=[*lead, Flowing(Menu(entries=items, empty=empty or ""))],
     ).build(request)

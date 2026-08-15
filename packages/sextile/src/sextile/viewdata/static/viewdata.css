@@ -1,0 +1,64 @@
+/* Viewdata frames, drawn with Bedstead.
+ *
+ * The mosaic glyph fills the em and Bedstead's line gap is zero, so
+ * line-height: 1 tiles mosaics with no vertical seam, and the 0.6em advance
+ * aligns the forty columns with no letter-spacing. width is those forty columns
+ * and overflow: hidden is a backstop, so a run that came out wrong cannot escape
+ * the frame. Measured in the S1 spike (docs/spikes/bedstead.html). */
+
+.viewdata {
+  font-family: "Bedstead", monospace;
+  font-size: 20px;
+  line-height: 1;
+  letter-spacing: 0;
+  width: 24em;          /* 40 columns * 0.6em */
+  overflow: hidden;
+  margin: 0;
+  padding: 0;
+  background: #000;
+  color: #fff;
+  white-space: pre;
+}
+
+/* The eight teletext colours, foreground and background. */
+.viewdata .fg-black   { color: #000; }
+.viewdata .fg-red     { color: #f00; }
+.viewdata .fg-green   { color: #0f0; }
+.viewdata .fg-yellow  { color: #ff0; }
+.viewdata .fg-blue    { color: #00f; }
+.viewdata .fg-magenta { color: #f0f; }
+.viewdata .fg-cyan    { color: #0ff; }
+.viewdata .fg-white   { color: #fff; }
+
+.viewdata .bg-black   { background: #000; }
+.viewdata .bg-red     { background: #f00; }
+.viewdata .bg-green   { background: #0f0; }
+.viewdata .bg-yellow  { background: #ff0; }
+.viewdata .bg-blue    { background: #00f; }
+.viewdata .bg-magenta { background: #f0f; }
+.viewdata .bg-cyan    { background: #0ff; }
+.viewdata .bg-white   { background: #fff; }
+
+/* Double height: the run is scaled 2x from its top; the same columns on the row
+ * below are blank in the frame, leaving the lower half room. */
+.viewdata .dh {
+  display: inline-block;
+  transform: scaleY(2);
+  transform-origin: top left;
+}
+
+/* Flash: hidden for part of the cycle, touching opacity only so the run keeps
+ * its face and cell width. Stilled when the reader asks for less motion. */
+@keyframes viewdata-flash {
+  0%, 49% { opacity: 1; }
+  50%, 100% { opacity: 0; }
+}
+.viewdata .flash {
+  animation: viewdata-flash 1s steps(1, end) infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .viewdata .flash { animation: none; }
+}
+
+/* Conceal: shown as the background until revealed. */
+.viewdata .conceal { color: transparent; }

@@ -36,6 +36,7 @@ __all__ = [
 
 
 type CallNext = Callable[[PageRequest], Awaitable[Page | None]]
+"""The rest of the chain, handed to a middleware to call or to answer instead of."""
 
 type Middleware = Callable[[PageRequest, CallNext], Awaitable[Page | None]]
 """Something wrapped round every page a service builds.

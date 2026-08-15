@@ -87,13 +87,6 @@ nitpick_ignore = [
     ("py:class", "sextile.session.session.Session"),  # what a Caller wraps
     ("py:class", "sextile.routing.Match"),  # routing's internal match result
     ("py:class", "sextile.viewdata.attributes.Run"),  # the attribute planner's
-    #  Public type aliases (`type Handler = ...`, `type CallNext = ...`),
-    #  re-exported and documented on the sextile page. Sphinx emits the
-    #  annotation cross-reference as py:class against the alias's own defining
-    #  module and cannot resolve a PEP 695 alias that way without stringized
-    #  annotations; the names themselves are on the surface and in the glossary.
-    ("py:class", "sextile.routing.Handler"),
-    ("py:class", "sextile.middleware.CallNext"),
 ]
 
 # -- intersphinx --------------------------------------------------------------

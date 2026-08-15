@@ -226,8 +226,8 @@ class FieldSet(Form):
                 #  A background runs to the end of the row unless something
                 #  stops it, which would say there is room for thirty
                 #  characters in a field that takes six.
-                room = min(field.width, row.remaining - _END_CELLS)
-                row.text(fitted(field.value, room).ljust(room), self._text_colour)
+                cells = min(field.width, row.remaining - _END_CELLS)
+                row.text(fitted(field.value, cells).ljust(cells), self._text_colour)
                 row.end_background()
             else:
                 #  Two spaces and the colour attribute before them come to the

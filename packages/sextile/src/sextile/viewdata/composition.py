@@ -275,8 +275,8 @@ class Composition:
         first, last = _lit_span(rows)
         if first is None or last is None:
             return self._aligned(width, needed, where, within), False
-        room, origin = _room_and_origin(within)
-        left = _centred_start(last - first + 1, room=room * BLOCKS_ACROSS) - first
+        cells, origin = _cells_and_origin(within)
+        left = _centred_start(last - first + 1, extent=cells * BLOCKS_ACROSS) - first
         column, half = divmod(left + origin * BLOCKS_ACROSS, BLOCKS_ACROSS)
         least = _leftmost_start(needed, within)
         return (column, bool(half)) if column >= least else (least, False)
@@ -299,8 +299,8 @@ class Composition:
             return max(top + deep - len(rows), top), 0
         first, last = _lit_rows(rows)
         if first is None or last is None:
-            return top + _centred_start(len(rows), room=deep), 0
-        above = _centred_start(last - first + 1, room=deep * BLOCKS_DOWN) - first
+            return top + _centred_start(len(rows), extent=deep), 0
+        above = _centred_start(last - first + 1, extent=deep * BLOCKS_DOWN) - first
         within_rows, third = divmod(above + top * BLOCKS_DOWN, BLOCKS_DOWN)
         return (within_rows, third) if within_rows >= top else (top, 0)
 
@@ -310,13 +310,13 @@ class Composition:
         """The column for something `width` cells wide, in cells alone."""
         if isinstance(where, int):
             return where
-        room, origin = _room_and_origin(within)
+        cells, origin = _cells_and_origin(within)
         least = _leftmost_start(needed, within)
         if where is Align.RIGHT:
-            return max(origin + room - width, least)
+            return max(origin + cells - width, least)
         if where is Align.LEFT:
             return least
-        return max(origin + _centred_start(width, room=room), least)
+        return max(origin + _centred_start(width, extent=cells), least)
 
     def _positioned(self, run: Run, where: Where, within: Panel | None = None) -> Run:
         """A run of text moved to where it was asked to go.
@@ -427,11 +427,11 @@ def _top_row(where: Align, deep: int) -> int:
         return 0
     if where is Align.RIGHT:
         return max(ROWS - deep, 0)
-    return _centred_start(deep, room=ROWS)
+    return _centred_start(deep, extent=ROWS)
 
 
-def _room_and_origin(within: "Panel | None") -> tuple[int, int]:
-    """How much room something has, and where that room starts."""
+def _cells_and_origin(within: "Panel | None") -> tuple[int, int]:
+    """How many cells something has to work in, and where they start."""
     return (COLUMNS, 0) if within is None else (within.width, within.column)
 
 
@@ -444,14 +444,14 @@ def _leftmost_start(needed: int, within: "Panel | None") -> int:
     return (0 if within is None else within.column + 1) + needed
 
 
-def _centred_start(width: int, *, room: int = COLUMNS) -> int:
-    """Where something `width` wide starts to sit in the middle of `room`.
+def _centred_start(width: int, *, extent: int = COLUMNS) -> int:
+    """Where something `width` wide starts to sit in the middle of `extent`.
 
     Left-biased where it cannot be exact -- an odd number of spare cells has to
     go somewhere -- and always the same way, so two things centred on the same
     frame are out by at most half of one and never in opposite directions.
     """
-    return max((room - width) // 2, 0)
+    return max((extent - width) // 2, 0)
 
 
 def _shown_span(runs: Sequence[Run]) -> tuple[int, int]:

@@ -156,13 +156,13 @@ def bar(
     screen shortens rather than merely failing to lengthen.
     """
     attributes = _SEPARATED_ATTRIBUTES if separated else _CONTIGUOUS_ATTRIBUTES
-    room = (COLUMNS - column - attributes) if cells is None else cells
-    if room <= 0:
+    width = (COLUMNS - column - attributes) if cells is None else cells
+    if width <= 0:
         raise ValueError(f"no room for a bar at column {column} of row {row}")
-    solid = room if lit is None else max(min(lit, room), 0)
+    solid = width if lit is None else max(min(lit, width), 0)
     #  Through the sequential mosaic writer, as the all-lit block and the empty
     #  one -- by pattern rather than by writing a Unicode character and trusting
     #  it to encode to 0x7F. The writer lays the graphics colour (and the
     #  separated attribute if asked) before the blocks, the cells bar reserved.
-    patterns = [SOLID_BLOCKS] * solid + [0] * (room - solid)
+    patterns = [SOLID_BLOCKS] * solid + [0] * (width - solid)
     canvas.row(row).starting_at(column).mosaic(patterns, colour, separated=separated)

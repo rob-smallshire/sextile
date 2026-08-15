@@ -145,12 +145,12 @@ class RowWriter:
         """
         budget = cells
         for run in runs:
-            room = self.remaining - _ATTRIBUTE_CELL
+            width = self.remaining - _ATTRIBUTE_CELL
             if budget is not None:
-                room = min(room, budget - _ATTRIBUTE_CELL)
-            if room <= 0:
+                width = min(width, budget - _ATTRIBUTE_CELL)
+            if width <= 0:
                 break
-            text = fitted(run.text, room)
+            text = fitted(run.text, width)
             self.text(text, run.colour)
             if budget is not None:
                 budget -= _ATTRIBUTE_CELL + cell_count(text)

@@ -337,10 +337,10 @@ class Listing(RowSequencePart[Entry]):
         being a table rather than a place for prose.
         """
         assert self.column is not None
-        room = COLUMNS - self.column - self.ATTRIBUTES
+        cells = COLUMNS - self.column - self.ATTRIBUTES
         carried: list[Entry] = []
         for entry in entries:
-            lines = wrap_within(entry.detail, cells=room, rows=2) or [""]
+            lines = wrap_within(entry.detail, cells=cells, rows=2) or [""]
             carried.append(entry)
             carried += [MenuItem(text="", detail=line) for line in lines[1:]]
             if len(lines) > 1:
@@ -388,9 +388,9 @@ class Figures(RowSequencePart[Entry]):
             return
         figure = max((cell_count(one.detail) for one in self.entries), default=0)
         widest = max((cell_count(one.text) for one in self.entries), default=0)
-        room = COLUMNS - self.INDENT - figure - self.ATTRIBUTES
+        cells = COLUMNS - self.INDENT - figure - self.ATTRIBUTES
         object.__setattr__(self, "figure_width", figure)
-        object.__setattr__(self, "label_width", min(widest + self._GAP, room))
+        object.__setattr__(self, "label_width", min(widest + self._GAP, cells))
 
     def draw(self, row: RowWriter, entry: Entry, digit: str | None = None) -> None:
         assert self.label_width is not None and self.figure_width is not None

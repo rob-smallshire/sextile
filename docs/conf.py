@@ -77,6 +77,25 @@ autodoc_member_order = "bysource"
 #  parameter descriptions, so a signature is not repeated in full twice.
 always_document_param_types = True
 
+#  Cross-references Sphinx cannot resolve under -n, with the reason each is
+#  ignored rather than fixed:
+nitpick_ignore = [
+    #  Genuinely private types, none part of the surface, appearing only inside
+    #  the annotations of public signatures.
+    ("py:obj", "sextile.state._T"),  # the TypeVar behind StateKey
+    ("py:class", "sextile.state._T"),
+    ("py:class", "sextile.session.session.Session"),  # what a Caller wraps
+    ("py:class", "sextile.routing.Match"),  # routing's internal match result
+    ("py:class", "sextile.viewdata.attributes.Run"),  # the attribute planner's
+    #  Public type aliases (`type Handler = ...`, `type CallNext = ...`),
+    #  re-exported and documented on the sextile page. Sphinx emits the
+    #  annotation cross-reference as py:class against the alias's own defining
+    #  module and cannot resolve a PEP 695 alias that way without stringized
+    #  annotations; the names themselves are on the surface and in the glossary.
+    ("py:class", "sextile.routing.Handler"),
+    ("py:class", "sextile.middleware.CallNext"),
+]
+
 # -- intersphinx --------------------------------------------------------------
 
 intersphinx_mapping = {"python": ("https://docs.python.org/3", None)}

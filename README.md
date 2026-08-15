@@ -30,7 +30,6 @@ async def post(request: PageRequest, post_id: int) -> Page:
 ```sh
 uv run sextile serve my_service:app     # answer calls on port 6850
 nc localhost 6850                       # and call it
-uv run sextile render --demo            # a frame, in colour, without a Beeb
 ```
 
 `stardot-viewdata` is the first such application, and the one all of this was

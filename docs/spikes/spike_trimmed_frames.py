@@ -29,9 +29,9 @@ import pytest
 from beebium.client import Beebium
 from beebium.client.exceptions import ServerNotFoundError
 from beebium.ext.peripheral.rpc_serial import RpcSerial
-from sextile.pages.demo import demo_frame
 from sextile.viewdata.canvas import Canvas
 from sextile.viewdata.controls import Colour, Control
+from sextile.viewdata.drawing import rule
 from sextile.viewdata.frame import COLUMNS, ROWS, Frame
 
 COMMSTAR_ROM_FILENAME = "commstar_1_40_SN882A.rom"
@@ -125,9 +125,28 @@ def compare(bbc: Beebium, frame: Frame, label: str) -> None:
     assert full == trimmed, label
 
 
+def _demonstration_frame() -> Frame:
+    """A representative frame: header, mosaic rules, body text, a page number."""
+    canvas = Canvas()
+    canvas.row(0).text("SEXTILE", Colour.CYAN)
+    canvas.right(0, "82489493", Colour.WHITE)
+    rule(canvas, 1)
+    canvas.row(3).text("NS32016 TIMING INVESTIGATION", Colour.YELLOW)
+    canvas.paragraph(
+        7,
+        12,
+        "Wrapped body text over several rows, to exercise the paragraph wrapper "
+        "for the trimming comparison against Commstar.",
+        colour=Colour.WHITE,
+    )
+    rule(canvas, 21)
+    canvas.row(23).text("Key # for next frame", Colour.WHITE)
+    return canvas.frame
+
+
 def test_the_demonstration_frame(commstar: Beebium) -> None:
     """Colour, mosaic rules, wrapped body text and a page number."""
-    compare(commstar, demo_frame(), "the demonstration frame")
+    compare(commstar, _demonstration_frame(), "the demonstration frame")
 
 
 def test_a_frame_with_blank_rows_between_content(commstar: Beebium) -> None:

@@ -5,10 +5,6 @@ one:
 
     sextile serve your_service:app
     sextile render your_service:app --page 82489493
-    sextile render --demo
-
-The demonstration frame needs no application, being a picture of what the
-framework itself can draw.
 """
 
 import argparse
@@ -24,10 +20,8 @@ from sextile.cli import (
     add_listening_arguments,
     load_application,
     render_page,
-    rendered,
     run_service,
 )
-from sextile.demo import demo_frame
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -44,7 +38,6 @@ def build_parser() -> argparse.ArgumentParser:
         nargs="?",
         help="The application to draw, as module:name",
     )
-    render.add_argument("--demo", action="store_true", help="Render the demonstration frame")
     render.add_argument("--page", help="Render a page by its number, such as 1 or 82489493")
     add_form_arguments(render)
 
@@ -79,12 +72,9 @@ def main(argv: Sequence[str] | None = None) -> int:
 
 
 def _render(arguments: argparse.Namespace) -> int:
-    if arguments.demo:
-        print(rendered(demo_frame(), arguments.form, colour=not arguments.no_colour))
-        return 0
     if arguments.application is None or arguments.page is None:
         print(
-            "Nothing to render: pass --demo, or an application and --page <number>.",
+            "Nothing to render: pass an application and --page <number>.",
             file=sys.stderr,
         )
         return 2

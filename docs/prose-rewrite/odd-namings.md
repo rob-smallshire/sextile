@@ -70,7 +70,7 @@ Checked framework `src` for identifiers, branches, runtime strings and imports n
 
 **Judgment calls:**
 1. The **`contributor` / "By contributor" / "poster"** running example — **RESOLVED:** genericised to **`user`** / "By user" / "browse by name" throughout the framework (src docstrings in contents.py, declarations.py, application.py; the design.md and writing-an-application.md examples; and the test fixtures in test_contents.py, test_application.py, kept green). `packages/sextile` is now clean of `contributor`/`poster`. "user" was chosen as neutral and already matched the `<user-id>` field in the example.
-2. `demo._SAMPLE_BODY` — a made-up forum-post-like string ("The board runs at 8MHz…") used as demo frame content. The module calls itself "a picture of a page"; it's illustrative data, not a dependency. **Left as-is** (flag only).
+2. `demo._SAMPLE_BODY` — **RESOLVED by removing `demo.py` entirely.** A canned demonstration frame did not belong in a framework. Deleted `sextile/demo.py` and the `sextile render --demo` CLI flag; moved the frame construction into a self-contained frame-engine smoke test (`tests/test_frame_engine.py`, renamed from `test_demo_page.py`); updated the READMEs, CLAUDE.md, writing-an-application.md and public-surface.md; and fixed the already-broken `sextile.pages.demo` import in `docs/spikes/spike_trimmed_frames.py` to build its own frame. Gate green.
 
 ## Invariant-2 concern (application reaching past the public surface)
 

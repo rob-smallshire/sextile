@@ -239,7 +239,6 @@ the live board. Prefer re-using them to making fresh requests.
 ## Trying it
 
 ```sh
-uv run sextile render --demo                        # a frame, without a Beeb
 uv run sextile serve calendar_viewdata:app          # a whole service, no forum
 uv run stardot-viewdata render --page 1             # a page, plus where its keys lead
 uv run stardot-viewdata ingest --seed               # fill a new archive (an hour or more)

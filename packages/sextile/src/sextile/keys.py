@@ -38,7 +38,7 @@ __all__ = [
     "RIGHT",
     "RUB_OUT",
     "UP",
-    "arrows_lead_where",
+    "with_arrow_choices",
     "as_letter",
     "frame_moves",
     "with_arrows",
@@ -140,7 +140,7 @@ def as_letter(key: str) -> str:
     return LETTER_FOR.get(key, key)
 
 
-def arrows_lead_where[T](choices: Mapping[str, T]) -> dict[str, T]:
+def with_arrow_choices[T](choices: Mapping[str, T]) -> dict[str, T]:
     """Those choices, with each arrow leading where its letter leads."""
     return dict(choices) | {
         ARROW_FOR[key]: where for key, where in choices.items() if key in ARROW_FOR

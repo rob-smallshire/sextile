@@ -32,8 +32,8 @@ from sextile.keys import (
     NEXT_ITEM,
     PREVIOUS_FRAME,
     PREVIOUS_ITEM,
-    arrows_lead_where,
     frame_moves,
+    with_arrow_choices,
 )
 from sextile.page import Page, PageFrame
 from sextile.viewdata.canvas import Canvas
@@ -812,7 +812,7 @@ class PageLayout:
         shortcuts = self._shortcuts()
         choices = dict(filled.claim.choices)
         choices |= {one.key: one.destination for one in shortcuts}
-        choices |= arrows_lead_where(
+        choices |= with_arrow_choices(
             {one.key: one.destination for one in shortcuts if one.with_arrow}
         )
         if (way := _way_home(home)) is not None:

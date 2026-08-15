@@ -123,7 +123,7 @@ The names and codes, and the four helpers that turn one form into another.
     PREVIOUS_ITEM  NEXT_ITEM  BACK
     REDISPLAY  REFRESH  CANCEL  RUB_OUT
     LEFT  RIGHT  UP  DOWN  ARROW_KEYS  ARROW_FOR  LETTER_FOR
-    with_arrows  as_letter  arrows_lead_where  frame_moves
+    with_arrows  as_letter  with_arrow_choices  frame_moves
 
 ### `sextile.content` — what is to be shown
 

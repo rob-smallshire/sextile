@@ -862,7 +862,7 @@ WASD in the parser, before any page could see them — a fact about the hardware
 made into an opinion about what pressing them should do, imposed on every
 service at once. On a coordinate form it is wrong twice over: `W` is West and
 `S` is South, so a reader reaching for the up arrow would silently type a letter
-into a number. `keys.ARROW_FOR`, `with_arrows` and `arrows_lead_where` offer the
+into a number. `keys.ARROW_FOR`, `with_arrows` and `with_arrow_choices` offer the
 knowledge; a page decides what to do with it. `PageLayout` offers the arrows
 for the frame keys, which mean the same on every page, and for a `Shortcut`
 only where the page has said `with_arrow=True`.

@@ -621,7 +621,7 @@ which byte is which arrow and deliberately does not fix what an arrow means:
 
 ```python
 moves=with_arrows({PREVIOUS_FRAME, NEXT_FRAME})
-choices=arrows_lead_where({"A": before, "D": after})
+choices=with_arrow_choices({"A": before, "D": after})
 ```
 
 `PageLayout` does the first for every page it builds, and the second for any

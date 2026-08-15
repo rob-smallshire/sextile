@@ -120,6 +120,26 @@ class FieldSet(Form):
         field_colour: Colour = FIELD_BACKGROUND,
         text_colour: Colour = FIELD_COLOUR,
     ) -> None:
+        """Set up the fields, where submitting leads, and what is said beneath.
+
+        Args:
+            fields: The fields, at least one, in the order TAB moves through them.
+            on_submit: Given the keyed values, where RETURN on the last field
+                leads, or None while there is nowhere to send the reader.
+            footnote: Given the keyed values, what to say beneath the fields as
+                they stand, awaited on each keystroke. None says nothing.
+            footnote_row: The row the footnote is drawn on, or None for none.
+            submit_label: What finishing the form does, in a word, shown against
+                the key that does it. Empty where the last field is plain enough.
+            footer_items: What the prompt should say over and above the keys the
+                form answers. A page whose fields take digits cannot offer `0`
+                for the index, so it names another way out here.
+            field_colour: The background of the live field.
+            text_colour: The colour of what is typed into it.
+
+        Raises:
+            ValueError: If no field is given.
+        """
         if not fields:
             raise ValueError("a form needs a field to type into")
         #: What else the prompt should say, over and above the keys this form

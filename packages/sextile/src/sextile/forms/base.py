@@ -61,6 +61,30 @@ class Form(ABC):
     A subclass numbers its rows from nought, and `top_row` is where the layout put
     it. Everything a form draws or reports is offset by that, so a form need not
     track where the content of a frame begins.
+
+    Example:
+        A one-row field that collects text and offers nothing to choose::
+
+            class Text(Form):
+                def __init__(self) -> None:
+                    self._value = ""
+
+                @property
+                def rows(self) -> range:
+                    return range(self.top_row, self.top_row + 1)
+
+                @property
+                def caret(self) -> tuple[int, int]:
+                    return self.top_row, len(self._value)
+
+                def accepts(self, key: str) -> bool:
+                    return len(key) == 1 and key.isprintable()
+
+                async def typed(self, key: str) -> None:
+                    self._value += key
+
+                def draw(self, canvas: Canvas) -> None:
+                    canvas.row(self.top_row).text(self._value)
     """
 
     #: The row this form was placed on. Nought until it has been.

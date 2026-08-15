@@ -731,9 +731,11 @@ bar(canvas, 20, colour=Colour.GREEN, cells=20, lit=13)   # a gauge
 fitted(title, COLUMNS - 4)                         # shortened to the cells free
 ```
 
-`draw_chrome` draws a header with the page number, two rules and a footer,
-leaving twenty rows. It is a convenience, not a requirement; a service that wants
-the whole screen does not call it.
+To get the standard header, two rules and footer, build the page with
+`PageLayout` and its `DEFAULT_FURNITURE` rather than drawing the frame by hand.
+A frame drawn entirely by hand draws its own: `rule(canvas, 1)` for each rule,
+and `canvas` for the header and footer, as `demo.py` does. Neither is required;
+a page that wants the whole screen draws only what it wants.
 
 For long text, give `sextile.viewdata.typesetting` a `Document` of blocks; it
 wraps the text, colours quotations and listings distinctly, and divides the

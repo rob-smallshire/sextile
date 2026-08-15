@@ -1,6 +1,6 @@
 # How a document becomes bytes
 
-Following one body of text to the wire. Each stage is a pure function over
+This follows one body of text to the wire. Each stage is a pure function over
 values, which is why nearly all of it is testable without a BBC Micro.
 
 ```
@@ -8,7 +8,7 @@ Document            Paragraph(("lda &b5fe",))       what is to be said
         |  viewdata/typesetting.py
         v
 rows                Row("lda &b5fe", GREEN, 2)      text, colour, indent
-        |  viewdata/canvas.py, chrome.py, footer.py
+        |  viewdata/canvas.py, layout.py, footer.py
         v
 frame               24 x 40 cells                   what the screen shows
         |  viewdata/frame.py
@@ -16,10 +16,10 @@ frame               24 x 40 cells                   what the screen shows
 bytes               the wire stream
 ```
 
-Where the `Document` came from is the application's business. Stardot's is
-parsed out of phpBB's post HTML — see
+How the `Document` was produced is the application's concern. Stardot parses its
+own out of phpBB's post HTML — see
 [its design notes](../../stardot-viewdata/docs/design.md) — and a service with
-prose of its own simply builds one.
+prose of its own builds one directly.
 
 ## What a document is
 
@@ -50,25 +50,26 @@ words they are.
 Nesting indents two cells per level, stopping at four levels — beyond that the
 indent costs more than it conveys and colour carries it alone.
 
-A page has frames `a`-`z` and no more. A post long enough to exhaust them says
-so rather than ending mid-sentence with nothing to explain it.
+A page has frames `a`-`z` and no more. A post long enough to exhaust them ends
+with a notice rather than mid-sentence with nothing to explain the stop.
 
 ## Rows to a frame
 
 `viewdata/canvas.py` exists because **a colour attribute occupies a character
 cell**. A row that changes colour twice has thirty-eight columns for text, not
-forty. Canvas does that accounting so nothing above it has to — and it is why
-colour could not be added later: the layout engine would have had to be rewritten
-around it.
+forty. Canvas does that accounting so no layer above it has to. It is also why
+colour could not have been added later: the layout would have had to be
+rewritten around it.
 
 Attributes reset at the start of every row on the SAA5050, so each row is
 written independently and white text needs no attribute at all. That is read
 from the emulation rather than guessed: `Saa5050::start_of_line()`.
 
-`chrome.py` fixes the geometry every page shares — a header, two mosaic rules,
-a footer — leaving twenty content rows. The page number goes down first and the
-title takes what is left, because titles reach forty characters unaided and the
-number is what a reader needs in order to come back or to quote.
+The furnishings in `layout.py` fix the geometry every page shares — a header,
+two mosaic rules, a footer — leaving twenty content rows. The page number is
+written first and the title takes what is left, because titles reach forty
+characters unaided and the number is what a reader needs in order to come back
+or to quote.
 
 ## A frame to bytes
 

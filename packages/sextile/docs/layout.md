@@ -77,9 +77,9 @@ first frame; one after a flowing part lands on whichever frame that flow
 finished on.
 
 `Every` parts before the first flowing part are drawn where they stand. Those
-after it have their rows kept back from the foot before the flow is asked for
-its, and are then drawn under the content — a flowing part takes the rows left
-to it, so anything after one would otherwise never be drawn at all.
+after it have their rows reserved at the foot before the flowing part is placed,
+and are then drawn under the content. A flowing part takes whatever rows are
+left to it, so an `Every` part after one would otherwise never be drawn.
 
 Several flowing parts follow one another: the second begins in the row after
 the first has finished, on whatever frame that is.
@@ -99,9 +99,9 @@ From `sextile.formatting`, each taking `entries` and an optional `empty`:
 | `Lines` | one line, drawn as given | nothing is wrapped and nothing is moved |
 | `Prose` | one row of wrapped running text | `Prose.of("First.", "Second.")` builds it from paragraphs |
 
-`empty` is said in place of the entries where there are none. A service that
-answers slowly cannot let a frame come up empty and unexplained, because a
-reader cannot tell that from a fault.
+`empty` is said in place of the entries where there are none. On a slow service
+a frame must not come up empty and unexplained, because a reader cannot tell
+that from a fault.
 
 Two more parts are in `sextile.layout` rather than `formatting`, being drawings
 rather than sequences:
@@ -134,9 +134,10 @@ from its own `says`, so that every page describes those keys the same way.
 Shortcut(key=keys.PREVIOUS_ITEM, destination=arrival.preceding, arrow=True)
 ```
 
-Whether an arrow means what its letter means is the page's business, which is
-why it is asked for. On a page with a coordinate field it does not: `W` is West
-there, and an up arrow that typed a letter into a field would be a defect.
+Whether an arrow should mean what its letter means is for the page to decide,
+which is why `arrow` is a parameter. On a page with a coordinate field it should
+not: `W` is West there, and an up arrow that typed a letter into a field would
+be a defect.
 
 ## Furniture
 
@@ -148,9 +149,8 @@ rules on a page that does something irreversible:
 PageLayout(furniture=(), parts=[Once(Drawn(rows=ROWS, draw=masthead))])
 ```
 
-Two levels, and no cascade. A reader learns where the page number sits and
-learns it once, so the site-wide setting is the one to reach for and a per-page
-override wants a reason.
+Two levels, and no cascade. A reader learns where the page number sits once, so
+the site-wide setting is the one to set, and a per-page override needs a reason.
 
 ## Writing a part of your own
 
@@ -165,10 +165,10 @@ class Part(Protocol):
 are still unclaimed on this frame, which the whole frame shares however many
 parts divide it.
 
-`Placement` carries `rows` used, an `Offer` of what the part claims, and `rest`:
-what is left of the part for the next frame, or None where it is finished.
-Returning nought rows and `self` asks for a fresh frame, which is how a part
-too tall for the room declines to be split.
+`Placement` carries the `rows` used, an `Offer` of what the part claims, and
+`rest`: what is left of the part for the next frame, or None when it is finished.
+Returning nought rows and `self` requests a fresh frame, which is how a part too
+tall for the room left is carried to the next frame whole rather than split.
 
 `Offer` carries `choices` — keys that lead somewhere — `named`, what the prompt
 should say about them, and `form` where the part is one.
@@ -195,9 +195,9 @@ prompt says about choosing. A shape written along its rows subclasses
 `RowFormatter` instead and writes `draw` and `draw_detail`, each given a
 `RowWriter`.
 
-A formatter that works out a column width from its entries must fix it once and
-carry it into what it hands back, or a table will step sideways part way down.
-`Listing` and `Figures` do this by computing theirs only when they have none.
+A formatter that computes a column width from its entries must fix it once and
+carry it into what it returns, or the columns will shift partway down the table.
+`Listing` and `Figures` do this by computing the width only when they have none.
 
 ## Writing a furnishing of your own
 

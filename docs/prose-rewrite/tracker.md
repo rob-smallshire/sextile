@@ -44,10 +44,10 @@ Legend: `[ ]` not started · `[~]` in progress · `[x]` done
 Docs:
 - [x] docs/writing-an-application.md  (flagship; register sample for sign-off)
 - [ ] docs/design.md
-- [ ] docs/layout.md
+- [x] docs/layout.md
 - [ ] docs/page-layout.md
-- [ ] docs/navigation.md
-- [ ] docs/rendering.md
+- [x] docs/navigation.md  (also fixed stale "template" reference)
+- [x] docs/rendering.md  (also fixed stale chrome.py references)
 - [ ] docs/viewdata-encoding.md
 - [ ] docs/graphics.md
 - [ ] docs/mosaic-fonts.md

@@ -27,8 +27,8 @@ and the 7E1 line takes the eighth bit, landing them on the viewdata
 cursor-control codes 0x08-0x0B. So arrows and WASD are two spellings of one
 compass, and `sextile/keys.py` is where it is spelled once.
 
-`sextile/compass.py` draws that compass, for a page that would rather show a
-reader which way is which than tell them. The arrows on it are mosaics because
+`sextile/compass.py` draws that compass, for a page that shows a reader which
+way is which rather than telling them. The arrows on it are mosaics because
 the G0 set has left, right and up and **no down arrow** — those three are there
 for BBC BASIC and the line editor rather than as a compass, so one of the four
 would have had to be drawn whatever happened.
@@ -94,7 +94,7 @@ prompt = render_footer(items, ROOM)
 ```
 
 `movement` gives the framework's own words for the framework's own keys, so a
-page built by a template and a page built by hand say the same thing about
+page built by `PageLayout` and a page built by hand say the same thing about
 `S`. Only the noun differs, and it comes from the service: a post, a month, a
 day.
 

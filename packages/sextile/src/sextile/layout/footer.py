@@ -67,13 +67,19 @@ class Priority(IntEnum):
 
 @dataclass(frozen=True)
 class FooterItem:
-    """One key the reader may press, and what it does."""
+    """One key the reader may press, and what it does.
+
+    Attributes:
+        key: The character the reader presses.
+        label: What the prompt calls it, or empty to name the key alone.
+        priority: How hard the prompt tries to keep it when the row is tight.
+        brief: A shorter label, tried before the key sheds its label entirely.
+    """
 
     key: str
     label: str = ""
     priority: Priority = Priority.SECONDARY
     brief: str = ""
-    """A shorter way of saying the same thing, for when the row is tight."""
 
     def wordings(self) -> list[str]:
         """Every way of writing this item, the fullest first."""
@@ -82,7 +88,16 @@ class FooterItem:
 
 
 def render_footer(items: Sequence[FooterItem], width: int) -> str:
-    """Compose the prompt, shedding what will not fit in priority order."""
+    """Compose the prompt, shedding what will not fit in priority order.
+
+    Args:
+        items: The keys to name, in the order the prompt should try to keep
+            them, most worth saying last off.
+        width: The cells the row has, `FOOTER_WIDTH` for a full-width frame.
+
+    Returns:
+        The prompt, shortened to `width` by shedding labels and then keys.
+    """
     if width <= 0:
         return ""
     line = ""
@@ -169,11 +184,17 @@ _MOVEMENT: Final = {
 
 
 def movement(available: Iterable[str], *, item: str = "item") -> list[FooterItem]:
-    """Footer items for the movement keys a frame answers, in order.
+    """Build the footer items for the movement keys a frame answers, in order.
 
-    Here because both `PageLayout` and a service drawing a frame by hand have to
-    name these keys, and naming them in two places lets two pages of one service
-    describe the same key differently.
+    Args:
+        available: The movement keys the frame answers, as their letters.
+        item: The noun `A` and `D` move between, as the prompt names it.
+
+    Returns:
+        A `FooterItem` for each movement key answered, in a fixed order.
+
+    Here so a `PageLayout` and a frame drawn by hand name these keys the one
+    way, rather than two pages of a service describing the same key differently.
     """
     answered = set(available)
     return [

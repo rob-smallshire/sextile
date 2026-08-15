@@ -51,7 +51,7 @@ class TestLoggingEveryPage:
     ) -> None:
         clock = Clock()
         clock.step = 0.25
-        with caplog.at_level(logging.INFO, logger="sextile.pages"):
+        with caplog.at_level(logging.INFO, logger="sextile.serving"):
             await _app(clock).ask("1")
         assert "*1#" in caplog.text
         assert "0.250s" in caplog.text
@@ -62,7 +62,7 @@ class TestLoggingEveryPage:
         #  Which is what a frame costs on the wire, so it is the number worth
         #  having beside the time.
         clock = Clock()
-        with caplog.at_level(logging.INFO, logger="sextile.pages"):
+        with caplog.at_level(logging.INFO, logger="sextile.serving"):
             await _app(clock).ask("1")
         assert "1 frames" in caplog.text
 
@@ -72,7 +72,7 @@ class TestLoggingEveryPage:
         #  A count of pages built that quietly left out the ones nobody could
         #  reach would be the wrong count.
         clock = Clock()
-        with caplog.at_level(logging.INFO, logger="sextile.pages"):
+        with caplog.at_level(logging.INFO, logger="sextile.serving"):
             await _app(clock).ask("7")
         assert "not here" in caplog.text
 
@@ -83,7 +83,7 @@ class TestSayingWhenSomethingIsSlow:
     ) -> None:
         clock = Clock()
         clock.step = 0.01
-        with caplog.at_level(logging.INFO, logger="sextile.pages"):
+        with caplog.at_level(logging.INFO, logger="sextile.serving"):
             await _app(clock).ask("1")
         assert caplog.records[0].levelno == logging.INFO
 
@@ -92,7 +92,7 @@ class TestSayingWhenSomethingIsSlow:
     ) -> None:
         clock = Clock()
         clock.step = 4.0
-        with caplog.at_level(logging.INFO, logger="sextile.pages"):
+        with caplog.at_level(logging.INFO, logger="sextile.serving"):
             await _app(clock).ask("1")
         assert caplog.records[0].levelno == logging.WARNING
 
@@ -104,7 +104,7 @@ class TestSayingWhenSomethingIsSlow:
         #  outcome.
         clock = Clock()
         clock.step = 4.0
-        with caplog.at_level(logging.INFO, logger="sextile.pages"):
+        with caplog.at_level(logging.INFO, logger="sextile.serving"):
             await _app(clock).ask("7")
         assert caplog.records[0].levelno == logging.WARNING
 
@@ -113,7 +113,7 @@ class TestSayingWhenSomethingIsSlow:
     ) -> None:
         clock = Clock()
         clock.step = 0.5
-        with caplog.at_level(logging.INFO, logger="sextile.pages"):
+        with caplog.at_level(logging.INFO, logger="sextile.serving"):
             await _app(clock, slow=0.1).ask("1")
         assert caplog.records[0].levelno == logging.WARNING
 

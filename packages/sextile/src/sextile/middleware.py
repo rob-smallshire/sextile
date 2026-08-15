@@ -58,7 +58,7 @@ def log_pages(
     A page that is not there is logged too. A count of pages built that quietly
     omitted the ones nobody could reach would be the wrong count.
     """
-    log = logger or logging.getLogger("sextile.pages")
+    log = logger or logging.getLogger("sextile.serving")
 
     async def timing(request: PageRequest, build: Next) -> Page | None:
         began = clock()

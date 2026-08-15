@@ -88,12 +88,15 @@ async def main(request: PageRequest) -> Page:
     return menu_page(
         request,
         title=SERVICE_NAME,
-        preamble=[_long_date(today), ""],
+        preamble=[_long_date(today)],
         items=[
-            MenuItem("The time now", "to the second", app.address_for("now")),
+            app.menu_item("now"),
+            #  Not the registered "as a grid": which month it is says more here
+            #  than how it is drawn, and only the page in front of the reader
+            #  can know the date.
             MenuItem("This month", _month_name(today), app.address_for("this_month")),
-            MenuItem("The days to come", f"the next {DAYS_AHEAD}", app.address_for("ahead")),
-            MenuItem("About this service", "", app.address_for("about")),
+            app.menu_item("ahead"),
+            app.menu_item("about"),
         ],
     )
 

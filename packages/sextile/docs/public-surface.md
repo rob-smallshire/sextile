@@ -223,7 +223,7 @@ behave no differently.
 
 ### `sextile.testing` — driving a service the way a caller does
 
-    connect  Caller  request_for  text_of
+    connect  Caller  fetch  request_for  text_of
 
 A service's own tests want to press keys and read the screen, which nothing
 else stands in for: whether `*3#` reaches a handler, whether a field kept what
@@ -231,7 +231,8 @@ was typed, and what `0` does from three pages in are questions about the
 session rather than about any one page. `text_of(page, index=0)` reads the
 characters of a built page's frame back, the one extraction a test would
 otherwise write for itself; it takes a `Frame` too, for a drawing test working
-below the page.
+below the page. `fetch(app, "3")` is `Sextile.fetch` with the `None` asserted
+away, so a test naming a page it registered reads it back typed as present.
 
 ### `sextile.cli` — building a service's command line
 

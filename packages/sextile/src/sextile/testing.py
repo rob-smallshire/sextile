@@ -23,7 +23,7 @@ from contextlib import asynccontextmanager
 from dataclasses import dataclass, field
 
 from sextile.application import Sextile
-from sextile.page import Page, PageAddress
+from sextile.page import Page, PageAddress, keyed
 from sextile.requests import Neighbours, PageRequest
 from sextile.session.session import Session
 from sextile.viewdata.frame import Frame
@@ -31,6 +31,7 @@ from sextile.viewdata.frame import Frame
 __all__ = [
     "Caller",
     "connect",
+    "fetch",
     "request_for",
     "text_of",
 ]
@@ -91,6 +92,34 @@ def request_for(
         session=session if session is not None else {},
         history=history,
     )
+
+
+async def fetch(
+    app: Sextile,
+    target: str | PageAddress = "1",
+    *,
+    neighbours: Neighbours | None = None,
+) -> Page:
+    """The page a service answers a number with, asserted to be present.
+
+    `Sextile.fetch` returns None where the service has no such page, which a
+    test naming a page it has registered does not want to narrow at each call.
+    This fetches and asserts, so the page comes back typed as a `Page` rather
+    than a `Page | None`.
+
+    Args:
+        app: The service to ask, already started.
+        target: The page number, defaulting to `1`.
+        neighbours: The pages either side of this one, where the test is about
+            a sequence.
+
+    Returns:
+        The page at `target`.
+    """
+    address = target if isinstance(target, PageAddress) else PageAddress(target)
+    page = await app.fetch(address, neighbours=neighbours)
+    assert page is not None, f"the service has no page at {keyed(address)}"
+    return page
 
 
 @dataclass

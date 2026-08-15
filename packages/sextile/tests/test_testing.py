@@ -9,7 +9,7 @@ can be read, and that the service is opened and closed around the call.
 from sextile import Page, PageAddress, PageRequest, PageRoute, Sextile
 from sextile.formatting import Lines, Menu, MenuItem
 from sextile.layout import Flow, PageLayout
-from sextile.testing import connect
+from sextile.testing import connect, fetch, text_of
 
 
 async def index(request: PageRequest) -> Page:
@@ -106,3 +106,23 @@ class TestTheServiceIsOpenedAndClosedAroundTheCall:
             assert not closed
             assert caller.screen
         assert closed
+
+
+class TestFetchingAPage:
+    async def test_it_returns_the_page_typed_as_present(self) -> None:
+        app = service()
+        await app.startup()
+        assert "WEATHER" in text_of(await fetch(app, "2"))
+
+    async def test_it_defaults_to_the_index(self) -> None:
+        app = service()
+        await app.startup()
+        assert "INDEX" in text_of(await fetch(app))
+
+    async def test_a_page_that_is_not_there_fails_the_test(self) -> None:
+        import pytest
+
+        app = service()
+        await app.startup()
+        with pytest.raises(AssertionError):
+            await fetch(app, "7")

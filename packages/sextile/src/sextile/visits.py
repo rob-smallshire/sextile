@@ -38,7 +38,7 @@ from typing import Final, Protocol, Self
 from sextile.addressing import PageAddress
 
 __all__ = [
-    "KEPT",
+    "RETENTION",
     "SqliteVisits",
     "Visit",
     "Visits",
@@ -46,7 +46,7 @@ __all__ = [
 
 #: How long a visit is kept. Thirty days is what "lately" means; it is a setting
 #: rather than a rule, since a service with more readers may want less of it.
-KEPT: Final = timedelta(days=30)
+RETENTION: Final = timedelta(days=30)
 
 _SCHEMA: Final = """
 create table if not exists visits (
@@ -104,13 +104,13 @@ class SqliteVisits:
     only copy of what it holds.
     """
 
-    def __init__(self, connection: sqlite3.Connection, *, kept: timedelta = KEPT) -> None:
+    def __init__(self, connection: sqlite3.Connection, *, kept: timedelta = RETENTION) -> None:
         self._connection = connection
         self._kept = kept
         self._trimmed: datetime | None = None
 
     @classmethod
-    def open(cls, filepath: Path | str, *, kept: timedelta = KEPT) -> Self:
+    def open(cls, filepath: Path | str, *, kept: timedelta = RETENTION) -> Self:
         connection = sqlite3.connect(filepath, check_same_thread=False)
         connection.executescript(_SCHEMA)
         connection.commit()

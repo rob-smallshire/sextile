@@ -182,7 +182,7 @@ page is given.
 
 ### `sextile.visits` — the log of what has been read
 
-    Visits  Visit  SqliteVisits  KEPT
+    Visits  Visit  SqliteVisits  RETENTION
 
 `Visits` is the protocol, `SqliteVisits` the implementation that comes with the
 framework. A service keeping its log elsewhere writes its own, and the pages

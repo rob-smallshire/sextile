@@ -26,13 +26,14 @@ or does without:
 from collections.abc import Sequence
 from typing import TYPE_CHECKING, Final
 
-from sextile.addressing import PageAddress, keyed
+from sextile.addressing import keyed
 from sextile.formatting import Listing, MenuItem
 from sextile.layout import Flowing, PageLayout
 from sextile.page import Page
 
 if TYPE_CHECKING:
     from sextile.application import PageInfo
+    from sextile.requests import PageRequest
 
 TITLE: Final = "EVERY PAGE"
 
@@ -41,9 +42,8 @@ _NOTHING: Final = "This service advertises no pages."
 
 def contents_page(
     *,
-    address: PageAddress,
+    request: "PageRequest",
     pages: Sequence["PageInfo"],
-    home: PageAddress,
     title: str = TITLE,
 ) -> Page:
     """Build the contents page, one row per page, as many frames as it takes.
@@ -61,5 +61,5 @@ def contents_page(
         for page in sorted(pages, key=lambda page: page.keyed)
     ]
     return PageLayout(
-        title=title, home=home, parts=[Flowing(Listing(entries=entries, empty=_NOTHING))]
-    ).build(address)
+        title=title, parts=[Flowing(Listing(entries=entries, empty=_NOTHING))]
+    ).build(request)

@@ -27,10 +27,10 @@ language, and a compass is a few rows of graphics like any other few.
 
 from collections.abc import Sequence
 from dataclasses import dataclass
-from typing import Final
+from typing import TYPE_CHECKING, Final
 
 from sextile import keys
-from sextile.addressing import PageAddress, keyed
+from sextile.addressing import keyed
 from sextile.compass import ROWS as COMPASS_ROWS
 from sextile.compass import compass
 from sextile.formatting import RowFormatter
@@ -40,6 +40,9 @@ from sextile.viewdata.canvas import RowWriter
 from sextile.viewdata.composition import Composition
 from sextile.viewdata.drawing import key_row
 from sextile.viewdata.encoding import cell_count
+
+if TYPE_CHECKING:
+    from sextile.requests import PageRequest
 
 TITLE: Final = "HOW TO GET ABOUT"
 
@@ -94,9 +97,8 @@ class _Keys(RowFormatter[GuideRow]):
 
 def guide_page(
     *,
-    address: PageAddress,
+    request: "PageRequest",
     title: str = TITLE,
-    home: PageAddress | None = None,
     home_called: str = "index",
     moving: Sequence[GuideRow] = (),
     asking: Sequence[GuideRow] = (),
@@ -105,9 +107,8 @@ def guide_page(
     """The guide, as two frames of keys.
 
     Args:
-        address: The address the page answers to.
+        request: The request this page answers.
         title: What the header calls it.
-        home: Where `0` leads, or None to offer no way home.
         home_called: What the service calls its first page, so that the row for
             `0` says "back to the main menu" on a service with a menu and
             "back to the main index" on one with an index.
@@ -126,7 +127,6 @@ def guide_page(
     column = max(cell_count(row.key) for row in [*first, *second]) + _GAP
     return PageLayout(
         title=title,
-        home=home,
         parts=[
             Flowing(_Keys(entries=first, column=column)),
             #  Under the words rather than at the foot of the frame. A rule
@@ -144,7 +144,7 @@ def guide_page(
             Break(),
             Flowing(_Keys(entries=second, column=column)),
         ],
-    ).build(address)
+    ).build(request)
 
 
 def _moving(home_called: str) -> list[GuideRow]:

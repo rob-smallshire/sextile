@@ -30,9 +30,8 @@ from sextile.layout import Flowing, PageLayout
 
 PageLayout(
     title="LATEST POSTS",
-    home=app.index,
     parts=[Flowing(Menu(entries=posts))],
-).build(request.address)
+).build(request)
 ```
 
 `PageLayout` takes:

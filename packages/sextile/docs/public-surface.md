@@ -166,7 +166,7 @@ behave no differently.
 
 ### `sextile.testing` — driving a service the way a caller does
 
-    calling  Caller
+    calling  Caller  request_for
 
 A service's own tests want to press keys and read the screen, which nothing
 else stands in for: whether `*3#` reaches a handler, whether a field kept what

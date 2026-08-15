@@ -25,9 +25,8 @@ Example:
 
         PageLayout(
             title="LATEST POSTS",
-            home=app.index,
             parts=[Flowing(Menu(entries=posts))],
-        ).build(address)
+        ).build(request)
 """
 
 from abc import ABC, abstractmethod
@@ -510,4 +509,4 @@ def farewell_page(title: str, *lines: str, hang_up: bool = True) -> Page:
             Once(Lines(said=(title,), colour=Colour.CYAN)),
             Once(Lines(said=("", *lines))),
         ],
-    ).build(None)
+    )._bare()

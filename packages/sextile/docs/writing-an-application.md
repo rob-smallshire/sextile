@@ -23,7 +23,7 @@ async def main(request: PageRequest) -> Page:
     return PageLayout(
         title="MY SERVICE",
         parts=[Flowing(Lines(said=("Hello, 1981.",)))],
-    ).build(request.address)
+    ).build(request)
 
 app = Sextile(pages=[PageRoute("1", main, name="main")])
 ```
@@ -164,7 +164,7 @@ PageLayout(
             )
         ),
     ],
-).build(request.address)
+).build(request)
 ```
 
 `Menu` numbers its entries 1–9, nine to a frame, each with a line of detail
@@ -209,7 +209,7 @@ PageLayout(
             )
         )
     ],
-).build(request.address)
+).build(request)
 ```
 
 Each argument to `Prose.of` is a paragraph; the framework wraps and spaces them
@@ -567,12 +567,11 @@ from sextile.layout import Once, PageLayout
 
 return PageLayout(
     title="FIND A PLACE",
-    home=app.index,
     parts=[
         Once(Lines(said=("Key a place name.", ""))),
         Once(Suggest(look_up=places.matching, label="PLACE:")),
     ],
-).build(request.address)
+).build(request)
 ```
 
 A form answers a keypress by redrawing part of the frame rather than by moving

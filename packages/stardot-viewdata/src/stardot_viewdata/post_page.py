@@ -10,7 +10,7 @@ the one page that uses all of it; the handler that fetches the post is in
 from collections.abc import Callable
 from typing import Final
 
-from sextile import Arrival, Page, PageAddress, Sextile, keys
+from sextile import Arrival, Page, PageRequest, Sextile, keys
 from sextile.formatting import Prose
 from sextile.layout import Drawn, Every, Flowing, PageLayout, Shortcut
 from sextile.viewdata.canvas import Canvas
@@ -35,22 +35,13 @@ PREVIOUS_ITEM_KEY: Final = keys.PREVIOUS_ITEM
 NEXT_ITEM_KEY: Final = keys.NEXT_ITEM
 
 
-def post_page(
-    app: Sextile,
-    address: PageAddress,
-    post: Post,
-    arrival: Arrival,
-    *,
-    untitled: str,
-) -> Page:
+def post_page(request: PageRequest, post: Post, *, untitled: str) -> Page:
     """One post, divided between frames, with its heading on each of them.
 
     Args:
-        app: The service, for the addresses its other pages answer to.
-        address: The address this post answers to.
+        request: The request this post answers, carrying the service its other
+            pages answer to and how the reader got here.
         post: The post itself.
-        arrival: How the reader got here, which carries the posts either side
-            of this one.
         untitled: What to head a post whose forum the archive never learned --
             one first seen in a per-topic feed -- since a frame has to say
             something.
@@ -60,16 +51,15 @@ def post_page(
     """
     return PageLayout(
         title=post.forum_name or untitled,
-        home=app.address_for("main"),
         item="post",
-        shortcuts=[*_about(app, post), *_neighbours(arrival)],
+        shortcuts=[*_about(request.app, post), *_neighbours(request.arrival)],
         parts=[
             #  On every frame: a reader three frames into a post should not
             #  have to go back to the first to see whose words these are.
             Every(Drawn(rows=_POST_HEADING_ROWS, draw=_heading_of(post))),
             Flowing(Prose(entries=rows_for(parse_post_body(post.content_html)))),
         ],
-    ).build(address)
+    ).build(request)
 
 
 def _heading_of(post: Post) -> Callable[[Canvas, int], None]:

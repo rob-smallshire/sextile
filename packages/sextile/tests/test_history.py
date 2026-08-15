@@ -11,9 +11,13 @@ it at all, which is why these tests build it directly.
 import pytest
 
 from sextile.addressing import PageAddress
+from sextile.application import Sextile
 from sextile.layout import CHOICES_PER_FRAME
 from sextile.page import Page
 from sextile.pages.history import TITLE, history_page
+from sextile.testing import request_for
+
+_APP = Sextile()
 
 
 def at(digits: str) -> PageAddress:
@@ -22,10 +26,9 @@ def at(digits: str) -> PageAddress:
 
 def built(*been: str, address: str = "92") -> Page:
     return history_page(
-        address=at(address),
+        request=request_for(_APP, at(address)),
         been=tuple(at(digits) for digits in been),
         describe=lambda where: f"page {where}",
-        home=at("1"),
     )
 
 
@@ -121,10 +124,9 @@ class TestWhatItLooksLike:
 
     def test_a_service_may_title_it_otherwise(self) -> None:
         page = history_page(
-            address=at("92"),
+            request=request_for(_APP, at("92")),
             been=(at("1"),),
             describe=lambda where: "somewhere",
-            home=at("1"),
             title="RECENTLY READ",
         )
         assert "RECENTLY READ" in text_of(page)

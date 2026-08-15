@@ -15,7 +15,7 @@ answered last week and does not answer now belongs in one and not the other.
 
 from collections.abc import Callable, Sequence
 from datetime import UTC, datetime, timedelta
-from typing import Final
+from typing import TYPE_CHECKING, Final
 
 from sextile.addressing import PageAddress, keyed
 from sextile.formatting import Figures, Lines, Menu, MenuItem
@@ -23,6 +23,9 @@ from sextile.layout import Every, Flowing, PageLayout
 from sextile.page import Page
 from sextile.viewdata.controls import Colour
 from sextile.viewdata.frame import COLUMNS
+
+if TYPE_CHECKING:
+    from sextile.requests import PageRequest
 from sextile.viewdata.wrapping import wrap_text
 from sextile.visits import Visit
 
@@ -66,19 +69,17 @@ _AGES: Final = ((86400, "day"), (3600, "hour"), (60, "minute"))
 
 def recent_page(
     *,
-    address: PageAddress,
+    request: "PageRequest",
     visits: Sequence[Visit],
     describe: Callable[[PageAddress], str],
-    home: PageAddress,
     title: str = RECENT_TITLE,
     now: datetime | None = None,
 ) -> Page:
     """What has been looked at lately, newest first."""
     when = now or datetime.now(UTC)
     return _menu(
-        address=address,
+        request=request,
         title=title,
-        home=home,
         empty=_NOTHING_READ,
         entries=[
             (visit, _ago(when - visit.at.astimezone(UTC))) for visit in visits
@@ -89,17 +90,15 @@ def recent_page(
 
 def popular_page(
     *,
-    address: PageAddress,
+    request: "PageRequest",
     visits: Sequence[Visit],
     describe: Callable[[PageAddress], str],
-    home: PageAddress,
     title: str = POPULAR_TITLE,
 ) -> Page:
     """What has been looked at most, the most read first."""
     return _menu(
-        address=address,
+        request=request,
         title=title,
-        home=home,
         empty=_NOTHING_READ,
         entries=[(visit, _times(visit.times)) for visit in visits],
         describe=describe,
@@ -108,16 +107,14 @@ def popular_page(
 
 def _menu(
     *,
-    address: PageAddress,
+    request: "PageRequest",
     title: str,
-    home: PageAddress,
     empty: str,
     entries: Sequence[tuple[Visit, str]],
     describe: Callable[[PageAddress], str],
 ) -> Page:
     return PageLayout(
         title=title,
-        home=home,
         parts=[
             Flowing(
                 Menu(
@@ -134,7 +131,7 @@ def _menu(
                 )
             )
         ],
-    ).build(address)
+    ).build(request)
 
 
 def _ago(since: timedelta) -> str:
@@ -153,9 +150,8 @@ def _times(count: int) -> str:
 
 def callers_page(
     *,
-    address: PageAddress,
+    request: "PageRequest",
     counts: Sequence[tuple[str, int]],
-    home: PageAddress,
     title: str = CALLERS_TITLE,
 ) -> Page:
     """How many have called, over each of a few periods.
@@ -173,7 +169,6 @@ def callers_page(
     reporting = counts if any(count for _, count in counts) else ()
     return PageLayout(
         title=title,
-        home=home,
         parts=[
             Flowing(
                 Figures(
@@ -194,4 +189,4 @@ def callers_page(
                 )
             ),
         ],
-    ).build(address)
+    ).build(request)

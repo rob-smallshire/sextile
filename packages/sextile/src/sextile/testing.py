@@ -18,18 +18,52 @@ For testing a service, not the framework. The framework's own tests drive
 `Session` directly, that being the thing they are testing.
 """
 
-from collections.abc import AsyncIterator
+from collections.abc import AsyncIterator, MutableMapping
 from contextlib import asynccontextmanager
 from dataclasses import dataclass, field
 
 from sextile.addressing import PageAddress
 from sextile.application import Sextile
+from sextile.requests import Arrival, PageRequest
 from sextile.session.session import Session
 
 __all__ = [
     "Caller",
     "calling",
+    "request_for",
 ]
+
+
+def request_for(
+    app: Sextile,
+    target: str | PageAddress = "1",
+    *,
+    arrival: Arrival | None = None,
+    session: MutableMapping[str, object] | None = None,
+    history: tuple[PageAddress, ...] = (),
+) -> PageRequest:
+    """A request for a page on a service, for a test that has no session.
+
+    A handler and a layout both take the request they answer. A test that
+    exercises one without ringing the service up builds the request here rather
+    than by hand, so the service it belongs to is supplied in one place.
+
+    Args:
+        app: The service the page belongs to, reached as `request.app`.
+        target: The page number the request is for, defaulting to `1`.
+        arrival: The pages either side of this one, if the test is about a
+            sequence.
+        session: This caller's own state, if the test reads or writes it.
+        history: Where this caller has been, if the test is about that.
+    """
+    address = target if isinstance(target, PageAddress) else PageAddress(target)
+    return PageRequest(
+        address=address,
+        app=app,
+        arrival=arrival or Arrival(),
+        session=session if session is not None else {},
+        history=history,
+    )
 
 
 @dataclass

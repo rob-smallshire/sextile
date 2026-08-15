@@ -23,12 +23,15 @@ the one the reader is looking at.
 """
 
 from collections.abc import Callable, Sequence
-from typing import Final
+from typing import TYPE_CHECKING, Final
 
 from sextile.addressing import PageAddress, keyed
 from sextile.formatting import Menu, MenuItem
 from sextile.layout import Flowing, PageLayout
 from sextile.page import Page
+
+if TYPE_CHECKING:
+    from sextile.requests import PageRequest
 
 TITLE: Final = "WHERE YOU HAVE BEEN"
 
@@ -37,10 +40,9 @@ _NOWHERE: Final = "You have been nowhere else yet."
 
 def history_page(
     *,
-    address: PageAddress,
+    request: "PageRequest",
     been: Sequence[PageAddress],
     describe: Callable[[PageAddress], str],
-    home: PageAddress,
     title: str = TITLE,
 ) -> Page:
     """Build the history page.
@@ -49,6 +51,7 @@ def history_page(
     first, so that key 1 means the same as `*0#` and the numbers count backwards
     through the call.
     """
+    address = request.address
     entries = [
         MenuItem(
             text=describe(where),
@@ -64,8 +67,8 @@ def history_page(
         )
     ]
     return PageLayout(
-        title=title, home=home, parts=[Flowing(Menu(entries=entries, empty=_NOWHERE))]
-    ).build(address)
+        title=title, parts=[Flowing(Menu(entries=entries, empty=_NOWHERE))]
+    ).build(request)
 
 
 def _how_far(steps: int) -> str:

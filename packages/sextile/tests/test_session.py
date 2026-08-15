@@ -991,7 +991,7 @@ async def _paged() -> Session:
             parts=[
                 Flowing(Listing(entries=[MenuItem(f"{n}", "row") for n in range(50)]))
             ],
-        ).build(request.address)
+        ).build(request)
 
     app = Sextile(pages=[PageRoute("1", long, name="long")])
     session = Session(app)

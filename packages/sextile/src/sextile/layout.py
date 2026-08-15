@@ -42,6 +42,9 @@ from sextile.viewdata.footer import ROOM, FooterItem, Priority, movement, render
 from sextile.viewdata.frame import COLUMNS, ROWS
 from sextile.viewdata.typesetting import TRUNCATION_NOTICE
 
+if TYPE_CHECKING:
+    from sextile.requests import PageRequest
+
 __all__ = [
     "CHOICES_PER_FRAME",
     "DEFAULT_FURNITURE",
@@ -505,11 +508,14 @@ class Summary:
     index: int
     frames: int
     offered: Sequence[FooterItem]
+    numbered: bool = True
 
     @property
     def page_number(self) -> str:
         """The page number as this frame displays it, or empty for none."""
-        return self.address.frame_number(self.index) if self.address else ""
+        if self.address is None or not self.numbered:
+            return ""
+        return self.address.frame_number(self.index)
 
 
 @runtime_checkable
@@ -615,18 +621,38 @@ def content_rows(furniture: Sequence[Furnishing]) -> range:
     return range(above, ROWS - below)
 
 
+class _DefaultHome:
+    """Sentinel for a `home` left unset, so the app's index stands in for it."""
+
+
+#: `home` was not given, so `build` takes the way home from `request.app.index`.
+#: Distinct from `None`, which is a page saying it offers no way home at all.
+_DEFAULT_HOME: Final = _DefaultHome()
+
+
+def _way_home(home: "PageAddress | Shortcut | None") -> Shortcut | None:
+    """The way home as a shortcut, whichever way the page gave it."""
+    if home is None or isinstance(home, Shortcut):
+        return home
+    return Shortcut(key=HOME_KEY, destination=home, says="index")
+
+
 @dataclass(kw_only=True)
 class PageLayout:
     """A page as its furniture and the parts laid out between it.
 
-    Construct one and call `build` with the address the page answers to.
+    Construct one and call `build` with the request the page answers.
 
     Attributes:
-        title: What the header calls the page.
+        title: What the header calls the page. `None` takes the registered
+            title of `request.address`, upper-cased; `""` heads it with nothing.
         parts: The content, in the order it appears down the frames.
-        home: Where `0` leads from every frame, or None for no way home. A
-            `Shortcut` where the footer should call it something other than
-            "index", or where another key should do it.
+        home: Where `0` leads from every frame. Unset takes `request.app.index`;
+            `None` offers no way home; a `PageAddress` leads there under the
+            `index` label; a `Shortcut` where the footer should call it
+            something else, or another key should do it.
+        numbered: Whether the header shows the page number. `False` for a page
+            with a header but no number a reader could key, such as a notice.
         shortcuts: Keys offered on every frame, besides the digits and `0`.
         item: What `A` and `D` move between, as the footer says it.
         furniture: The bands round the content. Empty for a page that wants
@@ -641,65 +667,87 @@ class PageLayout:
 
             PageLayout(
                 title="LATEST POSTS",
-                home=app.index,
                 parts=[Once(preamble), Flowing(Menu(entries=posts))],
-            ).build(address)
+            ).build(request)
     """
 
-    title: str = ""
+    title: str | None = None
     parts: Sequence[Part] = ()
-    home: "PageAddress | Shortcut | None" = None
+    home: "PageAddress | Shortcut | None | _DefaultHome" = _DEFAULT_HOME
+    numbered: bool = True
     shortcuts: Sequence[Shortcut] = ()
     item: str = "item"
     furniture: Sequence[Furnishing] = DEFAULT_FURNITURE
     follows: PageAddress | None = None
     hang_up: bool = False
 
-    @property
-    def way_home(self) -> Shortcut | None:
-        """The way home as a shortcut, whichever way the page gave it."""
-        if self.home is None or isinstance(self.home, Shortcut):
-            return self.home
-        return Shortcut(key=HOME_KEY, destination=self.home, says="index")
-
-    def build(self, address: PageAddress | None) -> Page:
+    def build(self, request: "PageRequest") -> Page:
         """Fill the frames with the parts, then furnish them.
 
+        The title, the way home and the page number are taken from the request
+        where the page did not give them: the registered title of
+        `request.address`, `request.app.index`, and `request.address` itself.
+
         Args:
-            address: The address this page answers to, from which each frame
-                takes the page number it displays. None where the page has no
-                number of its own.
+            request: The request this page answers, supplying the address it is
+                at and the service it belongs to.
 
         Returns:
             The finished page: one frame for each the parts needed, each
             carrying the keys that work while it is showing.
         """
+        title = self.title if self.title is not None else request.app.heading_for(request.address)
+        home = request.app.index if isinstance(self.home, _DefaultHome) else self.home
+        return self._render(address=request.address, title=title, home=home)
+
+    def _render(
+        self, *, address: PageAddress | None, title: str, home: "PageAddress | Shortcut | None"
+    ) -> Page:
+        """Build the frames from resolved values, the request already read."""
         filled = fill(self.parts, content_rows(self.furniture))
         return Page(
             frames=tuple(
-                self._frame(one, index, len(filled), address)
+                self._frame(one, index, len(filled), address, title=title, home=home)
                 for index, one in enumerate(filled)
             ),
             follows=self.follows,
             hang_up=self.hang_up,
         )
 
+    def _bare(self) -> Page:
+        """Build a page that answers no request, for the framework's notices.
+
+        A notice is built from a target or a parting, not from a request, so it
+        has no app to default a title or a way home from. It gives both itself,
+        or wants neither.
+        """
+        home = None if isinstance(self.home, _DefaultHome) else self.home
+        return self._render(address=None, title=self.title or "", home=home)
+
     def _frame(
-        self, filled: Filled, index: int, frames: int, address: PageAddress | None
+        self,
+        filled: Filled,
+        index: int,
+        frames: int,
+        address: PageAddress | None,
+        *,
+        title: str,
+        home: "PageAddress | Shortcut | None",
     ) -> PageFrame:
         """One frame, furnished, with the keys it answers gathered onto it."""
         back, on = index > 0, index + 1 < frames or self.follows is not None
         page = Summary(
-            title=self.title,
+            title=title,
             address=address,
             index=index,
             frames=frames,
-            offered=self._offered(filled, back=back, on=on),
+            numbered=self.numbered,
+            offered=self._offered(filled, back=back, on=on, home=home),
         )
         self._furnish(filled.canvas, page)
         return PageFrame(
             frame=filled.canvas.frame,
-            choices=self._choices(filled),
+            choices=self._choices(filled, home=home),
             moves=moving(back=back, on=on),
             form=filled.offer.form,
         )
@@ -717,18 +765,22 @@ class PageLayout:
                 one.draw(canvas, at, page)
                 at += one.rows
 
-    def _choices(self, filled: Filled) -> dict[str, PageAddress]:
+    def _choices(
+        self, filled: Filled, *, home: "PageAddress | Shortcut | None"
+    ) -> dict[str, PageAddress]:
         """Every key on this frame that leads somewhere else."""
         choices = dict(filled.offer.choices)
         choices |= {one.key: one.destination for one in self.shortcuts}
         choices |= arrows_lead_where(
             {one.key: one.destination for one in self.shortcuts if one.arrow}
         )
-        if (way := self.way_home) is not None:
+        if (way := _way_home(home)) is not None:
             choices[way.key] = way.destination
         return choices
 
-    def _offered(self, filled: Filled, *, back: bool, on: bool) -> list[FooterItem]:
+    def _offered(
+        self, filled: Filled, *, back: bool, on: bool, home: "PageAddress | Shortcut | None"
+    ) -> list[FooterItem]:
         """What the prompt should try to name, most worth saying last off."""
         items = list(filled.offer.named)
         #  A shortcut on one of the movement letters is named by `movement`
@@ -744,7 +796,7 @@ class PageLayout:
             moves | {key for key, yes in ((PREVIOUS_FRAME, back), (NEXT_FRAME, on)) if yes},
             item=self.item,
         )
-        if (way := self.way_home) is not None:
+        if (way := _way_home(home)) is not None:
             items.append(
                 FooterItem(
                     way.key, way.says, Priority.ESSENTIAL, brief=way.says.split(",")[0]

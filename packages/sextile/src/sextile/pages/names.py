@@ -23,12 +23,15 @@ numbering or does without:
 """
 
 from collections.abc import Callable, Mapping
-from typing import Final
+from typing import TYPE_CHECKING, Final
 
 from sextile.addressing import PageAddress, keyed
 from sextile.formatting import Listing, MenuItem
 from sextile.layout import Flowing, PageLayout
 from sextile.page import Page
+
+if TYPE_CHECKING:
+    from sextile.requests import PageRequest
 
 TITLE: Final = "WORDS YOU CAN KEY"
 
@@ -37,10 +40,9 @@ _NOTHING: Final = "This service has no words to key."
 
 def names_page(
     *,
-    address: PageAddress,
+    request: "PageRequest",
     named: Mapping[str, PageAddress],
     describe: Callable[[PageAddress], str],
-    home: PageAddress,
     title: str = TITLE,
 ) -> Page:
     """Build the page of named jumps, one row per word."""
@@ -48,5 +50,5 @@ def names_page(
         MenuItem(text=keyed(word), detail=describe(named[word])) for word in sorted(named)
     ]
     return PageLayout(
-        title=title, home=home, parts=[Flowing(Listing(entries=entries, empty=_NOTHING))]
-    ).build(address)
+        title=title, parts=[Flowing(Listing(entries=entries, empty=_NOTHING))]
+    ).build(request)

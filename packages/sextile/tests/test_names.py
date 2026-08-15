@@ -7,8 +7,12 @@ which is exactly what a hand-written list of keywords in a help page does.
 """
 
 from sextile.addressing import PageAddress
+from sextile.application import Sextile
 from sextile.page import Page
 from sextile.pages.names import TITLE, names_page
+from sextile.testing import request_for
+
+_APP = Sextile()
 
 
 def at(digits: str) -> PageAddress:
@@ -17,10 +21,9 @@ def at(digits: str) -> PageAddress:
 
 def listed(**named: str) -> Page:
     return names_page(
-        address=at("94"),
+        request=request_for(_APP, at("94")),
         named={word: at(digits) for word, digits in named.items()},
         describe=lambda where: f"page {where}",
-        home=at("1"),
     )
 
 

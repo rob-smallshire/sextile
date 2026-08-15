@@ -8,9 +8,13 @@ follow is a list that has been written at you.
 from datetime import UTC, datetime, timedelta
 
 from sextile.addressing import PageAddress
+from sextile.application import Sextile
 from sextile.page import Page
 from sextile.pages.readership import callers_page, popular_page, recent_page
+from sextile.testing import request_for
 from sextile.visits import Visit
+
+_APP = Sextile()
 
 NOON = datetime(2026, 8, 11, 12, 0, tzinfo=UTC)
 
@@ -35,10 +39,9 @@ def visit(page: str, *, ago: timedelta = timedelta(), times: int = 1) -> Visit:
 class TestLatelyRead:
     def test_every_row_is_somewhere_to_go(self) -> None:
         page = recent_page(
-            address=PageAddress("96"),
+            request=request_for(_APP, "96"),
             visits=[visit("3"), visit("1")],
             describe=describe,
-            home=PageAddress("1"),
             now=NOON,
         )
         found = page.frame(0)
@@ -48,14 +51,13 @@ class TestLatelyRead:
 
     def test_it_says_how_long_ago_in_plain_words(self) -> None:
         page = recent_page(
-            address=PageAddress("96"),
+            request=request_for(_APP, "96"),
             visits=[
                 visit("1", ago=timedelta(seconds=20)),
                 visit("3", ago=timedelta(hours=2)),
                 visit("321333", ago=timedelta(days=3)),
             ],
             describe=describe,
-            home=PageAddress("1"),
             now=NOON,
         )
         shown = text_of(page)
@@ -65,10 +67,9 @@ class TestLatelyRead:
 
     def test_one_of_something_is_singular(self) -> None:
         page = recent_page(
-            address=PageAddress("96"),
+            request=request_for(_APP, "96"),
             visits=[visit("1", ago=timedelta(hours=1))],
             describe=describe,
-            home=PageAddress("1"),
             now=NOON,
         )
         assert "1 hour ago" in text_of(page)
@@ -78,10 +79,9 @@ class TestLatelyRead:
         #  two are not the same list: a number that answered last week and does
         #  not answer now belongs in one and not the other.
         page = recent_page(
-            address=PageAddress("96"),
+            request=request_for(_APP, "96"),
             visits=[visit("9999"), visit("1")],
             describe=describe,
-            home=PageAddress("1"),
             now=NOON,
         )
         found = page.frame(0)
@@ -92,10 +92,9 @@ class TestLatelyRead:
         #  Rather than an empty frame, which on a service that answers slowly
         #  is indistinguishable from a fault.
         page = recent_page(
-            address=PageAddress("96"),
+            request=request_for(_APP, "96"),
             visits=[],
             describe=describe,
-            home=PageAddress("1"),
             now=NOON,
         )
         assert "Nothing has been read yet." in text_of(page)
@@ -105,10 +104,9 @@ class TestLatelyRead:
         #  any other menu. Showing nine and dropping the rest without saying so
         #  would make the limit mean something other than what it says.
         page = recent_page(
-            address=PageAddress("96"),
+            request=request_for(_APP, "96"),
             visits=[visit("1") for _ in range(20)],
             describe=describe,
-            home=PageAddress("1"),
             now=NOON,
         )
         assert len(page.frames) == 3
@@ -117,10 +115,9 @@ class TestLatelyRead:
 class TestMostRead:
     def test_it_says_how_often(self) -> None:
         page = popular_page(
-            address=PageAddress("97"),
+            request=request_for(_APP, "97"),
             visits=[visit("1", times=12), visit("3", times=1)],
             describe=describe,
-            home=PageAddress("1"),
         )
         shown = text_of(page)
         assert "read 12 times" in shown
@@ -128,10 +125,9 @@ class TestMostRead:
 
     def test_and_the_number_that_fetches_each(self) -> None:
         page = popular_page(
-            address=PageAddress("97"),
+            request=request_for(_APP, "97"),
             visits=[visit("321333", times=4)],
             describe=describe,
-            home=PageAddress("1"),
         )
         assert "*321333#" in text_of(page)
 
@@ -148,9 +144,8 @@ class TestWhoHasCalled:
     def test_a_count_for_every_period(self) -> None:
         shown = text_of(
             callers_page(
-                address=PageAddress("98"),
+                request=request_for(_APP, "98"),
                 counts=[("Last 24 hours", 4), ("Last 7 days", 19)],
-                home=PageAddress("1"),
             )
         )
         assert "Last 24 hours" in shown
@@ -163,9 +158,8 @@ class TestWhoHasCalled:
         #  whole use of a page like this.
         rows = text_of(
             callers_page(
-                address=PageAddress("98"),
+                request=request_for(_APP, "98"),
                 counts=[("Last 24 hours", 4), ("Last 30 days", 1234)],
-                home=PageAddress("1"),
             )
         ).splitlines()
         first = next(row for row in rows if "Last 24 hours" in row)
@@ -177,9 +171,8 @@ class TestWhoHasCalled:
     def test_it_says_what_a_caller_is(self) -> None:
         shown = text_of(
             callers_page(
-                address=PageAddress("98"),
+                request=request_for(_APP, "98"),
                 counts=[("Last 7 days", 3)],
-                home=PageAddress("1"),
             )
         )
         assert "never who" in shown
@@ -189,16 +182,15 @@ class TestWhoHasCalled:
         #  has only just been switched on.
         shown = text_of(
             callers_page(
-                address=PageAddress("98"),
+                request=request_for(_APP, "98"),
                 counts=[("Last 7 days", 0), ("Last 30 days", 0)],
-                home=PageAddress("1"),
             )
         )
         assert "Nobody has called yet." in shown
 
     def test_and_nought_goes_home(self) -> None:
         page = callers_page(
-            address=PageAddress("98"), counts=[], home=PageAddress("1")
+            request=request_for(_APP, "98"), counts=[]
         )
         found = page.frame(0)
         assert found is not None

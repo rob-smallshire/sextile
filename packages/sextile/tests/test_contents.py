@@ -9,6 +9,9 @@ from sextile.addressing import PageAddress
 from sextile.application import PageInfo, Sextile
 from sextile.page import Page
 from sextile.pages.contents import TITLE, contents_page
+from sextile.testing import request_for
+
+_APP = Sextile()
 
 
 def at(digits: str) -> PageAddress:
@@ -16,7 +19,7 @@ def at(digits: str) -> PageAddress:
 
 
 def listed(*pages: PageInfo) -> Page:
-    return contents_page(address=at("93"), pages=pages, home=at("1"))
+    return contents_page(request=request_for(_APP, at("93")), pages=pages)
 
 
 def text_of(page: Page, index: int = 0) -> str:

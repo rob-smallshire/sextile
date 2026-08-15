@@ -468,10 +468,9 @@ class Sextile:
         before that, and so on.
         """
         return history_page(
-            address=request.address,
+            request=request,
             been=request.history,
             describe=self.describe,
-            home=self.index,
             title=self.heading(request.address, history.TITLE),
         )
 
@@ -501,9 +500,8 @@ class Sextile:
         called that: it is the page's own title, so the two cannot disagree.
         """
         return guidance.guide_page(
-            address=request.address,
+            request=request,
             title=self.heading(request.address, guidance.TITLE),
-            home=self.index,
             home_called=self.describe(self.index).lower(),
             moving=moving,
             asking=asking,
@@ -535,10 +533,9 @@ class Sextile:
         own vocabulary.
         """
         return readership.recent_page(
-            address=request.address,
+            request=request,
             visits=await visits.recent(limit, prefix=prefix),
             describe=self.describe,
-            home=self.index,
             title=self.heading(request.address, readership.RECENT_TITLE),
         )
 
@@ -563,10 +560,9 @@ class Sextile:
                 wants "most read lately" rather than most read ever.
         """
         return readership.popular_page(
-            address=request.address,
+            request=request,
             visits=await visits.popular(limit, prefix=prefix, since=since),
             describe=self.describe,
-            home=self.index,
             title=self.heading(request.address, readership.POPULAR_TITLE),
         )
 
@@ -585,12 +581,11 @@ class Sextile:
         """
         when = datetime.now(UTC)
         return readership.callers_page(
-            address=request.address,
+            request=request,
             counts=[
                 (said, await visits.callers(since=when - window))
                 for window, said in periods
             ],
-            home=self.index,
             title=self.heading(request.address, readership.CALLERS_TITLE),
         )
 
@@ -602,10 +597,9 @@ class Sextile:
         precisely what a list of keywords typed into a help page does.
         """
         return names_page(
-            address=request.address,
+            request=request,
             named=self.keywords(),
             describe=self.describe,
-            home=self.index,
             title=self.heading(request.address, names.TITLE),
         )
 
@@ -618,9 +612,8 @@ class Sextile:
         everybody holding a user number can be told where to put it.
         """
         return contents_page(
-            address=request.address,
+            request=request,
             pages=self.pages(),
-            home=self.index,
             title=self.heading(request.address, contents.TITLE),
         )
 

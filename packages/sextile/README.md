@@ -17,7 +17,7 @@ async def main(request: PageRequest) -> Page:
     return PageLayout(
         title="MY SERVICE",
         parts=[Flowing(Lines(said=("Hello, 1981.",)))],
-    ).build(request.address)
+    ).build(request)
 ```
 
 ```sh

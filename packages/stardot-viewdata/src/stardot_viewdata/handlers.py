@@ -31,7 +31,6 @@ from sextile import (
     GuideRow,
     Held,
     Page,
-    PageAddress,
     PageRequest,
     Parting,
     Sextile,
@@ -110,13 +109,16 @@ async def title(request: PageRequest) -> Page:
     return PageLayout(
         #  None at all: a masthead is the whole frame.
         furniture=(),
+        #  No `0` either: the opening frame is where a reader arrives, so there
+        #  is no index to send them back to that they are not already at.
+        home=None,
         #  `#` is the one key a viewdata reader tries without being told, and a
         #  title frame is nothing but an invitation to press it. Setting this
         #  answers that key as well as saying where it leads.
         follows=main_page,
         shortcuts=[Shortcut(key="1", destination=main_page)],
         parts=[Once(Drawn(rows=ROWS, draw=draw))],
-    ).build(None)
+    ).build(request)
 
 
 @page("1", name="main", title="Main index", keywords=("MAIN", "INDEX", "HOME"))
@@ -139,8 +141,7 @@ async def main_index(request: PageRequest) -> Page:
         )
     ]
     return _menu(
-        app,
-        request.address,
+        request,
         title=SERVICE_NAME,
         items=items,
         preamble=["Stardot, for users of Acorn computers.", f"{held} posts held."],
@@ -153,7 +154,7 @@ async def days_index(request: PageRequest) -> Page:
     app = request.app
     days = await _read(request, lambda repository: repository.days(limit=60))
     if not days:
-        return _notice(app, request.address, None, ["NO POSTS held yet."])
+        return _notice(request, None, ["NO POSTS held yet."])
     items = [
         MenuItem(
             day_title(day),
@@ -162,15 +163,14 @@ async def days_index(request: PageRequest) -> Page:
         )
         for day, count in days
     ]
-    return _menu(app, request.address, items=items)
+    return _menu(request, items=items)
 
 
 @page("32{day:date}", name="day", title="One day")
 async def one_day(request: PageRequest, day: date) -> Page:
     """Every post held from one day, in the order they were published."""
-    app = request.app
     posts = await _read(request, lambda repository: repository.posts_on(day))
-    return _posts_menu(app, request.address, posts, day_title(day))
+    return _posts_menu(request, posts, day_title(day))
 
 
 @page("4", name="forums", title="By forum", detail="browse by section",
@@ -180,7 +180,7 @@ async def forums_index(request: PageRequest) -> Page:
     app = request.app
     forums = await _read(request, lambda repository: repository.forums())
     if not forums:
-        return _notice(app, request.address, None, ["NO POSTS held yet."])
+        return _notice(request, None, ["NO POSTS held yet."])
     items = [
         MenuItem(
             name,
@@ -189,13 +189,12 @@ async def forums_index(request: PageRequest) -> Page:
         )
         for forum_id, name, count in forums
     ]
-    return _menu(app, request.address, items=items)
+    return _menu(request, items=items)
 
 
 @page("42{forum_id:int}", name="forum", title="One forum")
 async def one_forum(request: PageRequest, forum_id: int) -> Page:
     """The newest posts held from one forum."""
-    app = request.app
     posts = await _read(request, lambda repository: repository.posts_in_forum(forum_id))
     #  Ask the archive rather than the post: a post first seen in a
     #  per-topic feed knows its forum's id but not its name, and the archive
@@ -203,7 +202,7 @@ async def one_forum(request: PageRequest, forum_id: int) -> Page:
     forums = await _read(request, lambda repository: repository.forums())
     named = {found_id: name for found_id, name, _ in forums}
     title = named.get(forum_id) or f"FORUM {forum_id}"
-    return _posts_menu(app, request.address, posts, title)
+    return _posts_menu(request, posts, title)
 
 
 @page("5", name="contributors", title="By contributor", detail="browse by poster",
@@ -213,7 +212,7 @@ async def contributors_index(request: PageRequest) -> Page:
     app = request.app
     contributors = await _read(request, lambda repository: repository.contributors())
     if not contributors:
-        return _notice(app, request.address, None, ["NO POSTS held yet."])
+        return _notice(request, None, ["NO POSTS held yet."])
     items = [
         MenuItem(
             name,
@@ -222,16 +221,15 @@ async def contributors_index(request: PageRequest) -> Page:
         )
         for user_id, name, count in contributors
     ]
-    return _menu(app, request.address, items=items)
+    return _menu(request, items=items)
 
 
 @page("52{user_id:int}", name="contributor", title="One contributor")
 async def one_contributor(request: PageRequest, user_id: int) -> Page:
     """The newest posts held from one contributor."""
-    app = request.app
     posts = await _read(request, lambda repository: repository.posts_by_author(user_id))
     title = posts[0].author_name if posts else f"USER {user_id}"
-    return _posts_menu(app, request.address, posts, title)
+    return _posts_menu(request, posts, title)
 
 
 @page("7", name="topics", title="By topic", detail="read whole threads",
@@ -246,8 +244,6 @@ async def topics_index(request: PageRequest) -> Page:
     topics = await _read(request, lambda repository: repository.topics(limit=60))
     if not topics:
         return PageLayout(
-            title=app.heading_for(request.address),
-            home=app.index,
             parts=[
                 Flowing(
                     Prose.of(
@@ -257,7 +253,7 @@ async def topics_index(request: PageRequest) -> Page:
                     )
                 )
             ],
-        ).build(request.address)
+        ).build(request)
     items = [
         MenuItem(
             title,
@@ -266,36 +262,32 @@ async def topics_index(request: PageRequest) -> Page:
         )
         for topic_id, title, count in topics
     ]
-    return _menu(app, request.address, items=items)
+    return _menu(request, items=items)
 
 
 @page("72{topic_id:int}", name="topic", title="One topic")
 async def one_topic(request: PageRequest, topic_id: int) -> Page:
     """Every post held from one topic."""
-    app = request.app
     posts = await _read(request, lambda repository: repository.posts_in_topic(topic_id))
     title = posts[0].topic_title if posts else f"TOPIC {topic_id}"
-    return _posts_menu(app, request.address, posts, title)
+    return _posts_menu(request, posts, title)
 
 
 @page("8", name="posts", title="Latest posts", detail="the newest first",
       keywords=("LATEST", "NEW", "POSTS"))
 async def latest_posts(request: PageRequest) -> Page:
     """The sixty newest posts held, whatever forum or topic they are from."""
-    app = request.app
     posts = await _read(request, lambda repository: repository.latest_posts(limit=60))
-    return _posts_menu(app, request.address, posts)
+    return _posts_menu(request, posts)
 
 
 @page("82{post_id:int}", name="post", title="One post")
 async def one_post(request: PageRequest, post_id: int) -> Page:
     """One post in full, or a notice where the archive has not seen it."""
-    app = request.app
     post = await _read(request, lambda repository: repository.post(post_id))
     if post is None:
         return PageLayout(
             title="POST",
-            home=app.index,
             parts=[
                 Flowing(
                     Prose.of(
@@ -305,10 +297,8 @@ async def one_post(request: PageRequest, post_id: int) -> Page:
                     )
                 )
             ],
-        ).build(request.address)
-    return post_page(
-        app, request.address, post, request.arrival, untitled=SERVICE_NAME
-    )
+        ).build(request)
+    return post_page(request, post, untitled=SERVICE_NAME)
 
 
 @page("9", name="about", title="About this service", keywords=("ABOUT",))
@@ -318,7 +308,6 @@ async def about(request: PageRequest) -> Page:
     held = await _read(request, lambda repository: repository.count_posts())
     return PageLayout(
         title=f"ABOUT {app.name.upper()}",
-        home=app.index,
         parts=[
             Flowing(
                 Prose.of(
@@ -332,7 +321,7 @@ async def about(request: PageRequest) -> Page:
                 )
             )
         ],
-    ).build(request.address)
+    ).build(request)
 
 
 #  Titled, and so listed: the contents page is a directory of numbers that
@@ -396,6 +385,10 @@ def unknown_page(app: Sextile, target: str) -> Page:
     """Say so, in the service's own furniture, and leave the way back open."""
     return PageLayout(
         title="UNKNOWN PAGE",
+        #  A notice answering a mistyped request has no page of its own, so the
+        #  header shows the title alone. `numbered=False` says so; the address
+        #  the request carries is only there because a page is built from one.
+        numbered=False,
         parts=[
             Flowing(
                 Lines(
@@ -415,31 +408,30 @@ def unknown_page(app: Sextile, target: str) -> Page:
             destination=app.address_for("main"),
             says="index, or key another page",
         ),
-    ).build(None)
+    ).build(PageRequest(address=app.index, app=app))
 
 
 # -- the shapes the pages above share -----------------------------------------
 
 
 def _posts_menu(
-    app: Sextile, address: PageAddress, posts: list[Post], title: str | None = None
+    request: PageRequest, posts: list[Post], title: str | None = None
 ) -> Page:
     if not posts:
-        return _notice(app, address, title, ["NO POSTS held for this page."])
+        return _notice(request, title, ["NO POSTS held for this page."])
     items = [
         MenuItem(
             post.subject,
             f"{post.author_name}  {time_of(post)}",
-            app.address_for("post", post_id=post.post_id),
+            request.app.address_for("post", post_id=post.post_id),
         )
         for post in posts
     ]
-    return _menu(app, address, title=title, items=items)
+    return _menu(request, title=title, items=items)
 
 
 def _menu(
-    app: Sextile,
-    address: PageAddress,
+    request: PageRequest,
     *,
     title: str | None = None,
     items: list[MenuItem],
@@ -448,27 +440,24 @@ def _menu(
 ) -> Page:
     """A menu, dealt nine to a frame by the framework's `Menu`."""
     return PageLayout(
-        title=title if title is not None else app.heading_for(address),
-        home=app.index,
+        title=title,
         parts=[
             *([Once(Lines(said=(*preamble, "")))] if preamble else []),
             Flowing(Menu(entries=items, empty=empty)),
         ],
-    ).build(address)
+    ).build(request)
 
 
 def _notice(
-    app: Sextile,
-    address: PageAddress,
+    request: PageRequest,
     title: str | None,
     lines: list[str],
 ) -> Page:
     """A page that simply says something, with no choices but the way back."""
     return PageLayout(
-        title=title if title is not None else app.heading_for(address),
-        home=app.address_for("main"),
+        title=title,
         parts=[Flowing(Lines(said=lines))],
-    ).build(address)
+    ).build(request)
 
 
 def day_title(day: date) -> str:

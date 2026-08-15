@@ -11,6 +11,7 @@ from dataclasses import dataclass
 import pytest
 
 from sextile.addressing import FRAMES_PER_PAGE, PageAddress
+from sextile.application import Sextile
 from sextile.keys import CONVENTIONAL_NEXT_FRAME, DOWN, LEFT, NEXT_FRAME, RIGHT, UP
 from sextile.layout import (
     DEFAULT_FURNITURE,
@@ -29,11 +30,16 @@ from sextile.layout import (
     fill,
 )
 from sextile.page import Page
+from sextile.testing import request_for
 from sextile.viewdata.canvas import Canvas
 from sextile.viewdata.controls import Colour
 from sextile.viewdata.footer import FooterItem, Priority
 from sextile.viewdata.frame import COLUMNS
 from sextile.viewdata.typesetting import TRUNCATION_NOTICE
+
+#: A bare service to answer the requests these layout tests build. What is on a
+#: page rather than which service it belongs to is what they are about.
+_APP = Sextile()
 
 CONTENT = range(2, 22)
 
@@ -268,18 +274,21 @@ class TestTheFurniture:
         assert content_rows([*DEFAULT_FURNITURE, Prompt()]) == range(2, 21)
 
     def test_the_header_carries_the_title_and_the_page_number(self) -> None:
-        shown = rows_of(PageLayout(title="ITEMS", parts=[Once(Says("x"))]).build(at("8")))
+        layout = PageLayout(title="ITEMS", parts=[Once(Says("x"))])
+        shown = rows_of(layout.build(request_for(_APP, at("8"))))
         assert shown[0].strip().startswith("ITEMS")
         assert shown[0].strip().endswith("8a")
 
     def test_a_page_with_no_number_gives_the_title_the_row(self) -> None:
-        shown = rows_of(PageLayout(title="UNKNOWN PAGE").build(None))
+        shown = rows_of(
+            PageLayout(title="UNKNOWN PAGE", numbered=False).build(request_for(_APP, at("8")))
+        )
         assert shown[0].strip() == "UNKNOWN PAGE"
 
     def test_a_page_may_do_without_furniture_altogether(self) -> None:
         shown = rows_of(
             PageLayout(title="STARDOT", furniture=(), parts=[Once(Says("masthead"))])
-            .build(None)
+            .build(request_for(_APP, at("8")))
         )
         assert shown[0].strip() == "masthead"
         assert all("STARDOT" not in row for row in shown)
@@ -289,7 +298,7 @@ class TestWhatAFrameAnswers:
     def test_the_parts_claims_and_the_way_home_together(self) -> None:
         page = PageLayout(
             title="ITEMS", home=at("1"), parts=[Flowing(items(3))]
-        ).build(at("8"))
+        ).build(request_for(_APP, at("8")))
         found = page.frame(0)
         assert found is not None
         assert found.destination("1") == PageAddress("80")
@@ -301,7 +310,7 @@ class TestWhatAFrameAnswers:
             home=at("1"),
             shortcuts=[Shortcut(key="R", destination=at("7"), says="reply")],
             parts=[Flowing(items(12))],
-        ).build(at("8"))
+        ).build(request_for(_APP, at("8")))
         for index in range(len(page.frames)):
             found = page.frame(index)
             assert found is not None
@@ -310,7 +319,7 @@ class TestWhatAFrameAnswers:
     def test_the_prompt_names_the_keys_that_work_here(self) -> None:
         page = PageLayout(
             title="ITEMS", home=at("1"), parts=[Flowing(items(12))]
-        ).build(at("8"))
+        ).build(request_for(_APP, at("8")))
         first = rows_of(page, 0)[-1]
         second = rows_of(page, 1)[-1]
         assert "1-9 select" in first
@@ -318,7 +327,8 @@ class TestWhatAFrameAnswers:
         assert "W page up" in second and "S page down" not in second
 
     def test_and_a_page_of_one_frame_names_no_movement(self) -> None:
-        page = PageLayout(title="ITEMS", home=at("1"), parts=[Flowing(items(3))]).build(at("8"))
+        layout = PageLayout(title="ITEMS", home=at("1"), parts=[Flowing(items(3))])
+        page = layout.build(request_for(_APP, at("8")))
         assert "page down" not in rows_of(page, 0)[-1]
 
 
@@ -328,7 +338,7 @@ class TestWhereAPageLeads:
         #  the key has to be answered for that to happen at all.
         page = PageLayout(
             title="STARDOT", furniture=(), parts=[Once(Says("masthead"))], follows=at("1")
-        ).build(None)
+        ).build(request_for(_APP, at("8")))
         found = page.frame(0)
         assert found is not None
         assert page.follows == at("1")
@@ -336,12 +346,13 @@ class TestWhereAPageLeads:
         assert CONVENTIONAL_NEXT_FRAME in found.moves
 
     def test_ringing_off_is_said_by_the_page(self) -> None:
-        assert PageLayout(title="GOODBYE", hang_up=True).build(None).hang_up
+        assert PageLayout(title="GOODBYE", hang_up=True).build(request_for(_APP, at("1"))).hang_up
 
 
 class TestAPageTooLongForItsFrames:
     def test_it_stops_and_says_so(self) -> None:
-        page = PageLayout(title="PAGES", parts=[Flowing(lines(1000))]).build(at("9"))
+        layout = PageLayout(title="PAGES", parts=[Flowing(lines(1000))])
+        page = layout.build(request_for(_APP, at("9")))
         assert len(page.frames) == FRAMES_PER_PAGE
         assert TRUNCATION_NOTICE in rows_of(page, FRAMES_PER_PAGE - 1)[-3]
 
@@ -357,7 +368,7 @@ class TestTheWayHomeIsAShortcutLikeAnyOther:
     def a_page(self, home: PageAddress | Shortcut | None = None) -> Page:
         return PageLayout(
             title="NOTICE", home=home, parts=[Once(Says("Said."))]
-        ).build(at("2"))
+        ).build(request_for(_APP, at("2")))
 
     def test_an_address_puts_it_on_nought_and_calls_it_the_index(self) -> None:
         page = self.a_page(at("1"))
@@ -405,7 +416,7 @@ class TestAShortcutThatAnswersAnArrowToo:
                 Shortcut(key="A", destination=at("41"), says="prev", arrow=arrow),
                 Shortcut(key="D", destination=at("43"), says="next", arrow=arrow),
             ],
-        ).build(at("42"))
+        ).build(request_for(_APP, at("42")))
 
     def test_the_letter_leads_where_it_always_did(self) -> None:
         found = self.a_page().frame(0)
@@ -432,7 +443,7 @@ class TestAShortcutThatAnswersAnArrowToo:
             home=at("1"),
             parts=[Once(Says("A post."))],
             shortcuts=[Shortcut(key="R", destination=at("7"), says="reply", arrow=True)],
-        ).build(at("8"))
+        ).build(request_for(_APP, at("8")))
         found = page.frame(0)
         assert found is not None
         assert found.destination("R") == at("7")
@@ -458,7 +469,7 @@ class TestWhatTheItemsAreCalled:
                     Shortcut(key="A", destination=at("41"), arrow=True),
                     Shortcut(key="D", destination=at("43"), arrow=True),
                 ],
-            ).build(at("42"))
+            ).build(request_for(_APP, at("42")))
         )[-1]
 
     def test_an_item_by_default(self) -> None:
@@ -477,7 +488,7 @@ class TestWhatTheItemsAreCalled:
                 item="day",
                 parts=[Once(Says("Saturday."))],
                 shortcuts=[Shortcut(key="1", destination=at("32"), says="month")],
-            ).build(at("42"))
+            ).build(request_for(_APP, at("42")))
         )[-1]
         assert "1 month" in footer
 
@@ -490,7 +501,7 @@ class TestWhatTheItemsAreCalled:
                 home=at("1"),
                 item="day",
                 parts=[Flowing(lines(30))],
-            ).build(at("42"))
+            ).build(request_for(_APP, at("42")))
         )[-1]
         assert "page down" in footer
         assert "day" not in footer
@@ -499,8 +510,8 @@ class TestWhatTheItemsAreCalled:
 class TestTheHeader:
     """The title, and the page number at the right of the same row."""
 
-    def a_frame(self, title: str, address: PageAddress | None = None) -> Page:
-        return PageLayout(title=title, parts=[Once(Says("x"))]).build(address)
+    def a_frame(self, title: str, address: PageAddress) -> Page:
+        return PageLayout(title=title, parts=[Once(Says("x"))]).build(request_for(_APP, address))
 
     def test_the_title_appears(self) -> None:
         assert "PROGRAMMING" in rows_of(self.a_frame("PROGRAMMING", at("4254")))[0]
@@ -541,7 +552,7 @@ class TestTheRulesAndThePrompt:
             home=at("1"),
             shortcuts=[Shortcut(key="R", destination=at("7"), says=prompt_from)],
             parts=[Once(Says("x"))],
-        ).build(at("1"))
+        ).build(request_for(_APP, at("1")))
 
     def test_the_rules_are_drawn_in_mosaic_graphics(self) -> None:
         found = self.a_frame().frame(0)
@@ -558,6 +569,6 @@ class TestTheRulesAndThePrompt:
         assert len(rows_of(self.a_frame("p" * 100))[-1]) == COLUMNS
 
     def test_the_furniture_writes_nothing_into_the_content_rows(self) -> None:
-        page = PageLayout(title="T", home=at("1")).build(at("1"))
+        page = PageLayout(title="T", home=at("1")).build(request_for(_APP, at("1")))
         content = rows_of(page)[2:22]
         assert all(not row.strip() for row in content)

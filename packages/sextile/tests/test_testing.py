@@ -28,7 +28,7 @@ async def index(request: PageRequest) -> Page:
                 )
             )
         ],
-    ).build(request.address)
+    ).build(request)
 
 
 async def weather(request: PageRequest) -> Page:
@@ -36,7 +36,7 @@ async def weather(request: PageRequest) -> Page:
         title="WEATHER",
         home=PageAddress("1"),
         parts=[Flowing(Lines(said=("Rain, mostly.",)))],
-    ).build(request.address)
+    ).build(request)
 
 
 def service() -> Sextile:

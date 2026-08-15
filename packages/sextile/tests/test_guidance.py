@@ -6,8 +6,12 @@ than none.
 """
 
 from sextile.addressing import PageAddress
+from sextile.application import Sextile
 from sextile.page import Page
 from sextile.pages.guidance import GuideRow, guide_page
+from sextile.testing import request_for
+
+_APP = Sextile()
 
 
 def text_of(page: Page, index: int = 0) -> str:
@@ -18,7 +22,7 @@ def text_of(page: Page, index: int = 0) -> str:
 
 
 def a_guide(**wanted: object) -> Page:
-    return guide_page(address=PageAddress("91"), home=PageAddress("1"), **wanted)  # type: ignore[arg-type]
+    return guide_page(request=request_for(_APP, PageAddress("91")), **wanted)  # type: ignore[arg-type]
 
 
 class TestWhatTheFrameworkSaysForItself:

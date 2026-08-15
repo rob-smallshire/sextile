@@ -83,8 +83,7 @@ async def main(request: PageRequest) -> Page:
     app = request.app
     today = _today(request)
     return _menu(
-        app,
-        request.address,
+        request,
         title=SERVICE_NAME,
         preamble=[_long_date(today), ""],
         items=[
@@ -100,8 +99,7 @@ async def now_page(request: PageRequest) -> Page:
     """The time now, to the second, with the key that asks again."""
     moment = _now(request)
     return _notice(
-        request.app,
-        request.address,
+        request,
         None,
         [
             _long_date(moment.date()),
@@ -116,12 +114,12 @@ async def now_page(request: PageRequest) -> Page:
 
 async def this_month(request: PageRequest) -> Page:
     """The current month as a grid, taken from the request's own clock."""
-    return _month_page(request.app, request.address, _today(request))
+    return _month_page(request, _today(request))
 
 
 async def month(request: PageRequest, day: date) -> Page:
     """The month a given day falls in, as a grid."""
-    return _month_page(request.app, request.address, day)
+    return _month_page(request, day)
 
 
 async def ahead(request: PageRequest) -> Page:
@@ -130,8 +128,7 @@ async def ahead(request: PageRequest) -> Page:
     today = _today(request)
     days = [today + timedelta(days=offset) for offset in range(DAYS_AHEAD)]
     return _menu(
-        app,
-        request.address,
+        request,
         items=[
             (_long_date(day), _in_words(day - today), app.address_for("day", day=day))
             for day in days
@@ -172,19 +169,15 @@ async def one_day(request: PageRequest, day: date) -> Page:
         )
     return PageLayout(
         title=_month_name(day),
-        home=app.address_for("main"),
         shortcuts=shortcuts,
         item="day",
         parts=[Flowing(Lines(said=lines))],
-    ).build(request.address)
+    ).build(request)
 
 
 async def about(request: PageRequest) -> Page:
     """What the service is, and why a calendar was chosen for it."""
-    app = request.app
     return PageLayout(
-        title=app.heading_for(request.address),
-        home=app.index,
         parts=[
             Flowing(
                 Prose.of(
@@ -196,7 +189,7 @@ async def about(request: PageRequest) -> Page:
                 )
             )
         ],
-    ).build(request.address)
+    ).build(request)
 
 
 async def goodbye(request: PageRequest) -> Page:
@@ -255,12 +248,12 @@ def build_application(now: Callable[[], datetime] | None = None) -> Sextile:
 # -- drawing -----------------------------------------------------------------
 
 
-def _month_page(app: Sextile, address: PageAddress, day: date) -> Page:
+def _month_page(request: PageRequest, day: date) -> Page:
+    app = request.app
     weeks = calendar.Calendar().monthdayscalendar(day.year, day.month)
     previous, following = _months_either_side(day)
     return PageLayout(
         title=_month_name(day).upper(),
-        home=app.address_for("main"),
         #  A grid is placed by cell rather than written along its rows. It is
         #  the whole of the page's content, and needs no flowing part at all.
         parts=[
@@ -284,7 +277,7 @@ def _month_page(app: Sextile, address: PageAddress, day: date) -> Page:
             ),
         ],
         item="month",
-    ).build(address)
+    ).build(request)
 
 
 def _draw_month(
@@ -302,8 +295,7 @@ def _draw_month(
 
 
 def _menu(
-    app: Sextile,
-    address: PageAddress,
+    request: PageRequest,
     *,
     title: str | None = None,
     items: list[tuple[str, str, PageAddress]],
@@ -311,8 +303,7 @@ def _menu(
 ) -> Page:
     """A menu, nine to a frame, divided by the framework's layout."""
     return PageLayout(
-        title=title if title is not None else app.heading_for(address),
-        home=app.index,
+        title=title,
         parts=[
             *([Once(Lines(said=(*preamble, "")))] if preamble else []),
             Flowing(
@@ -324,18 +315,15 @@ def _menu(
                 )
             ),
         ],
-    ).build(address)
+    ).build(request)
 
 
-def _notice(
-    app: Sextile, address: PageAddress, title: str | None, lines: list[str]
-) -> Page:
+def _notice(request: PageRequest, title: str | None, lines: list[str]) -> Page:
     """A page that simply says something, with no choices but the way back."""
     return PageLayout(
-        title=title if title is not None else app.heading_for(address),
-        home=app.address_for("main"),
+        title=title,
         parts=[Flowing(Lines(said=lines))],
-    ).build(address)
+    ).build(request)
 
 
 # -- helpers -----------------------------------------------------------------

@@ -10,6 +10,7 @@ from dataclasses import dataclass
 from typing import ClassVar
 
 from sextile.addressing import PageAddress
+from sextile.application import Sextile
 from sextile.formatting import (
     Entry,
     Figures,
@@ -22,6 +23,7 @@ from sextile.formatting import (
     farewell_page,
 )
 from sextile.layout import CHOICES_PER_FRAME, Flowing, Once, PageLayout, Room
+from sextile.testing import request_for
 from sextile.viewdata.canvas import Canvas
 from sextile.viewdata.controls import Colour
 from sextile.viewdata.frame import COLUMNS
@@ -31,6 +33,9 @@ CONTENT = range(2, 22)
 
 def at(digits: str) -> PageAddress:
     return PageAddress(digits)
+
+
+_APP = Sextile()
 
 
 def items(count: int) -> list[MenuItem]:
@@ -98,7 +103,7 @@ class TestAMenuInAPage:
     def test_twelve_entries_are_nine_and_three(self) -> None:
         page = PageLayout(
             title="ITEMS", home=at("1"), parts=[Flowing(Menu(entries=items(12)))]
-        ).build(at("8"))
+        ).build(request_for(_APP, at("8")))
         assert len(page.frames) == 2
         first, second = page.frame(0), page.frame(1)
         assert first is not None and second is not None
@@ -113,7 +118,7 @@ class TestAMenuInAPage:
                 Once(Lines(said=("A lead-in", "of four", "rows, which", "costs two"))),
                 Flowing(Menu(entries=items(12))),
             ],
-        ).build(at("8"))
+        ).build(request_for(_APP, at("8")))
         found = page.frame(0)
         assert found is not None
         #  Four rows gone of twenty, so eight two-row entries rather than nine.

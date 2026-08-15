@@ -384,7 +384,7 @@ class TestABoxFittedRoundItsLetters:
 
     def test_it_can_be_put_against_a_side_of_the_frame(self) -> None:
         layout = Composition()
-        box = lettering.boxed(layout, 0, "NEWS", load_font("silkscreen"), where=Align.RIGHT)
+        box = lettering.boxed(layout, 0, "NEWS", load_font("silkscreen"), where=Align.END)
         assert box.end == COLUMNS
 
     def test_and_the_box_it_made_can_have_more_put_in_it(self) -> None:

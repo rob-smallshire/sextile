@@ -255,15 +255,15 @@ class TestWhereAThingGoesIsTheCompositionsBusiness:
         assert layout.runs[0][0].column == 1
 
     def test_left_is_as_far_left_as_the_attributes_allow(self) -> None:
-        layout = Composition().blocks(0, Align.LEFT, [0x3F] * 4, Colour.RED)
+        layout = Composition().blocks(0, Align.START, [0x3F] * 4, Colour.RED)
         assert layout.runs[0][0].column == 1
 
     def test_and_left_is_column_zero_when_nothing_is_needed(self) -> None:
-        layout = Composition().text(0, Align.LEFT, "ABCD")
+        layout = Composition().text(0, Align.START, "ABCD")
         assert layout.runs[0][0].column == 0
 
     def test_right_is_flush_with_the_last_column(self) -> None:
-        layout = Composition().text(0, Align.RIGHT, "ABCD")
+        layout = Composition().text(0, Align.END, "ABCD")
         assert layout.runs[0][0].end == COLUMNS
 
 
@@ -367,7 +367,7 @@ class TestPanels:
 
     def test_it_can_be_asked_for_a_side_of_the_frame(self) -> None:
         layout = Composition()
-        panel = layout.panel(0, Align.RIGHT, width=8, colour=Colour.BLUE)
+        panel = layout.panel(0, Align.END, width=8, colour=Colour.BLUE)
         assert panel.end == COLUMNS
 
 

@@ -77,21 +77,27 @@ __all__ = [
 
 
 class Align(Enum):
-    """Where to put something, for a caller that would rather not count.
+    """Where to put something along an axis, for a caller that would rather not count.
 
-    Given instead of a column. Centring is accounting about attributes: what a
-    style costs in cells decides whether the middle is reachable at all, and
-    that accounting is what a composition is for. A caller doing it must know the
-    cost before it knows the column, and three callers who did came out a cell
-    and a half apart.
+    `START` and `END` are spelled for the axis: the left or right edge where the
+    axis is a row's columns, the top or bottom where it is the frame's rows.
+    Spelling them so rather than `LEFT`/`RIGHT` is what lets one enum place a
+    thing across a row and down a frame without `LEFT` having to mean "top".
+
+    Given instead of a coordinate because centring is accounting about
+    attributes: what a style costs in cells decides whether the middle is
+    reachable at all, and that accounting is what a composition is for. A caller
+    doing it must know the cost before the coordinate, and three callers who did
+    came out a cell and a half apart.
     """
 
-    LEFT = "left"
+    START = "start"
     CENTRE = "centre"
-    RIGHT = "right"
+    END = "end"
 
 
-#: A column, or a request to be put somewhere.
+#: A coordinate along an axis -- a column across a row, or a row down the frame
+#: -- or an `Align` asking to be placed without one being counted.
 Where = int | Align
 
 #: What a panel costs to the left of its own first cell: one, to choose the
@@ -293,9 +299,9 @@ class Composition:
         if isinstance(row, int):
             return row, 0
         deep, top = (len(within.rows), within.rows[0]) if within else (ROWS, 0)
-        if row is Align.LEFT:
+        if row is Align.START:
             return top, 0
-        if row is Align.RIGHT:
+        if row is Align.END:
             return max(top + deep - len(rows), top), 0
         first, last = _lit_rows(rows)
         if first is None or last is None:
@@ -312,9 +318,9 @@ class Composition:
             return where
         cells, origin = _cells_and_origin(within)
         least = _leftmost_start(needed, within)
-        if where is Align.RIGHT:
+        if where is Align.END:
             return max(origin + cells - width, least)
-        if where is Align.LEFT:
+        if where is Align.START:
             return least
         return max(origin + _centred_start(width, extent=cells), least)
 
@@ -423,9 +429,9 @@ class Composition:
 
 def _top_row(where: Align, deep: int) -> int:
     """The row something `deep` rows tall starts on to sit down the frame."""
-    if where is Align.LEFT:
+    if where is Align.START:
         return 0
-    if where is Align.RIGHT:
+    if where is Align.END:
         return max(ROWS - deep, 0)
     return _centred_start(deep, extent=ROWS)
 

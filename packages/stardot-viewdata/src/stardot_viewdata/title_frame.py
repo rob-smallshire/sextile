@@ -63,7 +63,7 @@ def draw_masthead(canvas: Canvas, name: str) -> None:
     layout = Composition()
     stripe = layout.panel(
         BANNER_ROW,
-        Align.LEFT,
+        Align.START,
         colour=BANNER_BACKGROUND,
         width=COLUMNS - 1,
         rows=lettering.rows_needed(face),

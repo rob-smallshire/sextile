@@ -178,6 +178,14 @@ session rather than about any one page.
     run_service  render_page  add_listening_arguments  add_form_arguments
     ApplicationSpecError
 
+### `sextile.compass` — the four keys that move about a page, drawn
+
+    ROWS  compass
+
+The picture of `W`/`A`/`S`/`D` is the framework's, not any one service's, so a
+service drawing its own guide page reaches for the same one rather than
+redrawing it. `ROWS` is how many rows it occupies.
+
 ## What is internal
 
 Everything else, and specifically:
@@ -189,7 +197,6 @@ Everything else, and specifically:
 | `routing` | a service declares routes; the router matches them. `Converter` is the extension point, and it and the two errors it raises are at the top level |
 | `pages` | reached through `sextile.handlers` or the `Sextile` methods |
 | `session`, `server` | how a call is answered, which no page takes part in |
-| `compass` | drawn by the framework's own pages |
 | `viewdata.command_line`, `.countdown`, `.parting`, `.repaint` | what the session is built from |
 | `viewdata.ansi` | for looking at a frame without a terminal |
 

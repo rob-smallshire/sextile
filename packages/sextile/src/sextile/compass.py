@@ -32,6 +32,11 @@ from sextile.viewdata.blocks import BLOCKS_DOWN, Icon, icon
 from sextile.viewdata.composition import Align, Composition
 from sextile.viewdata.controls import Colour
 
+__all__ = [
+    "ROWS",
+    "compass",
+]
+
 #: One arrow, and the three turns of it. A long shaft and a head of two blocks
 #: a side stepping back from the tip; the turn costs the head nothing, because
 #: blocks laid corner to corner read as the diagonal they are.

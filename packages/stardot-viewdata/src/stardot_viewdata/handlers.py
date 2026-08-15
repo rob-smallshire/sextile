@@ -38,12 +38,12 @@ from sextile import (
     menu_page,
     notice_page,
     page,
+    prose_page,
 )
-from sextile.formatting import MenuItem, Prose, farewell_page
+from sextile.formatting import MenuItem, farewell_page
 from sextile.layout import (
     HOME_KEY,
     Drawn,
-    Flowing,
     Once,
     PageLayout,
     Shortcut,
@@ -245,17 +245,12 @@ async def topics_index(request: PageRequest) -> Page:
     app = request.app
     topics = await _read(request, lambda repository: repository.topics(limit=60))
     if not topics:
-        return PageLayout(
-            parts=[
-                Flowing(
-                    Prose.of(
-                        "NO TOPICS held yet.",
-                        "Topics are known only for posts seen since the board's "
-                        "feed began carrying them. Older posts have none.",
-                    )
-                )
-            ],
-        ).build(request)
+        return prose_page(
+            request,
+            "NO TOPICS held yet.",
+            "Topics are known only for posts seen since the board's feed began "
+            "carrying them. Older posts have none.",
+        )
     items = [
         MenuItem(
             title,
@@ -288,18 +283,13 @@ async def one_post(request: PageRequest, post_id: int) -> Page:
     """One post in full, or a notice where the archive has not seen it."""
     post = await _read(request, lambda repository: repository.post(post_id))
     if post is None:
-        return PageLayout(
+        return prose_page(
+            request,
+            f"Post {post_id} is NOT in the archive.",
+            "This service holds what it has seen in the board's feed, which "
+            "reaches back only a little way.",
             title="POST",
-            parts=[
-                Flowing(
-                    Prose.of(
-                        f"Post {post_id} is NOT in the archive.",
-                        "This service holds what it has seen in the board's feed, "
-                        "which reaches back only a little way.",
-                    )
-                )
-            ],
-        ).build(request)
+        )
     return post_page(request, post, untitled=SERVICE_NAME)
 
 
@@ -308,22 +298,16 @@ async def about(request: PageRequest) -> Page:
     """What the service is, how much it holds, and how its numbering works."""
     app = request.app
     held = await _read(request, lambda repository: repository.count_posts())
-    return PageLayout(
+    return prose_page(
+        request,
+        "A Viewdata service carrying posts from stardot.org.uk, for users of "
+        "Acorn computers and emulators.",
+        f"{held} posts held.",
+        "Page numbers follow the board's own identifiers, so *82489493# here is "
+        "post 489493 there.",
+        "Served by Sextile, named after the star key on a viewdata keypad.",
         title=f"ABOUT {app.name.upper()}",
-        parts=[
-            Flowing(
-                Prose.of(
-                    "A Viewdata service carrying posts from stardot.org.uk, for "
-                    "users of Acorn computers and emulators.",
-                    f"{held} posts held.",
-                    "Page numbers follow the board's own identifiers, so "
-                    "*82489493# here is post 489493 there.",
-                    "Served by Sextile, named after the star key on a viewdata "
-                    "keypad.",
-                )
-            )
-        ],
-    ).build(request)
+    )
 
 
 #  Titled, and so listed: the contents page is a directory of numbers that

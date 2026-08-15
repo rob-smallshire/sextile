@@ -191,19 +191,15 @@ class Line:
 For running text, leave the line breaks to the framework:
 
 ```python
-PageLayout(
+from sextile import prose_page
+
+prose_page(
+    request,
+    "A Viewdata service carrying posts from stardot.org.uk, for "
+    "users of Acorn computers and emulators.",
+    f"{held} posts held.",
     title="ABOUT STARDOT",
-    home=self.index,
-    parts=[
-        Flowing(
-            Prose.of(
-                "A Viewdata service carrying posts from stardot.org.uk, for "
-                "users of Acorn computers and emulators.",
-                f"{held} posts held.",
-            )
-        )
-    ],
-).build(request)
+)
 ```
 
 Each argument to `Prose.of` is a paragraph; the framework wraps and spaces them

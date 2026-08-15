@@ -12,7 +12,7 @@ from sextile.declarations import PageRoute
 from sextile.formatting import MenuItem
 from sextile.layout import Shortcut
 from sextile.page import Page, PageFrame
-from sextile.pages import menu_page, notice_page
+from sextile.pages import menu_page, notice_page, prose_page
 from sextile.testing import request_for
 from sextile.viewdata.canvas import Canvas
 
@@ -124,3 +124,16 @@ class TestMenuItem:
 
         with pytest.raises(ValueError, match="not a page"):
             _APP.menu_item("nowhere")
+
+
+class TestProsePage:
+    def test_it_shows_its_paragraphs(self) -> None:
+        page = prose_page(request_for(_APP), "First para.", "Second para.")
+        shown = text_of(page)
+        assert "First para." in shown
+        assert "Second para." in shown
+
+    def test_its_header_comes_from_the_registration(self) -> None:
+        app = _titled("about", "About this")
+        page = prose_page(request_for(app, "1"), "Something.")
+        assert "ABOUT THIS" in text_of(page).splitlines()[0]

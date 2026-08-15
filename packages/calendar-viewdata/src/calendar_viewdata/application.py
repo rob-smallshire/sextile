@@ -41,8 +41,9 @@ from sextile import (
     keys,
     menu_page,
     notice_page,
+    prose_page,
 )
-from sextile.formatting import Lines, MenuItem, Prose, farewell_page
+from sextile.formatting import Lines, MenuItem, farewell_page
 from sextile.layout import Drawn, Flowing, Once, PageLayout, Shortcut
 from sextile.viewdata.canvas import Canvas
 from sextile.viewdata.controls import Colour
@@ -175,19 +176,14 @@ async def one_day(request: PageRequest, day: date) -> Page:
 
 async def about(request: PageRequest) -> Page:
     """What the service is, and why a calendar was chosen for it."""
-    return PageLayout(
-        parts=[
-            Flowing(
-                Prose.of(
-                    "A calendar, served as Viewdata frames.",
-                    "It exists to demonstrate that Sextile is a framework and "
-                    "not one service: nothing here knows about forums, and "
-                    "nothing in the framework knows about calendars.",
-                    "Everything it shows comes from the standard library.",
-                )
-            )
-        ],
-    ).build(request)
+    return prose_page(
+        request,
+        "A calendar, served as Viewdata frames.",
+        "It exists to demonstrate that Sextile is a framework and not one "
+        "service: nothing here knows about forums, and nothing in the framework "
+        "knows about calendars.",
+        "Everything it shows comes from the standard library.",
+    )
 
 
 async def goodbye(request: PageRequest) -> Page:

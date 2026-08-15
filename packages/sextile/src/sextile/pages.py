@@ -16,7 +16,7 @@ The framework's own notices are these too: `Sextile.not_found`, `.failed` and
 from collections.abc import Sequence
 
 from sextile.addressing import PageAddress
-from sextile.formatting import Entry, Lines, Menu
+from sextile.formatting import Entry, Lines, Menu, Prose
 from sextile.layout import (
     _DEFAULT_HOME,
     DEFAULT_FURNITURE,
@@ -34,6 +34,7 @@ from sextile.viewdata.controls import Colour
 __all__ = [
     "menu_page",
     "notice_page",
+    "prose_page",
 ]
 
 #: What a page's `home` is when the caller leaves it unset: the app's index,
@@ -133,4 +134,34 @@ def menu_page(
         shortcuts=shortcuts,
         item=item,
         parts=[*lead, Flowing(Menu(entries=items, empty=empty or ""))],
+    ).build(request)
+
+
+def prose_page(
+    request: PageRequest,
+    *paragraphs: str,
+    title: str | None = None,
+    home: _Home = _DEFAULT_HOME,
+    shortcuts: Sequence[Shortcut] = (),
+) -> Page:
+    """A page of running text, the line breaks left to the framework.
+
+    Args:
+        request: The request this page answers.
+        *paragraphs: The paragraphs, each wrapped to the frame and spaced from
+            the next. A long one runs on to further frames rather than being
+            cut.
+        title: The header, or None to take the registered title of the page.
+        home: Where `0` leads; unset takes `request.app.index`, `None` offers
+            no way home.
+        shortcuts: Keys offered on every frame besides the digits and `0`.
+
+    Returns:
+        The page, of as many frames as the text needed.
+    """
+    return PageLayout(
+        title=title,
+        home=home,
+        shortcuts=shortcuts,
+        parts=[Flowing(Prose.of(*paragraphs))],
     ).build(request)

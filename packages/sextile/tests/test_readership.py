@@ -10,7 +10,7 @@ from datetime import UTC, datetime, timedelta
 from sextile.addressing import PageAddress
 from sextile.application import Sextile
 from sextile.page import Page
-from sextile.pages.readership import callers_page, popular_page, recent_page
+from sextile.builtin.readership import callers_page, popular_page, recent_page
 from sextile.testing import request_for
 from sextile.visits import Visit
 

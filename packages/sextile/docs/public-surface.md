@@ -149,7 +149,7 @@ Pass a parameter rather than reading a constant.
     history  contents  names
 
 One line apiece in a service's routes. The pages behind them are
-`sextile.pages`, which is internal: a service reaches them through these
+`sextile.builtin`, which is internal: a service reaches them through these
 handlers or through the `Sextile` methods they call.
 
 ### `sextile.middleware` — what wraps every page

@@ -22,12 +22,12 @@ from importlib.metadata import version
 from sextile import keys
 from sextile.addressing import PageAddress, UnknownPageError, keyed
 from sextile.application import Middleware, Next, Sextile
+from sextile.builtin.guidance import GuideRow
 from sextile.content.transliterate import transliterate
 from sextile.declarations import Handler, PageInfo, PageRoute, page, routes_in, routes_on
 from sextile.forms import Form, Suggest, draw_form
 from sextile.held import Held
 from sextile.page import Page, PageFrame
-from sextile.pages.guidance import GuideRow
 from sextile.requests import Arrival, PageRequest, Parting
 from sextile.routing import Converter, NoSuchRouteError, RouteError
 

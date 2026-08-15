@@ -34,7 +34,7 @@ might be about.
    layout      PageLayout, parts, furniture             a page as its pieces
             |  formatting  Menu, Listing, Prose         a sequence as a part
             |
-   pages/      contents, names, history                 pages the framework
+   builtin/    contents, names, history                 pages the framework
             |  guidance, readership                     builds from what it knows
             |  handlers                                  the routes that name them
             |
@@ -699,7 +699,7 @@ the defaults end at thirty days because that is what the log keeps by default.
 
 **The framework builds four pages, not three.** `history`, `contents`, `names`
 — and now `guide`, which was Stardot's, written by hand, and much the better of
-the two help pages the workspace had. They live in `sextile/pages/` with the
+the two help pages the workspace had. They live in `sextile/builtin/` with the
 readership pages, all five being the same kind of thing: a page built from what
 the framework holds already, registered nowhere, mapped in by a service that
 wants it. `sextile/handlers.py` is the other half of that — the handlers a

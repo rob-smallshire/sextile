@@ -1,6 +1,6 @@
 """Handlers naming the framework's own pages, for a route to point at.
 
-The pages themselves are in `sextile.pages`, and are registered nowhere: a
+The pages themselves are in `sextile.builtin`, and are registered nowhere: a
 service maps them into its own numbering or does without. Each is reached
 through a method on the application, which a `PageRoute` cannot name without
 an instance to bind it to. These handlers are that binding, written once:

@@ -23,7 +23,7 @@ from dataclasses import dataclass
 from typing import Final
 
 from sextile.addressing import PageAddress, UnknownPageError
-from sextile.application import Neighbours, PageRequest, Parting, Sextile
+from sextile.application import Neighbours, PageRequest, Sextile
 from sextile.forms import draw_form
 from sextile.keys import (
     CONVENTIONAL_NEXT_FRAME,
@@ -183,7 +183,7 @@ class Session:
         """
         self._page = await self._application.timed_out(
             self._request(self._address),
-            Parting(frame_index=self._frame_index),
+            self._frame_index,
         )
         self._frame_index = 0
         self._finished = True

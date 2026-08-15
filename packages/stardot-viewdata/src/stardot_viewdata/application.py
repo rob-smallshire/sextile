@@ -18,7 +18,7 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Final
 
-from sextile import Page, PageRequest, PageRoute, Parting, Sextile, standard_pages
+from sextile import Page, PageRequest, PageRoute, Sextile, standard_pages
 from stardot_viewdata import handlers
 from stardot_viewdata.handlers import ARCHIVE, SERVICE_NAME, ringing_off, unknown_page
 from stardot_viewdata.store.repository import Repository
@@ -89,8 +89,8 @@ def build_application(
         return unknown_page(request, target)
 
     @app.on_timed_out
-    async def released(request: PageRequest, parting: Parting) -> Page:
-        return ringing_off(request, parting)
+    async def released(request: PageRequest, frame_index: int) -> Page:
+        return ringing_off(request)
 
     return app
 

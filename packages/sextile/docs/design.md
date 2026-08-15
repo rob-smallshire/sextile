@@ -401,11 +401,12 @@ top of somebody else's service would repeat the mistake.
 
 **Ringing off is a page, both ways round.** A service that says goodbye does so
 on a page like any other, with `hang_up` set. The involuntary parting has one
-too — `Sextile.timed_out(request, parting)`, overridable with `@app.on_timed_out`.
+too — `Sextile.timed_out(request, frame_index)`, overridable with
+`@app.on_timed_out`.
 
 That handler is given the `PageRequest` for the page the caller was on — which
 carries the address, the history and the session, the same as any handler's —
-and a `Parting` beside it that carries only the frame, there being no frame on a
+and a `frame_index` beside it that says which frame, there being no frame on a
 request to read off. The terminal keeps none of it, so the one useful thing to
 hand over is where they had got to: "You were reading *82489493#" is what lets
 somebody dial back in and pick up. Both are whole frames: a line of text written

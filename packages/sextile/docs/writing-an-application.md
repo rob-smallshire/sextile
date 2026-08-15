@@ -293,13 +293,13 @@ released. It has a page of its own, told where the caller had reached:
 
 ```python
 @app.on_timed_out
-async def gone(request: PageRequest, parting: Parting) -> Page:
-    ...   # request.address, .history, .session; parting.frame_index
+async def gone(request: PageRequest, frame_index: int) -> Page:
+    ...   # request.address, .history, .session; frame_index for the frame
 ```
 
 The terminal keeps nothing, so `request.address` is worth showing: "You were
 reading *82489493#" is what lets a caller dial back in and pick up. The request
-is the page they were on; the `Parting` beside it says which frame. The default
+is the page they were on; `frame_index` says which frame of it. The default
 page does this, and names the service if it has a name:
 
 ```python

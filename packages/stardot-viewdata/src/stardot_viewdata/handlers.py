@@ -33,7 +33,6 @@ from sextile import (
     Page,
     PageRequest,
     PageRouter,
-    Parting,
     StateKey,
     farewell_page,
     keyed,
@@ -364,12 +363,12 @@ async def guide(request: PageRequest) -> Page:
 # -- the service's own voice, off any page number -----------------------------
 
 
-def ringing_off(request: PageRequest, parting: Parting) -> Page:
+def ringing_off(request: PageRequest) -> Page:
     """Said in the service's own voice as an idle caller is released.
 
     Naming the page they were on, because the terminal keeps nothing and a
     reader who dials back in has no other way to pick up where they were. The
-    request is the page they were on; the parting says which frame of it.
+    request is the page they were on.
     """
     app = request.app
     return farewell_page(

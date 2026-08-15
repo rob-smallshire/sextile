@@ -29,7 +29,7 @@ from sextile.forms import Form, TypeAhead, draw_form
 from sextile.handlers import standard_pages
 from sextile.page import Page, PageFrame
 from sextile.pages import farewell_page, menu_page, notice_page, prose_page
-from sextile.requests import Neighbours, PageRequest, Parting
+from sextile.requests import Neighbours, PageRequest
 from sextile.routing import Converter, NoSuchRouteError, RouteError
 from sextile.state import StateKey
 
@@ -54,7 +54,6 @@ __all__ = [
     "PageRequest",
     "PageRoute",
     "PageRouter",
-    "Parting",
     "RouteError",
     "Sextile",
     "StateKey",

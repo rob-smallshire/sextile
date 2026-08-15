@@ -55,7 +55,7 @@ from sextile.formatting import MenuItem
 from sextile.layout import CHOICES_PER_FRAME, HOME_KEY
 from sextile.page import Page
 from sextile.pages import notice_page
-from sextile.requests import Neighbours, PageRequest, Parting
+from sextile.requests import Neighbours, PageRequest
 from sextile.routing import Converter, ConverterFactory, Match, Router
 from sextile.state import State
 from sextile.visits import Visits
@@ -68,7 +68,6 @@ __all__ = [
     "PageRequest",
     "PageRoute",
     "PageRouter",
-    "Parting",
     "Sextile",
 ]
 
@@ -77,7 +76,7 @@ _QUOTED: Final = 30
 
 
 type NotFoundHandler = Callable[[PageRequest, str], Awaitable[Page]]
-type PartingHandler = Callable[[PageRequest, Parting], Awaitable[Page]]
+type PartingHandler = Callable[[PageRequest, int], Awaitable[Page]]
 type FailureHandler = Callable[[PageRequest, Exception], Awaitable[Page]]
 
 type Next = Callable[[PageRequest], Awaitable[Page | None]]
@@ -356,17 +355,17 @@ class Sextile:
             furniture=(),
         )
 
-    async def timed_out(self, request: PageRequest, parting: Parting) -> Page:
+    async def timed_out(self, request: PageRequest, frame_index: int) -> Page:
         """Say that the line is being released for want of a reply.
 
-        ``request`` is the page the reader was on; ``parting`` says which frame
-        of it. A page rather than a line of text over whatever was showing, for
-        the same reason every other thing this service says is a page: a message
-        overprinting a frame is hard to pick out from the frame. A service
-        registering `@app.on_timed_out` says goodbye its own way.
+        ``request`` is the page the reader was on; ``frame_index`` says which
+        frame of it. A page rather than a line of text over whatever was
+        showing, for the same reason every other thing this service says is a
+        page: a message overprinting a frame is hard to pick out from the frame.
+        A service registering `@app.on_timed_out` says goodbye its own way.
         """
         if self._timed_out is not None:
-            return await self._timed_out(request, parting)
+            return await self._timed_out(request, frame_index)
         return notice_page(
             request,
             "No reply for some time, so the line",

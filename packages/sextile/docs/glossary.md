@@ -61,6 +61,10 @@ as "was X" so a reader coming from older code or docs can find it.
   sets its own). Index is where the `0` key goes from every frame
   (`Sextile(index=...)`, the same as home unless set apart). The footer word
   `index` is the label for that key.
+- **idle timeout** — an idle caller is released with `on_timed_out(request,
+  frame_index)`: the request is the page they were on, `frame_index` which frame
+  of it. There was a `Parting` dataclass here; since it held only the frame it
+  was dropped for a bare `int`.
 - **session vs service state** — session state is one caller's own, lasting as
   long as the line is up (`request.session`); service state is shared across
   callers for the life of the service. Service state is `request.state`, a

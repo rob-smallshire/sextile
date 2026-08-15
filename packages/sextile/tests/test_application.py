@@ -21,7 +21,6 @@ from sextile.application import (
     Next,
     PageRequest,
     PageRoute,
-    Parting,
     Sextile,
 )
 from sextile.page import Page, PageFrame
@@ -285,14 +284,14 @@ class TestWhatAServiceIsCalled:
 
     async def test_the_name_is_used_where_the_framework_speaks(self) -> None:
         app = Sextile(name="Stardot")
-        page = await app.timed_out(request_for(app, "1"), Parting())
+        page = await app.timed_out(request_for(app, "1"), 0)
         assert "Thank you for calling Stardot." in row_of(page, row=7)
 
     async def test_a_nameless_service_is_not_thanked_on_its_behalf(self) -> None:
         #  Better to say nothing than to say "Thank you for calling ." or, worse,
         #  to thank the reader for calling the framework.
         app = Sextile()
-        page = await app.timed_out(request_for(app, "1"), Parting())
+        page = await app.timed_out(request_for(app, "1"), 0)
         assert "calling" not in "".join(
             page.frames[0].frame.to_grid()[0]
         )
@@ -305,51 +304,37 @@ class TestRingingOffForWantOfAReply:
 
     async def test_there_is_something_to_show(self) -> None:
         app = Sextile()
-        page = await app.timed_out(request_for(app, "1"), Parting())
+        page = await app.timed_out(request_for(app, "1"), 0)
         assert "no reply" in row_of(page, row=2).lower()
 
     async def test_it_says_the_line_has_gone(self) -> None:
         app = Sextile()
-        assert "OFF" in row_of(await app.timed_out(request_for(app, "1"), Parting())).upper()
+        assert "OFF" in row_of(await app.timed_out(request_for(app, "1"), 0)).upper()
 
     async def test_it_says_where_the_reader_had_got_to(self) -> None:
         #  So they can key it again on calling back, which is the one piece of
         #  their session worth handing over: the terminal keeps nothing. The
         #  page they were on is the request's address.
         app = Sextile()
-        page = await app.timed_out(request_for(app, "82489493"), Parting())
+        page = await app.timed_out(request_for(app, "82489493"), 0)
         assert "*82489493#" in row_of(page, row=5)
 
     async def test_a_service_can_say_it_its_own_way(self) -> None:
         app = Sextile()
 
         @app.on_timed_out
-        async def gone(request: PageRequest, parting: Parting) -> Page:
+        async def gone(request: PageRequest, frame_index: int) -> Page:
             return saying(f"YOU WERE ON *{request.address}#")
 
-        assert row_of(await app.timed_out(request_for(app, "8"), Parting())) == "YOU WERE ON *8#"
+        assert row_of(await app.timed_out(request_for(app, "8"), 0)) == "YOU WERE ON *8#"
 
     async def test_it_leaves_room_to_type_beneath(self) -> None:
         #  The reader is about to talk to their modem, and the cursor is put
         #  below the last thing said.
         app = Sextile(name="Stardot")
-        page = await app.timed_out(request_for(app, "1"), Parting())
+        page = await app.timed_out(request_for(app, "1"), 0)
         assert page.frames[0].frame.last_written_row() < 20
 
-
-class TestWhereTheCallerHadGot:
-    """What a timeout hook is told about how far a caller had got.
-
-    The page they were on, the history and the session are on the `PageRequest`
-    the hook is given, tested where a request is; the `Parting` beside it carries
-    only the frame, there being no frame on a request to read it off.
-    """
-
-    def test_the_frame_of_it(self) -> None:
-        assert Parting(frame_index=2).frame_index == 2
-
-    def test_a_parting_defaults_to_the_first_frame(self) -> None:
-        assert Parting().frame_index == 0
 
 
 class TestWhereTheReaderHasBeen:

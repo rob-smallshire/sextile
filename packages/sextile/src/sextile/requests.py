@@ -75,16 +75,3 @@ class PageRequest:
     the line, `state` is shared and lasts as long as the process. A read-only
     view here, because a change would reach every other caller at once; the
     lifespan writes it through `app.state`."""
-
-@dataclass(frozen=True)
-class Parting:
-    """How far into a page a caller had got when the line was taken from them.
-
-    Handed to the timeout hook alongside the `PageRequest` for the page they
-    were on, which carries the address, the history and the session. Only the
-    frame is here, because a request names a page and a page runs to several
-    frames: there is no frame on a request to read this off.
-    """
-
-    frame_index: int = 0
-    """Which frame of the page they were on, for a page that ran to several."""

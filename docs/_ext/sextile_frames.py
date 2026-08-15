@@ -71,6 +71,14 @@ def _fetch(app: Sextile, page: str = "1", *, frame: int = 0) -> Frame:
     return asyncio.run(run())
 
 
+def _page_frame(page: Page, index: int) -> Frame:
+    """One frame of an already-built page."""
+    one = page.frame(index)
+    if one is None:
+        raise ValueError(f"the page has no frame {index}")
+    return one.frame
+
+
 def _drive(app: Sextile, start: str, keys: str, frame: int) -> Frame:
     """Press keys from a page, and return the frame on screen after."""
 
@@ -127,17 +135,24 @@ class SextileFrame(SphinxDirective):
     def _from_snippet(self) -> Frame:
         namespace: dict[str, Any] = {"fetch": _fetch}
         exec("\n".join(self.content), namespace)  # noqa: S102 -- the docs' own snippet
+        index = self.options.get("frame", 0)
         frame = namespace.get("frame")
         if isinstance(frame, Frame):
             return frame
         page = namespace.get("page")
         if isinstance(page, Page):
-            index = self.options.get("frame", 0)
-            one = page.frame(index)
-            if one is None:
-                raise ValueError(f"the snippet's page has no frame {index}")
-            return one.frame
-        raise ValueError("the snippet must leave `frame` (a Frame) or `page` (a Page)")
+            return _page_frame(page, index)
+        #  A snippet that is nothing but the lesson leaves `app`, and :page: says
+        #  which page to draw -- so the shown code carries no fetch scaffolding.
+        app = namespace.get("app")
+        if isinstance(app, Sextile) and "page" in self.options:
+            keys = self.options.get("keys")
+            if keys:
+                return _drive(app, self.options["page"], keys, index)
+            return _fetch(app, self.options["page"], frame=index)
+        raise ValueError(
+            "the snippet must leave `frame` or `page`, or define `app` with :page:"
+        )
 
 
 def _copy_assets(app: Sphinx, exception: Exception | None) -> None:

@@ -12,13 +12,8 @@ from collections.abc import Callable, Mapping
 import pytest
 
 from sextile import Page, PageAddress, PageFrame, PageRequest, PageRoute, Sextile, keys
-from sextile.forms import (
-    HINT_COLOUR,
-    NOTE_COLOUR,
-    Field,
-    FieldSet,
-    draw_form,
-)
+from sextile.forms import Field, FieldSet, draw_form
+from sextile.forms.fields import HINT_COLOUR, NOTE_COLOUR
 from sextile.session.session import Session
 from sextile.testing import text_of
 from sextile.viewdata.canvas import Canvas

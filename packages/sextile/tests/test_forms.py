@@ -12,7 +12,8 @@ import pytest
 
 from sextile import Page, PageAddress, PageFrame, PageRequest, PageRoute, Sextile, keys
 from sextile.formatting import Entry, MenuItem
-from sextile.forms import SUBMIT_MARK, SUGGESTIONS, TypeAhead, draw_form
+from sextile.forms import SUGGESTIONS, TypeAhead, draw_form
+from sextile.forms.base import SUBMIT_MARK
 from sextile.session.session import Session
 from sextile.testing import text_of
 from sextile.viewdata.canvas import Canvas

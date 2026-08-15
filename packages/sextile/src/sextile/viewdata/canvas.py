@@ -16,6 +16,7 @@ from typing import Final, Self
 
 from sextile.viewdata.charset import mosaic_code
 from sextile.viewdata.controls import (
+    GRAPHICS_COLOURS,
     Attribute,
     Colour,
     alpha_colour,
@@ -251,28 +252,44 @@ class RowWriter:
         return self
 
     def _colour_in_force(self) -> Colour:
-        """The colour a character written here would take.
+        """The colour a character written here would take."""
+        return self._state_in_force()[0]
+
+    def _state_in_force(self) -> tuple[Colour, "_Mode"]:
+        """The colour and the mode a run written here would inherit.
 
         Attributes reset at the start of a row, so only this row matters, and
-        only the attributes before the cursor.
+        only the attributes before the cursor. The last colour attribute settles
+        both: a graphics colour leaves the cell in graphics, an alpha colour in
+        letters.
         """
-        colour = DEFAULT_COLOUR
+        colour, mode = DEFAULT_COLOUR, _Mode.ALPHA
         for column in range(self._column):
-            found = colour_of(self._frame.cell(self._row, column))
+            code = self._frame.cell(self._row, column)
+            found = colour_of(code)
             if found is not None:
                 colour = found
-        return colour
+                mode = _Mode.GRAPHICS if code in GRAPHICS_COLOURS else _Mode.ALPHA
+        return colour, mode
 
     @property
     def colour(self) -> Colour:
         """The colour the next character would take."""
         return self._colour
 
-    def at(self, column: int) -> Self:
-        """Move to a column, which must not be behind the cursor."""
+    def starting_at(self, column: int) -> Self:
+        """Move to a column and pick up the colour and mode in force there.
+
+        For a second writer beginning part way along a row another has already
+        drawn on -- a legend's words beside a symbol, a figure after a picture.
+        Reading what is in force is what makes the next write escape it: white
+        text after a mosaic emits the attribute that returns to letters, rather
+        than coming out as blocks. The column must not be behind the cursor.
+        """
         if not (self._column <= column <= COLUMNS):
             raise ValueError(f"cannot move from column {self._column} to {column}")
         self._column = column
+        self._colour, self._mode = self._state_in_force()
         return self
 
 

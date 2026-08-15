@@ -165,4 +165,4 @@ def bar(
     #  it to encode to 0x7F. The writer lays the graphics colour (and the
     #  separated attribute if asked) before the blocks, the cells bar reserved.
     patterns = [SOLID_BLOCKS] * solid + [0] * (room - solid)
-    canvas.row(row).at(column).mosaic(patterns, colour, separated=separated)
+    canvas.row(row).starting_at(column).mosaic(patterns, colour, separated=separated)

@@ -33,7 +33,7 @@ def _frame() -> Frame:
     canvas.right(0, str(_PAGE_NUMBER), Colour.WHITE)
     rule(canvas, 1)
     canvas.row(3).text("NS32016 TIMING INVESTIGATION", Colour.YELLOW)
-    canvas.row(5).text("RobertS", Colour.GREEN).at(30).text("21:20", Colour.GREEN)
+    canvas.row(5).text("RobertS", Colour.GREEN).starting_at(30).text("21:20", Colour.GREEN)
     for offset, line in enumerate(wrap_text(_BODY, COLUMNS)[:12]):
         canvas.row(7 + offset).text(line, Colour.WHITE)
     rule(canvas, 21)

@@ -142,6 +142,34 @@ class TestCapacity:
         assert canvas.frame.text_at(0, 0, 8) == "    HERE"
 
 
+class TestStartingAtAColumn:
+    """A writer that begins part way along a row someone else has drawn on."""
+
+    def test_it_writes_from_the_column(self) -> None:
+        canvas = Canvas()
+        canvas.row(0).starting_at(10).text("HERE")
+        assert canvas.frame.text_at(0, 10, 4) == "HERE"
+
+    def test_it_reads_the_colour_in_force(self) -> None:
+        #  A fresh writer resuming a row someone else coloured takes that
+        #  colour, so text in the same colour is not given a needless attribute.
+        canvas = Canvas()
+        canvas.row(0).text("REDRED", Colour.RED)
+        canvas.row(0).starting_at(10).text("SAME", Colour.RED)
+        assert canvas.frame.text_at(0, 10, 4) == "SAME"
+        assert not canvas.frame.is_attribute(0, 10)
+
+    def test_it_escapes_a_graphics_run_to_its_left(self) -> None:
+        #  A fresh writer starting after a mosaic picture is in graphics, so
+        #  white text there emits the alpha attribute that returns to letters --
+        #  what a legend's words beside a symbol need.
+        canvas = Canvas()
+        canvas.row(0).mosaic([0b111111] * 3, Colour.YELLOW)
+        canvas.row(0).starting_at(4).text("W", Colour.WHITE)
+        assert canvas.frame.cell(0, 4) == Attribute.ALPHA_WHITE
+        assert canvas.frame.text_at(0, 5, 1) == "W"
+
+
 class TestAlignment:
     #  Centring is `drawing.centred`, tested there: it goes through a
     #  Composition, which is where the accounting about attributes belongs. Only

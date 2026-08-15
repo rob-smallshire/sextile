@@ -68,4 +68,7 @@ as "was X" so a reader coming from older code or docs can find it.
 - **form** — rows of a frame a reader types into, a field with furniture around
   it. `forms.Form`, `forms.Field`. `TypeAhead` (was `Suggest`) is a field with
   the best few matches beneath it, changing as the reader types; `FieldSet`
-  (was `Fields`) is a form of several fields at once.
+  (was `Fields`) is a form of several fields at once. Its `on_submit` (was
+  `complete`), `footnote` (was `note`), `submit_label` (was `sends`) and
+  `footer_items` (was `advice`) each say what they are; the handler types are
+  `SubmitHandler` (was `Complete`) and `Footnote` (was `Note`).

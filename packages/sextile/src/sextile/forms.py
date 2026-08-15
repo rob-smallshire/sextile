@@ -38,12 +38,12 @@ from sextile.viewdata.footer import FooterItem, Priority
 from sextile.viewdata.frame import COLUMNS, Frame
 
 __all__ = [
-    "Complete",
+    "SubmitHandler",
     "Field",
     "FieldSet",
     "Form",
     "Lookup",
-    "Note",
+    "Footnote",
     "SUGGESTIONS",
     "TypeAhead",
     "draw_form",
@@ -437,10 +437,10 @@ class Field:
 #: what RETURN would do is marked on the screen and the mark must match what
 #: RETURN actually does. So it is asked of half-keyed forms and empty ones, and
 #: must answer rather than raise.
-type Complete = Callable[[Mapping[str, str]], PageAddress | None]
+type SubmitHandler = Callable[[Mapping[str, str]], PageAddress | None]
 
 #: Something to say about what has been keyed so far, drawn beneath the fields.
-type Note = Callable[[Mapping[str, str]], Awaitable[str]]
+type Footnote = Callable[[Mapping[str, str]], Awaitable[str]]
 
 
 class FieldSet(Form):
@@ -470,11 +470,11 @@ class FieldSet(Form):
         self,
         *,
         fields: Sequence[Field],
-        complete: Complete,
-        note: Note | None = None,
-        note_row: int | None = None,
-        sends: str = "",
-        advice: Sequence[FooterItem] = (),
+        on_submit: SubmitHandler,
+        footnote: Footnote | None = None,
+        footnote_row: int | None = None,
+        submit_label: str = "",
+        footer_items: Sequence[FooterItem] = (),
         field_colour: Colour = FIELD_BACKGROUND,
         text_colour: Colour = FIELD_COLOUR,
     ) -> None:
@@ -484,14 +484,14 @@ class FieldSet(Form):
         #: answers. A page whose fields take digits cannot offer `0` for the
         #: index -- a nought keyed into a numeric field is a nought -- so it says
         #: how to leave some other way.
-        self._advice = tuple(advice)
+        self._footer_items = tuple(footer_items)
         self._fields = list(fields)
-        self._complete = complete
-        self._note = note
-        self._note_row = note_row
+        self._on_submit = on_submit
+        self._footnote = footnote
+        self._footnote_row = footnote_row
         #: What finishing the form does, in a word, shown against the key that
         #: does it. Empty for a form whose last field is self-explanatory.
-        self._sends = sends
+        self._submit_label = submit_label
         self._field_colour = field_colour
         self._text_colour = text_colour
         self._live = 0
@@ -505,7 +505,7 @@ class FieldSet(Form):
         return (
             FooterItem("TAB", "next field", Priority.PRIMARY),
             FooterItem("DEL", "rub out", Priority.SECONDARY),
-            *self._advice,
+            *self._footer_items,
         )
 
     @property
@@ -522,8 +522,8 @@ class FieldSet(Form):
     def rows(self) -> range:
         rows = [field.row for field in self._fields]
         rows += [field.hint_row for field in self._fields if field.hint_row is not None]
-        if self._note_row is not None:
-            rows.append(self._note_row)
+        if self._footnote_row is not None:
+            rows.append(self._footnote_row)
         return range(self.at + min(rows), self.at + max(rows) + 1)
 
     @property
@@ -551,8 +551,8 @@ class FieldSet(Form):
             self.live.value = self.live.value[:-1]
         elif len(self.live.value) < self.live.width:
             self.live.value += key.upper()
-        if self._note is not None:
-            self._said = await self._note(self.values)
+        if self._footnote is not None:
+            self._said = await self._footnote(self.values)
 
     def submit(self) -> PageAddress | None:
         """Onward, and away from the last.
@@ -567,7 +567,7 @@ class FieldSet(Form):
         if self._live + 1 < len(self._fields):
             self._live += 1
             return None
-        return self._complete(self.values)
+        return self._on_submit(self.values)
 
     def draw(self, canvas: Canvas) -> None:
         for offset, field in enumerate(self._fields):
@@ -597,8 +597,8 @@ class FieldSet(Form):
                 canvas.row(self.at + field.hint_row).text(
                     fitted(field.hint, COLUMNS - 1), HINT_COLOUR
                 )
-        if self._note_row is not None and self._said:
-            canvas.row(self.at + self._note_row).text(
+        if self._footnote_row is not None and self._said:
+            canvas.row(self.at + self._footnote_row).text(
                 fitted(self._said, COLUMNS - 1), NOTE_COLOUR
             )
 
@@ -617,9 +617,9 @@ class FieldSet(Form):
         nothing: on a slow line a reader cannot tell a dead key from a slow
         one.
         """
-        if offset + 1 != len(self._fields) or self._complete(self.values) is None:
+        if offset + 1 != len(self._fields) or self._on_submit(self.values) is None:
             return
-        said = f" {SUBMIT_MARK} {self._sends}".rstrip()
+        said = f" {SUBMIT_MARK} {self._submit_label}".rstrip()
         if row.remaining > len(said):
             row.text(said, Colour.YELLOW)
 

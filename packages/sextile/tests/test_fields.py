@@ -51,7 +51,7 @@ def a_form(**wanted: object) -> FieldSet:
             Field("latitude", "LATITUDE", FIRST_ROW, _takes("NS")),
             Field("longitude", "LONGITUDE", FIRST_ROW + 1, _takes("EW")),
         ],
-        complete=where,
+        on_submit=where,
         **wanted,  # type: ignore[arg-type]
     )
 
@@ -195,7 +195,7 @@ class TestWhatIsOnTheScreen:
                 Field("longitude", "LONGITUDE", FIRST_ROW + 2, _takes("EW"),
                       hint="1.1W or -1.1", hint_row=FIRST_ROW + 3),
             ],
-            complete=where,
+            on_submit=where,
         )
         frame = Frame()
         draw_form(frame, form)
@@ -213,7 +213,7 @@ class TestWhatIsOnTheScreen:
                 Field("longitude", "LONGITUDE", FIRST_ROW + 2, _takes("EW"),
                       hint="1.1W or -1.1", hint_row=FIRST_ROW + 3),
             ],
-            complete=where,
+            on_submit=where,
         )
         await form.typed(keys.RIGHT)
         frame = Frame()
@@ -227,7 +227,7 @@ class TestWhatIsOnTheScreen:
             return f"{len(values['latitude'])} keyed"
 
         frame = Frame()
-        draw_form(frame, await typing(a_form(note=note, note_row=NOTE_ROW), "54"))
+        draw_form(frame, await typing(a_form(footnote=note, footnote_row=NOTE_ROW), "54"))
         assert "2 keyed" in text_of(frame).splitlines()[NOTE_ROW]
 
 
@@ -290,7 +290,7 @@ class TestTheBarIsTheFieldsWidth:
     def _bounded(self) -> FieldSet:
         return FieldSet(
             fields=[Field("latitude", "LAT", FIRST_ROW, _takes("NS"), width=6)],
-            complete=where,
+            on_submit=where,
         )
 
     async def test_it_stops_after_the_field(self) -> None:
@@ -331,8 +331,8 @@ class TestSayingWhatReturnWillDo:
                 Field("latitude", "LAT", FIRST_ROW, _takes("NS"), width=6),
                 Field("longitude", "LON", FIRST_ROW + 1, _takes("EW"), width=6),
             ],
-            complete=where,
-            sends="forecast",
+            on_submit=where,
+            submit_label="forecast",
         )
 
     async def test_the_last_field_says_what_return_does(self) -> None:
@@ -405,9 +405,9 @@ def _noted() -> FieldSet:
     return FieldSet(
         fields=[Field(name="where", label="WHERE", row=2, takes=str.isdigit,
                       hint="a number", hint_row=HINT_ROW)],
-        complete=lambda values: None,
-        note=note,
-        note_row=NOTE_ROW,
+        on_submit=lambda values: None,
+        footnote=note,
+        footnote_row=NOTE_ROW,
     )
 
 

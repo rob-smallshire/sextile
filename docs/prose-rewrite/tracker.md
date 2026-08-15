@@ -107,4 +107,4 @@ Source docstrings + comments (src/sextile):
 
 ### Phase 4 — CLAUDE.md
 
-- [ ] Root CLAUDE.md, especially the writing-standard section.
+- [x] Root CLAUDE.md  (Template/templates.py/preamble drift fixed; rule 9 added; exemplars refreshed)

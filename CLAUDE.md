@@ -140,25 +140,23 @@ same mistake facing the other way: `test_templates.py` went with
 shortcut answering its arrow, and of what the footer calls the way home -- all
 three of which survived the deletion under another name.
 
-**A new field on `Template` needs a second caller, or it wants to be a
-subclass.** The shapes are configured rather than composed, which is right for
-a small closed vocabulary and turns into twenty knobs if nobody counts. Three
-fields were added in a day, each for one page; one of them, `home_says`, would
-have failed this test and was folded back into `home` the day after.
+**A new field on `PageLayout` needs a second caller, or the page wants a part of
+its own.** The layout is configured from a small closed vocabulary of fields,
+which is right until nobody counts and it grows twenty knobs. Three fields were
+added in a day, each for one page; one of them, `home_says`, would have failed
+this test and was folded back into `home` the day after.
 
 Before adding one, look for the field it is a special case of. `home` and
-`shortcuts` were the same idea — a key on every frame leading to a fixed
-address — spelled two ways, so the second way went. And check what a page
-needing this could do instead: a service can subclass `Template` or
-`RowTemplate` and supply its own drawing, which is what `weather-viewdata` does
-for a forecast day four rows tall.
+`shortcuts` were the same idea — a key on every frame leading to a fixed address
+— spelled two ways, so the second way went. And check what the page could do
+instead: content that is not a plain sequence is a `Part`, and a sequence drawn
+its own way is a `Formatter` or `RowFormatter` subclass, which is what
+`weather-viewdata` does for a forecast day four rows tall.
 
-Note also that `preamble`, `headings` and `footnote` are one idea spelled three
-times — rows around the entries, differing in whether they sit above or below
-and whether they appear on the first frame or on all of them. They are left
-alone deliberately: with one or two callers each there is not yet enough
-evidence to say what the single field would look like. A third caller for any
-of them is the moment to unify them, not to add a fourth.
+The parts model already absorbed one such pressure: `preamble`, `headings` and
+`footnote` were three fields for one idea — rows around the entries — and are
+now a `Once` or `Every` part at the right point in the list. Reach for that
+route before adding a field.
 
 ## Writing the documentation
 
@@ -184,8 +182,8 @@ Do not restate a type — `mypy --strict` has already said it; say what the valu
   the contract, it is in the wrong place.
 
 The discursive register belongs in `#` comments, where there is no contract
-competing for the space. The existing why-comments in `templates.py` are the
-model; its class docstrings are not.
+competing for the space. The why-comments in `routing.py` and `keys.py` are the
+model.
 
 **The rules, in order of how often they are broken here.**
 
@@ -199,10 +197,10 @@ model; its class docstrings are not.
 3. No anthropomorphism. A class does not say, want, know, ask or decide. Name
    the actor — the caller, the subclass author, the session — or rewrite so
    none is needed.
-4. One term, one meaning, fixed across the package. *Frame*, *entry*,
-   *template*, *row*, *chrome* each have exactly one sense. Do not press a word
-   into a second job because it sounds well (as *shape* was: subclass kind,
-   visual layout, and goodness of fit, in one file).
+4. One term, one meaning, fixed across the package. *Frame*, *entry*, *part*,
+   *row*, *furniture* each have exactly one sense. Do not press a word into a
+   second job because it sounds well (as *shape* was: subclass kind, visual
+   layout, and goodness of fit, in one file).
 5. Give an `Example:` wherever the call sequence is not obvious from the
    signature — anything constructed then built, anything subclassed. Six lines
    of real code outteach three paragraphs.
@@ -216,6 +214,13 @@ model; its class docstrings are not.
    sentence survives being said flatly, say it flatly. This is the rule that
    catches the error the others let through, because plain prose makes a wrong
    claim look wrong.
+9. Cut the "how it might have been worse" narrative. Three forms of it: tours of
+   other named systems and their failure modes (InDesign, LaTeX, Textual);
+   counterfactual justifications ("a framework that knew X would be a framework
+   with an opinion"); and speculative future-guards ("three things would show it
+   had overreached"). State the design fact and, briefly, why it fits *this*
+   problem. A framework the project models (Starlette) or the protocol (Prestel,
+   viewdata) named in passing is fine; the digression built around it is not.
 
 The same applies to Markdown in `docs/`, with the register loosened one notch:
 a reader there has chosen to be reading, but still cannot act on a metaphor.

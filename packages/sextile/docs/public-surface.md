@@ -86,6 +86,7 @@ Public submodules:
 | `composition` | `Composition`, `Panel`, `Align` — placing things relative to each other |
 | `lettering` | outsized letters: `place`, `boxed`, `cells_for`, `width`, `rows_for` |
 | `font` | `Font`, `load_font`, `font_names` |
+| `footer` | `FooterItem`, `Priority`, `movement`, `render_footer`, `ROOM` — composing a prompt for a frame drawn by hand |
 | `wrapping` | `wrap_text`, `wrap_within` |
 
 Internal to the framework, and not to be imported: `command_line`,
@@ -183,7 +184,6 @@ Everything else, and specifically:
 | `pages` | reached through `sextile.handlers` or the `Sextile` methods |
 | `session`, `server` | how a call is answered, which no page takes part in |
 | `compass`, `demo` | drawn by the framework's own pages |
-| `viewdata.chrome`, `.footer`, `.layout` | what a template is built from |
 | `viewdata.command_line`, `.countdown`, `.parting`, `.repaint` | what the session is built from |
 | `viewdata.ansi` | for looking at a frame without a terminal |
 

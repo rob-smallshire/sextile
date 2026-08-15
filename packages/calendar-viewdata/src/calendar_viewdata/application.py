@@ -31,10 +31,16 @@ from datetime import UTC, date, datetime, timedelta
 from typing import Final, Protocol
 
 from sextile import (
+    Custom,
+    Lines,
+    MenuItem,
+    OnOneFrame,
     Page,
+    PageLayout,
     PageRequest,
     PageRoute,
     Sextile,
+    Shortcut,
     StateKey,
     farewell_page,
     keyed,
@@ -44,8 +50,6 @@ from sextile import (
     prose_page,
     standard_pages,
 )
-from sextile.formatting import Lines, MenuItem
-from sextile.layout import Custom, OnOneFrame, PageLayout, Shortcut
 from sextile.viewdata.canvas import Canvas
 from sextile.viewdata.controls import Colour
 

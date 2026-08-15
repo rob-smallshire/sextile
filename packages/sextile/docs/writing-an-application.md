@@ -15,9 +15,7 @@ the standard library, and written to be read.
 ## A minimal application
 
 ```python
-from sextile import Page, PageRequest, PageRoute, Sextile
-from sextile.formatting import Lines
-from sextile.layout import Flow, PageLayout
+from sextile import Flow, Lines, Page, PageLayout, PageRequest, PageRoute, Sextile
 
 async def main(request: PageRequest) -> Page:
     return PageLayout(

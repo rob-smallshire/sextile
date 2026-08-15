@@ -35,9 +35,18 @@ application in its first few lines.
     Middleware  CallNext
     Converter  UnknownPageError  NoSuchRouteError  RouteError
     Form  TypeAhead  draw_form
+    PageLayout  Flow  Custom  OnOneFrame  Shortcut
+    Lines  Prose  MenuItem
     menu_page  notice_page  prose_page  farewell_page
     standard_pages  transliterate
     keys  handlers  __version__
+
+The commonest `layout` and `formatting` shapes are re-exported here too, so a
+plain page needs no second import line: `PageLayout` and the parts a service
+reaches for first (`Flow`, `Custom`, `OnOneFrame`, `Shortcut`), and the plain
+`formatting` shapes (`Lines`, `Prose`, `MenuItem`). The full sets, and the
+subclassing machinery, stay in [`sextile.layout`](#sextilelayout--a-page-as-furniture-and-parts)
+and [`sextile.formatting`](#sextileformatting--sequences-laid-out-as-parts).
 
 `keys` and `handlers` are modules, re-exported: `keys.BACK`,
 `keys.with_arrows`, and the rest of

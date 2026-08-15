@@ -128,9 +128,13 @@ returned by `build_application`. It was a `Sextile` subclass until August 2026;
 what moving it settled is worth recording, because a service of eighteen pages
 is where the shape either pays or does not.
 
-**Three overrides became handlers.** `describe`, `not_found` and `timed_out`
-were methods, which is why this had to be a class at all. `on_describe`,
-`on_not_found` and `on_timed_out` say the same things without one.
+**Three overrides became handlers, then two.** `describe`, `not_found` and
+`timed_out` were methods, which is why this had to be a class at all.
+`on_not_found` and `on_timed_out` say the last two without one, each handed the
+request. What `describe` did — better words for a page whose number carries a
+field — is now a `label=` beside each of those five routes, so there is no
+service-wide hook left to register: "Post 489493" is declared where "One post"
+is.
 
 **Whose archive it is now reads as a branch.** It was two booleans on the
 object — `_repository` and `_ours` — and a `startup` that consulted both. The

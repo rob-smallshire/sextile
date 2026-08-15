@@ -207,7 +207,7 @@ the prefix could not be stripped — a service draws its page number onto
 the frame, so a number with its prefix removed would be drawn as one the reader
 could not key back — which meant the numbering had to be *merged and disjoint*
 rather than nested. Everything that reports across a service then had to see
-through the seam: routing, keywords, the contents, `describe`. A mounted
+through the seam: routing, keywords, the contents, `label_for`. A mounted
 service had to be handed its own state rather than its host's. And a `history`
 page inside a mount could still only name half of where a reader had been,
 because a history is about a call and a call crosses the whole namespace.
@@ -271,8 +271,8 @@ point: a service that names each page in its menu, again wherever one is
 listed, and again in its own guide has three copies which do not stay in step,
 and that is exactly what Stardot had.
 
-`Sextile.describe` reads them, `Sextile.pages()` lists them, and
-`Sextile.page_info(name)` fetches one. **A page given no title is not
+`Sextile.title_for` and `Sextile.label_for` read them, `Sextile.pages()` lists
+them, and `Sextile.page_info(name)` fetches one. **A page given no title is not
 advertised** — which is how a title frame or a logoff page stays off the
 contents without a flag of its own.
 
@@ -328,11 +328,12 @@ self.alias("HISTORY", self.address_for("history"))
 
 It can live in the framework because there is nothing service-specific about it.
 What it lists are addresses, and what it *calls* them comes from
-`Sextile.describe`, whose default reads the route's own name and fields —
-"post 489493" — so the labels come out in the application's vocabulary without
-the framework knowing what a service is about. A service wanting better words
-overrides `describe`, and `Sextile.route(address)` is the numbering read
-backwards for anything else that needs it.
+`Sextile.label_for`, whose default reads the route's own title and fields —
+"One post 489493" — so the labels come out in the application's vocabulary
+without the framework knowing what a service is about. A route whose number
+carries a field says better words with `PageRoute(..., label=...)`, and
+`Sextile.route(address)` is the numbering read backwards for anything else that
+needs it.
 
 Two details that took a live walk to get right. Keys run 1–9 on *every* frame,
 as any other viewdata menu's do, because an entry shown but not selectable is
@@ -400,15 +401,16 @@ top of somebody else's service would repeat the mistake.
 
 **Ringing off is a page, both ways round.** A service that says goodbye does so
 on a page like any other, with `hang_up` set. The involuntary parting has one
-too — `Sextile.timed_out(parting)`, overridable with `@app.on_timed_out` —
-because no page number reaches it, so the framework calls the handler itself.
+too — `Sextile.timed_out(request, parting)`, overridable with `@app.on_timed_out`.
 
-That handler is given a `Parting`: the page the caller was on, the frame of it,
-where they had been, and what they had accumulated. The terminal keeps none of
-it, so the one useful thing to hand over is where they had got to — "You were
-reading *82489493#" is what lets somebody dial back in and pick up. Both are whole frames: a
-line of text written over whatever was showing is hard to pick out from the
-frame it lands on, which is what the first version of this did.
+That handler is given the `PageRequest` for the page the caller was on — which
+carries the address, the history and the session, the same as any handler's —
+and a `Parting` beside it that carries only the frame, there being no frame on a
+request to read off. The terminal keeps none of it, so the one useful thing to
+hand over is where they had got to: "You were reading *82489493#" is what lets
+somebody dial back in and pick up. Both are whole frames: a line of text written
+over whatever was showing is hard to pick out from the frame it lands on, which
+is what the first version of this did.
 
 **And the terminal is handed back usable.** Every frame begins by hiding the
 cursor, but once the line has gone the reader is talking to their modem again —
@@ -662,7 +664,7 @@ in a test, and a service that wants its log elsewhere writes forty lines rather
 than going without the pages.
 
 **The record is the address.** `321<geoname-id>` is what the reader keyed, what
-the router parses back, and what `describe` names — so there is nothing else to
+the router parses back, and what `label_for` names — so there is nothing else to
 store and nothing that can come to disagree with it. A prefix filter is then a
 namespace filter, which is what a first digit already means: a weather service
 asks for `321` and gets its forecasts.

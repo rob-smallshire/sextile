@@ -293,12 +293,13 @@ released. It has a page of its own, told where the caller had reached:
 
 ```python
 @app.on_timed_out
-async def gone(parting: Parting) -> Page:
-    ...   # parting.address, .frame_index, .history, .session
+async def gone(request: PageRequest, parting: Parting) -> Page:
+    ...   # request.address, .history, .session; parting.frame_index
 ```
 
-The terminal keeps nothing, so `parting.address` is worth showing: "You were
-reading *82489493#" is what lets a caller dial back in and pick up. The default
+The terminal keeps nothing, so `request.address` is worth showing: "You were
+reading *82489493#" is what lets a caller dial back in and pick up. The request
+is the page they were on; the `Parting` beside it says which frame. The default
 page does this, and names the service if it has a name:
 
 ```python
@@ -333,7 +334,8 @@ here, they need no second copy downstream:
 
 ```python
 app.page_info("users").title             # "By user"
-app.describe(PageAddress("5"))           # "By user"
+app.title_for(PageAddress("5"))          # "By user"
+app.label_for(PageAddress("5"))          # "By user", or "Post 489493" for a field page
 app.pages()                              # every page that has a title
 ```
 
@@ -380,9 +382,10 @@ async def days(request: PageRequest) -> Page:
     return menu_page(request, items=items)   # headed BY DAY
 ```
 
-`describe(address)` gives the registered title, and `heading_for(address)` gives
-that title in upper case, which is what a heading is. Pages whose heading is
-*not* their title — a post's forum, a day's date — pass one explicitly.
+`title_for(address)` gives the registered title as registered; the layout
+shouts it into the header where a page gave no title of its own. Pages whose
+heading is *not* their title — a post's forum, a day's date — pass one
+explicitly, and the layout draws that one as it is.
 
 The framework's own pages work the same way: map `contents` into the service's
 numbering with a title and the page uses it, or keeps its own if none is given.
@@ -474,14 +477,15 @@ patterns rather than enumerating every value — `*52<user-id>#  One user`
 
 Key 1 goes back one page (the same as `*0#`), 2 goes back two, and longer
 histories page with `W`/`S`/`#`. The label on each entry comes from the route
-by default, reading its name and fields, so `82{post_id:int}` named `post`
-shows as "post 489493". Register `@app.on_describe` to use the reader's own
-words instead; return `None` where the route's own label will do:
+by default, reading its title and fields, so `82{post_id:int}` titled "One post"
+shows as "One post 489493". A route whose number carries a field says its own
+words with `label=`, a template over the captured fields or a callable taking
+them:
 
 ```python
-@app.on_describe
-def describe(address: PageAddress) -> str | None:
-    ...          # the reader's own words for this address, or None
+@router.page("82{post_id:int}", name="post", title="One post", label="Post {post_id}")
+async def post(request: PageRequest, post_id: int) -> Page:
+    ...          # listed "One post", shown in history as "Post 489493"
 ```
 
 ## PageRequest: How pages are requested
@@ -542,18 +546,19 @@ should render the notice in that:
 
 ```python
 @app.on_not_found
-async def missing(target: str) -> Page:
-    ...
+async def missing(request: PageRequest, target: str) -> Page:
+    ...          # notice_page(request, ...) in the service's own furniture
 ```
 
 **A handler that raises is different**, and gets a different page: the viewdata
 equivalent of a 500. The session catches the exception, logs the traceback and
 shows `failed` without moving the reader, so a bug in one page costs that page
-and not the call.
+and not the call. The hook is handed the request and the exception, so a service
+can log or classify it its own way:
 
 ```python
 @app.on_failed
-async def broke(address: PageAddress) -> Page:
+async def broke(request: PageRequest, error: Exception) -> Page:
     ...
 ```
 

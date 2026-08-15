@@ -22,19 +22,20 @@ is rendered from the code, so the two cannot disagree:
 :page: "1"
 :show-code:
 
-from sextile import Sextile, notice_page
+from sextile import Page, PageRequest, Sextile, notice_page
 
 app = Sextile(name="CALENDAR")
 
 @app.page("1")
-async def main(request):
+async def main(request: PageRequest) -> Page:
     return notice_page(request, "A calendar, served as Viewdata.")
 ```
 
 `Sextile` is the service. `@app.page("1")` registers a handler at the page number
-`*1#`, and a handler is an `async` function of the `request` that returns a
-[page](../reference/glossary.md). `notice_page` is the one-call shape for a page
-that simply says something.
+`*1#`, and a handler is an `async` function of the `PageRequest` that returns a
+[`Page`](../reference/glossary.md). `notice_page` is the one-call shape for a page
+that simply says something. The types are not decoration: this workspace is
+checked with `mypy --strict`, and so is anything you write in it.
 
 ## Draw it at the terminal
 

@@ -30,7 +30,7 @@ from sextile.layout import Flowing, PageLayout
 from sextile.page import Page
 
 if TYPE_CHECKING:
-    from sextile.application import PageInfo
+    from sextile.declarations import PageRoute
     from sextile.requests import PageRequest
 
 TITLE: Final = "EVERY PAGE"
@@ -41,7 +41,7 @@ _NOTHING: Final = "This service advertises no pages."
 def contents_page(
     *,
     request: "PageRequest",
-    pages: Sequence["PageInfo"],
+    pages: Sequence["PageRoute"],
     title: str = TITLE,
 ) -> Page:
     """Build the contents page, one row per page, as many frames as it takes.

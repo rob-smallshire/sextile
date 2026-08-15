@@ -20,27 +20,6 @@ type Handler = Callable[..., Awaitable[Page | None]]
 
 
 @dataclass(frozen=True)
-class PageInfo:
-    """What a service declared about a page when it registered it.
-
-    The words belong where the page is declared, so they are stated once rather
-    than copied into every menu, list and guide that names the page.
-    """
-
-    name: str
-    """The route's name, which `address_for` also answers to."""
-
-    keyed: str
-    """The number a reader would key, fields shown as `<name>`: `52<user_id>`."""
-
-    title: str
-    """What to call it. A page with no title is not advertised."""
-
-    detail: str = ""
-    """A second line, for a menu with room for one."""
-
-
-@dataclass(frozen=True)
 class PageRoute:
     """One page of a service, declared as a value rather than as a decoration.
 
@@ -49,6 +28,11 @@ class PageRoute:
     is a list of these. Declaring pages as data makes registration order
     unobservable: converters, pages, middleware and lifespan all arrive in one
     constructor call, so no step has to run before another.
+
+    A route also carries what the service reads back about the page it declared:
+    `Sextile.page_info` and `Sextile.pages` return these, with `keyed` filled
+    in. On a route a caller constructs, `keyed` is empty until a service
+    registers it, there being no numbering to read it against yet.
     """
 
     pattern: str
@@ -71,6 +55,11 @@ class PageRoute:
 
     keywords: Sequence[str] = ()
     """Words a reader may key instead of the number."""
+
+    keyed: str = ""
+    """The number a reader keys, fields shown as `<name>`: `52<user_id>`. Filled
+    in when a service registers the route, from the numbering it registers it
+    into; empty on a route a caller has only constructed."""
 
 
 def declaring[H: Handler](

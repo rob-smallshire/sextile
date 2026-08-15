@@ -35,6 +35,7 @@ from collections.abc import (
     Sequence,
 )
 from contextlib import AbstractAsyncContextManager
+from dataclasses import replace
 from datetime import UTC, datetime, timedelta
 from typing import Final
 
@@ -46,7 +47,6 @@ from sextile.builtin.history import history_page
 from sextile.builtin.names import names_page
 from sextile.declarations import (
     Handler,
-    PageInfo,
     PageRoute,
     PageRouter,
     declaring,
@@ -65,7 +65,6 @@ __all__ = [
     "Middleware",
     "Neighbours",
     "Next",
-    "PageInfo",
     "PageRequest",
     "PageRoute",
     "PageRouter",
@@ -117,7 +116,7 @@ class Sextile:
     ) -> None:
         self._name = name
         self._router: Router[Handler] = Router()
-        self._pages: dict[str, PageInfo] = {}
+        self._pages: dict[str, PageRoute] = {}
         self._not_found: NotFoundHandler | None = None
         self._timed_out: PartingHandler | None = None
         self._failed: FailureHandler | None = None
@@ -157,11 +156,11 @@ class Sextile:
         name = route.name or route.handler.__name__
         self._router.add(route.pattern, route.handler, name=name)
         if route.title:
-            self._pages[name] = PageInfo(
-                name=name,
-                keyed=self._router.named(name).keyed,
-                title=route.title,
-                detail=route.detail,
+            #  What `pages()` and `page_info` read back: the route as declared,
+            #  its name resolved and its keyed form read off the numbering it
+            #  has just been registered into.
+            self._pages[name] = replace(
+                route, name=name, keyed=self._router.named(name).keyed
             )
         for keyword in route.keywords:
             self.alias(keyword, self.address_for(name))
@@ -207,8 +206,12 @@ class Sextile:
             keywords=keywords,
         )
 
-    def page_info(self, name: str) -> PageInfo | None:
-        """What was said about a named page when it was registered."""
+    def page_info(self, name: str) -> PageRoute | None:
+        """The registered route named `name`, with its `keyed` form filled in.
+
+        None where no advertised page was registered under `name`: a page given
+        no title is routed but not kept here.
+        """
         return self._pages.get(name)
 
     def menu_item(self, name: str) -> MenuItem:
@@ -234,7 +237,7 @@ class Sextile:
             text=about.title, detail=about.detail, destination=self.address_for(name)
         )
 
-    def pages(self) -> tuple[PageInfo, ...]:
+    def pages(self) -> tuple[PageRoute, ...]:
         """Every page this service advertises, in the order it registered them.
 
         Registration order rather than the router's match order, which would put

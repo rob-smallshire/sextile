@@ -24,7 +24,7 @@ from sextile.addressing import PageAddress, UnknownPageError, keyed
 from sextile.application import Middleware, Next, Sextile
 from sextile.builtin.guidance import GuideRow
 from sextile.content.transliterate import transliterate
-from sextile.declarations import Handler, PageInfo, PageRoute, PageRouter
+from sextile.declarations import Handler, PageRoute, PageRouter
 from sextile.forms import Form, Suggest, draw_form
 from sextile.handlers import standard_pages
 from sextile.page import Page, PageFrame
@@ -51,7 +51,6 @@ __all__ = [
     "Page",
     "PageAddress",
     "PageFrame",
-    "PageInfo",
     "PageRequest",
     "PageRoute",
     "PageRouter",

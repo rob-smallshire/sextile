@@ -6,19 +6,35 @@ where to put it, and only the framework knows the patterns well enough to say.
 """
 
 from sextile.addressing import PageAddress
-from sextile.application import PageInfo, Sextile
+from sextile.application import Sextile
 from sextile.builtin.contents import TITLE, contents_page
-from sextile.page import Page
+from sextile.declarations import PageRoute
+from sextile.page import Page, PageFrame
+from sextile.requests import PageRequest
 from sextile.testing import request_for
+from sextile.viewdata.canvas import Canvas
 
 _APP = Sextile()
+
+
+async def _blank(request: PageRequest) -> Page:
+    return Page(frames=(PageFrame(frame=Canvas().frame),))
+
+
+def info(name: str, keyed: str, title: str) -> PageRoute:
+    """A registered route as `pages()` hands one back: `keyed` already filled.
+
+    The pattern and handler are what a real registration would carry and what
+    the contents page ignores; `keyed` and `title` are what it reads.
+    """
+    return PageRoute(pattern=keyed, handler=_blank, name=name, title=title, keyed=keyed)
 
 
 def at(digits: str) -> PageAddress:
     return PageAddress(digits)
 
 
-def listed(*pages: PageInfo) -> Page:
+def listed(*pages: PageRoute) -> Page:
     return contents_page(request=request_for(_APP, at("93")), pages=pages)
 
 
@@ -29,8 +45,8 @@ def text_of(page: Page, index: int = 0) -> str:
     return "\n".join(characters)
 
 
-USERS = PageInfo(name="users", keyed="5", title="By user")
-ONE = PageInfo(name="user", keyed="52<user_id>", title="One user")
+USERS = info(name="users", keyed="5", title="By user")
+ONE = info(name="user", keyed="52<user_id>", title="One user")
 
 
 class TestWhatItShows:
@@ -64,7 +80,7 @@ class TestLongerServices:
     def build(self, count: int) -> Page:
         return listed(
             *(
-                PageInfo(name=f"page{number}", keyed=str(number), title=f"Page {number}")
+                info(name=f"page{number}", keyed=str(number), title=f"Page {number}")
                 for number in range(10, 10 + count)
             )
         )
@@ -98,10 +114,10 @@ class TestTheOrder:
         #  Sorting the digits as text does this for free, because that is what a
         #  scheme whose first digit names a namespace already means.
         pages = [
-            PageInfo(name="post", keyed="82<post_id>", title="One post"),
-            PageInfo(name="main", keyed="1", title="Main index"),
-            PageInfo(name="posts", keyed="8", title="Latest posts"),
-            PageInfo(name="about", keyed="9", title="About"),
+            info(name="post", keyed="82<post_id>", title="One post"),
+            info(name="main", keyed="1", title="Main index"),
+            info(name="posts", keyed="8", title="Latest posts"),
+            info(name="about", keyed="9", title="About"),
         ]
         shown = [row.strip() for row in text_of(listed(*pages)).splitlines() if "*" in row]
         assert [row.split()[0] for row in shown] == ["*1#", "*8#", "*82<post-id>#", "*9#"]

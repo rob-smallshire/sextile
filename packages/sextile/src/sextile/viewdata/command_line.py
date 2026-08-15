@@ -20,9 +20,9 @@ from typing import Final
 
 from sextile.viewdata.canvas import Canvas
 from sextile.viewdata.controls import Attribute, Colour, alpha_colour
-from sextile.viewdata.encoding import ScreenControl, encode_text
+from sextile.viewdata.encoding import ScreenControl
 from sextile.viewdata.frame import COLUMNS, FOOTER_ROW, Frame
-from sextile.viewdata.repaint import to_row
+from sextile.viewdata.repaint import to_row, typed_bytes
 
 CANCEL_HINT: Final = "* cancels"
 
@@ -33,8 +33,6 @@ _BUFFER_ATTRIBUTES: Final = 3
 
 #  Two more to return to yellow on black for the hint.
 _HINT_ATTRIBUTES: Final = 2
-
-_SPACE: Final = 0x20
 
 #: Cells the typed request has to itself, once the colours and hint are paid for.
 BUFFER_CELLS: Final = COLUMNS - _BUFFER_ATTRIBUTES - _HINT_ATTRIBUTES - len(CANCEL_HINT)
@@ -60,26 +58,33 @@ def draw_command_line(canvas: Canvas, entry: str) -> None:
 def incremental_bytes(entry: str, displayed: str) -> bytes | None:
     """The smallest change turning what is showing into what is wanted.
 
-    Two cases are worth the trouble, both because the cursor is already in the
-    right place. A character typed needs only that character: the cursor
-    advances itself. A character rubbed out needs cursor left, a space, and
-    cursor left again -- the space inheriting the row's blue background, since
-    the attributes that set it sit earlier in the row and are not touched.
+    The command line is one row of a frame, so this is `repaint.typed_bytes`
+    over two of them: the row as it stands and the row wanted. A character typed
+    costs that character, the cursor advancing itself; one rubbed out costs
+    cursor left, a space and cursor left again, the space inheriting the row's
+    blue background. The cursor is where the last draw left it, at the end of
+    what was displayed.
 
-    Returns None when the row genuinely has to be redrawn: the line appearing,
-    or a buffer wide enough to scroll, where everything on it moves.
+    Returns None when the row has to be redrawn whole: the line appearing, or a
+    buffer wide enough to scroll, where everything on it moves.
     """
     if not displayed:
         return None
     if max(len(entry), len(displayed)) > BUFFER_CELLS:
         return None
-    if len(entry) == len(displayed) + 1 and entry.startswith(displayed):
-        return encode_text(entry[-1])
-    if len(entry) == len(displayed) - 1 and displayed.startswith(entry):
-        return bytes(
-            [ScreenControl.CURSOR_LEFT, _SPACE, ScreenControl.CURSOR_LEFT]
-        )
-    return None
+    return typed_bytes(
+        _command_line_frame(displayed),
+        _command_line_frame(entry),
+        FOOTER_ROW,
+        at=_BUFFER_ATTRIBUTES + len(displayed),
+    )
+
+
+def _command_line_frame(entry: str) -> Frame:
+    """A blank frame with the command line for `entry` drawn across its foot."""
+    frame = Frame()
+    draw_command_line(Canvas(frame), entry)
+    return frame
 
 
 def command_line_bytes(entry: str) -> bytes:

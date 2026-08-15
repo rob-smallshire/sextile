@@ -12,8 +12,9 @@ variants, and the difference is decorative rather than structural.
 from typing import Final
 
 from sextile.viewdata.charset import decode_g0, mosaic_pattern
-from sextile.viewdata.controls import GRAPHICS_COLOURS, Attribute, Colour, colour_of
-from sextile.viewdata.frame import COLUMNS, ROWS, Frame
+from sextile.viewdata.controls import Colour
+from sextile.viewdata.display import StyledRun, styled_cells
+from sextile.viewdata.frame import Frame
 
 #  Patterns Unicode already had before the sextant block was added, which the
 #  sextant block therefore skips.
@@ -59,40 +60,28 @@ def mosaic_character(code: int) -> str:
 
 def render_ansi(frame: Frame, *, colour: bool = True) -> str:
     """A frame as lines of text, optionally with ANSI colour."""
-    return "\n".join(_render_row(frame, row, colour) for row in range(ROWS))
+    return "\n".join(_render_row(row, colour) for row in styled_cells(frame))
 
 
-def _render_row(frame: Frame, row: int, colour: bool) -> str:
-    #  Attributes reset at the start of every row.
-    foreground = Colour.WHITE
-    background = Colour.BLACK
-    graphics = False
-    held: list[str] = []
+def _render_row(runs: list[StyledRun], colour: bool) -> str:
+    parts: list[str] = []
+    prevailing = (Colour.WHITE, Colour.BLACK)  # what each row resets to
     if colour:
-        held.append(_ansi(foreground, background))
-
-    for column in range(COLUMNS):
-        code = frame.cell(row, column)
-        if frame.is_attribute(row, column):
-            #  The attribute cell itself displays as a space in the prevailing
-            #  background; the change applies from the following cell.
-            held.append(" ")
-            found = colour_of(code)
-            if found is not None:
-                foreground = found
-                graphics = code in GRAPHICS_COLOURS
-            elif code == Attribute.BLACK_BACKGROUND:
-                background = Colour.BLACK
-            elif code == Attribute.NEW_BACKGROUND:
-                background = foreground
-            if colour:
-                held.append(_ansi(foreground, background))
-            continue
-        held.append(mosaic_character(code) if graphics else decode_g0(code))
-
+        parts.append(_ansi(*prevailing))
+    for run in runs:
+        if colour and (run.style.colour, run.style.background) != prevailing:
+            prevailing = (run.style.colour, run.style.background)
+            parts.append(_ansi(*prevailing))
+        if run.patterns:
+            #  Separated mosaics are drawn contiguous here: a terminal font has no
+            #  separated variants, and the difference is decorative. The HTML
+            #  render draws them properly, through the Private Use area.
+            parts.append("".join(sextant(pattern) for pattern in run.patterns))
+        else:
+            parts.append(run.text)
     if colour:
-        held.append("\x1b[0m")
-    return "".join(held)
+        parts.append("\x1b[0m")
+    return "".join(parts)
 
 
 def _ansi(foreground: Colour, background: Colour) -> str:

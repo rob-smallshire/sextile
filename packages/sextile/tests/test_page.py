@@ -122,8 +122,8 @@ class TestReadingOn:
     #  dead end.
 
     def test_a_page_leads_nowhere_by_default(self) -> None:
-        assert Page(frames=(PageFrame(blank()),)).follows is None
+        assert Page(frames=(PageFrame(blank()),)).next_page is None
 
     def test_a_page_can_say_what_comes_after_it(self) -> None:
-        page = Page(frames=(PageFrame(blank()),), follows=to("1"))
-        assert page.follows == to("1")
+        page = Page(frames=(PageFrame(blank()),), next_page=to("1"))
+        assert page.next_page == to("1")

@@ -478,10 +478,10 @@ class Session:
         if self._frame_index + 1 < len(self._page.frames):
             self._frame_index += 1
             return self._send()
-        if self._page.follows is not None:
+        if self._page.next_page is not None:
             #  Out of frames, but the page says what comes after it. Treated as
             #  going there, history and all: it is a move between pages.
-            return await self._go_to(self._page.follows)
+            return await self._go_to(self._page.next_page)
         #  Wrapping round would loop a reader who cannot see that they have.
         return None
 

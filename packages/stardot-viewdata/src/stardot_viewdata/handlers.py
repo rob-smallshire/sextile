@@ -122,7 +122,7 @@ async def title(request: PageRequest) -> Page:
         #  `#` is the one key a viewdata reader tries without being told, and a
         #  title frame is nothing but an invitation to press it. Setting this
         #  answers that key as well as saying where it leads.
-        follows=main_page,
+        next_page=main_page,
         shortcuts=[Shortcut(key="1", destination=main_page)],
         parts=[OnFirstFrame(Custom(rows=ROWS, draw=draw))],
     ).build(request)

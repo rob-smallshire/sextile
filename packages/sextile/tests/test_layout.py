@@ -358,11 +358,11 @@ class TestWhereAPageLeads:
         #  The session tries the next frame and falls through to `follows`, so
         #  the key has to be answered for that to happen at all.
         page = PageLayout(
-            title="STARDOT", furniture=(), parts=[OnFirstFrame(Says("masthead"))], follows=at("1")
+            title="STARDOT", furniture=(), parts=[OnFirstFrame(Says("masthead"))], next_page=at("1")
         ).build(request_for(_APP, at("8")))
         found = page.frame(0)
         assert found is not None
-        assert page.follows == at("1")
+        assert page.next_page == at("1")
         assert NEXT_FRAME in found.moves
         assert CONVENTIONAL_NEXT_FRAME in found.moves
 

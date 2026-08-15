@@ -74,7 +74,7 @@ class Page:
     """Whether the line should drop once this page has been shown. Which page
     ends the call is the application's choice, not the framework's."""
 
-    follows: PageAddress | None = None
+    next_page: PageAddress | None = None
     """Where `#` leads once this page's frames have run out.
 
     A title frame or the last page of a guide is an invitation to press `#`;

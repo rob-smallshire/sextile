@@ -496,7 +496,7 @@ class TestTheTitleFrame:
 
     async def test_hash_carries_on_to_the_index(self, app: Sextile) -> None:
         #  The one key a viewdata reader tries without being told.
-        assert (await page_at(app, "0")).follows == PageAddress("1")
+        assert (await page_at(app, "0")).next_page == PageAddress("1")
 
     async def test_so_does_the_first_digit(self, app: Sextile) -> None:
         page = await page_at(app, "0")

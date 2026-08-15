@@ -732,7 +732,7 @@ class TestReadingOn:
         @board.page("6", name="title")
         async def title(request: PageRequest) -> Page:
             page = board.menu(request.address, "TITLE", [])
-            return Page(frames=page.frames, follows=board.address_for("main"))
+            return Page(frames=page.frames, next_page=board.address_for("main"))
 
         session = Session(board, start=at("6"))
         await session.greeting()
@@ -759,7 +759,7 @@ class TestReadingOn:
         @board.page("6", name="title")
         async def title(request: PageRequest) -> Page:
             page = board.menu(request.address, "TITLE", [])
-            return Page(frames=page.frames, follows=board.address_for("main"))
+            return Page(frames=page.frames, next_page=board.address_for("main"))
 
         session = Session(board, start=at("6"))
         await session.greeting()

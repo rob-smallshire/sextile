@@ -45,7 +45,7 @@ PageLayout(
 | `neighbours` | The pages either side of this one; given, wires `A`/`D`. Pass `request.neighbours`. |
 | `item_noun` | What `A` and `D` move between, as the footer says it: `item_noun="post"` gives `previous post`. |
 | `furniture` | The bands round the content. `DEFAULT_FURNITURE` unless given; `()` for a page that wants none. |
-| `follows` | Where `#` leads once the frames have run out. Setting it also answers the next-frame keys. |
+| `next_page` | Where `#` leads once the frames have run out. Setting it also answers the next-frame keys. |
 | `hang_up` | Whether the line drops once the page has been shown. |
 
 `build(address)` returns the `Page`. Pass None for `address` where the page has

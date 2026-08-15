@@ -680,7 +680,7 @@ class PageLayout:
         item_noun: What `A` and `D` move between, as the footer says it.
         furniture: The bands round the content. Empty for a page that wants
             none, such as a masthead.
-        follows: Where `#` leads once the frames have run out. Setting it
+        next_page: Where `#` leads once the frames have run out. Setting it
             answers the next-frame keys, the session trying the next frame
             before falling through to this.
         hang_up: Whether the line drops once the page has been shown.
@@ -702,7 +702,7 @@ class PageLayout:
     neighbours: "Neighbours | None" = None
     item_noun: str = "item"
     furniture: Sequence[Furnishing] = DEFAULT_FURNITURE
-    follows: PageAddress | None = None
+    next_page: PageAddress | None = None
     hang_up: bool = False
 
     def _shortcuts(self) -> tuple[Shortcut, ...]:
@@ -757,7 +757,7 @@ class PageLayout:
                 self._frame(one, index, len(filled), address, title=title, home=home)
                 for index, one in enumerate(filled)
             ),
-            follows=self.follows,
+            next_page=self.next_page,
             hang_up=self.hang_up,
         )
 
@@ -773,7 +773,7 @@ class PageLayout:
         home: "PageAddress | Shortcut | None",
     ) -> PageFrame:
         """One frame, furnished, with the keys it answers gathered onto it."""
-        back, on = index > 0, index + 1 < frames or self.follows is not None
+        back, on = index > 0, index + 1 < frames or self.next_page is not None
         page = FrameContext(
             title=title,
             address=address,

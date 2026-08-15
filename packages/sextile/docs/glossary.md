@@ -41,6 +41,9 @@ as "was X" so a reader coming from older code or docs can find it.
 - **sequence, neighbours** — the pages either side of this one in a run a menu
   offered, so a reader can step along without going back. `request.neighbours`
   is a `Neighbours(previous, next)` (was `Arrival(preceding, following)`).
+- **next_page** (was `follows`) — where `#` leads once a page's frames have run
+  out, so a title frame or the last frame of a guide answers the key a viewdata
+  reader tries first. On `PageLayout` and `Page`.
 - **shortcut** — a key present on every frame that leads to a fixed address.
   `layout.Shortcut`: `label` (was `says`) is how the footer names it,
   `with_arrow` (was `arrow`) whether the matching cursor key leads there too.

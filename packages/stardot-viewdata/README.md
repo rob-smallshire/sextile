@@ -128,7 +128,7 @@ cursor-control codes 0x08-0x0B — so arrows and WASD are two spellings of one
 compass. Measured, not assumed: `docs/spikes/spike_cursor_keys.py`.
 
 Vertical within an item, because a document reads top to bottom; horizontal
-between items, because that is shuffling sideways through a drawer of them.
+between items, one to the next.
 
 ```
 *nnn#     go to a page              1-9   select from the menu

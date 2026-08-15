@@ -1,29 +1,22 @@
 """The application: a service that answers page requests by routing.
 
-`Sextile` answers a page request by routing its number to a handler. It is the
-one application class: everything about connections, sessions, the protocol and
-the numbering is on the framework's side of `respond`, and what the pages say
-is the service's.
+`Sextile` routes a page number to a handler and returns the page the handler
+builds. Connections, sessions, the protocol and the numbering are the
+framework's, behind `respond`; a handler is a service's.
 
-A handler is a function of a *request*, not of a page number:
+A handler is `async` and takes a `PageRequest`, not a page number:
 
-    @app.page("82{post_id:int}")
-    async def post(request: PageRequest, post_id: int) -> Page:
+    @app.page("52{field:int}")
+    async def item(request: PageRequest, field: int) -> Page:
         ...
 
-That distinction matters more here than the corresponding one does on the web.
-A viewdata terminal is a display and nothing more, so everything a session knows
-is held at this end; two callers keying the same number can legitimately be
-shown different things once there is such a thing as being logged in, or as
-having arrived from a particular menu.
+Each field a `pattern` names is passed to the handler by keyword. `async`
+because a handler often answers from a database or an HTTP API, and a call
+awaiting one should not hold the others.
 
-Handlers are `async` because the second thing every application does after
-answering from memory is answer from somewhere else -- a database, an HTTP API,
-a device. The one caller kept waiting should not be all of them.
-
-The request a handler takes is `sextile.requests`'s; the vocabulary for
-declaring a page beside its handler is `sextile.routing`'s. Both are
-re-exported here, `sextile` itself being where a service imports from.
+`PageRequest` is `sextile.requests`'s and `PageRoute`/`PageRouter` are
+`sextile.routing`'s; both are re-exported here, `sextile` being where a service
+imports from.
 """
 
 from collections.abc import (
@@ -92,6 +85,24 @@ class Sextile:
         middleware: Sequence[Middleware] = (),
         lifespan: Lifespan | None = None,
     ) -> None:
+        """Assemble a service from its pages, converters, middleware and lifespan.
+
+        Args:
+            name: What the service calls itself, shown where it names itself to
+                a caller. Empty leaves it unnamed.
+            home: The page a caller arrives on when the line opens.
+            index: The page `0` leads to from every frame. Defaults to `home`.
+            converters: Field shapes the patterns use, by the name a pattern
+                names them with. Given here rather than added later because a
+                pattern must know a field shape before it compiles.
+            pages: The routes to register, each a `PageRoute` or the spread of a
+                `PageRouter`.
+            middleware: What wraps every page, the first given outermost.
+            lifespan: An async context manager opened at `startup` and closed at
+                `shutdown`, which fills `state` before yielding.
+
+        Everything arrives in one call, so registration order is unobservable.
+        """
         self._name = name
         self._router: Router[Handler] = Router()
         self._pages: dict[str, PageRoute] = {}
@@ -116,20 +127,28 @@ class Sextile:
 
     @property
     def name(self) -> str:
+        """What the service calls itself, or empty."""
         return self._name
 
     @property
     def home(self) -> PageAddress:
+        """The page a caller arrives on when the line opens."""
         return self._home
 
     @property
     def index(self) -> PageAddress:
+        """The page `0` leads to from every frame, `home` unless set apart."""
         return self._index
 
     # -- building it --------------------------------------------------------
 
     def add_page(self, route: PageRoute) -> None:
-        """Register one page. What everything else here is written in terms of."""
+        """Register one page, the operation `page` and the constructor build on.
+
+        Args:
+            route: The page to register, its name taken from the handler where
+                the route gives none.
+        """
         name = route.name or route.handler.__name__
         self._router.add(route.pattern, route.handler, name=name)
         if route.title:
@@ -152,29 +171,27 @@ class Sextile:
         keywords: Sequence[str] = (),
         label: str | Callable[..., str] | None = None,
     ) -> Callable[[H], H]:
-        """Register a handler for every page number matching ``pattern``.
+        """Register the decorated handler for every page number `pattern` matches.
 
-        The route takes the handler's own name unless told otherwise, so a page
-        linking to another names it once rather than twice.
+        Args:
+            pattern: The page numbers this answers: literal digits and named
+                fields.
+            name: What `address_for` calls the route. The handler's own name
+                where none is given.
+            title: What to call the page where it is listed rather than shown --
+                in a menu, in the history, in the contents. A page with no title
+                is not advertised, which keeps a title frame off the contents.
+            detail: A second line, wherever the title gets one.
+            keywords: Words a reader may key instead of the number.
+            label: What to call the page in a list of visited pages, where the
+                title is wrong because the number carried a field. See
+                `PageRoute.label`.
 
-        ``title`` and ``detail`` are what to call this page where it is listed
-        rather than shown -- in a menu, in the history, in the contents. Saying
-        them here means saying them once. A page given no title is not
-        advertised in the contents, which is how a title frame or a logoff page
-        stays off it without needing a flag of its own.
+        Returns:
+            A decorator that registers its handler and returns it unchanged.
 
-        ``keywords`` are words a reader may key instead of the number, aliased
-        onto this page. Said here rather than in a separate `add_keyword` call for
-        the same reason the title is: a page should say what it is in one
-        place.
-
-        ``label`` is what to call the page in a list of visited pages, when the
-        listed title is wrong because the number carried a field. See
-        `PageRoute.label`.
-
-        Generic in the handler so that decorating one does not throw its own
-        signature away: a service checked strictly should stay checked strictly
-        on the far side of the decorator.
+        Generic in the handler so a strictly checked service stays strictly
+        checked past the decorator.
         """
         #  The same builder as `PageRouter.page`, so the two decorators cannot
         #  drift into constructing a route differently. This one registers it
@@ -190,10 +207,15 @@ class Sextile:
         )
 
     def route(self, name: str) -> PageRoute | None:
-        """The registered route named `name`, with its `keyed` form filled in.
+        """Return the advertised route named `name`, or None.
 
-        None where no advertised page was registered under `name`: a page given
-        no title is routed but not kept here.
+        Args:
+            name: The name a route was registered under.
+
+        Returns:
+            The route with its `keyed` form filled in, or None where the name
+            registered no advertised page: a page given no title is routed but
+            not kept here.
         """
         return self._pages.get(name)
 
@@ -221,10 +243,11 @@ class Sextile:
         )
 
     def routes(self) -> tuple[PageRoute, ...]:
-        """Every page this service advertises, in the order it registered them.
+        """List every page this service advertises, in registration order.
 
-        Registration order rather than the router's match order, which would put
-        the most literal pattern first.
+        Returns:
+            The advertised routes, in the order registered rather than the
+            router's most-literal-first match order.
         """
         return tuple(self._pages.values())
 
@@ -238,30 +261,32 @@ class Sextile:
 
 
     def on_not_found[H: NotFoundHandler](self, handler: H) -> H:
-        """Register what this service says about a page it has not got."""
+        """Register the handler that builds the page for a number naming nothing."""
         self._not_found = handler
         return handler
 
     def on_timed_out[H: TimeoutHandler](self, handler: H) -> H:
-        """Register what this service says as it releases an idle caller."""
+        """Register the handler that builds the frame shown as an idle line drops."""
         self._timed_out = handler
         return handler
 
     def on_failed[H: FailureHandler](self, handler: H) -> H:
-        """Register what this service says when a page will not build."""
+        """Register the handler that builds the frame shown when a handler raises."""
         self._failed = handler
         return handler
 
     def on_unresolved[H: ResolveHandler](self, handler: H) -> H:
-        """Register a last resort for a target the numbering does not name.
+        """Register a resolver for a keyed target the numbering does not name.
 
-        A reader keys letters and the numbering knows only its own keywords, so
-        a service with a search of its own -- a place name, a callsign, a
-        postcode -- wants a say before the target is called unknown. Returning
-        None means it really is.
+        Args:
+            handler: Given the target a reader keyed, it returns the address the
+                target means or None where it means nothing.
 
-        Tried after the numbering and never before it: a keyword a service has
-        registered must keep meaning what it was registered to mean.
+        Returns:
+            The handler, so it may be used as a decorator.
+
+        Tried after the numbering, never before it, so a registered keyword
+        keeps meaning what it was registered to mean.
         """
         self._unresolved = handler
         return handler
@@ -269,6 +294,14 @@ class Sextile:
     # -- answering ----------------------------------------------------------
 
     async def respond(self, request: PageRequest) -> Page | None:
+        """Answer a request, through the middleware and then the router.
+
+        Args:
+            request: The request to answer.
+
+        Returns:
+            The page built for it, or None where no route matches its address.
+        """
         return await self._chain(request)
 
     async def _build(self, request: PageRequest) -> Page | None:
@@ -283,12 +316,14 @@ class Sextile:
         return await chained(self._build, self._middleware)(request)
 
     def params_for(self, address: PageAddress) -> Mapping[str, object] | None:
-        """What a page number means: the fields its route captured, or None.
+        """Read the fields a page number's route captured, or None.
 
-        The same reading of a number that served the page, for a service that
-        has the number and wants the fields again -- reading its own log back,
-        most likely. Taking the digits apart by hand would be the numbering
-        written down twice.
+        Args:
+            address: The page number to read.
+
+        Returns:
+            The captured fields by name, the same reading that served the page,
+            or None where no route matches.
         """
         found = self._router.match(address)
         return None if found is None else found.params
@@ -307,11 +342,16 @@ class Sextile:
             raise
 
     async def not_found(self, request: PageRequest, target: str) -> Page:
-        """Say that ``target`` named nothing here.
+        """Build the page shown for a target that names nothing here.
 
-        Silence would be indistinguishable from a line fault, which on a service
-        that answers slowly by design is exactly the wrong thing to be. A
-        service registering `@app.on_not_found` says it its own way instead.
+        Args:
+            request: The page the reader is on, which they stay on.
+            target: What they keyed that led nowhere.
+
+        Returns:
+            The page an `on_not_found` handler builds, or the framework's own
+            notice. A notice rather than silence, which on a service that answers
+            slowly is not distinguishable from a line fault.
         """
         if self._not_found is not None:
             return await self._not_found(request, target)
@@ -324,13 +364,16 @@ class Sextile:
         )
 
     async def timed_out(self, request: PageRequest, frame_index: int) -> Page:
-        """Say that the line is being released for want of a reply.
+        """Build the frame shown as an idle line is released for want of a reply.
 
-        ``request`` is the page the reader was on; ``frame_index`` says which
-        frame of it. A page rather than a line of text over whatever was
-        showing, for the same reason every other thing this service says is a
-        page: a message overprinting a frame is hard to pick out from the frame.
-        A service registering `@app.on_timed_out` says goodbye its own way.
+        Args:
+            request: The page the reader was on.
+            frame_index: Which frame of it they were on.
+
+        Returns:
+            The page an `on_timed_out` handler builds, or the framework's own.
+            A whole frame, not a line over what was showing: a message
+            overprinting a frame is hard to pick out from it.
         """
         if self._timed_out is not None:
             return await self._timed_out(request, frame_index)
@@ -348,13 +391,17 @@ class Sextile:
         )
 
     async def failed(self, request: PageRequest, error: Exception) -> Page:
-        """Say that a page which exists could not be built.
+        """Build the frame shown when a handler raises building a page that exists.
 
-        The viewdata equivalent of a 500, and deliberately not the same page as
-        `not_found`: one says the reader asked for something that is not here,
-        this says the service could not build something that is. ``error`` is
-        what the handler raised, for a service registering `@app.on_failed` that
-        wants to say it its own way; the framework's own words do not read it.
+        Args:
+            request: The page the reader asked for.
+            error: What the handler raised, for an `on_failed` handler that reads
+                it. The framework's own notice does not.
+
+        Returns:
+            The page an `on_failed` handler builds, or the framework's own.
+            Distinct from `not_found`: that number names nothing, this one names
+            a page the service could not build.
         """
         if self._failed is not None:
             return await self._failed(request, error)
@@ -377,35 +424,44 @@ class Sextile:
         return self._router.address_for(name, **params)
 
     def match(self, address: PageAddress) -> Match[Handler] | None:
-        """What answers this address, and what its pattern captured.
+        """Match an address to the route that answers it and what it captured.
 
-        The numbering read backwards, for an application that has an address and
-        wants to know what it names -- taking the digits apart again would be
-        the scheme written down twice.
+        Args:
+            address: The page number to match.
+
+        Returns:
+            The `Match` for the route that answers it, or None where none does.
         """
         return self._router.match(address)
 
     def title_for(self, address: PageAddress) -> str | None:
-        """The title a page was registered with, as registered.
+        """Read the title a page was registered with, as registered, or None.
 
-        None where the address is unrouted or its route was given no title. Not
-        upper-cased: the layout shouts it as it draws the heading, and a listing
-        reads it as it is.
+        Args:
+            address: The page number to read the title of.
+
+        Returns:
+            The registered title, or None where the address is unrouted or its
+            route was given no title. Not upper-cased: the layout upper-cases it
+            when it draws a heading, and a listing reads it as it is.
         """
         found = self.match(address)
         about = self._pages.get(found.name) if found and found.name else None
         return about.title if about and about.title else None
 
     def label_for(self, address: PageAddress) -> str:
-        """What to call a page in a list of pages a reader has visited.
+        """Name a page for a list of pages a reader has visited.
 
-        The route's `label` when it set one, so a page whose number carries a
-        field reads as the page a reader was on ("Post 489493") rather than as
-        the kind of page it is ("One post"). A `str.format` template is filled
-        from the captured fields; a callable is passed them as keyword arguments.
+        Args:
+            address: The page number to label.
 
-        With no `label`, the registered title followed by the field values, or
-        the keyed number for a page that is unrouted or untitled.
+        Returns:
+            The route's `label` where it set one, so a page whose number carried
+            a field reads as the one page rather than the kind of page: a
+            `str.format` template filled from the captured fields, or a callable
+            passed them by keyword. With no `label`, the registered title
+            followed by the field values, or the keyed number where the address
+            is unrouted or untitled.
         """
         found = self.match(address)
         if found is None or found.name is None:
@@ -420,7 +476,7 @@ class Sextile:
         return f"{called} {fields}".strip()
 
     def keywords(self) -> dict[str, PageAddress]:
-        """The named jumps, for a page that wants to list them."""
+        """Return the keyword-to-address jumps, for a page that lists them."""
         return self._router.keywords()
 
     # -- lifespan -----------------------------------------------------------
@@ -436,11 +492,13 @@ class Sextile:
         return self._state
 
     async def startup(self) -> None:
+        """Open the lifespan, filling `state` for the pages that read it."""
         if self._lifespan is not None:
             self._running = self._lifespan(self)
             await self._running.__aenter__()
 
     async def shutdown(self) -> None:
+        """Close the lifespan and clear `state`."""
         if self._running is not None:
             #  Whatever the lifespan set up is torn down by the same function
             #  that set it up, which is the reason for it being a context

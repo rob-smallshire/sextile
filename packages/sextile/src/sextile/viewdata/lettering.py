@@ -49,6 +49,15 @@ from sextile.viewdata.composition import (
 from sextile.viewdata.controls import Colour
 from sextile.viewdata.font import Font, Glyph
 
+__all__ = [
+    "Spacing",
+    "boxed",
+    "cells_for",
+    "place",
+    "rows_for",
+    "width",
+]
+
 #: Blocks that must stay clear between two letters when kerning. One is the
 #: least that keeps them legible: at this size a block is a stroke's width.
 _GAP: Final = 1

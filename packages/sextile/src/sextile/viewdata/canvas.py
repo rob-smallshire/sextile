@@ -20,6 +20,12 @@ from sextile.viewdata.encoding import cell_count, fitted
 from sextile.viewdata.frame import COLUMNS, ROWS, Frame
 from sextile.viewdata.wrapping import wrap_text
 
+__all__ = [
+    "Canvas",
+    "RowWriter",
+    "Run",
+]
+
 #: Every row begins displaying white alphanumerics.
 DEFAULT_COLOUR = Colour.WHITE
 

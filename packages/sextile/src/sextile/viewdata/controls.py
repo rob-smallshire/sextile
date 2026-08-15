@@ -13,6 +13,14 @@ is obtained by changing the background instead.
 from enum import IntEnum
 from typing import Final
 
+__all__ = [
+    "Colour",
+    "Control",
+    "alpha_colour",
+    "graphics_colour",
+    "is_control_code",
+]
+
 
 class Colour(IntEnum):
     """The eight teletext colours, in their canonical order."""

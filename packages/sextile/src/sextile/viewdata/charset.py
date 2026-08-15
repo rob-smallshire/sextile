@@ -14,6 +14,12 @@ to show in their place belongs to the transliteration layer.
 
 from typing import Final
 
+__all__ = [
+    "G0_TO_UNICODE",
+    "is_representable",
+    "mosaic_code",
+]
+
 FIRST_PRINTABLE: Final = 0x20
 LAST_PRINTABLE: Final = 0x7F
 

@@ -21,6 +21,13 @@ from sextile.viewdata.charset import decode_g0
 from sextile.viewdata.controls import Control
 from sextile.viewdata.encoding import ScreenControl, encode_control, encode_text
 
+__all__ = [
+    "COLUMNS",
+    "FOOTER_ROW",
+    "Frame",
+    "ROWS",
+]
+
 ROWS: Final = 24
 COLUMNS: Final = 40
 

@@ -82,16 +82,16 @@ Public submodules:
 | Module | For |
 |---|---|
 | `canvas` | `Canvas`, `RowWriter`, `Run` — writing on a frame |
-| `frame` | `Frame`, `ROWS`, `COLUMNS` — what a frame is |
+| `frame` | `Frame`, `ROWS`, `COLUMNS`, `FOOTER_ROW` — what a frame is |
 | `controls` | `Colour`, `Control`, `is_control_code`, and the two colour encoders |
 | `encoding` | `cell_count`, `fitted` — what fits in how many cells |
-| `charset` | the G0 set, `mosaic_code`, `is_representable` |
+| `charset` | `G0_TO_UNICODE`, `mosaic_code`, `is_representable` |
 | `drawing` | `rule`, `thin_rule`, `centred`, `key_row`, `bar` |
-| `blocks` | mosaic pictures: `Icon`, `icon`, `block_runs`, `read_bitmap` |
+| `blocks` | mosaic pictures: `Icon`, `icon`, `block_runs`, `read_bitmap`, `BLOCKS_ACROSS`, `BLOCKS_DOWN` |
 | `charting` | `curve`, `bars` |
-| `composition` | `Composition`, `Panel`, `Align` — placing things relative to each other |
-| `lettering` | outsized letters: `place`, `boxed`, `cells_for`, `width`, `rows_for` |
-| `font` | `Font`, `load_font`, `font_names` |
+| `composition` | `Composition`, `Panel`, `Align`, `Style`, `DoesNotFit`, `Where` — placing things relative to each other |
+| `lettering` | outsized letters: `place`, `boxed`, `cells_for`, `width`, `rows_for`, `Spacing` |
+| `font` | `Font`, `load_font`, `font_names`, `read_font`, `Glyph`, `FontError` |
 | `footer` | `FooterItem`, `Priority`, `movement`, `render_footer`, `ROOM` — composing a prompt for a frame drawn by hand |
 | `wrapping` | `wrap_text`, `wrap_within` |
 

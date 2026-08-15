@@ -50,6 +50,15 @@ from functools import lru_cache
 from importlib import resources
 from typing import Final
 
+__all__ = [
+    "Font",
+    "FontError",
+    "Glyph",
+    "font_names",
+    "load_font",
+    "read_font",
+]
+
 #: What is drawn in place of a character the font has no glyph for -- the same
 #: substitution `content.transliterate` makes, for the same reason: a banner
 #: with one wrong letter is a better answer to a caller than no page at all.

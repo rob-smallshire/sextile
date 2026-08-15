@@ -21,6 +21,11 @@ last thing known, and a line that stopped short would read as data that stopped.
 from collections.abc import Sequence
 from typing import Final
 
+__all__ = [
+    "bars",
+    "curve",
+]
+
 #: A block grid is this many blocks to a cell, each way.
 ACROSS_A_CELL: Final = 2
 DOWN_A_CELL: Final = 3

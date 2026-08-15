@@ -24,6 +24,11 @@ from sextile.content.transliterate import transliterate
 from sextile.viewdata.charset import encode_g0
 from sextile.viewdata.controls import Control
 
+__all__ = [
+    "cell_count",
+    "fitted",
+]
+
 ESCAPE: Final = 0x1B
 
 #  Attributes are transmitted shifted out of the C0 range, which is what lets the

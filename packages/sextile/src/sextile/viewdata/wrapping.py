@@ -34,6 +34,11 @@ from typing import Final
 
 from sextile.viewdata.encoding import cell_count
 
+__all__ = [
+    "wrap_text",
+    "wrap_within",
+]
+
 #: What a line that ends a paragraph costs, however much room is left on it.
 _LAST_LINE: Final = 0.0
 

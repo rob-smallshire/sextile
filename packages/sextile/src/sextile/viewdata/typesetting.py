@@ -32,6 +32,12 @@ from sextile.viewdata.controls import Colour
 from sextile.viewdata.frame import COLUMNS
 from sextile.viewdata.wrapping import wrap_text
 
+__all__ = [
+    "Row",
+    "TRUNCATION_NOTICE",
+    "rows_for",
+]
+
 _QUOTE_INDENT: Final = 2
 
 #  Beyond this the indent costs more than it conveys, so deeper quotations stop

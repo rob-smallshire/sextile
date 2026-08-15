@@ -35,6 +35,14 @@ from sextile import keys
 from sextile.viewdata.encoding import cell_count
 from sextile.viewdata.frame import COLUMNS
 
+__all__ = [
+    "FooterItem",
+    "Priority",
+    "ROOM",
+    "movement",
+    "render_footer",
+]
+
 _SEPARATOR = ", "
 
 #: The row less the cell the colour attribute takes.

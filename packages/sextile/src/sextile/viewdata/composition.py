@@ -50,6 +50,15 @@ from sextile.viewdata.controls import Colour, Control, alpha_colour, graphics_co
 from sextile.viewdata.encoding import cell_count
 from sextile.viewdata.frame import COLUMNS, ROWS
 
+__all__ = [
+    "Align",
+    "Composition",
+    "DoesNotFit",
+    "Panel",
+    "Style",
+    "Where",
+]
+
 
 class DoesNotFit(ValueError):
     """A composition that cannot be drawn, and why."""

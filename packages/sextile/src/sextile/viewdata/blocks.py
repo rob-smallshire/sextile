@@ -37,6 +37,15 @@ from dataclasses import dataclass
 from textwrap import dedent
 from typing import Final
 
+__all__ = [
+    "BLOCKS_ACROSS",
+    "BLOCKS_DOWN",
+    "Icon",
+    "block_runs",
+    "icon",
+    "read_bitmap",
+]
+
 #: Block positions within a cell, from the least significant bit up. Read from
 #: Beebium's `get_graphics_row`; `charset.mosaic_code` turns them into a byte.
 _BLOCK_BITS: Final = ((0, 0), (1, 0), (0, 1), (1, 1), (0, 2), (1, 2))

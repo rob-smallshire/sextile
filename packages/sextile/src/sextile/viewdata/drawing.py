@@ -24,6 +24,14 @@ from sextile.viewdata.controls import Colour, Control, graphics_colour
 from sextile.viewdata.encoding import cell_count, fitted
 from sextile.viewdata.frame import COLUMNS
 
+__all__ = [
+    "bar",
+    "centred",
+    "key_row",
+    "rule",
+    "thin_rule",
+]
+
 #: The mosaic character with all six blocks lit. Every rule and bar is a run of
 #: these; in the G1 set it is 0x7F.
 SOLID: Final = "▮"

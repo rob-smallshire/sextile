@@ -351,7 +351,7 @@ async def guide(request: PageRequest) -> Page:
     app = request.app
     return await app.guide_page(
         request,
-        asking=[
+        asking_rows=[
             GuideRow(keyed(app.address_for("logoff")), "log off"),
             GuideRow(),
             GuideRow(keyed(app.address_for("contents")), "every page and its number"),

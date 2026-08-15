@@ -648,7 +648,7 @@ translating, in the one place a move is acted on.
 does not implement them*: a service wires them to `request.neighbours` -- Stardot
 does — or it has no such thing. The weather has no such thing, and was drawing
 two keys that do nothing on the one page a reader goes to to find out what the
-keys do. `compass(..., items=False)` and `guide(..., items=False)`. The up and
+keys do. `compass(..., items=False)` and `guide(..., show_item_keys=False)`. The up and
 down arm is always drawn, frames being something every page has.
 
 ## What has been read

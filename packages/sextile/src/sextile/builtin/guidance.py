@@ -98,31 +98,31 @@ def guide_page(
     *,
     request: "PageRequest",
     title: str = TITLE,
-    home_called: str = "index",
-    moving: Sequence[GuideRow] = (),
-    asking: Sequence[GuideRow] = (),
-    items: bool = True,
+    home_label: str = "index",
+    moving_rows: Sequence[GuideRow] = (),
+    asking_rows: Sequence[GuideRow] = (),
+    show_item_keys: bool = True,
 ) -> Page:
     """The guide, as two frames of keys.
 
     Args:
         request: The request this page answers.
         title: What the header calls it.
-        home_called: What the service calls its first page, so that the row for
+        home_label: What the service calls its first page, so that the row for
             `0` says "back to the main menu" on a service with a menu and
             "back to the main index" on one with an index.
-        moving: The service's own rows about moving about, appended to the
+        moving_rows: The service's own rows about moving about, appended to the
             framework's.
-        asking: The service's own rows about asking for something.
-        items: Whether the compass shows the keys that move between items.
+        asking_rows: The service's own rows about asking for something.
+        show_item_keys: Whether the compass shows the keys that move between items.
 
     Returns:
         Two frames, divided where the guide means to divide rather than where
         the rows run out: the first is about moving about and carries the
         compass, the second about asking for something.
     """
-    first = [*_moving(home_called), *moving]
-    second = [*_ASKING, GuideRow(), *asking]
+    first = [*_moving(home_label), *moving_rows]
+    second = [*_ASKING, GuideRow(), *asking_rows]
     column = max(cell_count(row.key) for row in [*first, *second]) + _GAP
     return PageLayout(
         title=title,
@@ -136,7 +136,7 @@ def guide_page(
                 Custom(
                     rows=COMPASS_ROWS,
                     draw=lambda canvas, row: compass(
-                        Composition(), row, items=items
+                        Composition(), row, items=show_item_keys
                     ).draw(canvas),
                 )
             ),
@@ -146,10 +146,10 @@ def guide_page(
     ).build(request)
 
 
-def _moving(home_called: str) -> list[GuideRow]:
+def _moving(home_label: str) -> list[GuideRow]:
     return [
         GuideRow(f"1-{_CHOICES}", "choose from a menu"),
-        GuideRow(keys.BACK, f"back to the {home_called}"),
+        GuideRow(keys.BACK, f"back to the {home_label}"),
         GuideRow(keyed("<number>"), "go straight to a page"),
         GuideRow(keyed("<keyword>"), "go to a named page"),
         GuideRow(keys.CONVENTIONAL_NEXT_FRAME, "next frame of a page"),

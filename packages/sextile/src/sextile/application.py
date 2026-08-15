@@ -505,9 +505,9 @@ class Sextile:
         self,
         request: PageRequest,
         *,
-        moving: "Sequence[guidance.GuideRow]" = (),
-        asking: "Sequence[guidance.GuideRow]" = (),
-        items: bool = True,
+        moving_rows: "Sequence[guidance.GuideRow]" = (),
+        asking_rows: "Sequence[guidance.GuideRow]" = (),
+        show_item_keys: bool = True,
     ) -> Page:
         """How to get about, as a table of the keys this service answers.
 
@@ -518,7 +518,7 @@ class Sextile:
 
         A service passes its own keys, since only it knows them: one page may
         answer letters typed into a field, another a single key such as `F`.
-        `moving` joins the first frame and `asking` the second. `items=False`
+        `moving_rows` joins the first frame and `asking_rows` the second. `show_item_keys=False`
         leaves `A` and `D` off the compass, for a service that does not wire
         them to `request.neighbours` and so does not answer them.
 
@@ -529,10 +529,10 @@ class Sextile:
         return guidance.guide_page(
             request=request,
             title=(self.title_for(request.address) or guidance.TITLE).upper(),
-            home_called=self.label_for(self.index).lower(),
-            moving=moving,
-            asking=asking,
-            items=items,
+            home_label=self.label_for(self.index).lower(),
+            moving_rows=moving_rows,
+            asking_rows=asking_rows,
+            show_item_keys=show_item_keys,
         )
 
     async def recent_page(

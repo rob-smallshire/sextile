@@ -93,6 +93,18 @@ included: they are offered for use "in exchange for a mention in the credits",
 which is a permission rather than a licence. An importer for them, when there
 is one, is for pointing at your own copy.
 
+### Bedstead (documentation only)
+
+`docs/_static/fonts/bedstead.woff2` is Bedstead, the Mullard SAA5050 teletext
+character generator recreated as an OpenType font by bjh21 (Ben Harris). It
+draws Viewdata frames as HTML in the Sphinx documentation and is not part of the
+package. The program that generates Bedstead and its newly-designed glyphs are
+released into the public domain (CC0-1.0); the original SAA5050 bitmap is stated
+to be public domain in the United Kingdom under Section 55 of the Copyright,
+Designs and Patents Act 1988. Vendored from
+`https://bjh21.me.uk/bedstead/bedstead.otf` (the standard SAA5050 width) on
+2026-08-15 and converted to WOFF2 with fontTools; the design is unchanged.
+
 ## Spike scripts
 
 The scripts in `docs/spikes/` drive the Beebium BBC Micro emulator, and their

@@ -14,4 +14,5 @@ keys
 cli
 layout
 viewdata-encoding
+display-semantics
 ```

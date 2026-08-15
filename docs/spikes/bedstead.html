@@ -1,0 +1,64 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Bedstead viewdata spike</title>
+<style>
+@font-face {
+  font-family: "Bedstead";
+  src: url("../_static/fonts/bedstead.woff2") format("woff2");
+}
+:root { color-scheme: dark; }
+body { background:#222; color:#ccc; font-family: sans-serif; padding: 1rem; }
+h2 { font-size: 0.9rem; margin: 1.2rem 0 0.3rem; color:#8ab; }
+/* The frame. font-size sets the cell; line-height:1 makes each line exactly one
+   em tall, and Bedstead's mosaics fill the em, so vertical neighbours join with
+   no seam. The advance is 0.6em, so 40 columns are 24em wide and align by the
+   monospace advance alone -- no letter-spacing. */
+pre.viewdata {
+  font-family: "Bedstead", monospace;
+  font-size: 28px;
+  line-height: 1;
+  letter-spacing: 0;
+  background: #000;
+  color: #fff;
+  margin: 0;
+  padding: 0;
+  width: 24em;        /* 40 * 0.6em */
+  white-space: pre;
+}
+/* teletext colours */
+.r{color:#f00} .g{color:#0f0} .y{color:#ff0} .b{color:#00f}
+.m{color:#f0f} .c{color:#0ff} .w{color:#fff} .k{color:#000}
+.bg-r{background:#f00} .bg-b{background:#00f} .bg-g{background:#0f0} .bg-k{background:#000}
+/* double height: the run is scaled 2x from its top; the SAME cells on the row
+   below are left blank so the lower half shows there. */
+.dh { display:inline-block; transform: scaleY(2); transform-origin: top left; }
+/* flash: hidden for half the cycle; stilled when the reader asks for less motion */
+@keyframes vflash { 0%,49%{opacity:1} 50%,100%{opacity:0} }
+.flash { animation: vflash 1s steps(1,end) infinite; }
+@media (prefers-reduced-motion: reduce) { .flash { animation: none; } }
+/* conceal: shown as the background until revealed */
+.conceal { color: transparent; }
+</style>
+
+<h2>(a) mosaic rule: contiguous (left 20) vs separated (right 20)</h2>
+<pre class="viewdata"><span class="g"></span>
+<span class="c"></span>
+<span class="y"></span></pre>
+
+<h2>(b) coloured text on coloured background; the attribute cell is a space</h2>
+<pre class="viewdata">Plain white text on black               
+<span class="bg-b w"> Blue band, white text                  </span>
+<span class="w">Red then </span><span class="r bg-k"> </span><span class="bg-r k">red-bg black text                       </span></pre>
+
+<h2>(c) double height (top row scaled 2x, row below blank underneath)</h2>
+<pre class="viewdata">normal line above                       
+<span class="y dh">DOUBLE HEIGHT                           </span>
+                                        
+normal line below the blank             </pre>
+
+<h2>(d) flashing run and concealed run</h2>
+<pre class="viewdata">steady                                  <span class="flash r">FLASHING</span>
+<span class="w">answer: </span><span class="conceal">42 hidden</span> (concealed)
+                                        </pre>
+
+<p style="font-family:sans-serif;color:#888;font-size:.8rem">Bedstead, public domain. Measured PUA: bit0 TL, bit1 TR, bit2 ML, bit3 MR, bit4 BL, bit6 BR, bit5 contiguous(set)/separated(clear).</p>

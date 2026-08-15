@@ -47,8 +47,8 @@ from sextile.viewdata.blocks import (
 from sextile.viewdata.canvas import Canvas
 from sextile.viewdata.charset import mosaic_code
 from sextile.viewdata.controls import Attribute, Colour, alpha_colour, graphics_colour
-from sextile.viewdata.encoding import cell_count
 from sextile.viewdata.frame import COLUMNS, ROWS
+from sextile.viewdata.measure import cell_count
 
 __all__ = [
     "Align",

@@ -100,7 +100,7 @@ Public submodules:
 | `canvas` | `Canvas`, `RowWriter`, `Span` — writing on a frame |
 | `frame` | `Frame`, `ROWS`, `COLUMNS`, `FOOTER_ROW` — what a frame is |
 | `controls` | `Colour`, `Attribute`, `is_attribute_code`, and the two colour encoders |
-| `encoding` | `cell_count`, `fitted` — what fits in how many cells |
+| `measure` | `cell_count`, `fitted` — what fits in how many cells |
 | `charset` | `G0_TO_UNICODE`, `mosaic_code`, `is_representable` |
 | `drawing` | `rule`, `thin_rule`, `centred`, `key_row`, `bar` |
 | `blocks` | mosaic pictures: `Icon`, `icon`, `block_runs`, `read_bitmap`, `BLOCKS_ACROSS`, `BLOCKS_DOWN` |
@@ -111,10 +111,11 @@ Public submodules:
 | `wrapping` | `wrap_text`, `wrap_within` |
 | `compass` | `ROWS`, `compass` — `W`/`A`/`S`/`D` drawn, for a guide page |
 
-Internal to the framework, and not to be imported: `command_line`,
-`idle_warning`, `hangup`, `repaint`, `ansi`. These are what the session is built
-from, and it draws on a frame after a page has been built rather than while it
-is being built.
+Internal to the framework, and not to be imported: `encoding`, `command_line`,
+`idle_warning`, `hangup`, `repaint`, `ansi`. `encoding` is the wire half --
+`ScreenControl`, `encode_attribute`, `encode_text` -- which a page never touches;
+the rest are what the session is built from, and it draws on a frame after a
+page has been built rather than while it is being built.
 
 **Some of this is offered rather than used.** `read_bitmap`, `boxed`,
 `cells_needed` and `is_attribute_code` have no caller among the three services here,
@@ -253,6 +254,7 @@ Everything else, and specifically:
 | `routing` | a service declares routes; the router matches them. `PageRoute`, `PageRouter` and `Handler` are declared here and re-exported by `sextile`; `Converter` is the extension point, and it and the two errors it raises are at the top level |
 | `pages` | reached through `sextile.handlers` or the `Sextile` methods |
 | `session`, `server` | how a call is answered, which no page takes part in |
+| `viewdata.encoding` | the wire half: `ScreenControl`, `encode_attribute`, `encode_text` |
 | `viewdata.command_line`, `.idle_warning`, `.hangup`, `.repaint` | what the session is built from |
 | `viewdata.ansi` | for looking at a frame without a terminal |
 

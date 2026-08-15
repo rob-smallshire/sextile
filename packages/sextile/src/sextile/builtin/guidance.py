@@ -38,7 +38,7 @@ from sextile.viewdata.compass import ROWS as COMPASS_ROWS
 from sextile.viewdata.compass import compass
 from sextile.viewdata.composition import Composition
 from sextile.viewdata.drawing import key_row
-from sextile.viewdata.encoding import cell_count
+from sextile.viewdata.measure import cell_count
 
 if TYPE_CHECKING:
     from sextile.requests import PageRequest

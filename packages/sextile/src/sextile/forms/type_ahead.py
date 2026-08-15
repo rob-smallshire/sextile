@@ -29,8 +29,8 @@ from sextile.layout.footer import FooterItem, Priority
 from sextile.page import PageAddress
 from sextile.viewdata.canvas import Canvas, RowWriter
 from sextile.viewdata.controls import Colour
-from sextile.viewdata.encoding import fitted
 from sextile.viewdata.frame import COLUMNS
+from sextile.viewdata.measure import fitted
 
 #: As many suggestions as the wire affords at 1200 baud. Measured, not chosen.
 SUGGESTIONS: Final = 3

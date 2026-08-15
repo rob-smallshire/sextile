@@ -38,8 +38,8 @@ from sextile.page import PageAddress
 from sextile.viewdata.canvas import Canvas, RowWriter
 from sextile.viewdata.controls import Colour
 from sextile.viewdata.drawing import key_row
-from sextile.viewdata.encoding import cell_count, fitted
 from sextile.viewdata.frame import COLUMNS
+from sextile.viewdata.measure import cell_count, fitted
 from sextile.viewdata.typesetting import Row, rows_for
 from sextile.viewdata.wrapping import wrap_within
 

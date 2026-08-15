@@ -22,8 +22,8 @@ from sextile.layout.footer import FooterItem, Priority
 from sextile.page import PageAddress
 from sextile.viewdata.canvas import Canvas, RowWriter
 from sextile.viewdata.controls import Colour
-from sextile.viewdata.encoding import fitted
 from sextile.viewdata.frame import COLUMNS
+from sextile.viewdata.measure import fitted
 
 #: And what ending a background costs, which is what bounds a field to its own
 #: width.

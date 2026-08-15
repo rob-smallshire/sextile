@@ -18,8 +18,8 @@ from sextile.viewdata.drawing import (
     rule,
     thin_rule,
 )
-from sextile.viewdata.encoding import cell_count, fitted
 from sextile.viewdata.frame import COLUMNS
+from sextile.viewdata.measure import cell_count, fitted
 
 
 def rows_of(canvas: Canvas) -> list[str]:

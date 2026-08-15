@@ -21,8 +21,8 @@ from typing import Final
 from sextile.viewdata.canvas import Canvas, RowWriter
 from sextile.viewdata.composition import Align, Composition, Style
 from sextile.viewdata.controls import Attribute, Colour, graphics_colour
-from sextile.viewdata.encoding import cell_count, fitted
 from sextile.viewdata.frame import COLUMNS
+from sextile.viewdata.measure import cell_count, fitted
 
 __all__ = [
     "bar",

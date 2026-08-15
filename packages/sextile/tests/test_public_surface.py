@@ -45,7 +45,7 @@ PUBLIC: Final = frozenset(
         "sextile.viewdata.composition",
         "sextile.viewdata.controls",
         "sextile.viewdata.drawing",
-        "sextile.viewdata.encoding",
+        "sextile.viewdata.measure",
         "sextile.viewdata.font",
         "sextile.viewdata.frame",
         "sextile.viewdata.lettering",

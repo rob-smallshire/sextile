@@ -25,8 +25,10 @@ from sextile.viewdata.charset import encode_g0
 from sextile.viewdata.controls import Attribute
 
 __all__ = [
-    "cell_count",
-    "fitted",
+    "ESCAPE",
+    "ScreenControl",
+    "encode_attribute",
+    "encode_text",
 ]
 
 ESCAPE: Final = 0x1B
@@ -77,33 +79,3 @@ def encode_text(text: str) -> bytes:
             raise AssertionError(f"transliteration produced unrepresentable {character!r}")
         encoded.append(position)
     return bytes(encoded)
-
-
-def cell_count(text: str) -> int:
-    """How many cells text occupies once transliterated.
-
-    Not the same as its length: an ellipsis becomes three characters and an
-    accented letter one, so callers laying out a row must ask rather than assume.
-    """
-    return len(encode_text(text))
-
-
-def fitted(text: str, cells: int) -> str:
-    """Text shortened until it occupies no more than the cells available.
-
-    Measured in cells rather than characters: transliteration can lengthen a
-    string on its way to the wire, so trimming by length would leave something
-    that still overruns. There is no ellipsis, because on forty columns three
-    dots to say "there was more" cost more than the three characters they hide.
-
-    Here rather than beside the drawing helpers because it is arithmetic about
-    cells and nothing else, and everything that lays out a row needs it --
-    including `RowWriter`, which the drawing helpers are built on and so cannot
-    import from.
-    """
-    if cells <= 0:
-        return ""
-    shortened = text
-    while cell_count(shortened) > cells:
-        shortened = shortened[:-1]
-    return shortened

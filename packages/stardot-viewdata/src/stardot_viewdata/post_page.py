@@ -15,8 +15,8 @@ from sextile.formatting import Prose
 from sextile.layout import Custom, Flow, OnEveryFrame, PageLayout, Shortcut
 from sextile.viewdata.canvas import Canvas
 from sextile.viewdata.controls import Colour
-from sextile.viewdata.encoding import fitted
 from sextile.viewdata.frame import COLUMNS
+from sextile.viewdata.measure import fitted
 from sextile.viewdata.typesetting import rows_for
 from stardot_viewdata.html import parse_post_body
 from stardot_viewdata.model import Post

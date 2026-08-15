@@ -32,7 +32,7 @@ column screen is a few dozen words.
 
 from typing import Final
 
-from sextile.viewdata.encoding import cell_count
+from sextile.viewdata.measure import cell_count
 
 __all__ = [
     "wrap_text",

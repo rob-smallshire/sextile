@@ -9,10 +9,10 @@ __all__ = [
     "composition",
     "controls",
     "drawing",
-    "encoding",
     "font",
     "frame",
     "lettering",
+    "measure",
     "typesetting",
     "wrapping",
 ]

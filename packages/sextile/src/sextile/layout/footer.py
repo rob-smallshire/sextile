@@ -32,8 +32,8 @@ from enum import IntEnum
 from typing import Final
 
 from sextile import keys
-from sextile.viewdata.encoding import cell_count
 from sextile.viewdata.frame import COLUMNS
+from sextile.viewdata.measure import cell_count
 
 __all__ = [
     "FooterItem",

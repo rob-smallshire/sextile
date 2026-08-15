@@ -16,8 +16,8 @@ from sextile.page import Page, PageAddress, PageFrame
 from sextile.viewdata.canvas import Canvas
 from sextile.viewdata.controls import Colour
 from sextile.viewdata.drawing import rule
-from sextile.viewdata.encoding import fitted
 from sextile.viewdata.frame import COLUMNS, ROWS
+from sextile.viewdata.measure import fitted
 
 #: This service draws its own frames rather than using the framework's layout,
 #: so that a session test failing says the session is wrong and not the layout.

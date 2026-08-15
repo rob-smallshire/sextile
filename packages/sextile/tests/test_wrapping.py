@@ -7,7 +7,7 @@ longer than the whole line -- are the point rather than the exception.
 
 import pytest
 
-from sextile.viewdata.encoding import cell_count
+from sextile.viewdata.measure import cell_count
 from sextile.viewdata.wrapping import wrap_text, wrap_within
 
 

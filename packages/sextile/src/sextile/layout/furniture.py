@@ -16,8 +16,8 @@ from sextile.page import PageAddress
 from sextile.viewdata.canvas import Canvas
 from sextile.viewdata.controls import Colour
 from sextile.viewdata.drawing import rule
-from sextile.viewdata.encoding import cell_count, fitted
 from sextile.viewdata.frame import COLUMNS, ROWS
+from sextile.viewdata.measure import cell_count, fitted
 
 
 class Edge(Enum):

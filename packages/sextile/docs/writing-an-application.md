@@ -735,7 +735,7 @@ functions, so a service's own sit beside them:
 
 ```python
 from sextile.viewdata.drawing import bar, centred, centred_double, rule
-from sextile.viewdata.encoding import cell_count, fitted
+from sextile.viewdata.measure import cell_count, fitted
 
 rule(canvas, 1)                                    # a mosaic rule across the row
 centred(canvas, 3, "STARDOT", Colour.YELLOW)       # across the middle of a row

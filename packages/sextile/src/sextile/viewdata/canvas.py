@@ -16,8 +16,8 @@ from typing import Final, Self
 
 from sextile.viewdata.charset import mosaic_code
 from sextile.viewdata.controls import Attribute, Colour, alpha_colour, graphics_colour
-from sextile.viewdata.encoding import cell_count, fitted
 from sextile.viewdata.frame import COLUMNS, ROWS, Frame
+from sextile.viewdata.measure import cell_count, fitted
 from sextile.viewdata.wrapping import wrap_text
 
 __all__ = [

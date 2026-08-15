@@ -24,8 +24,8 @@ from sextile.formatting import Prose
 from sextile.layout import Flow
 from sextile.layout.parts import fill
 from sextile.testing import text_of
-from sextile.viewdata.encoding import cell_count
 from sextile.viewdata.frame import COLUMNS, FRAME_PREAMBLE, ROWS, Frame
+from sextile.viewdata.measure import cell_count
 from sextile.viewdata.typesetting import rows_for
 
 #: A whole frame, this module being about typesetting rather than furniture.

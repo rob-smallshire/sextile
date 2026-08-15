@@ -106,11 +106,11 @@ class SequencePart[E](ABC):
 
     Class attributes, overridden by a subclass to describe its shape:
         rows_per_entry: Rows one entry occupies.
-        separation: Blank rows between one entry and the next, and not after
+        gap: Blank rows between one entry and the next, and not after
             the last of them.
         numbered: Whether entries take a digit, and so whether the reader can
             choose them.
-        selecting_hint: What the prompt says about choosing, on frames with
+        choose_hint: What the prompt says about choosing, on frames with
             something to choose.
 
     Attributes:
@@ -121,9 +121,9 @@ class SequencePart[E](ABC):
     """
 
     rows_per_entry: ClassVar[int] = 1
-    separation: ClassVar[int] = 0
+    gap: ClassVar[int] = 0
     numbered: ClassVar[bool] = False
-    selecting_hint: ClassVar[FooterItem | None] = None
+    choose_hint: ClassVar[FooterItem | None] = None
 
     entries: Sequence[E]
     empty: str = ""
@@ -165,13 +165,13 @@ class SequencePart[E](ABC):
             if digit is not None and where is not None:
                 choices[digit] = where
             self.draw_entry(canvas, row, entry, digit)
-            row += self.rows_per_entry + self.separation
+            row += self.rows_per_entry + self.gap
         rest = self.entries[taking:]
         return Placed(
-            rows=taking * (self.rows_per_entry + self.separation) - self.separation,
+            rows=taking * (self.rows_per_entry + self.gap) - self.gap,
             claim=Claim(
                 choices=choices,
-                named=[self.selecting_hint] if choices and self.selecting_hint else [],
+                named=[self.choose_hint] if choices and self.choose_hint else [],
             ),
             remainder=replace(self, entries=rest) if rest else None,
         )
@@ -179,12 +179,12 @@ class SequencePart[E](ABC):
     def _fitting(self, room: Space) -> int:
         """How many entries go in this room.
 
-        The separation falls between entries and not after the last of them, so
-        there is one separation more room than there appears to be: five
+        The gap falls between entries and not after the last of them, so
+        there is one gap more room than there appears to be: five
         three-row entries with a blank between them occupy nineteen rows rather
         than twenty.
         """
-        fits = (room.rows + self.separation) // (self.rows_per_entry + self.separation)
+        fits = (room.rows + self.gap) // (self.rows_per_entry + self.gap)
         if self.numbered:
             fits = min(fits, room.choices)
         return max(min(fits, len(self.entries)), 0)
@@ -237,7 +237,7 @@ class Menu(RowSequencePart[Entry]):
 
     rows_per_entry: ClassVar[int] = 2
     numbered: ClassVar[bool] = True
-    selecting_hint: ClassVar[FooterItem | None] = FooterItem(
+    choose_hint: ClassVar[FooterItem | None] = FooterItem(
         "1-9", "select", Priority.PRIMARY
     )
 

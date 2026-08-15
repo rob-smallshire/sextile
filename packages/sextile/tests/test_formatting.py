@@ -266,7 +266,7 @@ class TestAServiceWithItsOwnShape:
     @dataclass(frozen=True, kw_only=True)
     class Blocks(SequencePart[str]):
         rows_per_entry: ClassVar[int] = 3
-        separation: ClassVar[int] = 1
+        gap: ClassVar[int] = 1
 
         def draw_entry(
             self, canvas: Canvas, row: int, entry: str, digit: str | None

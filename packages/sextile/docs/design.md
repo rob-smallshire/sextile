@@ -629,7 +629,7 @@ instead of three, in the same separated mosaics and across the same cells. A bar
 belongs where a page ends; between two things that are both content it reads as
 a second frame beginning.
 
-**`separation` puts blank rows *between* entries**, not after the last of them.
+**`gap` puts blank rows *between* entries**, not after the last of them.
 A shape several rows tall needs space around it or two entries read as one block;
 charging that space to every entry wastes it at the foot of the frame, where the
 furniture's rule already does the same job. It is worth a whole entry per frame

@@ -188,7 +188,7 @@ subclass says how tall an entry is and how to draw one:
 @dataclass(frozen=True, kw_only=True)
 class ForecastTable(SequencePart[Day]):
     rows_per_entry: ClassVar[int] = PICTURE_ROWS
-    separation: ClassVar[int] = 1
+    gap: ClassVar[int] = 1
     numbered: ClassVar[bool] = False
 
     today: date
@@ -197,8 +197,8 @@ class ForecastTable(SequencePart[Day]):
         draw_day(canvas, row, entry, self.today)
 ```
 
-`separation` is blank rows between entries and not after the last of them.
-`numbered` says whether entries take a digit, and `selecting_hint` what the
+`gap` is blank rows between entries and not after the last of them.
+`numbered` says whether entries take a digit, and `choose_hint` what the
 prompt says about choosing. A shape written along its rows subclasses
 `RowSequencePart` instead and writes `draw` and `draw_detail`, each given a
 `RowWriter`.

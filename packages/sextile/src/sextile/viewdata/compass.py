@@ -103,13 +103,21 @@ def compass(
     key: Colour = Colour.YELLOW,
     word: Colour = Colour.WHITE,
 ) -> Composition:
-    """Draw the compass with its top row at `row`, taking `ROWS` in all.
+    """Draw the compass onto a composition, its top row at `row`, taking `ROWS`.
 
-    **`items=False` leaves the sideways arm off.** `A` and `D` step through the
-    run of pages a menu offered, and the framework does not implement them: a
-    service wires them to `request.neighbours` or it has no such thing, and one
-    that has no such thing must not draw two keys that do nothing. The up and
-    down arm is always there, being frames, which every page has.
+    Args:
+        composition: The composition to add the compass to.
+        row: The top row it occupies.
+        items: Whether to draw the sideways `A`/`D` arm. False leaves it off,
+            for a service that does not wire those keys to `request.neighbours`
+            and so must not draw two keys that do nothing. The up-and-down arm
+            is always drawn, being frames, which every page has.
+        colour: The arrows' colour.
+        key: The colour of the key letters.
+        word: The colour of the words.
+
+    Returns:
+        The composition, for chaining.
     """
     composition.text(row, Align.CENTRE, _UP_WORDS, word)
     composition.text(row + 1, Align.CENTRE, keys.PREVIOUS_FRAME, key)

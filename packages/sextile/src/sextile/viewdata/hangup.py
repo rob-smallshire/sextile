@@ -1,8 +1,8 @@
 """Handing the terminal back when the line drops.
 
 Every frame begins by hiding the cursor: one trailing across the screen as a
-page paints is a distraction, and the one place a cursor tells a reader anything
-is the command line. But once the service has rung off, the reader is talking to
+page paints is a distraction, and it is turned back on only where a reader is
+typing. But once the service has rung off, the reader is talking to
 their modem again -- `+++`, `ATDT` and whatever else their comms software wants
 -- and a terminal with no cursor, sitting under a full screen of somebody else's
 frame, gives them nothing to type at.

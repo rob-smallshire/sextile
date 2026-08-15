@@ -105,22 +105,20 @@ def rows_bytes(
 
 
 def typed_bytes(before: Frame, after: Frame, row: int, *, at: int) -> bytes | None:
-    """The smallest change turning one row into the other, or None.
+    """Return the smallest change turning one row into the other, or None.
 
-    Two cases are worth the trouble, and both work only because the cursor is
-    already sitting at ``at`` -- which it is, the last repaint having left it
-    where the next character goes. A character typed costs that character
-    alone, since the cursor advances itself; one rubbed out costs three, the
-    space taking the row's background because the attribute that set it sits
-    earlier in the row and goes untouched.
+    Args:
+        before: The frame as the terminal has it.
+        after: The frame wanted.
+        row: The row that may have changed.
+        at: Where the cursor sits, which both cases rely on -- the last repaint
+            left it where the next character goes.
 
-    None where the row changed some other way, or changed anywhere but under
-    the cursor. The caller then repaints it, which is always correct and merely
-    dearer.
-
-    The command line has done this since it was written. A field is the same
-    problem: a reader changes one cell, and repainting the row costs thirty-odd
-    bytes and a visible flicker.
+    Returns:
+        The bytes for one character typed (that character, the cursor advancing
+        itself) or one rubbed out (cursor left, a space, cursor left, the space
+        taking the row's background). None where the row changed some other way
+        or anywhere but under the cursor, and the caller must repaint it whole.
     """
     was, now = _row_of(before, row), _row_of(after, row)
     if was == now:

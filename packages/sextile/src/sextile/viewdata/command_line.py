@@ -88,12 +88,15 @@ def _command_line_frame(entry: str) -> Frame:
 
 
 def command_line_bytes(entry: str) -> bytes:
-    """The bytes that draw the command line, leaving the page beneath alone.
+    """Draw the command line and return its bytes, leaving the page beneath alone.
 
-    The cursor is put where the next character will land and turned on, which is
-    the one place in the service a cursor tells a reader anything. Getting there
-    costs a few cursor-rights: they skip without erasing, so stepping across the
-    row already drawn disturbs nothing.
+    Args:
+        entry: What the reader has keyed of a request so far.
+
+    Returns:
+        The bytes that redraw the footer row as the command line, with the
+        cursor put where the next character will land and turned on. Getting
+        there costs a few cursor-rights, which skip without erasing.
     """
     canvas = Canvas(Frame())
     draw_command_line(canvas, entry)

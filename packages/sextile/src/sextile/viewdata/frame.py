@@ -40,7 +40,7 @@ _BLANK: Final = 0x20
 
 #: What every frame begins with: hide the cursor so it does not trail across the
 #: screen as the frame paints, clear, and home. The command line turns the
-#: cursor back on, that being the one place it tells a reader anything.
+#: cursor back on where a reader is typing.
 FRAME_PREAMBLE: Final = bytes(
     [ScreenControl.CURSOR_OFF, ScreenControl.CLEAR_SCREEN, ScreenControl.CURSOR_HOME]
 )

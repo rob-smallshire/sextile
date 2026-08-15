@@ -130,17 +130,17 @@ class TestSayingSo:
 
     async def test_a_word_that_names_nothing_says_so(self) -> None:
         app = Sextile()
-        page = await app.not_found("BANANA")
+        page = await app.not_found(request_for(app, "1"), "BANANA")
         assert "BANANA" in text_of(page, row=2)
 
     async def test_an_application_can_say_it_its_own_way(self) -> None:
         app = Sextile()
 
         @app.on_not_found
-        async def missing(target: str) -> Page:
+        async def missing(request: PageRequest, target: str) -> Page:
             return saying(f"NO {target}")
 
-        assert text_of(await app.not_found("BANANA")) == "NO BANANA"
+        assert text_of(await app.not_found(request_for(app, "1"), "BANANA")) == "NO BANANA"
 
 
 class TestResolving:
@@ -284,20 +284,18 @@ class TestWhatAServiceIsCalled:
         assert Sextile(name="Stardot").name == "Stardot"
 
     async def test_the_name_is_used_where_the_framework_speaks(self) -> None:
-        page = await Sextile(name="Stardot").timed_out(nowhere())
+        app = Sextile(name="Stardot")
+        page = await app.timed_out(request_for(app, "1"), Parting())
         assert "Thank you for calling Stardot." in text_of(page, row=7)
 
     async def test_a_nameless_service_is_not_thanked_on_its_behalf(self) -> None:
         #  Better to say nothing than to say "Thank you for calling ." or, worse,
         #  to thank the reader for calling the framework.
-        page = await Sextile().timed_out(nowhere())
+        app = Sextile()
+        page = await app.timed_out(request_for(app, "1"), Parting())
         assert "calling" not in "".join(
             page.frames[0].frame.to_grid()[0]
         )
-
-
-def nowhere(digits: str = "1") -> Parting:
-    return Parting(address=PageAddress(digits))
 
 
 class TestRingingOffForWantOfAReply:
@@ -307,60 +305,51 @@ class TestRingingOffForWantOfAReply:
 
     async def test_there_is_something_to_show(self) -> None:
         app = Sextile()
-        page = await app.timed_out(nowhere())
+        page = await app.timed_out(request_for(app, "1"), Parting())
         assert "no reply" in text_of(page, row=2).lower()
 
     async def test_it_says_the_line_has_gone(self) -> None:
         app = Sextile()
-        assert "OFF" in text_of(await app.timed_out(nowhere())).upper()
+        assert "OFF" in text_of(await app.timed_out(request_for(app, "1"), Parting())).upper()
 
     async def test_it_says_where_the_reader_had_got_to(self) -> None:
         #  So they can key it again on calling back, which is the one piece of
-        #  their session worth handing over: the terminal keeps nothing.
-        page = await Sextile().timed_out(nowhere("82489493"))
+        #  their session worth handing over: the terminal keeps nothing. The
+        #  page they were on is the request's address.
+        app = Sextile()
+        page = await app.timed_out(request_for(app, "82489493"), Parting())
         assert "*82489493#" in text_of(page, row=5)
 
     async def test_a_service_can_say_it_its_own_way(self) -> None:
         app = Sextile()
 
         @app.on_timed_out
-        async def gone(parting: Parting) -> Page:
-            return saying(f"YOU WERE ON *{parting.address}#")
+        async def gone(request: PageRequest, parting: Parting) -> Page:
+            return saying(f"YOU WERE ON *{request.address}#")
 
-        assert text_of(await app.timed_out(nowhere("8"))) == "YOU WERE ON *8#"
+        assert text_of(await app.timed_out(request_for(app, "8"), Parting())) == "YOU WERE ON *8#"
 
     async def test_it_leaves_room_to_type_beneath(self) -> None:
         #  The reader is about to talk to their modem, and the cursor is put
         #  below the last thing said.
         app = Sextile(name="Stardot")
-        page = await app.timed_out(nowhere())
+        page = await app.timed_out(request_for(app, "1"), Parting())
         assert page.frames[0].frame.last_written_row() < 20
 
 
-
 class TestWhereTheCallerHadGot:
-    """What a parting handler is told, which is everything the session knew."""
+    """What a timeout hook is told about how far a caller had got.
 
-    def test_the_page_they_were_on(self) -> None:
-        assert Parting(address=PageAddress("8")).address == PageAddress("8")
+    The page they were on, the history and the session are on the `PageRequest`
+    the hook is given, tested where a request is; the `Parting` beside it carries
+    only the frame, there being no frame on a request to read it off.
+    """
 
     def test_the_frame_of_it(self) -> None:
-        assert Parting(address=PageAddress("8"), frame_index=2).frame_index == 2
+        assert Parting(frame_index=2).frame_index == 2
 
-    def test_where_they_had_been(self) -> None:
-        parting = Parting(
-            address=PageAddress("82489493"),
-            history=(PageAddress("1"), PageAddress("8")),
-        )
-        assert parting.history == (PageAddress("1"), PageAddress("8"))
-
-    def test_what_they_had_accumulated(self) -> None:
-        assert Parting(address=PageAddress("1"), session={"user": "komadori"}).session == {
-            "user": "komadori"
-        }
-
-    def test_a_caller_who_went_nowhere_has_no_history(self) -> None:
-        assert Parting(address=PageAddress("1")).history == ()
+    def test_a_parting_defaults_to_the_first_frame(self) -> None:
+        assert Parting().frame_index == 0
 
 
 class TestWhereTheReaderHasBeen:
@@ -598,30 +587,50 @@ class TestWhenAPageBreaks:
     """
 
     async def test_there_is_something_to_show(self) -> None:
-        page = await Sextile().failed(PageAddress("82489493"))
+        app = Sextile()
+        page = await app.failed(request_for(app, "82489493"), RuntimeError("boom"))
         assert "SERVICE ERROR" in text_of(page).upper()
 
     async def test_it_names_the_page_that_broke(self) -> None:
-        page = await Sextile().failed(PageAddress("82489493"))
+        app = Sextile()
+        page = await app.failed(request_for(app, "82489493"), RuntimeError("boom"))
         assert "*82489493#" in text_of(page, row=2)
 
     async def test_it_says_whose_fault_it_is(self) -> None:
         #  A reader on a 1200 baud line will otherwise assume they did it.
-        page = await Sextile().failed(PageAddress("8"))
+        app = Sextile()
+        page = await app.failed(request_for(app, "8"), RuntimeError("boom"))
         assert "our end" in "\n".join(page.frames[0].frame.to_grid()[0]).lower()
 
     async def test_a_service_can_say_it_its_own_way(self) -> None:
         app = Sextile()
 
         @app.on_failed
-        async def broke(address: PageAddress) -> Page:
-            return saying(f"SORRY ABOUT *{address}#")
+        async def broke(request: PageRequest, error: Exception) -> Page:
+            return saying(f"SORRY ABOUT *{request.address}#")
 
-        assert text_of(await app.failed(PageAddress("8"))) == "SORRY ABOUT *8#"
+        assert text_of(await app.failed(request_for(app, "8"), RuntimeError("boom"))) == (
+            "SORRY ABOUT *8#"
+        )
 
+    async def test_the_service_is_handed_the_exception(self) -> None:
+        #  What a service actually wants, to log it its own way or tell the
+        #  reader which kind of thing went wrong.
+        app = Sextile()
+        seen: list[Exception] = []
+
+        @app.on_failed
+        async def broke(request: PageRequest, error: Exception) -> Page:
+            seen.append(error)
+            return saying("SORRY")
+
+        boom = RuntimeError("the archive is on fire")
+        await app.failed(request_for(app, "8"), boom)
+        assert seen == [boom]
 
     async def test_it_leaves_room_to_type_beneath(self) -> None:
-        page = await Sextile().failed(PageAddress("1"))
+        app = Sextile()
+        page = await app.failed(request_for(app, "1"), RuntimeError("boom"))
         assert page.frames[0].frame.last_written_row() < 20
 
 

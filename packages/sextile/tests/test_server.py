@@ -17,7 +17,7 @@ import pytest
 from exemplar import Board
 
 from sextile.addressing import PageAddress
-from sextile.application import Parting
+from sextile.application import PageRequest, Parting
 from sextile.page import Page
 from sextile.server import DEFAULT_PORT, serve
 from sextile.viewdata.encoding import ScreenControl
@@ -426,9 +426,9 @@ class TestHandingTheTerminalBack:
         board = Board()
 
         @board.on_timed_out
-        async def gone(parting: Parting) -> Page:
+        async def gone(request: PageRequest, parting: Parting) -> Page:
             return board.menu(
-                PageAddress("1"), f"COME BACK TO *{parting.address}#", []
+                PageAddress("1"), f"COME BACK TO *{request.address}#", []
             )
 
         running = await serve(

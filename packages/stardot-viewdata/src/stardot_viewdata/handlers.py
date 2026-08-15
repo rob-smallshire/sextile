@@ -34,7 +34,6 @@ from sextile import (
     PageRequest,
     PageRouter,
     Parting,
-    Sextile,
     StateKey,
     farewell_page,
     keyed,
@@ -365,46 +364,43 @@ async def guide(request: PageRequest) -> Page:
 # -- the service's own voice, off any page number -----------------------------
 
 
-def ringing_off(app: Sextile, parting: Parting) -> Page:
+def ringing_off(request: PageRequest, parting: Parting) -> Page:
     """Said in the service's own voice as an idle caller is released.
 
     Naming the page they were on, because the terminal keeps nothing and a
-    reader who dials back in has no other way to pick up where they were.
+    reader who dials back in has no other way to pick up where they were. The
+    request is the page they were on; the parting says which frame of it.
     """
-    #  No request reaches on_timed_out, so one is built from the app to carry
-    #  the parting's address to farewell_page. The hooks step retires this.
+    app = request.app
     return farewell_page(
-        PageRequest(address=parting.address, app=app),
+        request,
         "RINGING OFF",
         "No reply for some time, so the line",
         "has been released for somebody else.",
         "",
-        f"You were reading *{parting.address}#.",
+        f"You were reading *{request.address}#.",
         "",
         f"Thank you for calling {app.name}. Do call",
         "again.",
     )
 
 
-def unknown_page(app: Sextile, target: str) -> Page:
+def unknown_page(request: PageRequest, target: str) -> Page:
     """Say so, in the service's own furniture, and leave the way back open."""
     return notice_page(
-        #  No request reaches here: on_not_found is handed the target alone, so
-        #  the app is captured in the closure and a request is built from it.
-        #  The address is only there because a page is built from one; the
-        #  notice answers no page of its own, so `numbered=False` hides it.
-        PageRequest(address=app.index, app=app),
+        request,
         f"*{target[:30]}# is NOT a page here.",
         "",
         "Try *1# for the main index.",
         title="UNKNOWN PAGE",
+        #  The notice answers no page of its own, so the number is hidden.
         numbered=False,
         #  The advice rides in the label: there is no key for "another page",
         #  only the command line. Shortened to "index" where the row is tight,
         #  the short form being first.
         home=Shortcut(
             key=HOME_KEY,
-            destination=app.address_for("main"),
+            destination=request.app.address_for("main"),
             says="index, or key another page",
         ),
     )

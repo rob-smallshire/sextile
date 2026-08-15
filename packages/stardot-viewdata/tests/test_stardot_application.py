@@ -25,6 +25,7 @@ from sextile import (
     keyed,
     keys,
 )
+from sextile.testing import request_for
 from sextile.viewdata import lettering
 from sextile.viewdata.blocks import BLOCKS_ACROSS, BLOCKS_DOWN
 from sextile.viewdata.charset import mosaic_pattern
@@ -150,7 +151,9 @@ async def page_at(app: Sextile, digits: str, neighbours: Neighbours = BY_NUMBER)
 async def what_a_reader_sees(app: Sextile, digits: str) -> Page:
     """The page, or the notice shown in its place -- as the session would."""
     page = await app.ask(digits)
-    return page if page is not None else await app.not_found(digits)
+    if page is not None:
+        return page
+    return await app.not_found(request_for(app, app.index), digits)
 
 
 def bytes_of(page: Page) -> list[bytes]:

@@ -6,7 +6,7 @@ two callers keying the same number can be shown different things: because they
 arrived through different menus, or because one is logged in.
 """
 
-from collections.abc import Mapping, MutableMapping
+from collections.abc import MutableMapping
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING
 
@@ -78,21 +78,13 @@ class PageRequest:
 
 @dataclass(frozen=True)
 class Parting:
-    """Where a caller had got to when the line was taken from them.
+    """How far into a page a caller had got when the line was taken from them.
 
-    Everything the session knew, handed over because the terminal keeps none of
-    it. A service can say "you were reading *82489493#", which is the one thing
-    worth telling somebody who is about to dial back in.
+    Handed to the timeout hook alongside the `PageRequest` for the page they
+    were on, which carries the address, the history and the session. Only the
+    frame is here, because a request names a page and a page runs to several
+    frames: there is no frame on a request to read this off.
     """
 
-    address: PageAddress
-    """The page they were on."""
-
     frame_index: int = 0
-    """Which frame of it, for a page that ran to several."""
-
-    history: tuple[PageAddress, ...] = ()
-    """Where they had been, oldest first, as far back as the session kept."""
-
-    session: Mapping[str, object] = field(default_factory=dict)
-    """What they had accumulated over the call."""
+    """Which frame of the page they were on, for a page that ran to several."""

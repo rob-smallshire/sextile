@@ -103,9 +103,10 @@ class _PageFailed(Exception):
     two are different things to say and only one of them is the reader's doing.
     """
 
-    def __init__(self, address: PageAddress) -> None:
-        super().__init__(f"*{address}# could not be built")
-        self.address = address
+    def __init__(self, request: PageRequest, error: Exception) -> None:
+        super().__init__(f"*{request.address}# could not be built")
+        self.request = request
+        self.error = error
 
 
 @dataclass(frozen=True)
@@ -181,12 +182,8 @@ class Session:
         a frame is hard to pick out from the frame.
         """
         self._page = await self._application.timed_out(
-            Parting(
-                address=self._address,
-                frame_index=self._frame_index,
-                history=self._been(),
-                session=dict(self._state),
-            )
+            self._request(self._address),
+            Parting(frame_index=self._frame_index),
         )
         self._frame_index = 0
         self._finished = True
@@ -360,7 +357,7 @@ class Session:
             #  It exists and we could not draw it, which is a different thing to
             #  say and not the reader's doing. They stay where they are either
             #  way.
-            return await self._show(await self._application.failed(broke.address))
+            return await self._show(await self._application.failed(broke.request, broke.error))
         if page is None:
             #  Say so, and leave the reader where they were. Silence would be
             #  indistinguishable from a line fault, and moving them to a page
@@ -502,7 +499,7 @@ class Session:
         try:
             page = await self._build(place.address, None, self._been()[:-1])
         except _PageFailed as broke:
-            return await self._show(await self._application.failed(broke.address))
+            return await self._show(await self._application.failed(broke.request, broke.error))
         if page is None:
             #  The page has gone since the reader was on it. Staying put is
             #  better than unwinding to somewhere they did not ask for.
@@ -519,7 +516,7 @@ class Session:
         try:
             page = await self._build(self._address, self._sequence, self._been())
         except _PageFailed as broke:
-            return await self._show(await self._application.failed(broke.address))
+            return await self._show(await self._application.failed(broke.request, broke.error))
         if page is None:
             return None
         self._page = page
@@ -533,9 +530,34 @@ class Session:
         except _PageFailed as broke:
             #  On connecting there is nowhere to stay, so the error becomes the
             #  page: a caller must be given a frame.
-            self._page = await self._application.failed(broke.address)
+            self._page = await self._application.failed(broke.request, broke.error)
             return
-        self._page = page if page is not None else await self._application.not_found(str(address))
+        if page is not None:
+            self._page = page
+        else:
+            self._page = await self._application.not_found(
+                self._request(address), str(address)
+            )
+
+    def _request(
+        self,
+        address: PageAddress,
+        sequence: "_Sequence | None" = None,
+        been: tuple[PageAddress, ...] | None = None,
+    ) -> PageRequest:
+        """The request for a page at ``address``, as a handler is given it.
+
+        The one place a request is built: a page's, and the one an error or
+        timeout hook is handed, so the two cannot come to carry different things.
+        """
+        return PageRequest(
+            address=address,
+            neighbours=sequence.neighbours() if sequence else Neighbours(),
+            session=self._state,
+            history=self._been() if been is None else been,
+            state=self._application.state,
+            app=self._application,
+        )
 
     async def _build(
         self,
@@ -543,17 +565,9 @@ class Session:
         sequence: "_Sequence | None",
         been: tuple[PageAddress, ...],
     ) -> Page | None:
+        request = self._request(address, sequence, been)
         try:
-            return await self._application.respond(
-                PageRequest(
-                    address=address,
-                    neighbours=sequence.neighbours() if sequence else Neighbours(),
-                    session=self._state,
-                    history=been,
-                    state=self._application.state,
-                    app=self._application,
-                )
-            )
+            return await self._application.respond(request)
         except Exception as error:
             #  A page that will not build costs its page, not the call. A
             #  session here is a telephone call, so ending it over one page's
@@ -565,7 +579,7 @@ class Session:
             #  page the service has is found rather than hidden behind a
             #  "not here".
             _logger.exception("Page *%s# could not be built", address)
-            raise _PageFailed(address) from error
+            raise _PageFailed(request, error) from error
 
     def _been(self) -> tuple[PageAddress, ...]:
         """Where the reader has been, oldest first, as the history stands."""
@@ -594,7 +608,11 @@ class Session:
         return frame + caret_bytes(*found.form.caret)
 
     async def _unknown(self, target: str) -> bytes:
-        return await self._show(await self._application.not_found(target))
+        #  The reader stays where they are; the notice is shown over the way, so
+        #  the request is theirs -- the page they are on -- and the target is
+        #  what they keyed that led nowhere.
+        request = self._request(self._address)
+        return await self._show(await self._application.not_found(request, target))
 
     async def _show(self, page: Page) -> bytes:
         """Send a page without going to it: something said, not somewhere gone."""

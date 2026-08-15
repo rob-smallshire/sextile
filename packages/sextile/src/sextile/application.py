@@ -76,9 +76,9 @@ __all__ = [
 _QUOTED: Final = 30
 
 
-type NotFoundHandler = Callable[[str], Awaitable[Page]]
-type PartingHandler = Callable[[Parting], Awaitable[Page]]
-type FailureHandler = Callable[[PageAddress], Awaitable[Page]]
+type NotFoundHandler = Callable[[PageRequest, str], Awaitable[Page]]
+type PartingHandler = Callable[[PageRequest, Parting], Awaitable[Page]]
+type FailureHandler = Callable[[PageRequest, Exception], Awaitable[Page]]
 
 type Next = Callable[[PageRequest], Awaitable[Page | None]]
 
@@ -339,80 +339,70 @@ class Sextile:
                     return found
             raise
 
-    async def not_found(self, target: str) -> Page:
-        """Say that a request named nothing here.
+    async def not_found(self, request: PageRequest, target: str) -> Page:
+        """Say that ``target`` named nothing here.
 
         Silence would be indistinguishable from a line fault, which on a service
         that answers slowly by design is exactly the wrong thing to be. A
         service registering `@app.on_not_found` says it its own way instead.
         """
         if self._not_found is not None:
-            return await self._not_found(target)
-        return self._own_notice(
-            "UNKNOWN PAGE", f"{keyed(target[:_QUOTED])} is NOT a page here.", at=self.home
+            return await self._not_found(request, target)
+        return notice_page(
+            request,
+            f"{keyed(target[:_QUOTED])} is NOT a page here.",
+            title="UNKNOWN PAGE",
+            home=None,
+            furniture=(),
         )
 
-    async def timed_out(self, parting: Parting) -> Page:
+    async def timed_out(self, request: PageRequest, parting: Parting) -> Page:
         """Say that the line is being released for want of a reply.
 
-        A page rather than a line of text over whatever was showing, for the
-        same reason every other thing this service says is a page: a message
+        ``request`` is the page the reader was on; ``parting`` says which frame
+        of it. A page rather than a line of text over whatever was showing, for
+        the same reason every other thing this service says is a page: a message
         overprinting a frame is hard to pick out from the frame. A service
         registering `@app.on_timed_out` says goodbye its own way.
         """
         if self._timed_out is not None:
-            return await self._timed_out(parting)
-        return self._own_notice(
-            "RINGING OFF",
+            return await self._timed_out(request, parting)
+        return notice_page(
+            request,
             "No reply for some time, so the line",
             "has been released.",
             "",
-            f"You were reading *{parting.address}#.",
+            f"You were reading *{request.address}#.",
             *(["", f"Thank you for calling {self.name}."] if self.name else []),
-            at=parting.address,
+            title="RINGING OFF",
+            home=None,
+            furniture=(),
             hang_up=True,
         )
 
-    async def failed(self, address: PageAddress) -> Page:
+    async def failed(self, request: PageRequest, error: Exception) -> Page:
         """Say that a page which exists could not be built.
 
         The viewdata equivalent of a 500, and deliberately not the same page as
         `not_found`: one says the reader asked for something that is not here,
-        this says the service could not build something that is. A service
-        registering `@app.on_failed` says it its own way.
+        this says the service could not build something that is. ``error`` is
+        what the handler raised, for a service registering `@app.on_failed` that
+        wants to say it its own way; the framework's own words do not read it.
         """
         if self._failed is not None:
-            return await self._failed(address)
-        return self._own_notice(
-            "SERVICE ERROR",
-            f"{keyed(address)} could not be built.",
+            return await self._failed(request, error)
+        return notice_page(
+            request,
+            f"{keyed(request.address)} could not be built.",
             "",
             "This is a fault at our end, not yours,",
             "and the service has made a note of it.",
             "",
             f"Key {HOME_KEY} for the index, or {keyed(keys.REFRESH)} to try it",
             "again.",
-            at=address,
-        )
-
-    def _own_notice(
-        self, title: str, *lines: str, at: PageAddress, hang_up: bool = False
-    ) -> Page:
-        """A notice the framework says for itself, having no request to answer.
-
-        `not_found`, `failed` and `timed_out` are handed a target, an address
-        or a parting rather than a request, so one is built from the app to
-        carry them to `notice_page`. `furniture=()` draws the plain, keyless
-        notice these want. When the hooks come to take the request, the built
-        request goes with them.
-        """
-        return notice_page(
-            PageRequest(address=at, app=self),
-            *lines,
-            title=title,
+            title="SERVICE ERROR",
             home=None,
             furniture=(),
-            hang_up=hang_up,
         )
 
     def address_for(self, name: str, **params: object) -> PageAddress:

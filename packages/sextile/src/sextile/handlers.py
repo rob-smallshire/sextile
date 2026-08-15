@@ -6,11 +6,11 @@ title, how to label a visited address, the service's index -- and are the
 `(request) -> Page` handlers a service routes. Registered nowhere: a service
 maps each into its own numbering or does without.
 
-`guide_page` is the one a service calls directly, since only the service knows
-the rows to add to it. The rest are routed through `standard_pages`, the one
-line most services want: it returns the routes for whichever of these the
-service gives a number, carrying the framework's own title, detail and keywords
-so a service need not retype them::
+`guide_page` is called directly, because the rows it adds are the service's own.
+The rest are routed through `standard_pages`, which returns the routes for
+whichever of these a service gives a number, each carrying the framework's own
+title, detail and keywords, so a service names the page once and retypes
+nothing::
 
     Sextile(pages=[*my_pages, *standard_pages(history="92", contents="93", keywords="94")])
 
@@ -101,8 +101,7 @@ async def keywords_page(request: PageRequest) -> Page:
     """The words a reader can key in place of a page number.
 
     Generated from the service's keywords, so it cannot drift from what the
-    service answers -- which is precisely what a list typed into a help page
-    does.
+    service answers.
     """
     app = request.app
     return _names.names_page(
@@ -122,12 +121,11 @@ async def guide_page(
 ) -> Page:
     """How to get about, as a table of the keys this service answers.
 
-    Most of what a guide has to say is the framework's -- the digits, the way
-    home, the syntax of a request, the key that turns a page -- and a guide that
-    drifts from the thing it describes is worse than none, so the framework
-    builds it. A service passes the rows only it can know, since only it knows
-    them: one page may answer letters typed into a field, another a single key
-    such as `F`.
+    The framework's own keys -- the digits, the way home, the syntax of a
+    request, the key that turns a page -- are drawn from what it already knows.
+    A service adds through `moving_rows` and `asking_rows` the rows only it can
+    supply: the keys a particular page answers, such as a letter typed into a
+    field, or a single key such as `F`.
 
     Args:
         request: The request this page answers.
@@ -141,12 +139,12 @@ async def guide_page(
 
     Returns:
         The guide, as two frames of keys.
-
-    The row for `0` reads "back to the main menu" on a service whose first page
-    is called one and "back to the main index" on a service whose is called
-    that: it is the page's own title, so the two cannot disagree.
     """
     app = request.app
+    #  The framework draws its own keys so the guide cannot drift from them. The
+    #  `0` row takes its words from the index page's own title, so it reads "back
+    #  to the main menu" or "the main index" as that page is titled, and the two
+    #  cannot disagree.
     return _guidance.guide_page(
         request=request,
         title=(app.title_for(request.address) or _guidance.TITLE).upper(),
@@ -170,9 +168,9 @@ async def recent_page(
         request: The request this page answers.
         visits: The log to read.
         limit: How many to show, defaulting to the nine a frame holds. More than
-            that goes on to further frames rather than being dropped.
-        prefix: Narrows it to a namespace, which is what a first digit already
-            means: a service can ask for one namespace's pages alone.
+            that runs on to further frames.
+        prefix: Narrows it to a namespace of the numbering, so a service can ask
+            for one namespace's pages alone.
 
     Returns:
         A menu of the pages looked at lately, newest first.
@@ -200,10 +198,10 @@ async def popular_page(
         request: The request this page answers.
         visits: The log to read.
         limit: How many to show, defaulting to the nine a frame holds. More than
-            that goes on to further frames rather than being dropped.
+            that runs on to further frames.
         prefix: Narrows it to a namespace of the numbering.
-        since: Counts only what has been read since then, where the service
-            wants "most read lately" rather than most read ever.
+        since: Counts only what has been read since then, for "most read lately"
+            rather than most read ever.
 
     Returns:
         A menu of the pages looked at most, the most read first.
@@ -226,7 +224,7 @@ async def callers_page(
     """How many have called, over each of a few periods.
 
     A count of connections rather than of anybody. `periods` is the service's to
-    choose: one longer than the log is kept for reads low, and silently.
+    choose; a period longer than the log's retention simply reads low.
     """
     when = datetime.now(UTC)
     app = request.app

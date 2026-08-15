@@ -16,6 +16,10 @@ here.
 page of its own, so it is documented here:
 
 ```{eval-rst}
+.. currentmodule pinned to sextile.routing so the target is
+   sextile.routing.Handler -- the name annotations cross-reference -- rather than
+   sextile.sextile.routing.Handler, which this page's own module context (sextile)
+   would otherwise prepend.
 .. py:currentmodule:: sextile.routing
 
 .. py:type:: Handler

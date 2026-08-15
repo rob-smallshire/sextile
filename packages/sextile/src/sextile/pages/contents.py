@@ -4,12 +4,12 @@ A list of the pages a service advertises, each with the number a reader would
 key. Where a page number carries a field, the field is shown as a placeholder
 rather than enumerated:
 
-    *5#            By contributor
-    *52<user-id>#  One contributor
+    *5#            By user
+    *52<user-id>#  One user
 
-Nobody can list every contributor on a screen, but everybody holding a
-contributor number can be shown where to key it. This works because the
-framework knows the patterns, not a hand-maintained list of addresses.
+Nobody can list every user on a screen, but everybody holding a user number can
+be shown where to key it. This works because the framework knows the patterns,
+not a hand-maintained list of addresses.
 
 A page appears here if it was given a title when it was registered. That is how
 a title frame stays off the list without a flag of its own: giving a page a

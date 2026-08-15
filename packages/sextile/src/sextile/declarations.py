@@ -101,8 +101,8 @@ def page[H](
     """Declare a page beside the function or method that builds it.
 
         class Board(Sextile):
-            @page("5", title="By contributor", detail="browse by poster")
-            async def contributors(self, request: PageRequest) -> Page:
+            @page("5", title="By user", detail="browse by name")
+            async def users(self, request: PageRequest) -> Page:
                 ...
 
     `app.page(...)` does the same thing, but only where an application object

@@ -68,9 +68,9 @@ Checked framework `src` for identifiers, branches, runtime strings and imports n
 - **The framework imports no application package** (also enforced by packaging).
 - Fixed 3 residual docstring leaks the prose sweep missed: "a weather service can ask for the forecasts" → generic; "a post's forum, a month's name" → generic; "One post" → "One item" (all in application.py).
 
-**Two judgment calls left for the owner (not changed):**
-1. The **`contributor` / "By contributor" / "poster"** running example in `contents.py`, `declarations.py` and `application.py` docstrings — borderline (a plausibly generic example of a field-carrying page, but a forum-flavoured word). Anchors contents.py's example; genericise (e.g. to "member"/"entry") only if you want it stricter.
-2. `demo._SAMPLE_BODY` — a made-up forum-post-like string ("The board runs at 8MHz…") used as demo frame content. The module calls itself "a picture of a page"; it's illustrative data, not a dependency.
+**Judgment calls:**
+1. The **`contributor` / "By contributor" / "poster"** running example — **RESOLVED:** genericised to **`user`** / "By user" / "browse by name" throughout the framework (src docstrings in contents.py, declarations.py, application.py; the design.md and writing-an-application.md examples; and the test fixtures in test_contents.py, test_application.py, kept green). `packages/sextile` is now clean of `contributor`/`poster`. "user" was chosen as neutral and already matched the `<user-id>` field in the example.
+2. `demo._SAMPLE_BODY` — a made-up forum-post-like string ("The board runs at 8MHz…") used as demo frame content. The module calls itself "a picture of a page"; it's illustrative data, not a dependency. **Left as-is** (flag only).
 
 ## Invariant-2 concern (application reaching past the public surface)
 

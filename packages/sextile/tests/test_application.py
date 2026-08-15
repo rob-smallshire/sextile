@@ -479,51 +479,51 @@ class TestSayingWhatAPageIsAtRegistration:
     def test_a_page_can_be_given_a_title(self) -> None:
         app = Sextile()
 
-        @app.page("5", name="contributors", title="By contributor")
-        async def contributors(request: PageRequest) -> Page:
+        @app.page("5", name="users", title="By user")
+        async def users(request: PageRequest) -> Page:
             return one_frame()
 
-        found = app.page_info("contributors")
+        found = app.page_info("users")
         assert found is not None
-        assert found.title == "By contributor"
+        assert found.title == "By user"
 
     def test_and_a_line_of_detail(self) -> None:
         app = Sextile()
 
-        @app.page("5", name="contributors", title="By contributor", detail="who posts")
-        async def contributors(request: PageRequest) -> Page:
+        @app.page("5", name="users", title="By user", detail="who registered")
+        async def users(request: PageRequest) -> Page:
             return one_frame()
 
-        found = app.page_info("contributors")
+        found = app.page_info("users")
         assert found is not None
-        assert found.detail == "who posts"
+        assert found.detail == "who registered"
 
     def test_the_title_is_what_describes_it(self) -> None:
         app = Sextile()
 
-        @app.page("5", name="contributors", title="By contributor")
-        async def contributors(request: PageRequest) -> Page:
+        @app.page("5", name="users", title="By user")
+        async def users(request: PageRequest) -> Page:
             return one_frame()
 
-        assert app.describe(PageAddress("5")) == "By contributor"
+        assert app.describe(PageAddress("5")) == "By user"
 
     def test_a_titled_page_with_fields_is_described_with_them(self) -> None:
         app = Sextile()
 
-        @app.page("52{user_id:int}", name="contributor", title="Contributor")
-        async def contributor(request: PageRequest, user_id: int) -> Page:
+        @app.page("52{user_id:int}", name="user", title="User")
+        async def user(request: PageRequest, user_id: int) -> Page:
             return one_frame()
 
-        assert app.describe(PageAddress("5210058")) == "Contributor 10058"
+        assert app.describe(PageAddress("5210058")) == "User 10058"
 
     def test_an_untitled_page_falls_back_to_its_route_name(self) -> None:
         app = Sextile()
 
-        @app.page("5", name="contributors")
-        async def contributors(request: PageRequest) -> Page:
+        @app.page("5", name="users")
+        async def users(request: PageRequest) -> Page:
             return one_frame()
 
-        assert app.describe(PageAddress("5")) == "contributors"
+        assert app.describe(PageAddress("5")) == "users"
 
     def test_asking_about_a_page_there_is_not(self) -> None:
         assert Sextile().page_info("nothing") is None
@@ -539,16 +539,16 @@ class TestListingThePages:
 
         app = Sextile()
         app.page("1", name="main", title="Main index")(anything)
-        app.page("5", name="contributors", title="By contributor")(anything)
-        app.page("52{user_id:int}", name="contributor", title="One contributor")(anything)
+        app.page("5", name="users", title="By user")(anything)
+        app.page("52{user_id:int}", name="user", title="One user")(anything)
         app.page("90", name="logoff")(anything)
         return app
 
     def test_titled_pages_are_listed(self) -> None:
         assert [page.name for page in self.build().pages()] == [
             "main",
-            "contributors",
-            "contributor",
+            "users",
+            "user",
         ]
 
     def test_a_page_with_no_title_is_left_out(self) -> None:
@@ -558,8 +558,8 @@ class TestListingThePages:
 
     def test_each_carries_the_number_a_reader_would_key(self) -> None:
         listed = {page.name: page.keyed for page in self.build().pages()}
-        assert listed["contributors"] == "5"
-        assert listed["contributor"] == "52<user_id>"
+        assert listed["users"] == "5"
+        assert listed["user"] == "52<user_id>"
 
     def test_they_come_in_the_order_they_were_registered(self) -> None:
         #  Not the order the router tries them in, which is about matching.
@@ -981,7 +981,7 @@ class TestSayingAPagesKeywordsWhereItIsDeclared:
 
     def test_a_keyword_may_be_declared_beside_the_page(self) -> None:
         app = Sextile()
-        app.page("5", name="contributors", title="By contributor",
+        app.page("5", name="users", title="By user",
                  keywords=("WHO", "USERS"))(_nothing)
         assert app.resolve("WHO") == PageAddress("5")
         assert app.resolve("USERS") == PageAddress("5")
@@ -1013,22 +1013,22 @@ class TestDeclaringPagesAsData:
         assert app.route(PageAddress("1")) is not None
 
     def test_it_takes_the_handler_s_own_name_unless_told_one(self) -> None:
-        async def contributors(request: PageRequest) -> Page:
+        async def users(request: PageRequest) -> Page:
             return Page(frames=(PageFrame(frame=Canvas().frame),))
 
-        app = Sextile(pages=[PageRoute("5", contributors)])
-        assert app.address_for("contributors") == PageAddress("5")
+        app = Sextile(pages=[PageRoute("5", users)])
+        assert app.address_for("users") == PageAddress("5")
 
     def test_what_a_page_is_called_comes_with_it(self) -> None:
         app = Sextile(
             pages=[
-                PageRoute("5", _nothing, name="who", title="By contributor",
-                          detail="browse by poster")
+                PageRoute("5", _nothing, name="who", title="By user",
+                          detail="browse by name")
             ]
         )
         about = app.page_info("who")
         assert about is not None
-        assert (about.title, about.detail) == ("By contributor", "browse by poster")
+        assert (about.title, about.detail) == ("By user", "browse by name")
 
     def test_and_so_do_the_words_that_reach_it(self) -> None:
         app = Sextile(
@@ -1217,10 +1217,10 @@ class TestAPageKnowingItsService:
 class TestHeadingAPage:
     def test_the_heading_is_the_registered_title_shouted(self) -> None:
         app = Sextile(
-            pages=[PageRoute("5", _nothing, name="contributors", title="By contributor")]
+            pages=[PageRoute("5", _nothing, name="users", title="By user")]
         )
 
-        assert app.heading_for(PageAddress("5")) == "BY CONTRIBUTOR"
+        assert app.heading_for(PageAddress("5")) == "BY USER"
 
 
 class TestAskingForAPageWithoutASocket:

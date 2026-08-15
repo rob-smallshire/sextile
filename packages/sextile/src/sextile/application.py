@@ -328,8 +328,8 @@ class Application(ABC):
 
         Registered nowhere, like `history`; a service maps it in or does not.
         Pages with fields are listed as `*52<user_id>#` rather than enumerated,
-        which is the point: nobody can list every contributor on a screen, and
-        everybody holding a contributor number can be told where to put it.
+        which is the point: nobody can list every user on a screen, and
+        everybody holding a user number can be told where to put it.
         """
         return contents_page(
             address=request.address,

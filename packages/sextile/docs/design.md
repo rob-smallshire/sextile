@@ -276,12 +276,12 @@ contents without a flag of its own.
 registrations. Its point is the pages whose numbers carry a field:
 
 ```
-*5#             By contributor
-*52<user-id>#   One contributor
+*5#             By user
+*52<user-id>#   One user
 ```
 
-Nobody can list every contributor on a screen; everybody holding a contributor
-number can be told where to put it, and only the framework knows the patterns
+Nobody can list every user on a screen; everybody holding a user number can be
+told where to put it, and only the framework knows the patterns
 well enough to say. The list is ordered by number rather than by declaration,
 which puts a namespace root next to its members — `5` then `52<user-id>` —
 because sorting digits as text is what a scheme whose first digit names a

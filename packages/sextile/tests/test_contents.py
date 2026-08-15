@@ -1,7 +1,7 @@
 """What a service is made of, from its own registrations.
 
 The point of it is the pages whose numbers carry a field. Nobody can list every
-contributor on a screen; everybody holding a contributor number can be told
+user on a screen; everybody holding a user number can be told
 where to put it, and only the framework knows the patterns well enough to say.
 """
 
@@ -26,18 +26,18 @@ def text_of(page: Page, index: int = 0) -> str:
     return "\n".join(characters)
 
 
-CONTRIBUTORS = PageInfo(name="contributors", keyed="5", title="By contributor")
-ONE = PageInfo(name="contributor", keyed="52<user_id>", title="One contributor")
+USERS = PageInfo(name="users", keyed="5", title="By user")
+ONE = PageInfo(name="user", keyed="52<user_id>", title="One user")
 
 
 class TestWhatItShows:
     def test_a_page_and_the_number_that_fetches_it(self) -> None:
-        shown = text_of(listed(CONTRIBUTORS))
+        shown = text_of(listed(USERS))
         assert "*5#" in shown
-        assert "By contributor" in shown
+        assert "By user" in shown
 
     def test_a_field_is_shown_as_a_placeholder_not_enumerated(self) -> None:
-        #  The whole idea: one line stands for every contributor there is.
+        #  The whole idea: one line stands for every user there is.
         assert "*52<user-id>#" in text_of(listed(ONE))
 
     def test_the_underscore_is_the_character_set_and_not_a_typo(self) -> None:
@@ -47,11 +47,11 @@ class TestWhatItShows:
 
     def test_the_titles_line_up_in_a_column(self) -> None:
         #  Set against the widest number, so the page reads as two columns.
-        rows = text_of(listed(CONTRIBUTORS, ONE)).splitlines()
-        assert rows[2].index("By contributor") == rows[3].index("One contributor")
+        rows = text_of(listed(USERS, ONE)).splitlines()
+        assert rows[2].index("By user") == rows[3].index("One user")
 
     def test_it_is_titled(self) -> None:
-        assert TITLE in text_of(listed(CONTRIBUTORS))
+        assert TITLE in text_of(listed(USERS))
 
     def test_a_service_advertising_nothing_says_so(self) -> None:
         assert "no pages" in text_of(listed())
@@ -86,10 +86,10 @@ class TestTheOrder:
     def test_pages_are_listed_by_number(self) -> None:
         #  Not by the order a service declares them in, which is about how its
         #  source reads.
-        rows = text_of(listed(ONE, CONTRIBUTORS)).splitlines()
+        rows = text_of(listed(ONE, USERS)).splitlines()
         assert rows[2].index("*5#") >= 0
-        assert "By contributor" in rows[2]
-        assert "One contributor" in rows[3]
+        assert "By user" in rows[2]
+        assert "One user" in rows[3]
 
     def test_which_puts_a_namespace_next_to_its_members(self) -> None:
         #  Sorting the digits as text does this for free, because that is what a

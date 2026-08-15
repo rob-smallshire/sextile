@@ -153,14 +153,14 @@ from sextile.formatting import Menu, MenuItem
 from sextile.layout import Flowing, Once, PageLayout
 
 PageLayout(
-    title="BY CONTRIBUTOR",
+    title="BY USER",
     home=self.index,
     parts=[
-        Once(Lines(said=("Everyone who has posted.", ""))),   # first frame only
+        Once(Lines(said=("Everyone registered.", ""))),   # first frame only
         Flowing(
             Menu(
-                entries=[MenuItem(text=name, detail=f"{count} posts", destination=where) ...],
-                empty="NO POSTS held yet.",   # said instead of an empty frame
+                entries=[MenuItem(text=name, detail=f"{count} entries", destination=where) ...],
+                empty="NONE held yet.",   # said instead of an empty frame
             )
         ),
     ],
@@ -331,8 +331,8 @@ return farewell_page("GOODBYE", f"Thank you for calling {app.name}.", "", "Ring 
 ## Say what a page is where you write it
 
 ```python
-PageRoute("5", contributors, name="contributors", title="By contributor",
-          detail="browse by poster", keywords=("WHO", "USERS"))
+PageRoute("5", users, name="users", title="By user",
+          detail="browse by name", keywords=("WHO", "USERS"))
 ```
 
 The route takes the handler's own name unless one is given.
@@ -342,8 +342,8 @@ than shown — a menu offering it, the history, the contents page. Declared once
 here, they need no second copy downstream:
 
 ```python
-app.page_info("contributors").title      # "By contributor"
-app.describe(PageAddress("5"))           # "By contributor"
+app.page_info("users").title             # "By user"
+app.describe(PageAddress("5"))           # "By user"
 app.pages()                              # every page that has a title
 ```
 
@@ -362,9 +362,9 @@ The same declaration works on module-level functions, gathered with
 that builds the page rather than in a separate list:
 
 ```python
-@page("5", title="By contributor", detail="browse by poster",
+@page("5", title="By user", detail="browse by name",
       keywords=("WHO", "USERS"))
-async def contributors(request: PageRequest) -> Page:
+async def users(request: PageRequest) -> Page:
     ...
 
 app = Sextile(pages=routes_in(sys.modules[__name__]))
@@ -472,7 +472,7 @@ been, which patterns are registered, which words are aliased — so none can dri
 from the service it describes, whereas a hand-typed help page goes stale.
 
 `contents` lists what the service is made of, showing pages with fields as
-patterns rather than enumerating every value — `*52<user-id>#  One contributor`
+patterns rather than enumerating every value — `*52<user-id>#  One user`
 — which a hand-written index cannot do.
 
 Key 1 goes back one page (the same as `*0#`), 2 goes back two, and longer

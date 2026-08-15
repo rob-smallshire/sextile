@@ -130,7 +130,7 @@ class SequencePart[E](ABC):
 
     @abstractmethod
     def draw_entry(
-        self, canvas: Canvas, row: int, entry: E, digit: str | None
+        self, canvas: Canvas, row: int, entry: E, digit: str | None = None
     ) -> None:
         """Draw one entry in the `rows_per_entry` rows beginning at `row`.
 
@@ -210,7 +210,7 @@ class RowSequencePart[E](SequencePart[E]):
     """
 
     @abstractmethod
-    def draw(self, row: RowWriter, entry: E, digit: str | None) -> None:
+    def draw(self, row: RowWriter, entry: E, digit: str | None = None) -> None:
         """Write an entry's first row."""
 
     #  Empty on purpose, and not abstract: an entry one row tall has no second
@@ -219,7 +219,7 @@ class RowSequencePart[E](SequencePart[E]):
         """Write an entry's second row, where `rows_per_entry` allows one."""
 
     def draw_entry(
-        self, canvas: Canvas, row: int, entry: E, digit: str | None
+        self, canvas: Canvas, row: int, entry: E, digit: str | None = None
     ) -> None:
         self.draw(canvas.row(row), entry, digit)
         if self.rows_per_entry > 1:
@@ -244,7 +244,7 @@ class Menu(RowSequencePart[Entry]):
     def destination(self, entry: Entry) -> PageAddress | None:
         return entry.destination
 
-    def draw(self, row: RowWriter, entry: Entry, digit: str | None) -> None:
+    def draw(self, row: RowWriter, entry: Entry, digit: str | None = None) -> None:
         if digit is not None:
             row.text(f"{digit} ", Colour.YELLOW)
         row.text(fitted(entry.text, COLUMNS - 4), Colour.WHITE)
@@ -274,9 +274,8 @@ class Lines(SequencePart[str]):
     colour: Colour = Colour.WHITE
 
     def draw_entry(
-        self, canvas: Canvas, row: int, entry: str, digit: str | None
+        self, canvas: Canvas, row: int, entry: str, digit: str | None = None
     ) -> None:
-        del digit  # a notice numbers nothing
         if entry:
             canvas.row(row).text(fitted(entry, COLUMNS - 1), self.colour)
 
@@ -350,8 +349,7 @@ class Listing(RowSequencePart[Entry]):
                 )
         return carried
 
-    def draw(self, row: RowWriter, entry: Entry, digit: str | None) -> None:
-        del digit  # a listing numbers nothing
+    def draw(self, row: RowWriter, entry: Entry, digit: str | None = None) -> None:
         assert self.column is not None
         key_row(row, entry.text, entry.detail, column=self.column)
 
@@ -393,8 +391,7 @@ class Figures(RowSequencePart[Entry]):
         object.__setattr__(self, "figure", figure)
         object.__setattr__(self, "label", min(widest + self._GAP, room))
 
-    def draw(self, row: RowWriter, entry: Entry, digit: str | None) -> None:
-        del digit  # a figure numbers nothing
+    def draw(self, row: RowWriter, entry: Entry, digit: str | None = None) -> None:
         assert self.label is not None and self.figure is not None
         row.skip(self.INDENT)
         #  The label is padded rather than the figure indented, so that one
@@ -433,9 +430,8 @@ class Prose(SequencePart[Row]):
         )
 
     def draw_entry(
-        self, canvas: Canvas, row: int, entry: Row, digit: str | None
+        self, canvas: Canvas, row: int, entry: Row, digit: str | None = None
     ) -> None:
-        del digit  # prose numbers nothing
         if entry.text:
             #  No truncation here: `typesetting` has already wrapped to the room
             #  a row has, colour attribute and indent included. Cutting again

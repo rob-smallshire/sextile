@@ -90,8 +90,7 @@ class _Keys(RowSequencePart[GuideRow]):
 
     column: int
 
-    def draw(self, row: RowWriter, entry: GuideRow, digit: str | None) -> None:
-        del digit  # a guide numbers nothing
+    def draw(self, row: RowWriter, entry: GuideRow, digit: str | None = None) -> None:
         key_row(row, entry.key, entry.does, column=self.column)
 
 

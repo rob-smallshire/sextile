@@ -269,9 +269,8 @@ class TestAServiceWithItsOwnShape:
         gap: ClassVar[int] = 1
 
         def draw_entry(
-            self, canvas: Canvas, row: int, entry: str, digit: str | None
+            self, canvas: Canvas, row: int, entry: str, digit: str | None = None
         ) -> None:
-            del digit
             for offset in range(self.rows_per_entry):
                 canvas.row(row + offset).text(f"{entry}{offset}", Colour.WHITE)
 

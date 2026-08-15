@@ -1,38 +1,18 @@
-"""Placing several things on a frame and working out the attributes once.
+"""Placing things at positions on a frame, and planning the attributes at once.
 
-`Canvas` writes a row left to right and inserts an attribute whenever the state
-changes, which is right for a page built a phrase at a time. It is the wrong
-shape for placing things *at* positions -- a heading here, a block of graphics
-there -- because each call re-establishes the state it wants without knowing
-what the next one will want, and because it cannot say whether the row will fit
-until it has half drawn it.
+A `Composition` collects text, mosaic pictures and coloured panels with where
+each goes -- a column, or an `Align` to be placed without counting -- and `draw`
+places them and works out the spacing attributes for the whole row in one pass.
+Unlike a `RowWriter`, which writes left to right and cannot say whether a row
+fits until it is half drawn, it takes the whole row first: so it can answer
+`fits` before drawing anything, and enter a colour once for runs at either end
+of a row rather than twice.
 
-A composition takes the whole row first. That buys three things:
-
-**It answers whether the layout is possible.** Attributes occupy cells, so a row
-of alternating colours may simply not fit in forty. Better to be told than to
-have the last item silently truncated.
-
-**Two runs in the same style cost one attribute, not two.** Blocks at either end
-of a row need graphics entered once: the composition never returns to alpha in
-between, there being no text in between. This is the case that made the
-sequential writer wasteful, and it is what a mosaic font needs -- a banner is a
-row of block runs all in one colour.
-
-**It is exact rather than clever.** An attribute displays as a blank, and a
-blank in graphics is the no-blocks mosaic, so an attribute may sit anywhere in
-the gap before the run it affects. The only question at each gap is whether the
-attributes fit in it, which makes a left-to-right pass optimal and leaves
-nothing to search for. Placement becomes a search only if items are free to
-move, which is a different feature and not this one.
-
-Rows are independent: every row begins in alpha, white, contiguous selected,
-whatever the row above ended in. So a frame composition is a row composition
-done twenty-four times, and nothing here concerns the frame as a whole.
-
-This module decides *where* things go. What colour they come out -- the plan of
-attributes for a row, and the style model behind it -- is `viewdata.attributes`,
-which it drives once a row's runs and panels are placed.
+Rows are independent -- each begins in alpha, white, contiguous graphics -- so a
+frame composition is a row composition done for each row, and nothing here
+concerns the frame as a whole. This module decides *where* things go; what
+colour they come out is `viewdata.attributes`, which it drives once a row's runs
+and panels are placed.
 """
 
 from collections.abc import Sequence
@@ -125,20 +105,26 @@ class Composition:
         padding: int = 0,
         rows: int = 1,
     ) -> Panel:
-        """A coloured rectangle, `rows` deep, returned so things can go in it.
+        """Add a coloured rectangle `rows` deep, returned so things can go in it.
 
-        A background is not a property of what is written on it: it belongs to
-        the field, it lasts to the end of the row unless something stops it,
-        and it costs cells that the things written on it would otherwise have
-        to account for. So it is declared once, here, and a run drawn within it
-        takes it without saying anything.
+        Args:
+            row: The top row, an int or an `Align` to place it down the frame.
+            where: Where it sits across the frame.
+            colour: Its background colour.
+            width: Its width in cells. Give this or `around`, not both.
+            around: Rows whose ink to fit it to instead, so a stripe is drawn
+                behind something without either being told where the other is.
+            padding: Cells of colour either side of what it goes `around`.
+            rows: How many rows deep it is.
 
-        `around` fits it to what is already on those rows, with `padding` cells
-        of colour either side -- which is how a stripe is drawn behind
-        something without either of them being told where the other is. It is
-        fitted to the *ink*, because that is what a reader sees it around: a
-        run may begin with a blank half-cell, and measuring the run rather than
-        the ink puts the colour a cell further one way than the other.
+        Returns:
+            The panel, so a run drawn `within` it takes its background without
+            saying anything. Fitted to the ink, not the run: a run may begin
+            with a blank half-cell.
+
+        Raises:
+            DoesNotFit: If both or neither of `width` and `around` is given, or
+                a row falls off the frame.
         """
         if (width is None) == (around is None):
             raise DoesNotFit("a panel is given either a width or something to go around")
@@ -188,11 +174,19 @@ class Composition:
         within: Panel | None = None,
         style: Style | None = None,
     ) -> "Composition":
-        """Place text at a column.
+        """Add text at a position, returning self so calls chain.
 
-        ``colour`` is the common case said briefly; ``style`` is everything the
-        hardware can do. Double height places the same text on the row below as
-        well, because that is how the SAA5050 draws the bottom halves.
+        Args:
+            row: The row to place it on.
+            where: Where it sits across the row, a column or an `Align`.
+            words: The text.
+            colour: Its colour, the common case; `style` overrides it.
+            within: A panel it is drawn on, whose background it takes.
+            style: The full style, in place of `colour`.
+
+        Returns:
+            Self. Double height places the same text on the row below too,
+            which is how the SAA5050 draws the bottom halves.
         """
         wanted = style if style is not None else Style(colour=colour)
         run = self._positioned(Run(column=0, style=wanted, words=words), where, within)
@@ -212,7 +206,20 @@ class Composition:
         separated: bool = False,
         style: Style | None = None,
     ) -> "Composition":
-        """Place a run of mosaic blocks, which is a picture one row tall."""
+        """Add a run of mosaic blocks, a picture one row tall, returning self.
+
+        Args:
+            row: The row to place it on.
+            where: Where it sits across the row.
+            patterns: The six-bit block patterns, one per cell.
+            colour: The colour to draw them in.
+            within: A panel it is drawn on.
+            separated: Whether the blocks are drawn separated, not contiguous.
+            style: The full style, in place of `colour` and `separated`.
+
+        Returns:
+            Self.
+        """
         return self.picture(
             row, where, [patterns], colour, within=within, separated=separated, style=style
         )
@@ -228,12 +235,20 @@ class Composition:
         separated: bool = False,
         style: Style | None = None,
     ) -> "Composition":
-        """Place several rows of mosaic blocks that belong together.
+        """Add several rows of mosaic blocks that belong together, returning self.
 
-        As one thing, because they have to be positioned as one thing: a
-        picture centred a row at a time would have each row measure its own ink
-        and some would take the half-cell shift while others did not, and the
-        picture would shear.
+        Args:
+            row: The top row, an int or an `Align` to place it down the frame.
+            where: Where it sits across the frame.
+            rows: The block patterns, a row of them per frame row.
+            colour: The colour to draw them in.
+            within: A panel it is drawn on.
+            separated: Whether the blocks are drawn separated, not contiguous.
+            style: The full style, in place of `colour` and `separated`.
+
+        Returns:
+            Self. Placed as one thing so it does not shear: centred a row at a
+            time, some rows would take the half-cell shift and others not.
         """
         wanted = (
             style if style is not None else Style(colour=colour, separated=separated)

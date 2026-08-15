@@ -131,7 +131,7 @@ tight, so a `Shortcut` should put the short form of its `label` first:
 `A` and `D` step through the pages either side of this one in a sequence, and
 `neighbours=request.neighbours` wires them: it offers whichever of
 `previous`/`next` is not None and names them, with their cursor-key arrows, from
-`viewdata.footer` so that every page describes those keys the same way.
+`layout.footer` so that every page describes those keys the same way.
 
 ```python
 PageLayout(..., neighbours=request.neighbours, item_noun="post").build(request)

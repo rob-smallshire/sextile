@@ -85,7 +85,7 @@ lose, not by what happens to sit at the end of the string.
 So a prompt is **composed as items, not written as a string**:
 
 ```python
-from sextile.viewdata.footer import FOOTER_WIDTH, FooterItem, Priority, movement, render_footer
+from sextile.layout import FOOTER_WIDTH, FooterItem, Priority, movement, render_footer
 
 items = [FooterItem("1-9", "select", Priority.PRIMARY)]
 items += movement(moving, item="post")
@@ -190,7 +190,7 @@ boundary specially, and it makes DELETE do the obvious thing everywhere.
 | `sextile/page.py` | `Page` and `PageFrame`: frames, choices, moves |
 | `sextile/routing.py` | which page number means which page |
 | `sextile/application.py` | the seam an application answers across |
-| `sextile/viewdata/footer.py` | fitting the prompt into a row |
+| `sextile/layout/footer.py` | fitting the prompt into a row |
 | `sextile/viewdata/command_line.py` | drawing and editing the request being typed |
 
 All of it is the framework's. What the pages actually *are* belongs to an

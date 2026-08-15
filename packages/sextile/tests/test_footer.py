@@ -13,7 +13,7 @@ the label only teaches it.
 
 import pytest
 
-from sextile.viewdata.footer import FooterItem, Priority, movement, render_footer
+from sextile.layout.footer import FooterItem, Priority, movement, render_footer
 
 #  The sort of items a page really offers, so the tests read as a page
 #  would be written rather than as the renderer's own vocabulary.

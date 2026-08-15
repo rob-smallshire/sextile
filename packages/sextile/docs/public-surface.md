@@ -65,6 +65,12 @@ and [`sextile.formatting`](#sextileformatting--sequences-laid-out-as-parts).
     Shortcut  HOME_KEY                     a fixed key on every frame
     DEFAULT_HOME  DefaultHome              home unset: the service's index
     content_rows  CHOICES_PER_FRAME
+    FooterItem  Priority  movement  render_footer  FOOTER_WIDTH   composing a prompt for a frame drawn by hand
+
+A package of three modules -- `parts`, `furniture`, `page` -- with the prompt
+composer in `layout.footer`; all re-exported here, so a service imports from
+`sextile.layout` and the split is invisible. The footer names were
+`sextile.viewdata.footer` before: a prompt is layout, not a frame or a byte.
 
 ### `sextile.formatting` — sequences laid out as parts
 
@@ -102,7 +108,6 @@ Public submodules:
 | `composition` | `Composition`, `Panel`, `Align`, `Style`, `DoesNotFit`, `Where` — placing things relative to each other |
 | `lettering` | outsized letters: `place`, `boxed`, `cells_needed`, `width`, `rows_needed`, `Spacing` |
 | `font` | `Font`, `load_font`, `font_names`, `read_font`, `Glyph`, `FontError` |
-| `footer` | `FooterItem`, `Priority`, `movement`, `render_footer`, `FOOTER_WIDTH` — composing a prompt for a frame drawn by hand |
 | `wrapping` | `wrap_text`, `wrap_within` |
 | `compass` | `ROWS`, `compass` — `W`/`A`/`S`/`D` drawn, for a guide page |
 

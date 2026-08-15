@@ -26,13 +26,13 @@ from sextile.layout import (
     Shortcut,
     Space,
     content_rows,
-    fill,
 )
+from sextile.layout.footer import FooterItem, Priority
+from sextile.layout.parts import fill
 from sextile.page import FRAMES_PER_PAGE, Page, PageAddress
 from sextile.testing import request_for
 from sextile.viewdata.canvas import Canvas
 from sextile.viewdata.controls import Colour
-from sextile.viewdata.footer import FooterItem, Priority
 from sextile.viewdata.frame import COLUMNS
 from sextile.viewdata.typesetting import TRUNCATION_NOTICE
 

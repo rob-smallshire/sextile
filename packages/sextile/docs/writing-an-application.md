@@ -252,7 +252,7 @@ Two conventions are worth keeping, because readers rely on them across services:
 frame drawn some other way composes one from items rather than writing a string:
 
 ```python
-from sextile.viewdata.footer import FOOTER_WIDTH, FooterItem, Priority, movement, render_footer
+from sextile.layout import FOOTER_WIDTH, FooterItem, Priority, movement, render_footer
 
 items = [FooterItem("1", "month", Priority.PRIMARY)]
 items += movement(choices, item="day")

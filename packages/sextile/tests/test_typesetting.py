@@ -21,7 +21,8 @@ from sextile.content.blocks import (
     Quote,
 )
 from sextile.formatting import Prose
-from sextile.layout import Flow, fill
+from sextile.layout import Flow
+from sextile.layout.parts import fill
 from sextile.testing import text_of
 from sextile.viewdata.encoding import cell_count
 from sextile.viewdata.frame import COLUMNS, FRAME_PREAMBLE, ROWS, Frame

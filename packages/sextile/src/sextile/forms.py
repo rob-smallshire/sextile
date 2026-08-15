@@ -30,11 +30,11 @@ from typing import Final
 from sextile import keys
 from sextile.formatting import Entry
 from sextile.layout import Claim, Placed, Space
+from sextile.layout.footer import FooterItem, Priority
 from sextile.page import PageAddress
 from sextile.viewdata.canvas import Canvas, RowWriter
 from sextile.viewdata.controls import Colour
 from sextile.viewdata.encoding import fitted
-from sextile.viewdata.footer import FooterItem, Priority
 from sextile.viewdata.frame import COLUMNS, Frame
 
 __all__ = [

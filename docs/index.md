@@ -20,6 +20,21 @@ async def main(request: PageRequest) -> Page:
     return notice_page(request, "Hello, 1981.")
 ```
 
+Page 1, as a caller sees it — drawn from that code at build time, not a
+screenshot:
+
+```{sextile-frame}
+from sextile import Sextile, notice_page
+
+app = Sextile(name="My service")
+
+@app.page("1")
+async def main(request):
+    return notice_page(request, "Hello, 1981.")
+
+frame = fetch(app, "1")
+```
+
 The documentation is in four parts. The **tutorial** teaches the framework by
 building one service; the **how-to** guides answer particular questions; the
 **reference** states the surface, the glossary and the wire; and the

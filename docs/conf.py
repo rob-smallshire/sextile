@@ -5,7 +5,12 @@ pages are MyST Markdown, and the API reference is generated from the framework's
 own docstrings, which are its primary documentation.
 """
 
+import os
+import sys
 from importlib.metadata import PackageNotFoundError, version
+
+#  The Viewdata-frame directive lives beside the docs, not in the package.
+sys.path.insert(0, os.path.abspath("_ext"))
 
 project = "Sextile"
 author = "Robert Smallshire"
@@ -24,6 +29,7 @@ extensions = [
     "sphinx.ext.intersphinx",
     "sphinx.ext.viewcode",
     "sphinx_autodoc_typehints",
+    "sextile_frames",
 ]
 
 source_suffix = {".md": "markdown"}

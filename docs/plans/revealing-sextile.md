@@ -59,6 +59,11 @@ The rewrite starts from a truthful base, not a blank one:
 
 ## Next
 
+- **Done, alongside the docs**: frames render as HTML with the Bedstead font --
+  `viewdata.display` (the shared display walk), `viewdata.html` `render_html`,
+  `sextile render --form html` (a self-contained page), and the `sextile-frame`
+  Sphinx directive drawing live frames in the docs. Display semantics measured
+  against Beebium in `docs/reference/display-semantics.md`.
 - The Sphinx documentation set (Phase 4): the rewrite proper, from the base above.
 - The `sextile.viewdata` facade question in `docs/open-questions.md`: whether the
   wire/drawing internals want a single public facade or stay a set of submodules.

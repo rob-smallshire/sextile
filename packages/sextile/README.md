@@ -48,6 +48,11 @@ hand. Every service gets this without writing anything.
 so a row that changes colour twice has thirty-eight columns for text. `Canvas`
 does that arithmetic so nothing above it has to.
 
+**Previewable as HTML.** `sextile render --form html` writes a self-contained
+page — the Bedstead font embedded, the frame drawn as the Beeb would — that opens
+from disk with no server, and the documentation renders live frames with the same
+code rather than pasting screenshots.
+
 ## Documentation
 
 | | |

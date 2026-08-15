@@ -51,6 +51,41 @@ The output is written to `docs/_build/html`, which is git-ignored.
 - API names are backticked and spelled exactly as the surface spells them.
 - No bold sentences. The full docstring and document rules are in `CLAUDE.md`.
 
+## Showing a frame
+
+A doc that shows a Viewdata frame draws it with the `sextile-frame` directive, so
+the frame is the one the code produces at build time, not a screenshot that goes
+stale. A frame that stops rendering stops the build. Two forms:
+
+Fetch a page from a service by its `module:name`:
+
+````md
+```{sextile-frame}
+:app: calendar_viewdata:app
+:page: "3"
+```
+````
+
+Or run a snippet that leaves a `frame` (a `Frame`) or a `page` (a `Page`), with
+`fetch(app, number)` in scope — the form for anything that needs a fixed clock or
+a hand-built frame. `:frame:` picks a later frame, `:keys:` presses keys from the
+page first, and `:show-code:` shows the snippet:
+
+````md
+```{sextile-frame}
+:show-code:
+
+from datetime import UTC, datetime
+from calendar_viewdata import build_application
+app = build_application(now=lambda: datetime(2026, 8, 1, tzinfo=UTC))
+frame = fetch(app, "3")
+```
+````
+
+The directive is `docs/_ext/sextile_frames.py`; it draws the frame as
+`render --form html` does, and registers the stylesheet and the Bedstead font
+from the package.
+
 ```{toctree}
 :hidden:
 

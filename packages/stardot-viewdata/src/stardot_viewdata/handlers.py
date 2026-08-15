@@ -44,7 +44,7 @@ from sextile import (
 from sextile.formatting import MenuItem
 from sextile.layout import (
     HOME_KEY,
-    Drawn,
+    Custom,
     OnFirstFrame,
     PageLayout,
     Shortcut,
@@ -124,7 +124,7 @@ async def title(request: PageRequest) -> Page:
         #  answers that key as well as saying where it leads.
         follows=main_page,
         shortcuts=[Shortcut(key="1", destination=main_page)],
-        parts=[OnFirstFrame(Drawn(rows=ROWS, draw=draw))],
+        parts=[OnFirstFrame(Custom(rows=ROWS, draw=draw))],
     ).build(request)
 
 

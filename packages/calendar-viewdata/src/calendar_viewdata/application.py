@@ -45,7 +45,7 @@ from sextile import (
     standard_pages,
 )
 from sextile.formatting import Lines, MenuItem
-from sextile.layout import Drawn, OnFirstFrame, PageLayout, Shortcut
+from sextile.layout import Custom, OnFirstFrame, PageLayout, Shortcut
 from sextile.viewdata.canvas import Canvas
 from sextile.viewdata.controls import Colour
 
@@ -240,7 +240,7 @@ def _month_page(request: PageRequest, day: date) -> Page:
         #  the whole of the page's content, and needs no flowing part at all.
         parts=[
             OnFirstFrame(
-                Drawn(
+                Custom(
                     rows=1 + len(weeks),
                     draw=lambda canvas, row: _draw_month(canvas, row, day, weeks),
                 )

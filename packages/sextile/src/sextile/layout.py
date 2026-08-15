@@ -52,7 +52,7 @@ __all__ = [
     "DEFAULT_FURNITURE",
     "FrameBreak",
     "Drawable",
-    "Drawn",
+    "Custom",
     "Edge",
     "OnEveryFrame",
     "Flow",
@@ -212,7 +212,7 @@ class Shortcut:
 
 
 @dataclass(frozen=True)
-class Drawn:
+class Custom:
     """A part of a stated height, drawn cell by cell by the page itself.
 
     A picture is positioned at a cell and may be several rows tall, which suits
@@ -225,7 +225,7 @@ class Drawn:
     Example:
         A month as a grid of weeks, which is the whole of a page's content::
 
-            OnFirstFrame(Drawn(rows=1 + len(weeks), draw=lambda canvas, row: ...))
+            OnFirstFrame(Custom(rows=1 + len(weeks), draw=lambda canvas, row: ...))
     """
 
     rows: int

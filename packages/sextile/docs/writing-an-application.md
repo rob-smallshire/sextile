@@ -219,7 +219,7 @@ something an entry does not carry — a date to mark against, a column width —
 declares a field rather than writing a constructor.
 
 For content that is not a sequence — a grid, a masthead, a picture —
-`Drawn(rows, draw)` is a part of a stated height that the page draws itself.
+`Custom(rows, draw)` is a part of a stated height that the page draws itself.
 
 ## Pages, frames and keys
 
@@ -415,12 +415,12 @@ of them:
 
 ```python
 from sextile.compass import ROWS, compass
-from sextile.layout import Drawn, OnFirstFrame
+from sextile.layout import Custom, OnFirstFrame
 
-OnFirstFrame(Drawn(rows=ROWS, draw=lambda canvas, row: compass(Composition(), row).draw(canvas)))
+OnFirstFrame(Custom(rows=ROWS, draw=lambda canvas, row: compass(Composition(), row).draw(canvas)))
 ```
 
-`ROWS` is how many rows it occupies, which is what `Drawn` is given, so the
+`ROWS` is how many rows it occupies, which is what `Custom` is given, so the
 layout can leave room for it or start it on the next frame. A service that drew
 its own compass would duplicate this one, and would keep drawing the old keys
 after the framework's had changed.

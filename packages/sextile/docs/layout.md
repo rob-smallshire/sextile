@@ -110,7 +110,7 @@ rather than sequences:
 
 | | |
 |---|---|
-| `Drawn(rows, draw)` | A part of a stated height, drawn cell by cell by `draw(canvas, row)`. For a picture, a grid, a masthead. |
+| `Custom(rows, draw)` | A part of a stated height, drawn cell by cell by `draw(canvas, row)`. For a picture, a grid, a masthead. |
 | a `Form` | A field the reader types into. `Suggest` and `Fields` are parts, and a frame carries one. |
 
 ## The keys a frame answers
@@ -152,7 +152,7 @@ service sets its own once and a page overrides it where it has reason — red
 rules on a page that does something irreversible:
 
 ```python
-PageLayout(furniture=(), parts=[OnFirstFrame(Drawn(rows=ROWS, draw=masthead))])
+PageLayout(furniture=(), parts=[OnFirstFrame(Custom(rows=ROWS, draw=masthead))])
 ```
 
 Two levels, and no cascade. A reader learns where the page number sits once, so

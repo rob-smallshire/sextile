@@ -13,6 +13,8 @@ as "was X" so a reader coming from older code or docs can find it.
   `Flowing`, and what a bare drawable means), or `FrameBreak` (was `Break`).
 - **entry** — one item in a sequence a formatter lays out, such as a line of a
   menu. `formatting.Entry`.
+- **Custom** (was `Drawn`) — a part of a stated height a page draws itself, cell
+  by cell: a picture, a grid, a masthead. `layout.Custom(rows, draw)`.
 - **place** — what a custom part does: `place(canvas, room) -> Placed`, drawing
   as much as fits and saying what is left. `Space` (was `Room`) is what the
   frame has left; `Placed` (was `Placement`) carries the rows used, a `Claim`

@@ -12,7 +12,7 @@ from typing import Final
 
 from sextile import Page, PageRequest, Sextile, keys
 from sextile.formatting import Prose
-from sextile.layout import Drawn, Flow, OnEveryFrame, PageLayout, Shortcut
+from sextile.layout import Custom, Flow, OnEveryFrame, PageLayout, Shortcut
 from sextile.viewdata.canvas import Canvas
 from sextile.viewdata.controls import Colour
 from sextile.viewdata.encoding import fitted
@@ -53,7 +53,7 @@ def post_page(request: PageRequest, post: Post, *, untitled: str) -> Page:
         parts=[
             #  On every frame: a reader three frames into a post should not
             #  have to go back to the first to see whose words these are.
-            OnEveryFrame(Drawn(rows=_POST_HEADING_ROWS, draw=_heading_of(post))),
+            OnEveryFrame(Custom(rows=_POST_HEADING_ROWS, draw=_heading_of(post))),
             Flow(Prose(entries=rows_for(parse_post_body(post.content_html)))),
         ],
     ).build(request)

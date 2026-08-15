@@ -49,7 +49,7 @@ application in its first few lines.
 
     PageLayout                            what a service constructs (.build)
     Part  OnFirstFrame  OnEveryFrame  Flow  FrameBreak   a page's parts, and the four kinds
-    Drawn                                  a part that draws itself, cell by cell
+    Custom                                 a part that draws itself, cell by cell
     Drawable  Space  Claim  Placed         what a part of your own must satisfy
     Edge  FrameContext  Furnishing         what furniture must satisfy
     Header  Rule  Footer  DEFAULT_FURNITURE

@@ -79,10 +79,10 @@ def draw_masthead(canvas: Canvas, name: str) -> None:
     )
     #  What the service is, in the lighter face -- the Beeb's own shapes --
     #  so that it reads as the second line and not a second title. Two
-    #  things that know nothing of each other: a stripe a row deep and a
-    #  word three rows tall, both centred, so they line up without either
-    #  being told where the other is. The composition sees that the middle
-    #  row is coloured and colours the letters on it accordingly.
+    #  independent pieces: a stripe a row deep and a word three rows tall,
+    #  both centred, so they line up without either being told where the
+    #  other is. The composition detects that the middle row is coloured and
+    #  colours the letters on it accordingly.
     lettering.place(
         layout,
         SUBTITLE_ROW,

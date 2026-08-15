@@ -94,7 +94,7 @@ Source docstrings + comments (src/sextile):
 ### Phase 2 — applications
 
 - [x] calendar-viewdata (docs + src)  (pilot; Template->PageLayout drift fixed)
-- [ ] stardot-viewdata (docs + src)
+- [x] stardot-viewdata (docs + src)  (mostly already plain; template->Menu drift fixed, atom miscount)
 - [ ] weather-viewdata (docs + src)
 
 ### Phase 3 — workspace docs

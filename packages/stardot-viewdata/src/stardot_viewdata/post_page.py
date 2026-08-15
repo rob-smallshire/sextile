@@ -49,8 +49,8 @@ def post_page(
         app: The service, for the addresses its other pages answer to.
         address: The address this post answers to.
         post: The post itself.
-        arrival: How the reader got here, which is what knows the posts either
-            side of this one.
+        arrival: How the reader got here, which carries the posts either side
+            of this one.
         untitled: What to head a post whose forum the archive never learned --
             one first seen in a per-topic feed -- since a frame has to say
             something.

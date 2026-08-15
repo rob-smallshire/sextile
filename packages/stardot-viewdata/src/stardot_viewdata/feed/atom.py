@@ -1,7 +1,7 @@
 """Reading phpBB's Atom feed.
 
-phpBB puts what Sextile needs in three awkward places, and this module knows
-about all three so that nothing downstream has to:
+phpBB puts what Sextile needs in awkward places, and this module handles them so
+that nothing downstream has to:
 
 - the **post id** is only in the entry's link, as `viewtopic.php?p=489493`;
 - the **forum id** is only in the category's `scheme` URL;

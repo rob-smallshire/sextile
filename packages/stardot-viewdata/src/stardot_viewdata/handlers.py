@@ -353,11 +353,11 @@ async def logoff(request: PageRequest) -> Page:
 async def guide(request: PageRequest) -> Page:
     """How to get about: the framework's guide, with this service's own rows.
 
-    It was written by hand here first, and the framework has it now -- keys,
-    two frames, the compass under the first -- because a guide is mostly a
-    description of the framework and a description that drifts from the thing
-    it describes is worse than none. What is left for a service is the rows
-    only it can know, which here are the pages it keeps its own numbers for.
+    Most of a guide is a description of the framework -- the keys, the two
+    frames, the compass under the first -- and a description that drifts from
+    what it describes is worse than none, so the framework builds it. What is
+    left for a service is the rows only it can know, which here are the pages it
+    keeps its own numbers for.
     """
     app = Sextile.of(request)
     return await app.guide(
@@ -446,7 +446,7 @@ def _menu(
     preamble: list[str] | None = None,
     empty: str = "",
 ) -> Page:
-    """A menu, dealt nine to a frame by the framework's template."""
+    """A menu, dealt nine to a frame by the framework's `Menu`."""
     return PageLayout(
         title=title if title is not None else app.heading_for(address),
         home=app.index,

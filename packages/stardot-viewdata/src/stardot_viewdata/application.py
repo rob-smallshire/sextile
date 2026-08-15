@@ -26,8 +26,8 @@ from stardot_viewdata.handlers import ARCHIVE, SERVICE_NAME, day_title, ringing_
 from stardot_viewdata.store.repository import Repository
 
 #: Named for the service rather than for the framework serving it, and
-#: relative to the working directory -- so `serve` and `ingest` must be run
-#: from the same place, which is the first thing that went wrong in practice.
+#: relative to the working directory, so `serve` and `ingest` must be run from
+#: the same place.
 DEFAULT_DATABASE_FILEPATH: Final = Path("stardot.sqlite")
 
 #: What the service is made of: its own pages, declared beside the functions
@@ -53,15 +53,13 @@ def build_application(
 ) -> Sextile:
     """Serve from an archive at ``database_filepath``, or from one already open.
 
-    ``pages`` is the service's own list unless given another, which is what
-    lets a test move a page and watch everything that names it follow -- the
-    thing the old subclass-and-override could only do by pretending to be a
-    different service.
+    ``pages`` is the service's own list unless given another, which lets a test
+    move a page and watch everything that names it follow.
 
     An archive passed in belongs to whoever passed it and is left open when the
-    service stops. That is what a test wants, and what a caller holding the
-    archive for some other purpose wants too -- and the lifespan is where that
-    distinction now reads as one, rather than as two booleans on an object.
+    service stops, which suits a test and a caller that holds the archive for
+    some other purpose. An archive opened from ``database_filepath`` is closed
+    when the service stops.
     """
 
     @asynccontextmanager
@@ -92,9 +90,8 @@ def build_application(
         Only the pages whose numbers carry a field need saying here: the rest
         are titled where they are registered, and the framework reads those.
         "One post" is the right title in a list of *kinds* of page and the
-        wrong one in a list of pages a reader has been to, which is the whole
-        reason this exists. Returning None means the registration's own words
-        will do.
+        wrong one in a list of pages a reader has been to, which is what this
+        overrides. Returning None means the registration's own words will do.
 
         Subjects and forum names are deliberately not looked up. A history
         frame lists nine pages, which would be nine queries for a label, and

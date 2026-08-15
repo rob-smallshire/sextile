@@ -151,7 +151,7 @@ async def _ingest(arguments: argparse.Namespace) -> int:
 
 def _report(result: IngestResult) -> None:
     #  Seeding and polling both run for minutes at a time, so progress has to
-    #  appear as it happens rather than when the buffer decides.
+    #  appear as it happens rather than only when the output buffer flushes.
     if result.failed:
         print(f"  {result.route}: could not be fetched: {result.failure}", file=sys.stderr)
         return

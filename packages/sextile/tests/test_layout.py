@@ -10,7 +10,6 @@ from dataclasses import dataclass
 
 import pytest
 
-from sextile.addressing import FRAMES_PER_PAGE, PageAddress
 from sextile.application import Neighbours, Sextile
 from sextile.keys import DOWN, HASH, LEFT, NEXT_FRAME, RIGHT, UP
 from sextile.layout import (
@@ -29,7 +28,7 @@ from sextile.layout import (
     content_rows,
     fill,
 )
-from sextile.page import Page
+from sextile.page import FRAMES_PER_PAGE, Page, PageAddress
 from sextile.testing import request_for
 from sextile.viewdata.canvas import Canvas
 from sextile.viewdata.controls import Colour

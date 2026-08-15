@@ -23,10 +23,9 @@ with `standard_pages` or does without:
 from collections.abc import Callable, Mapping
 from typing import TYPE_CHECKING, Final
 
-from sextile.addressing import PageAddress, keyed
 from sextile.formatting import Listing, MenuItem
 from sextile.layout import PageLayout
-from sextile.page import Page
+from sextile.page import Page, PageAddress, keyed
 
 if TYPE_CHECKING:
     from sextile.requests import PageRequest

@@ -31,9 +31,9 @@ from collections.abc import Sequence
 from dataclasses import dataclass, field, replace
 from typing import ClassVar, Protocol, runtime_checkable
 
-from sextile.addressing import PageAddress
 from sextile.content.blocks import Document, Paragraph
 from sextile.layout import Claim, Placed, Space
+from sextile.page import PageAddress
 from sextile.viewdata.canvas import Canvas, RowWriter
 from sextile.viewdata.controls import Colour
 from sextile.viewdata.drawing import key_row

@@ -40,7 +40,6 @@ from datetime import UTC, datetime, timedelta
 from typing import Final
 
 from sextile import keys
-from sextile.addressing import PageAddress, UnknownPageError, keyed
 from sextile.builtin import contents, guidance, history, names, readership
 from sextile.builtin.contents import contents_page
 from sextile.builtin.history import history_page
@@ -53,7 +52,7 @@ from sextile.declarations import (
 )
 from sextile.formatting import MenuItem
 from sextile.layout import CHOICES_PER_FRAME, HOME_KEY
-from sextile.page import Page
+from sextile.page import Page, PageAddress, UnknownPageError, keyed
 from sextile.pages import notice_page
 from sextile.requests import Neighbours, PageRequest
 from sextile.routing import Converter, ConverterFactory, Match, Router

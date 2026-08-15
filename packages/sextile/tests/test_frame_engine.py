@@ -7,7 +7,7 @@ text, a footer -- and checks the geometry, the colour, the serialised length,
 the trimming and the rendering, so an obvious break shows up in one place.
 """
 
-from sextile.addressing import PageAddress, keyed
+from sextile.page import PageAddress, keyed
 from sextile.viewdata.ansi import render_ansi
 from sextile.viewdata.canvas import Canvas
 from sextile.viewdata.controls import Colour

@@ -22,7 +22,6 @@ import logging
 from dataclasses import dataclass
 from typing import Final
 
-from sextile.addressing import PageAddress, UnknownPageError
 from sextile.application import Neighbours, PageRequest, Sextile
 from sextile.forms import draw_form
 from sextile.keys import (
@@ -31,7 +30,7 @@ from sextile.keys import (
     PREVIOUS_FRAME,
     as_letter,
 )
-from sextile.page import Page, PageFrame
+from sextile.page import Page, PageAddress, PageFrame, UnknownPageError
 from sextile.session.commands import (
     Back,
     Clear,

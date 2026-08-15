@@ -9,7 +9,6 @@ See docs/design.md.
 from dataclasses import dataclass
 from typing import ClassVar
 
-from sextile.addressing import PageAddress
 from sextile.application import Sextile
 from sextile.formatting import (
     Entry,
@@ -22,6 +21,7 @@ from sextile.formatting import (
     SequencePart,
 )
 from sextile.layout import CHOICES_PER_FRAME, Flow, OnOneFrame, PageLayout, Space
+from sextile.page import PageAddress
 from sextile.testing import request_for
 from sextile.viewdata.canvas import Canvas
 from sextile.viewdata.controls import Colour

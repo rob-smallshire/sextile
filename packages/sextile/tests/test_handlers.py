@@ -9,7 +9,7 @@ own words: what the pages show is tested where they are built.
 import pytest
 
 from sextile import PageRequest, PageRoute, Sextile, StateKey, handlers, standard_pages
-from sextile.addressing import PageAddress
+from sextile.page import PageAddress
 from sextile.state import State
 from sextile.visits import SqliteVisits, Visits
 

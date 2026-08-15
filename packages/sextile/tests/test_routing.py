@@ -14,7 +14,7 @@ from datetime import date
 
 import pytest
 
-from sextile.addressing import PageAddress, UnknownPageError
+from sextile.page import PageAddress, UnknownPageError
 from sextile.routing import Converter, NoSuchRouteError, RouteError, Router
 
 

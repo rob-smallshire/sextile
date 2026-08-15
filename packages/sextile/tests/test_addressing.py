@@ -11,7 +11,7 @@ there is more below, but it is never keyed.
 
 import pytest
 
-from sextile.addressing import PageAddress, UnknownPageError, frame_letter, keyed
+from sextile.page import PageAddress, UnknownPageError, frame_letter, keyed
 
 
 class TestParsing:

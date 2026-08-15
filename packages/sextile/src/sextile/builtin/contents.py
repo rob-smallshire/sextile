@@ -24,10 +24,9 @@ Registered nowhere, like the history page. A service gives it a number with
 from collections.abc import Sequence
 from typing import TYPE_CHECKING, Final
 
-from sextile.addressing import keyed
 from sextile.formatting import Listing, MenuItem
 from sextile.layout import PageLayout
-from sextile.page import Page
+from sextile.page import Page, keyed
 
 if TYPE_CHECKING:
     from sextile.declarations import PageRoute

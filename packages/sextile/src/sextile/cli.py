@@ -12,8 +12,8 @@ import sys
 from contextlib import suppress
 from typing import Final
 
-from sextile.addressing import PageAddress, UnknownPageError, keyed
 from sextile.application import Sextile
+from sextile.page import PageAddress, UnknownPageError, keyed
 from sextile.server import (
     DEFAULT_IDLE_TIMEOUT,
     DEFAULT_PORT,

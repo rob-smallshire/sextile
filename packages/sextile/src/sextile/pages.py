@@ -15,7 +15,6 @@ The framework's own notices are these too: `Sextile.not_found`, `.failed` and
 
 from collections.abc import Sequence
 
-from sextile.addressing import PageAddress
 from sextile.formatting import Entry, Lines, Menu, Prose
 from sextile.layout import (
     DEFAULT_FURNITURE,
@@ -27,7 +26,7 @@ from sextile.layout import (
     PageLayout,
     Shortcut,
 )
-from sextile.page import Page
+from sextile.page import Page, PageAddress
 from sextile.requests import Neighbours, PageRequest
 from sextile.viewdata.controls import Colour
 

@@ -9,7 +9,7 @@ from datetime import UTC, datetime, timedelta
 
 import pytest
 
-from sextile.addressing import PageAddress
+from sextile.page import PageAddress
 from sextile.visits import SqliteVisits, Visits
 
 NOON = datetime(2026, 8, 11, 12, 0, tzinfo=UTC)

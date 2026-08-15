@@ -28,9 +28,9 @@ from dataclasses import dataclass
 from typing import Final
 
 from sextile import keys
-from sextile.addressing import PageAddress
 from sextile.formatting import Entry
 from sextile.layout import Claim, Placed, Space
+from sextile.page import PageAddress
 from sextile.viewdata.canvas import Canvas, RowWriter
 from sextile.viewdata.controls import Colour
 from sextile.viewdata.encoding import fitted

@@ -7,9 +7,9 @@ follow is a list that has been written at you.
 
 from datetime import UTC, datetime, timedelta
 
-from sextile.addressing import PageAddress
 from sextile.application import Sextile
 from sextile.builtin.readership import callers_page, popular_page, recent_page
+from sextile.page import PageAddress
 from sextile.testing import request_for, text_of
 from sextile.visits import Visit
 

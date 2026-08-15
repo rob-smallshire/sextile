@@ -19,11 +19,9 @@ might be about.
             v
    content/    blocks, transliterate                    what is to be shown
             |
-   addressing  PageAddress                              what a page is called
-            |
    routing     Router, Converter, Route                 which page is which
             |
-   page        Page, PageFrame                          what an application returns
+   page        PageAddress, Page, PageFrame             what a page is called, and returns
             |
    forms       Form, TypeAhead, FieldSet                  a page typed into
             |

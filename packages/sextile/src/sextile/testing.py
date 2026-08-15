@@ -22,9 +22,8 @@ from collections.abc import AsyncIterator, MutableMapping
 from contextlib import asynccontextmanager
 from dataclasses import dataclass, field
 
-from sextile.addressing import PageAddress
 from sextile.application import Sextile
-from sextile.page import Page
+from sextile.page import Page, PageAddress
 from sextile.requests import Neighbours, PageRequest
 from sextile.session.session import Session
 from sextile.viewdata.frame import Frame

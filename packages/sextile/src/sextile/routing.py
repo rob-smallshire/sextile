@@ -33,7 +33,7 @@ from dataclasses import dataclass
 from datetime import date
 from typing import Final
 
-from sextile.addressing import PageAddress, UnknownPageError
+from sextile.page import PageAddress, UnknownPageError
 
 _FIELD: Final = re.compile(r"\{(?P<spec>[^{}]*)\}")
 

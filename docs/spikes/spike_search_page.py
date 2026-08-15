@@ -47,7 +47,7 @@ import pytest
 from beebium.client import Beebium
 from beebium.client.exceptions import ServerNotFoundError
 from beebium.ext.peripheral.rpc_serial import RpcSerial
-from sextile.addressing import PageAddress
+from sextile.page import PageAddress
 from sextile.session.session import Session
 from sextile.viewdata.frame import COLUMNS, ROWS
 from weather_viewdata import build_application

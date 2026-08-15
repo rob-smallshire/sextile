@@ -17,11 +17,10 @@ import pytest
 from exemplar import Board
 
 from sextile import keys
-from sextile.addressing import PageAddress
 from sextile.application import PageRequest, PageRoute, Sextile
 from sextile.formatting import Listing, MenuItem
 from sextile.layout import Flow, PageLayout
-from sextile.page import Page
+from sextile.page import Page, PageAddress
 from sextile.session.session import Session
 from sextile.viewdata.frame import FRAME_PREAMBLE
 

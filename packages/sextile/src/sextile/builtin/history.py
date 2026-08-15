@@ -23,10 +23,9 @@ the one the reader is looking at.
 from collections.abc import Callable, Sequence
 from typing import TYPE_CHECKING, Final
 
-from sextile.addressing import PageAddress, keyed
 from sextile.formatting import Menu, MenuItem
 from sextile.layout import PageLayout
-from sextile.page import Page
+from sextile.page import Page, PageAddress, keyed
 
 if TYPE_CHECKING:
     from sextile.requests import PageRequest

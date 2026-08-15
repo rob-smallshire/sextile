@@ -35,7 +35,7 @@ from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Final, Protocol, Self
 
-from sextile.addressing import PageAddress
+from sextile.page import PageAddress
 
 __all__ = [
     "RETENTION",

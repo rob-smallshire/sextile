@@ -10,7 +10,7 @@ from collections.abc import MutableMapping
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING
 
-from sextile.addressing import PageAddress
+from sextile.page import PageAddress
 from sextile.state import State, StateReader
 
 if TYPE_CHECKING:

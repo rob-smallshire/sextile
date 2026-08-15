@@ -25,7 +25,6 @@ from dataclasses import dataclass, field
 from enum import Enum, auto
 from typing import TYPE_CHECKING, Final, Protocol, runtime_checkable
 
-from sextile.addressing import FRAMES_PER_PAGE, PageAddress, keyed
 from sextile.keys import (
     ARROW_FOR,
     NEXT_FRAME,
@@ -35,7 +34,7 @@ from sextile.keys import (
     frame_moves,
     with_arrow_choices,
 )
-from sextile.page import Page, PageFrame
+from sextile.page import FRAMES_PER_PAGE, Page, PageAddress, PageFrame, keyed
 from sextile.viewdata.canvas import Canvas
 from sextile.viewdata.controls import Colour
 from sextile.viewdata.drawing import rule

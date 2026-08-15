@@ -10,8 +10,7 @@ session already holds it; a page that named itself as well could disagree.
 
 import pytest
 
-from sextile.addressing import PageAddress
-from sextile.page import Page, PageFrame
+from sextile.page import Page, PageAddress, PageFrame
 from sextile.viewdata.frame import Frame
 
 

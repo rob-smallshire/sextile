@@ -5,10 +5,9 @@ the other three are: a guide that drifts from the thing it describes is worse
 than none.
 """
 
-from sextile.addressing import PageAddress
 from sextile.application import Sextile
 from sextile.builtin.guidance import GuideRow, guide_page
-from sextile.page import Page
+from sextile.page import Page, PageAddress
 from sextile.testing import request_for, text_of
 
 _APP = Sextile()

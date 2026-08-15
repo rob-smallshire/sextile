@@ -14,7 +14,6 @@ from contextlib import asynccontextmanager
 
 import pytest
 
-from sextile.addressing import PageAddress, UnknownPageError
 from sextile.application import (
     CallNext,
     Middleware,
@@ -23,7 +22,7 @@ from sextile.application import (
     PageRoute,
     Sextile,
 )
-from sextile.page import Page, PageFrame
+from sextile.page import Page, PageAddress, PageFrame, UnknownPageError
 from sextile.routing import Converter, NoSuchRouteError
 from sextile.session.session import Session
 from sextile.state import StateKey

@@ -11,9 +11,8 @@ and a page that ends the call.
 
 from typing import Final
 
-from sextile.addressing import PageAddress
 from sextile.application import PageRequest, Sextile
-from sextile.page import Page, PageFrame
+from sextile.page import Page, PageAddress, PageFrame
 from sextile.viewdata.canvas import Canvas
 from sextile.viewdata.controls import Colour
 from sextile.viewdata.drawing import rule

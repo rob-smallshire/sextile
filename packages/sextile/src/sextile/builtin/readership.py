@@ -17,10 +17,9 @@ from collections.abc import Callable, Sequence
 from datetime import UTC, datetime, timedelta
 from typing import TYPE_CHECKING, Final
 
-from sextile.addressing import PageAddress, keyed
 from sextile.formatting import Figures, Lines, Menu, MenuItem
 from sextile.layout import Flow, OnEveryFrame, PageLayout
-from sextile.page import Page
+from sextile.page import Page, PageAddress, keyed
 from sextile.viewdata.controls import Colour
 from sextile.viewdata.frame import COLUMNS
 

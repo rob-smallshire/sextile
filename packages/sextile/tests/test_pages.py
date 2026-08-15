@@ -6,12 +6,11 @@ title, the way home and the page number default from it as they do for the
 layout underneath.
 """
 
-from sextile.addressing import PageAddress
 from sextile.application import Sextile
 from sextile.declarations import PageRoute
 from sextile.formatting import MenuItem
 from sextile.layout import Shortcut
-from sextile.page import Page, PageFrame
+from sextile.page import Page, PageAddress, PageFrame
 from sextile.pages import farewell_page, menu_page, notice_page, prose_page
 from sextile.testing import request_for, text_of
 from sextile.viewdata.canvas import Canvas

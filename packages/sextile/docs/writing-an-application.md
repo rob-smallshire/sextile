@@ -392,7 +392,7 @@ numbering with a title and the page uses it, or keeps its own if none is given.
 
 ## Obtaining page addresses
 
-`addressing.keyed` renders a page number as a reader keys it — `*91#` — and
+`keyed` renders a page number as a reader keys it — `*91#` — and
 `app.menu_item(name)` gives the words the page was registered with.
 Together they let a page that tells a reader what to press avoid spelling out
 either:

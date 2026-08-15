@@ -5,11 +5,10 @@ user on a screen; everybody holding a user number can be told
 where to put it, and only the framework knows the patterns well enough to say.
 """
 
-from sextile.addressing import PageAddress
 from sextile.application import Sextile
 from sextile.builtin.contents import TITLE, contents_page
 from sextile.declarations import PageRoute
-from sextile.page import Page, PageFrame
+from sextile.page import Page, PageAddress, PageFrame
 from sextile.requests import PageRequest
 from sextile.testing import request_for, text_of
 from sextile.viewdata.canvas import Canvas

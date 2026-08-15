@@ -16,9 +16,8 @@ from contextlib import suppress
 import pytest
 from exemplar import Board
 
-from sextile.addressing import PageAddress
 from sextile.application import PageRequest
-from sextile.page import Page
+from sextile.page import Page, PageAddress
 from sextile.server import DEFAULT_PORT, serve
 from sextile.viewdata.encoding import ScreenControl
 from sextile.viewdata.frame import FRAME_PREAMBLE

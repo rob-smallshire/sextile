@@ -106,7 +106,7 @@ class Style:
     separated: bool = False
     flashing: bool = False
     double_height: bool = False
-    held: bool = False
+    hold_graphics: bool = False
     concealed: bool = False
 
 
@@ -671,8 +671,10 @@ def _attributes_for(state: Style, graphics: bool, run: Run) -> list[Attribute]:
         needed.append(
             Attribute.DOUBLE_HEIGHT if wanted.double_height else Attribute.NORMAL_HEIGHT
         )
-    if wanted.held is not state.held:
-        needed.append(Attribute.HOLD_GRAPHICS if wanted.held else Attribute.RELEASE_GRAPHICS)
+    if wanted.hold_graphics is not state.hold_graphics:
+        needed.append(
+            Attribute.HOLD_GRAPHICS if wanted.hold_graphics else Attribute.RELEASE_GRAPHICS
+        )
     if wanted.concealed and not state.concealed:
         needed.append(Attribute.CONCEAL)
     return needed

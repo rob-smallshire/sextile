@@ -198,7 +198,7 @@ class TestTheWholeAttributeSet:
 
     def test_holding_graphics_costs_a_cell(self) -> None:
         composition = Composition().blocks(
-            0, 2, [0b111111], style=Style(colour=Colour.RED, held=True)
+            0, 2, [0b111111], style=Style(colour=Colour.RED, hold_graphics=True)
         )
         canvas = drawn(composition)
         assert Attribute.HOLD_GRAPHICS in [canvas.frame.cell(0, c) for c in (0, 1)]

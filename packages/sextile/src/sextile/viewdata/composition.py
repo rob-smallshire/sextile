@@ -29,6 +29,10 @@ move, which is a different feature and not this one.
 Rows are independent: every row begins in alpha, white, contiguous selected,
 whatever the row above ended in. So a frame composition is a row composition
 done twenty-four times, and nothing here concerns the frame as a whole.
+
+This module decides *where* things go. What colour they come out -- the plan of
+attributes for a row, and the style model behind it -- is `viewdata.attributes`,
+which it drives once a row's runs and panels are placed.
 """
 
 from collections.abc import Sequence
@@ -36,6 +40,19 @@ from dataclasses import dataclass, field, replace
 from enum import Enum
 from typing import Final
 
+from sextile.viewdata.attributes import (
+    OPENING,
+    DoesNotFit,
+    Panel,
+    Run,
+    Style,
+    _attributes_for,
+    _opening_style,
+    _Plan,
+    _row_events,
+    _style_after,
+    _with_panel_background,
+)
 from sextile.viewdata.blocks import (
     BLOCKS_ACROSS,
     BLOCKS_DOWN,
@@ -46,9 +63,8 @@ from sextile.viewdata.blocks import (
 )
 from sextile.viewdata.canvas import Canvas
 from sextile.viewdata.charset import mosaic_code
-from sextile.viewdata.controls import Attribute, Colour, alpha_colour, graphics_colour
+from sextile.viewdata.controls import Attribute, Colour
 from sextile.viewdata.frame import COLUMNS, ROWS
-from sextile.viewdata.measure import cell_count
 
 __all__ = [
     "Align",
@@ -58,10 +74,6 @@ __all__ = [
     "Style",
     "Where",
 ]
-
-
-class DoesNotFit(ValueError):
-    """A composition that cannot be drawn, and why."""
 
 
 class Align(Enum):
@@ -87,84 +99,6 @@ Where = int | Align
 #: the panel's own, and is already coloured -- the hardware sets a background at
 #: the attribute cell rather than after it.
 _PANEL_ATTRIBUTES: Final = 1
-
-
-@dataclass(frozen=True)
-class Style:
-    """How a run is to be displayed: every attribute the SAA5050 has.
-
-    Not every combination is reachable from every other in one cell, which is
-    why this is a value handed to a compositor rather than a sequence of
-    attributes written by hand. A background is the worst of them: the
-    hardware has no "set background" attribute, only "make the current
-    foreground the background", so white on blue costs three cells -- choose
-    blue, make it the background, choose white again.
-    """
-
-    colour: Colour = Colour.WHITE
-    background: Colour = Colour.BLACK
-    separated: bool = False
-    flashing: bool = False
-    double_height: bool = False
-    hold_graphics: bool = False
-    concealed: bool = False
-
-
-#: What every row starts as, whatever the row above ended in.
-OPENING: Final = Style()
-
-
-@dataclass(frozen=True)
-class Run:
-    """One thing to place: text, or a run of mosaic blocks.
-
-    ``patterns`` is six-bit block patterns; ``words`` is characters. Exactly one
-    of them says what this is.
-    """
-
-    column: int
-    style: Style = Style()
-    words: str = ""
-    patterns: tuple[int, ...] = ()
-
-    @property
-    def graphics(self) -> bool:
-        return bool(self.patterns)
-
-    @property
-    def cells(self) -> int:
-        return len(self.patterns) if self.graphics else cell_count(self.words)
-
-    @property
-    def end(self) -> int:
-        return self.column + self.cells
-
-
-@dataclass(frozen=True)
-class Panel:
-    """A coloured rectangle, cell-aligned, with things drawn on top of it.
-
-    `column` is its first coloured cell, which is the one carrying
-    NEW_BACKGROUND: the hardware sets a background *at* the attribute cell
-    rather than after it, so that cell is already the colour it asks for. The
-    cell before it is not -- it is where the colour is chosen, and a colour
-    attribute cannot colour itself -- so a panel always costs one black cell
-    to its left, and content inside it starts at least one cell in from the
-    left-hand edge.
-    """
-
-    column: int
-    width: int
-    colour: Colour
-    rows: tuple[int, ...] = ()
-
-    @property
-    def end(self) -> int:
-        """One past the last coloured cell."""
-        return self.column + self.width
-
-    def covers(self, run: Run) -> bool:
-        return self.column <= run.column and run.end <= self.end
 
 
 @dataclass
@@ -207,7 +141,7 @@ class Composition:
         else:
             assert width is not None
             column = self._aligned(width, _PANEL_ATTRIBUTES, where)
-        first = row if isinstance(row, int) else _down(row, rows)
+        first = row if isinstance(row, int) else _top_row(row, rows)
         panel = Panel(
             column=column,
             width=width,
@@ -233,7 +167,7 @@ class Composition:
                 f"nothing on row(s) {', '.join(str(row) for row in around)} for a "
                 f"panel to go around; what it goes around is placed first"
             )
-        first, last = _seen(runs)
+        first, last = _shown_span(runs)
         column = max(min(first - padding, min(run.column for run in runs)), _PANEL_ATTRIBUTES)
         end = min(max(last + 1 + padding, max(run.end for run in runs)), COLUMNS)
         return column, end - column
@@ -334,17 +268,17 @@ class Composition:
         block and an attribute cell look the same on the screen.
         """
         width = max((len(patterns) for patterns in rows), default=0)
-        probe = Run(column=0, style=_inherited(style, within), patterns=(0,) * width)
-        needed = len(_attributes_for(_opening(within), False, probe))
+        probe = Run(column=0, style=_with_panel_background(style, within), patterns=(0,) * width)
+        needed = len(_attributes_for(_opening_style(within), False, probe))
         if where is not Align.CENTRE:
             return self._aligned(width, needed, where, within), False
-        first, last = _ink(rows)
+        first, last = _lit_span(rows)
         if first is None or last is None:
             return self._aligned(width, needed, where, within), False
-        room, origin = _region(within)
-        left = _centre(last - first + 1, room=room * BLOCKS_ACROSS) - first
+        room, origin = _room_and_origin(within)
+        left = _centred_start(last - first + 1, room=room * BLOCKS_ACROSS) - first
         column, half = divmod(left + origin * BLOCKS_ACROSS, BLOCKS_ACROSS)
-        least = _least(needed, within)
+        least = _leftmost_start(needed, within)
         return (column, bool(half)) if column >= least else (least, False)
 
     def _descent(
@@ -363,10 +297,10 @@ class Composition:
             return top, 0
         if row is Align.RIGHT:
             return max(top + deep - len(rows), top), 0
-        first, last = _ink_rows(rows)
+        first, last = _lit_rows(rows)
         if first is None or last is None:
-            return top + _centre(len(rows), room=deep), 0
-        above = _centre(last - first + 1, room=deep * BLOCKS_DOWN) - first
+            return top + _centred_start(len(rows), room=deep), 0
+        above = _centred_start(last - first + 1, room=deep * BLOCKS_DOWN) - first
         within_rows, third = divmod(above + top * BLOCKS_DOWN, BLOCKS_DOWN)
         return (within_rows, third) if within_rows >= top else (top, 0)
 
@@ -376,21 +310,21 @@ class Composition:
         """The column for something `width` cells wide, in cells alone."""
         if isinstance(where, int):
             return where
-        room, origin = _region(within)
-        least = _least(needed, within)
+        room, origin = _room_and_origin(within)
+        least = _leftmost_start(needed, within)
         if where is Align.RIGHT:
             return max(origin + room - width, least)
         if where is Align.LEFT:
             return least
-        return max(origin + _centre(width, room=room), least)
+        return max(origin + _centred_start(width, room=room), least)
 
     def _positioned(self, run: Run, where: Where, within: Panel | None = None) -> Run:
         """A run of text moved to where it was asked to go.
 
         Text has no half-cells to be positioned in, so this is cells alone.
         """
-        probe = replace(run, style=_inherited(run.style, within))
-        needed = len(_attributes_for(_opening(within), False, probe))
+        probe = replace(run, style=_with_panel_background(run.style, within))
+        needed = len(_attributes_for(_opening_style(within), False, probe))
         return replace(run, column=self._aligned(run.cells, needed, where, within))
 
     def _add(self, row: int, run: Run) -> "Composition":
@@ -439,7 +373,7 @@ class Composition:
         """Every row with anything on it, a panel with nothing on it included."""
         return sorted(set(self.runs) | set(self.panels))
 
-    def _plan(self, row: int) -> "_Plan":
+    def _plan(self, row: int) -> _Plan:
         """Where the attributes go on one row, or why they cannot go anywhere."""
         runs = sorted(self.runs.get(row, []), key=lambda run: run.column)
         for earlier, later in zip(runs, runs[1:], strict=False):
@@ -453,8 +387,8 @@ class Composition:
         state, graphics = OPENING, False
         attributes: list[tuple[int, Attribute]] = []
         free = 0
-        for at, kind, what in _events(runs, panels):
-            marker = _marked(kind, what, state, panels)
+        for at, kind, what in _row_events(runs, panels):
+            marker = _style_after(kind, what, state, panels)
             #  Closing a panel is one cell and changes nothing else. Asking
             #  `_attributes_for` would have it leave graphics as well, because
             #  a marker carries no blocks -- and that second cell would land
@@ -487,21 +421,21 @@ class Composition:
         return _Plan(runs=runs, attributes=attributes)
 
 
-def _down(where: Align, deep: int) -> int:
+def _top_row(where: Align, deep: int) -> int:
     """The row something `deep` rows tall starts on to sit down the frame."""
     if where is Align.LEFT:
         return 0
     if where is Align.RIGHT:
         return max(ROWS - deep, 0)
-    return _centre(deep, room=ROWS)
+    return _centred_start(deep, room=ROWS)
 
 
-def _region(within: "Panel | None") -> tuple[int, int]:
+def _room_and_origin(within: "Panel | None") -> tuple[int, int]:
     """How much room something has, and where that room starts."""
     return (COLUMNS, 0) if within is None else (within.width, within.column)
 
 
-def _least(needed: int, within: "Panel | None") -> int:
+def _leftmost_start(needed: int, within: "Panel | None") -> int:
     """The leftmost column a run may start at, its own attributes allowed for.
 
     Inside a panel that is one cell in from the edge, because the panel's own
@@ -510,49 +444,7 @@ def _least(needed: int, within: "Panel | None") -> int:
     return (0 if within is None else within.column + 1) + needed
 
 
-def _inherited(style: Style, within: "Panel | None") -> Style:
-    """A style with the background of the panel it is going on, if it wants one.
-
-    A run that says nothing about a background takes the panel's. It has to be
-    known here as well as when the row is planned, because what a run costs in
-    attributes is what decides where it can start.
-    """
-    if within is None or style.background is not Colour.BLACK:
-        return style
-    return replace(style, background=within.colour)
-
-
-def _opening(within: "Panel | None") -> Style:
-    """The style in force where a run is going, before the run says anything.
-
-    Inside a panel, the colour is the panel's and so is the background -- which
-    is why a run drawn on a panel pays for its own colour and nothing else.
-    """
-    if within is None:
-        return OPENING
-    return Style(colour=within.colour, background=within.colour)
-
-
-def _events(
-    runs: Sequence[Run], panels: Sequence["Panel"]
-) -> list[tuple[int, str, "Run | Panel | None"]]:
-    """Everything that happens along a row, in the order it happens.
-
-    A panel opens one cell before the column its colour appears in, because the
-    attribute that promotes the colour is set *at* its cell and that cell is the
-    panel's first. It closes one cell after its last, for the same reason.
-    """
-    events: list[tuple[int, str, Run | Panel | None]] = []
-    for panel in panels:
-        events.append((panel.column + 1, "open", panel))
-        if panel.end < COLUMNS:
-            events.append((panel.end + 1, "close", None))
-    events += [(run.column, "run", run) for run in runs]
-    order = {"open": 0, "run": 1, "close": 2}
-    return sorted(events, key=lambda event: (event[0], order[event[1]]))
-
-
-def _centre(width: int, *, room: int = COLUMNS) -> int:
+def _centred_start(width: int, *, room: int = COLUMNS) -> int:
     """Where something `width` wide starts to sit in the middle of `room`.
 
     Left-biased where it cannot be exact -- an odd number of spare cells has to
@@ -562,7 +454,7 @@ def _centre(width: int, *, room: int = COLUMNS) -> int:
     return max((room - width) // 2, 0)
 
 
-def _seen(runs: Sequence[Run]) -> tuple[int, int]:
+def _shown_span(runs: Sequence[Run]) -> tuple[int, int]:
     """The first and last cell some runs actually show something in.
 
     For graphics that is the ink and not the run: a picture centred to the
@@ -574,7 +466,7 @@ def _seen(runs: Sequence[Run]) -> tuple[int, int]:
         if not run.graphics:
             cells += [run.column, run.end - 1]
             continue
-        first, last = _ink([run.patterns])
+        first, last = _lit_span([run.patterns])
         if first is not None and last is not None:
             cells += [
                 run.column + first // BLOCKS_ACROSS,
@@ -583,7 +475,7 @@ def _seen(runs: Sequence[Run]) -> tuple[int, int]:
     return (min(cells), max(cells)) if cells else (0, 0)
 
 
-def _ink(rows: Sequence[Sequence[int]]) -> tuple[int | None, int | None]:
+def _lit_span(rows: Sequence[Sequence[int]]) -> tuple[int | None, int | None]:
     """The first and last block of a picture that is lit, across all its rows."""
     lit = [
         index * BLOCKS_ACROSS + half
@@ -595,7 +487,7 @@ def _ink(rows: Sequence[Sequence[int]]) -> tuple[int | None, int | None]:
     return (min(lit), max(lit)) if lit else (None, None)
 
 
-def _ink_rows(rows: Sequence[Sequence[int]]) -> tuple[int | None, int | None]:
+def _lit_rows(rows: Sequence[Sequence[int]]) -> tuple[int | None, int | None]:
     """The same downwards: the first and last block row a picture lights."""
     lit = [
         index * BLOCKS_DOWN + third
@@ -604,85 +496,3 @@ def _ink_rows(rows: Sequence[Sequence[int]]) -> tuple[int | None, int | None]:
         if any(pattern & mask for pattern in patterns)
     ]
     return (min(lit), max(lit)) if lit else (None, None)
-
-
-def _marked(
-    kind: str, what: "Run | Panel | None", state: Style, panels: Sequence["Panel"]
-) -> Run:
-    """The style the row is to be in after this event, as a run to ask about.
-
-    A run drawn on a panel and saying nothing about a background takes the
-    panel's, which is the point of declaring the panel: a run that turned the
-    background off in the middle of a box would put a black hole in it.
-    """
-    if kind == "close":
-        return Run(column=0, style=replace(state, background=Colour.BLACK))
-    if isinstance(what, Panel):
-        return Run(column=0, style=Style(colour=what.colour, background=what.colour))
-    run = what
-    assert isinstance(run, Run)
-    for panel in panels:
-        if panel.covers(run):
-            return replace(run, style=_inherited(run.style, panel))
-    return run
-
-
-def _attributes_for(state: Style, graphics: bool, run: Run) -> list[Attribute]:
-    """The shortest run of attributes taking one style to another.
-
-    Order matters and is not arbitrary. The background comes first because
-    setting it means setting the foreground and then saying "that one", so the
-    foreground attribute that follows has to be the one that sticks. Conceal
-    comes last because it hides whatever follows it, and has no off switch --
-    the hardware clears it at the end of the row and nowhere else.
-    """
-    wanted = run.style
-    if state.concealed and not wanted.concealed:
-        raise DoesNotFit(
-            "conceal cannot be turned off within a row: the hardware clears it "
-            "only at the end of one"
-        )
-    needed: list[Attribute] = []
-    colour_of = graphics_colour if run.graphics else alpha_colour
-    foreground = state.colour
-
-    if wanted.background is not state.background:
-        if wanted.background is Colour.BLACK:
-            needed.append(Attribute.BLACK_BACKGROUND)
-        else:
-            #  There is no "set background": the current foreground becomes it.
-            needed.append(colour_of(wanted.background))
-            needed.append(Attribute.NEW_BACKGROUND)
-            foreground = wanted.background
-
-    if run.graphics and wanted.separated is not state.separated:
-        needed.append(
-            Attribute.SEPARATED_GRAPHICS if wanted.separated else Attribute.CONTIGUOUS_GRAPHICS
-        )
-
-    #  The colour attribute chooses the character set as well, so it is needed
-    #  whenever either changes.
-    if foreground is not wanted.colour or graphics is not run.graphics:
-        needed.append(colour_of(wanted.colour))
-
-    if wanted.flashing is not state.flashing:
-        needed.append(Attribute.FLASH if wanted.flashing else Attribute.STEADY)
-    if wanted.double_height is not state.double_height:
-        needed.append(
-            Attribute.DOUBLE_HEIGHT if wanted.double_height else Attribute.NORMAL_HEIGHT
-        )
-    if wanted.hold_graphics is not state.hold_graphics:
-        needed.append(
-            Attribute.HOLD_GRAPHICS if wanted.hold_graphics else Attribute.RELEASE_GRAPHICS
-        )
-    if wanted.concealed and not state.concealed:
-        needed.append(Attribute.CONCEAL)
-    return needed
-
-
-@dataclass(frozen=True)
-class _Plan:
-    runs: list[Run]
-    attributes: list[tuple[int, Attribute]]
-
-

@@ -255,6 +255,7 @@ Everything else, and specifically:
 | `pages` | reached through `sextile.handlers` or the `Sextile` methods |
 | `session`, `server` | how a call is answered, which no page takes part in |
 | `viewdata.encoding` | the wire half: `ScreenControl`, `encode_attribute`, `encode_text` |
+| `viewdata.attributes` | the style model and the plan of attributes a row needs, which `composition` drives |
 | `viewdata.command_line`, `.idle_warning`, `.hangup`, `.repaint` | what the session is built from |
 | `viewdata.ansi` | for looking at a frame without a terminal |
 

@@ -1,26 +1,14 @@
 """The Stardot service's page handlers, each declared beside its function.
 
-Menus are the shape most pages take. A reader selects with a single keypress, so
-a menu offers at most nine choices on a frame and moving down goes to the next
-nine. Digit 0 always returns to the main index: it is the one key a reader who
-has lost their bearings can rely on.
+The `@router.page` line above each function is everything the service says about
+that page -- its number, name, title and keywords -- and the order the functions
+are written in is the order the contents page lists them; the assembly spreads
+`router` into the service.
 
-Where the archive has nothing to show, the page says so. An empty menu with no
-explanation looks like a fault, and on a service that deliberately answers
-slowly a reader has no way to tell the difference.
-
-The pages are ordinary functions. Nothing here closes over anything: a page
-takes the archive from what the service holds and the numbering from the
-service itself, both through the request it is given. The `@router.page`
-declaration above each is everything the service says about it, and the order
-they are written in is the order the contents page lists them; the assembly
-spreads `router` into the service.
-
-The numbering is documented in docs/page-numbering.md. Its one rule worth
-repeating here is that every identifier comes from Stardot -- post, forum, topic
-and contributor ids are the board's own -- so nothing in this file allocates a
-number, nothing can renumber, and a page number means the same thing on the web
-forum as on a BBC Micro.
+The numbering is in docs/page-numbering.md. Every identifier in it comes from
+Stardot -- post, forum, topic and contributor ids are the board's own -- so
+nothing here allocates a number, and a page number means the same thing on the
+web forum as on a BBC Micro.
 """
 
 import asyncio
@@ -148,8 +136,6 @@ async def days_index(request: PageRequest) -> Page:
     """The sixty most recent days posts were made on, the newest first."""
     app = request.app
     days = await _read(request, lambda repository: repository.days(limit=60))
-    if not days:
-        return notice_page(request, "NO POSTS held yet.")
     items = [
         MenuItem(
             day_title(day),
@@ -158,7 +144,7 @@ async def days_index(request: PageRequest) -> Page:
         )
         for day, count in days
     ]
-    return menu_page(request, items=items)
+    return menu_page(request, items=items, empty="NO POSTS held yet.")
 
 
 @router.page(
@@ -182,8 +168,6 @@ async def forums_index(request: PageRequest) -> Page:
     """The forums posts have been seen in, with how many are held from each."""
     app = request.app
     forums = await _read(request, lambda repository: repository.forums())
-    if not forums:
-        return notice_page(request, "NO POSTS held yet.")
     items = [
         MenuItem(
             name,
@@ -192,7 +176,7 @@ async def forums_index(request: PageRequest) -> Page:
         )
         for forum_id, name, count in forums
     ]
-    return menu_page(request, items=items)
+    return menu_page(request, items=items, empty="NO POSTS held yet.")
 
 
 @router.page("42{forum_id:int}", name="forum", title="One forum", label="Forum {forum_id}")
@@ -214,8 +198,6 @@ async def contributors_index(request: PageRequest) -> Page:
     """Everyone who has posted, the most prolific first."""
     app = request.app
     contributors = await _read(request, lambda repository: repository.contributors())
-    if not contributors:
-        return notice_page(request, "NO POSTS held yet.")
     items = [
         MenuItem(
             name,
@@ -224,7 +206,7 @@ async def contributors_index(request: PageRequest) -> Page:
         )
         for user_id, name, count in contributors
     ]
-    return menu_page(request, items=items)
+    return menu_page(request, items=items, empty="NO POSTS held yet.")
 
 
 @router.page(
@@ -400,8 +382,6 @@ def unknown_page(request: PageRequest, target: str) -> Page:
 def _posts_menu(
     request: PageRequest, posts: list[Post], title: str | None = None
 ) -> Page:
-    if not posts:
-        return notice_page(request, "NO POSTS held for this page.", title=title)
     items = [
         MenuItem(
             post.subject,
@@ -410,9 +390,9 @@ def _posts_menu(
         )
         for post in posts
     ]
-    return menu_page(request, title=title, items=items)
-
-
+    return menu_page(
+        request, title=title, items=items, empty="NO POSTS held for this page."
+    )
 
 
 

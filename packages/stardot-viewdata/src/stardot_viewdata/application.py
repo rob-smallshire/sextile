@@ -1,15 +1,9 @@
 """Stardot, as a Viewdata service.
 
-This is a Sextile application and nothing more: it says which page numbers
-exist, what each of them shows, and where the keys lead. Everything about
-connections, sessions, frames, control codes and routing belongs to the
-framework, and everything about forums belongs here.
-
-The handlers are in `handlers`, each declared beside its function;
-`title_frame` draws the masthead and `post_page` divides one post between
-frames.
-This module is the assembly alone: the archive the service holds, the pages
-mapped into the numbering, and the words it uses for a page it has not got.
+The assembly alone: the archive the service holds, its own pages mapped into the
+numbering beside the framework's history, contents and keywords, and the words
+it uses for a page it has not got. The handlers are in `handlers`, each declared
+beside its function.
 """
 
 import asyncio
@@ -43,15 +37,21 @@ def build_application(
     repository: Repository | None = None,
     pages: Sequence[PageRoute] = PAGES,
 ) -> Sextile:
-    """Serve from an archive at ``database_filepath``, or from one already open.
+    """Assemble the service, from an archive on disk or one already open.
 
-    ``pages`` is the service's own list unless given another, which lets a test
-    move a page and watch everything that names it follow.
+    Args:
+        database_filepath: Where the archive lives, opened when the service
+            starts and closed when it stops. Ignored where `repository` is given.
+        repository: An open archive to serve from, for a test or a caller that
+            holds one for another purpose. It is left open when the service
+            stops, since it belongs to whoever passed it.
+        pages: The service's pages; the default is its own list spread with the
+            framework's. A test passes another to move a page and watch
+            everything that names it follow.
 
-    An archive passed in belongs to whoever passed it and is left open when the
-    service stops, which suits a test and a caller that holds the archive for
-    some other purpose. An archive opened from ``database_filepath`` is closed
-    when the service stops.
+    Returns:
+        The service, its archive held under `ARCHIVE`, with its own not-found
+        and timed-out pages.
     """
 
     @asynccontextmanager

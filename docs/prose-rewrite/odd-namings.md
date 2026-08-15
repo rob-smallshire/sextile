@@ -42,6 +42,7 @@ beyond prose.
 |------|------|----------|
 | session/commands.py | "the search page told readers there was no space bar"; "Place names hold spaces, hyphens and apostrophes" (weather concepts) | "a field appeared to have no space bar"; "Text a reader types may hold spaces, hyphens and apostrophes" — fixed here |
 | session/session.py | "hanging up on somebody because one post has an awkward image caption" (Stardot concepts) | "ending it over one page's exception" — fixed here |
+| viewdata/canvas.py | `RowWriter.runs` docstring: "a place name longer than anybody expected should cost the reader the end of a sentence" (weather concept) | "a value longer than anybody expected should cost the reader the end of a line" — fixed here |
 
 ## Structural drift needing a decision
 

@@ -87,9 +87,10 @@ Source docstrings + comments (src/sextile):
 - [x] session/ (commands.py, session.py)  (fixed 2 Invariant-1 comment leaks)
 - [ ] testing.py
 - [ ] visits.py
-- [ ] viewdata/ (ansi, blocks, canvas, charset, charting, command_line,
-      composition, controls, countdown, drawing, encoding, font, fonts,
-      footer, frame, lettering, parting, repaint, typesetting, wrapping)
+- [~] viewdata/  (Batch E done: canvas, drawing, composition rewritten;
+      ansi, charset, controls, encoding, frame already at target. Remaining:
+      blocks, charting, command_line, countdown, font, fonts, footer,
+      lettering, parting, repaint, typesetting, wrapping)
 
 ### Phase 2 — applications
 

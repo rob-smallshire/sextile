@@ -119,7 +119,7 @@ def key_row(row: "RowWriter", key: str, meaning: str, *, column: int) -> None:
 def thin_rule(canvas: Canvas, row: int, colour: Colour = Colour.BLUE) -> None:
     """A lighter rule: one block thick, across the middle of the row.
 
-    The chrome's `rule` is a bar, and a bar is what the top and bottom of a
+    The furniture's `rule` is a bar, and a bar is what the top and bottom of a
     frame want -- it is where the page ends. A rule *inside* a page is dividing
     two things that are both content, and a bar there reads as a second frame
     beginning. This is the same construction with a sixth of the ink.

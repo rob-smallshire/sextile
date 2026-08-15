@@ -15,9 +15,9 @@ have the last item silently truncated.
 
 **Two runs in the same style cost one attribute, not two.** Blocks at either end
 of a row need graphics entered once: the composition never returns to alpha in
-between, because it can see there is no text in between. This is the case that
-made the sequential writer wasteful, and it is what a mosaic font needs -- a
-banner is a row of block runs that all want the same colour.
+between, there being no text in between. This is the case that made the
+sequential writer wasteful, and it is what a mosaic font needs -- a banner is a
+row of block runs all in one colour.
 
 **It is exact rather than clever.** An attribute displays as a blank, and a
 blank in graphics is the no-blocks mosaic, so an attribute may sit anywhere in
@@ -28,7 +28,7 @@ move, which is a different feature and not this one.
 
 Rows are independent: every row begins in alpha, white, contiguous selected,
 whatever the row above ended in. So a frame composition is a row composition
-done twenty-four times, and nothing here has to think about the frame at all.
+done twenty-four times, and nothing here concerns the frame as a whole.
 """
 
 from collections.abc import Sequence
@@ -58,11 +58,11 @@ class DoesNotFit(ValueError):
 class Align(Enum):
     """Where to put something, for a caller that would rather not count.
 
-    Given instead of a column. Centring is accounting about attributes -- what
-    a style costs in cells decides whether the middle is reachable at all --
-    and that accounting is what a composition is for. A caller doing it has to
-    know the cost before it knows the column, which is knowing this module's
-    business, and three callers who did came out a cell and a half apart.
+    Given instead of a column. Centring is accounting about attributes: what a
+    style costs in cells decides whether the middle is reachable at all, and
+    that accounting is what a composition is for. A caller doing it must know the
+    cost before it knows the column, and three callers who did came out a cell
+    and a half apart.
     """
 
     LEFT = "left"
@@ -85,8 +85,8 @@ class Style:
     """How a run is to be displayed: every attribute the SAA5050 has.
 
     Not every combination is reachable from every other in one cell, which is
-    the whole reason this is a value handed to a compositor rather than a
-    sequence of controls written by hand. A background is the worst of them: the
+    why this is a value handed to a compositor rather than a sequence of
+    controls written by hand. A background is the worst of them: the
     hardware has no "set background" attribute, only "make the current
     foreground the background", so white on blue costs three cells -- choose
     blue, make it the background, choose white again.

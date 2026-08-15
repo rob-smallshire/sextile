@@ -32,8 +32,8 @@ _ATTRIBUTE_CELL: Final = 1
 class Run:
     """A stretch of text in one colour.
 
-    A row written in one voice needs no such thing -- `RowWriter.text` takes
-    the colour with the words. This is for a line whose colours are the meaning
+    A row written in a single colour needs no such thing -- `RowWriter.text`
+    takes the colour with the words. This is for a line whose colours are the meaning
     rather than the decoration: two clocks side by side, one in UTC and one
     local, told apart by colour because a label saying which would cost four
     cells to repeat what the row above already said.
@@ -122,8 +122,8 @@ class RowWriter:
 
         What `text` does repeatedly, with the difference that this trims rather
         than raises: a line assembled from runs is usually a line assembled from
-        data, and a place name longer than anybody expected should cost the
-        reader the end of a sentence rather than the whole frame.
+        data, and a value longer than anybody expected should cost the reader
+        the end of a line rather than the whole frame.
 
         A cell is held back from each run for the attribute that may precede it,
         which costs nothing except in the rare case where the trimming actually

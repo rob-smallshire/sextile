@@ -5,12 +5,15 @@ page gathers the parts a human contributor needs and points there for the rest.
 
 ## The gate
 
-Three commands must pass over the whole workspace, at every commit:
+Four commands must pass over the whole workspace, at every commit — the last
+builds the documentation with warnings treated as errors, so a docstring autodoc
+cannot render stays broken no longer than the commit that breaks it:
 
 ```sh
 uv run pytest
 uv run ruff check .
 uv run mypy
+uv run --group docs sphinx-build -n -W --keep-going -b html docs docs/_build/html
 ```
 
 ## The two invariants

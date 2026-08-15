@@ -13,7 +13,7 @@ from contextlib import suppress
 from typing import Final
 
 from sextile.addressing import PageAddress, UnknownPageError, keyed
-from sextile.application import Application
+from sextile.application import Sextile
 from sextile.server import (
     DEFAULT_IDLE_TIMEOUT,
     DEFAULT_PORT,
@@ -45,7 +45,7 @@ class ApplicationSpecError(ValueError):
     """A `module:name` that does not name an application."""
 
 
-def load_application(spec: str) -> Application:
+def load_application(spec: str) -> Sextile:
     """The application a `module:name` specification names.
 
     The same shape as a WSGI or ASGI server's, and for the same reason: the
@@ -63,9 +63,9 @@ def load_application(spec: str) -> Application:
         found = getattr(module, attribute)
     except AttributeError:
         raise ApplicationSpecError(f"{module_name!r} has no {attribute!r}") from None
-    if not isinstance(found, Application) and callable(found):
+    if not isinstance(found, Sextile) and callable(found):
         found = found()
-    if not isinstance(found, Application):
+    if not isinstance(found, Sextile):
         raise ApplicationSpecError(f"{spec!r} is a {type(found).__name__}, not an application")
     return found
 
@@ -118,7 +118,7 @@ def _seconds(text: str) -> float:
     return value
 
 
-async def render_page(application: Application, arguments: argparse.Namespace) -> int:
+async def render_page(application: Sextile, arguments: argparse.Namespace) -> int:
     """Draw one frame of one page, and say where its keys lead."""
     try:
         address = PageAddress(arguments.page)
@@ -150,7 +150,7 @@ async def render_page(application: Application, arguments: argparse.Namespace) -
     return 0
 
 
-async def run_service(application: Application, arguments: argparse.Namespace) -> int:
+async def run_service(application: Sextile, arguments: argparse.Namespace) -> int:
     """Answer calls until interrupted."""
     #  Zero means hold the line indefinitely, which is what `asyncio.wait_for`
     #  spells as no timeout at all. Zero seconds would otherwise mean releasing

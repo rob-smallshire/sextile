@@ -23,7 +23,7 @@ import asyncio
 import logging
 from typing import Final
 
-from sextile.application import Application
+from sextile.application import Sextile
 from sextile.session.session import Session
 from sextile.viewdata.countdown import BAR_CELLS
 
@@ -49,7 +49,7 @@ _logger = logging.getLogger(__name__)
 
 
 async def serve(
-    application: Application,
+    application: Sextile,
     *,
     host: str = "127.0.0.1",
     port: int = DEFAULT_PORT,
@@ -81,7 +81,7 @@ async def serve(
 async def _converse(
     reader: asyncio.StreamReader,
     writer: asyncio.StreamWriter,
-    application: Application,
+    application: Sextile,
     idle_timeout: float | None,
     warn_after: float | None,
 ) -> None:

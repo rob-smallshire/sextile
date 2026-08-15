@@ -11,7 +11,7 @@ from typing import Any
 import pytest
 from exemplar import Board
 
-from sextile.application import Application
+from sextile.application import Sextile
 from sextile.cli import (
     ApplicationSpecError,
     add_listening_arguments,
@@ -74,7 +74,7 @@ class TestRunningAService:
     ) -> None:
         seen: dict[str, Any] = {}
 
-        async def fake_serve(application: Application, **keywords: Any) -> _StoppedServer:
+        async def fake_serve(application: Sextile, **keywords: Any) -> _StoppedServer:
             seen.update(keywords)
             return _StoppedServer()
 
@@ -92,7 +92,7 @@ class TestRunningAService:
         #  otherwise mean "drop the line immediately", which nobody wants.
         seen: dict[str, Any] = {}
 
-        async def fake_serve(application: Application, **keywords: Any) -> _StoppedServer:
+        async def fake_serve(application: Sextile, **keywords: Any) -> _StoppedServer:
             seen.update(keywords)
             return _StoppedServer()
 
@@ -112,7 +112,7 @@ class TestRunningAService:
             async def shutdown(self) -> None:
                 events.append("shutdown")
 
-        async def fake_serve(application: Application, **keywords: Any) -> _StoppedServer:
+        async def fake_serve(application: Sextile, **keywords: Any) -> _StoppedServer:
             events.append("serving")
             return _StoppedServer()
 
@@ -123,7 +123,7 @@ class TestRunningAService:
 
 class TestLoadingAnApplication:
     def test_a_module_and_name(self) -> None:
-        assert isinstance(load_application("exemplar:Board"), Application)
+        assert isinstance(load_application("exemplar:Board"), Sextile)
 
     @pytest.mark.parametrize(
         "spec", ["exemplar", "exemplar:", ":Board", "nosuchmodule:app", "exemplar:Missing"]
@@ -151,7 +151,7 @@ class TestTheIdleWarning:
     async def test_it_is_passed_on(self, monkeypatch: pytest.MonkeyPatch) -> None:
         seen: dict[str, Any] = {}
 
-        async def fake_serve(application: Application, **keywords: Any) -> _StoppedServer:
+        async def fake_serve(application: Sextile, **keywords: Any) -> _StoppedServer:
             seen.update(keywords)
             return _StoppedServer()
 

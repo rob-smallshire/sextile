@@ -36,10 +36,10 @@ what is deliberately not done.
 Three boundaries do the load-bearing work. Each exists because something on one
 side is expected to be replaced.
 
-**`sextile/application.py` — the `Application` base class.** An application
-answers `respond(request) -> Page | None`, and everything about connections,
-sessions, protocol and routing is on the other side of it. The framework has no
-way to reach into an application and no vocabulary for what one might be about.
+**`sextile/application.py` — `Sextile.respond`.** An application answers
+`respond(request) -> Page | None`, and everything about connections, sessions,
+protocol and routing is on the other side of it. The framework has no way to
+reach into an application and no vocabulary for what one might be about.
 
 **`stardot_viewdata/feed/source.py` — the `PostSource` port.** Everything above
 it deals in `Post` and `Feed` and has never heard of Atom, phpBB or HTTP. The

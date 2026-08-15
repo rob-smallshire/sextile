@@ -27,7 +27,6 @@ declaring a page beside its handler is `sextile.declarations`'s. Both are
 re-exported here, `sextile` itself being where a service imports from.
 """
 
-from abc import ABC, abstractmethod
 from collections.abc import Awaitable, Callable, Mapping, MutableMapping, Sequence
 from contextlib import AbstractAsyncContextManager
 from datetime import UTC, datetime, timedelta
@@ -56,7 +55,6 @@ from sextile.viewdata.controls import Colour
 from sextile.visits import Visits
 
 __all__ = [
-    "Application",
     "Arrival",
     "Handler",
     "Middleware",
@@ -99,366 +97,7 @@ type ResolveHandler = Callable[[str], PageAddress | None]
 type DescribeHandler = Callable[[PageAddress], str | None]
 
 
-class Application(ABC):
-    """What a Sextile server serves.
-
-    Only `respond` must be supplied. The rest have defaults that are right until
-    an application has a reason to disagree with them.
-    """
-
-    @abstractmethod
-    async def respond(self, request: PageRequest) -> Page | None:
-        """Build the page this request asks for, or None if there is no such page.
-
-        None rather than a notice, because the two are shown differently: a page
-        that exists is somewhere the reader has gone, and a page that does not
-        is something said to a reader who has not moved.
-        """
-        raise NotImplementedError
-
-    @property
-    def home(self) -> PageAddress:
-        """Where a caller is put when the line opens.
-
-        Page 1 unless a service says otherwise. A caller has to arrive
-        somewhere, and the terminal has no address of its own to offer.
-        """
-        return PageAddress("1")
-
-    @property
-    def index(self) -> PageAddress:
-        """Where `0` goes: the page a reader who is lost can rely on.
-
-        The same as `home` for most services, and not for one that opens on a
-        title frame -- a caller arrives there once and should never be sent back
-        to it. The two are the same question only until a service has something
-        to show before its index.
-        """
-        return self.home
-
-    def describe(self, address: PageAddress) -> str:
-        """What to call a page in a list of pages.
-
-        Used by the built-in history page, and worth overriding for anything a
-        reader would rather see a title than a number for. `Sextile` derives it
-        from the route's own name, which is the application's word for the thing
-        and so needs no framework knowledge of what a service is about.
-        """
-        return keyed(address)
-
-    def heading_for(self, address: PageAddress) -> str:
-        """What to head a page with: what it was registered as, in upper case.
-
-        A page whose heading is its registered name gets it from here rather
-        than repeating it in its own chrome. A page whose heading is not its
-        registered name writes its own instead of calling this.
-        """
-        return self.describe(address).upper()
-
-    def heading(self, address: PageAddress, default: str) -> str:
-        """What to head a page with: ``default``, unless a title was registered.
-
-        `Sextile` prefers the title the service gave the page when it registered
-        it, so a built-in page mapped into a service's numbering shows the
-        service's title in menus and on the contents page rather than the
-        framework's ``default``.
-        """
-        return default
-
-    async def history(self, request: PageRequest) -> Page:
-        """Where this caller has been, newest first, as a menu of shortcuts.
-
-        Not registered anywhere by the framework: a service maps it into its own
-        numbering, or does not offer it at all.
-
-            self.page("92", name="history")(self.history)
-            self.alias("HISTORY", self.address_for("history"))
-
-        Key 1 for the page before this one -- the same as `*0#` -- 2 for the one
-        before that, and so on.
-        """
-        return history_page(
-            address=request.address,
-            been=request.history,
-            describe=self.describe,
-            home=self.index,
-            title=self.heading(request.address, history.TITLE),
-        )
-
-    async def guide(
-        self,
-        request: PageRequest,
-        *,
-        moving: "Sequence[guidance.GuideRow]" = (),
-        asking: "Sequence[guidance.GuideRow]" = (),
-        items: bool = True,
-    ) -> Page:
-        """How to get about, as a table of the keys this service answers.
-
-        Registered nowhere, like `history`, `contents` and `names`. Most of
-        what a guide has to say is the framework's -- the digits, the way home,
-        the syntax of a request, the key that turns a page -- and a guide that
-        drifts from the thing it describes is worse than none.
-
-        A service passes its own keys, since only it knows them: one page may
-        answer letters typed into a field, another a single key such as `F`.
-        `moving` joins the first frame and `asking` the second. `items=False`
-        leaves `A` and `D` off the compass, for a service that does not wire
-        them to `request.arrival` and so does not answer them.
-
-        The row for `0` says "back to the main menu" on a service whose first
-        page is called one, and "back to the main index" on a service whose is
-        called that: it is the page's own title, so the two cannot disagree.
-        """
-        return guidance.guide_page(
-            address=request.address,
-            title=self.heading(request.address, guidance.TITLE),
-            home=self.index,
-            home_called=self.describe(self.index).lower(),
-            moving=moving,
-            asking=asking,
-            items=items,
-        )
-
-    async def lately_read(
-        self,
-        request: PageRequest,
-        visits: Visits,
-        *,
-        limit: int = CHOICES_PER_FRAME,
-        prefix: str = "",
-    ) -> Page:
-        """What has been looked at lately, as a menu of where to look.
-
-        Args:
-            request: The request for this page.
-            visits: The log to read.
-            limit: How many to show, defaulting to the nine a frame holds. More
-                than that goes on to further frames rather than being dropped.
-            prefix: Narrows it to a namespace, which is what a first digit
-                already means: a service can ask for one namespace's pages
-                alone.
-
-        Registered nowhere, like the history, the contents and the words. The
-        log is the service's -- it decides where it is kept and how long for --
-        and the page is the framework's, a page number being the framework's
-        own vocabulary.
-        """
-        return readership.recent_page(
-            address=request.address,
-            visits=await visits.recent(limit, prefix=prefix),
-            describe=self.describe,
-            home=self.index,
-            title=self.heading(request.address, readership.RECENT_TITLE),
-        )
-
-    async def most_read(
-        self,
-        request: PageRequest,
-        visits: Visits,
-        *,
-        limit: int = CHOICES_PER_FRAME,
-        prefix: str = "",
-        since: datetime | None = None,
-    ) -> Page:
-        """What has been looked at most, as a menu of where to look.
-
-        Args:
-            request: The request for this page.
-            visits: The log to read.
-            limit: How many to show, defaulting to the nine a frame holds. More
-                than that goes on to further frames rather than being dropped.
-            prefix: Narrows it to a namespace of the numbering.
-            since: Counts only what has been read since then, where the service
-                wants "most read lately" rather than most read ever.
-        """
-        return readership.popular_page(
-            address=request.address,
-            visits=await visits.popular(limit, prefix=prefix, since=since),
-            describe=self.describe,
-            home=self.index,
-            title=self.heading(request.address, readership.POPULAR_TITLE),
-        )
-
-    async def who_has_called(
-        self,
-        request: PageRequest,
-        visits: Visits,
-        *,
-        periods: "Sequence[tuple[timedelta, str]]" = readership.PERIODS,
-    ) -> Page:
-        """How many have called, over each of a few periods.
-
-        The only figure a service keeps about its readers, and a count of
-        connections rather than of anybody. `periods` is the service's to
-        choose: one longer than the log is kept for reads low, and silently.
-        """
-        when = datetime.now(UTC)
-        return readership.callers_page(
-            address=request.address,
-            counts=[
-                (said, await visits.callers(since=when - window))
-                for window, said in periods
-            ],
-            home=self.index,
-            title=self.heading(request.address, readership.CALLERS_TITLE),
-        )
-
-    def keywords(self) -> dict[str, PageAddress]:
-        """The words this service answers to. None, unless it says so."""
-        return {}
-
-    async def names(self, request: PageRequest) -> Page:
-        """The words a reader can key in place of a page number.
-
-        Registered nowhere, like `history` and `contents`. Generated from the
-        aliases, so it cannot drift from what the service answers -- which is
-        precisely what a list of keywords typed into a help page does.
-        """
-        return names_page(
-            address=request.address,
-            named=self.keywords(),
-            describe=self.describe,
-            home=self.index,
-            title=self.heading(request.address, names.TITLE),
-        )
-
-    async def contents(self, request: PageRequest) -> Page:
-        """Every page this service advertises, with the number that fetches it.
-
-        Registered nowhere, like `history`; a service maps it in or does not.
-        Pages with fields are listed as `*52<user_id>#` rather than enumerated,
-        which is the point: nobody can list every user on a screen, and
-        everybody holding a user number can be told where to put it.
-        """
-        return contents_page(
-            address=request.address,
-            pages=self.advertised(),
-            home=self.index,
-            title=self.heading(request.address, contents.TITLE),
-        )
-
-    def advertised(self) -> tuple[PageInfo, ...]:
-        """The pages this service is willing to list. None, unless it says so."""
-        return ()
-
-    def resolve(self, target: str) -> PageAddress:
-        """The page a typed request names, or raise ``UnknownPageError``.
-
-        Digits name themselves. An application offering keywords overrides this,
-        as `Sextile` does.
-        """
-        return PageAddress(target.strip())
-
-    @property
-    def service(self) -> Mapping[str, object]:
-        """What this application holds while it is running. Nothing, by default."""
-        return {}
-
-    async def ask(
-        self,
-        target: str | PageAddress,
-        *,
-        arrival: Arrival | None = None,
-        session: MutableMapping[str, object] | None = None,
-        history: tuple[PageAddress, ...] = (),
-    ) -> Page | None:
-        """Answer a page number, the way a session would ask it.
-
-        A request carries more than the number: what the service holds, and the
-        service itself. Assembling one by hand at each call site is easy to get
-        subtly wrong, so the assembly lives here once. `render_page` uses it,
-        and so should anything else that wants a page without a socket.
-        """
-        address = target if isinstance(target, PageAddress) else PageAddress(target)
-        return await self.respond(
-            PageRequest(
-                address=address,
-                arrival=arrival or Arrival(),
-                session=session if session is not None else {},
-                history=history,
-                service=self.service,
-                application=self,
-            )
-        )
-
-    async def not_found(self, target: str) -> Page:
-        """Say that a request named nothing here.
-
-        Silence would be indistinguishable from a line fault, which on a service
-        that answers slowly by design is exactly the wrong thing to be.
-        """
-        return _plain_notice(
-            "UNKNOWN PAGE", f"{keyed(target[:_QUOTED])} is NOT a page here."
-        )
-
-    @property
-    def name(self) -> str:
-        """What this service is called, for the few things the framework says.
-
-        Empty unless a service sets it, and the framework invents no default: a
-        farewell naming *Sextile* would name the framework rather than the
-        service.
-        """
-        return ""
-
-    async def failed(self, address: PageAddress) -> Page:
-        """Say that a page which exists could not be built.
-
-        The viewdata equivalent of a 500, and deliberately not the same page as
-        `not_found`. One says the reader asked for something that is not here;
-        this says the service could not build something that is. Telling them
-        the first when it is the second sends them away thinking they mistyped,
-        and hides the fault from whoever could fix it.
-
-        It names the number, so that a reader can report which page it was, and
-        says whose fault it is -- somebody on a 1200 baud line will otherwise
-        assume they did it.
-        """
-        return _plain_notice(
-            "SERVICE ERROR",
-            f"{keyed(address)} could not be built.",
-            "",
-            "This is a fault at our end, not yours,",
-            "and the service has made a note of it.",
-            "",
-            f"Key {HOME_KEY} for the index, or {keyed(keys.REFRESH)} to try it",
-            "again.",
-        )
-
-    async def timed_out(self, parting: Parting) -> Page:
-        """Say that the line is being released for want of a reply.
-
-        A page rather than a line of text over whatever was showing, for the
-        same reason every other thing this service says is a page: a message
-        overprinting a frame is hard to pick out from the frame.
-
-        A service ringing off deliberately says goodbye on a page of its own,
-        being a page like any other with `hang_up` set. This is the involuntary
-        one, which no page number reaches, so the framework has to ask for it --
-        and hand over where the caller had got to, since the terminal keeps
-        nothing and they may want to key it again.
-        """
-        return _plain_notice(
-            "RINGING OFF",
-            "No reply for some time, so the line",
-            "has been released.",
-            "",
-            f"You were reading *{parting.address}#.",
-            *(["", f"Thank you for calling {self.name}."] if self.name else []),
-            hang_up=True,
-        )
-
-    #  Empty on purpose, and not abstract: an application with nothing to open
-    #  should not have to say so.
-    async def startup(self) -> None:  # noqa: B027
-        """Open whatever this application needs open. Called before the first call."""
-
-    async def shutdown(self) -> None:  # noqa: B027
-        """Close it again. Called after the last."""
-
-
-class Sextile(Application):
+class Sextile:
     """An application that answers by routing page numbers to handlers."""
 
     @classmethod
@@ -717,19 +356,58 @@ class Sextile(Application):
             raise
 
     async def not_found(self, target: str) -> Page:
-        if self._not_found is None:
-            return await super().not_found(target)
-        return await self._not_found(target)
+        """Say that a request named nothing here.
+
+        Silence would be indistinguishable from a line fault, which on a service
+        that answers slowly by design is exactly the wrong thing to be. A
+        service registering `@app.on_not_found` says it its own way instead.
+        """
+        if self._not_found is not None:
+            return await self._not_found(target)
+        return _plain_notice(
+            "UNKNOWN PAGE", f"{keyed(target[:_QUOTED])} is NOT a page here."
+        )
 
     async def timed_out(self, parting: Parting) -> Page:
-        if self._timed_out is None:
-            return await super().timed_out(parting)
-        return await self._timed_out(parting)
+        """Say that the line is being released for want of a reply.
+
+        A page rather than a line of text over whatever was showing, for the
+        same reason every other thing this service says is a page: a message
+        overprinting a frame is hard to pick out from the frame. A service
+        registering `@app.on_timed_out` says goodbye its own way.
+        """
+        if self._timed_out is not None:
+            return await self._timed_out(parting)
+        return _plain_notice(
+            "RINGING OFF",
+            "No reply for some time, so the line",
+            "has been released.",
+            "",
+            f"You were reading *{parting.address}#.",
+            *(["", f"Thank you for calling {self.name}."] if self.name else []),
+            hang_up=True,
+        )
 
     async def failed(self, address: PageAddress) -> Page:
-        if self._failed is None:
-            return await super().failed(address)
-        return await self._failed(address)
+        """Say that a page which exists could not be built.
+
+        The viewdata equivalent of a 500, and deliberately not the same page as
+        `not_found`: one says the reader asked for something that is not here,
+        this says the service could not build something that is. A service
+        registering `@app.on_failed` says it its own way.
+        """
+        if self._failed is not None:
+            return await self._failed(address)
+        return _plain_notice(
+            "SERVICE ERROR",
+            f"{keyed(address)} could not be built.",
+            "",
+            "This is a fault at our end, not yours,",
+            "and the service has made a note of it.",
+            "",
+            f"Key {HOME_KEY} for the index, or {keyed(keys.REFRESH)} to try it",
+            "again.",
+        )
 
     def address_for(self, name: str, **params: object) -> PageAddress:
         """The address a named route answers, built from its own pattern."""
@@ -751,7 +429,7 @@ class Sextile(Application):
                 return said
         found = self.route(address)
         if found is None or found.name is None:
-            return super().describe(address)
+            return keyed(address)
         about = self._pages.get(found.name)
         called = about.title if about is not None else found.name
         fields = " ".join(str(value) for value in found.params.values())
@@ -789,6 +467,211 @@ class Sextile(Application):
             await self._running.__aexit__(None, None, None)
             self._running = None
         self._service.clear()
+
+    def heading_for(self, address: PageAddress) -> str:
+        """What to head a page with: what it was registered as, in upper case.
+
+        A page whose heading is its registered name gets it from here rather
+        than repeating it in its own chrome. A page whose heading is not its
+        registered name writes its own instead of calling this.
+        """
+        return self.describe(address).upper()
+
+    async def history(self, request: PageRequest) -> Page:
+        """Where this caller has been, newest first, as a menu of shortcuts.
+
+        Not registered anywhere by the framework: a service maps it into its own
+        numbering, or does not offer it at all.
+
+            self.page("92", name="history")(self.history)
+            self.alias("HISTORY", self.address_for("history"))
+
+        Key 1 for the page before this one -- the same as `*0#` -- 2 for the one
+        before that, and so on.
+        """
+        return history_page(
+            address=request.address,
+            been=request.history,
+            describe=self.describe,
+            home=self.index,
+            title=self.heading(request.address, history.TITLE),
+        )
+
+    async def guide(
+        self,
+        request: PageRequest,
+        *,
+        moving: "Sequence[guidance.GuideRow]" = (),
+        asking: "Sequence[guidance.GuideRow]" = (),
+        items: bool = True,
+    ) -> Page:
+        """How to get about, as a table of the keys this service answers.
+
+        Registered nowhere, like `history`, `contents` and `names`. Most of
+        what a guide has to say is the framework's -- the digits, the way home,
+        the syntax of a request, the key that turns a page -- and a guide that
+        drifts from the thing it describes is worse than none.
+
+        A service passes its own keys, since only it knows them: one page may
+        answer letters typed into a field, another a single key such as `F`.
+        `moving` joins the first frame and `asking` the second. `items=False`
+        leaves `A` and `D` off the compass, for a service that does not wire
+        them to `request.arrival` and so does not answer them.
+
+        The row for `0` says "back to the main menu" on a service whose first
+        page is called one, and "back to the main index" on a service whose is
+        called that: it is the page's own title, so the two cannot disagree.
+        """
+        return guidance.guide_page(
+            address=request.address,
+            title=self.heading(request.address, guidance.TITLE),
+            home=self.index,
+            home_called=self.describe(self.index).lower(),
+            moving=moving,
+            asking=asking,
+            items=items,
+        )
+
+    async def lately_read(
+        self,
+        request: PageRequest,
+        visits: Visits,
+        *,
+        limit: int = CHOICES_PER_FRAME,
+        prefix: str = "",
+    ) -> Page:
+        """What has been looked at lately, as a menu of where to look.
+
+        Args:
+            request: The request for this page.
+            visits: The log to read.
+            limit: How many to show, defaulting to the nine a frame holds. More
+                than that goes on to further frames rather than being dropped.
+            prefix: Narrows it to a namespace, which is what a first digit
+                already means: a service can ask for one namespace's pages
+                alone.
+
+        Registered nowhere, like the history, the contents and the words. The
+        log is the service's -- it decides where it is kept and how long for --
+        and the page is the framework's, a page number being the framework's
+        own vocabulary.
+        """
+        return readership.recent_page(
+            address=request.address,
+            visits=await visits.recent(limit, prefix=prefix),
+            describe=self.describe,
+            home=self.index,
+            title=self.heading(request.address, readership.RECENT_TITLE),
+        )
+
+    async def most_read(
+        self,
+        request: PageRequest,
+        visits: Visits,
+        *,
+        limit: int = CHOICES_PER_FRAME,
+        prefix: str = "",
+        since: datetime | None = None,
+    ) -> Page:
+        """What has been looked at most, as a menu of where to look.
+
+        Args:
+            request: The request for this page.
+            visits: The log to read.
+            limit: How many to show, defaulting to the nine a frame holds. More
+                than that goes on to further frames rather than being dropped.
+            prefix: Narrows it to a namespace of the numbering.
+            since: Counts only what has been read since then, where the service
+                wants "most read lately" rather than most read ever.
+        """
+        return readership.popular_page(
+            address=request.address,
+            visits=await visits.popular(limit, prefix=prefix, since=since),
+            describe=self.describe,
+            home=self.index,
+            title=self.heading(request.address, readership.POPULAR_TITLE),
+        )
+
+    async def who_has_called(
+        self,
+        request: PageRequest,
+        visits: Visits,
+        *,
+        periods: "Sequence[tuple[timedelta, str]]" = readership.PERIODS,
+    ) -> Page:
+        """How many have called, over each of a few periods.
+
+        The only figure a service keeps about its readers, and a count of
+        connections rather than of anybody. `periods` is the service's to
+        choose: one longer than the log is kept for reads low, and silently.
+        """
+        when = datetime.now(UTC)
+        return readership.callers_page(
+            address=request.address,
+            counts=[
+                (said, await visits.callers(since=when - window))
+                for window, said in periods
+            ],
+            home=self.index,
+            title=self.heading(request.address, readership.CALLERS_TITLE),
+        )
+
+    async def names(self, request: PageRequest) -> Page:
+        """The words a reader can key in place of a page number.
+
+        Registered nowhere, like `history` and `contents`. Generated from the
+        aliases, so it cannot drift from what the service answers -- which is
+        precisely what a list of keywords typed into a help page does.
+        """
+        return names_page(
+            address=request.address,
+            named=self.keywords(),
+            describe=self.describe,
+            home=self.index,
+            title=self.heading(request.address, names.TITLE),
+        )
+
+    async def contents(self, request: PageRequest) -> Page:
+        """Every page this service advertises, with the number that fetches it.
+
+        Registered nowhere, like `history`; a service maps it in or does not.
+        Pages with fields are listed as `*52<user_id>#` rather than enumerated,
+        which is the point: nobody can list every user on a screen, and
+        everybody holding a user number can be told where to put it.
+        """
+        return contents_page(
+            address=request.address,
+            pages=self.advertised(),
+            home=self.index,
+            title=self.heading(request.address, contents.TITLE),
+        )
+
+    async def ask(
+        self,
+        target: str | PageAddress,
+        *,
+        arrival: Arrival | None = None,
+        session: MutableMapping[str, object] | None = None,
+        history: tuple[PageAddress, ...] = (),
+    ) -> Page | None:
+        """Answer a page number, the way a session would ask it.
+
+        A request carries more than the number: what the service holds, and the
+        service itself. Assembling one by hand at each call site is easy to get
+        subtly wrong, so the assembly lives here once. `render_page` uses it,
+        and so should anything else that wants a page without a socket.
+        """
+        address = target if isinstance(target, PageAddress) else PageAddress(target)
+        return await self.respond(
+            PageRequest(
+                address=address,
+                arrival=arrival or Arrival(),
+                session=session if session is not None else {},
+                history=history,
+                service=self.service,
+                application=self,
+            )
+        )
 
 
 def _wrap(middleware: Middleware, build: Next) -> Next:

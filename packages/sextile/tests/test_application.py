@@ -17,7 +17,6 @@ import pytest
 
 from sextile.addressing import PageAddress, UnknownPageError
 from sextile.application import (
-    Application,
     Arrival,
     Middleware,
     Next,
@@ -241,37 +240,18 @@ class TestLifespan:
         await app.shutdown()
 
 
-class Recording(Application):
-    """An application that is not a router, which is the point of it."""
+class Recording(Sextile):
+    """A service that records when it is started and stopped."""
 
     def __init__(self) -> None:
+        super().__init__()
         self.events: list[str] = []
-
-    async def respond(self, request: PageRequest) -> Page:
-        self.events.append(f"respond {request.address}")
-        return one_frame()
 
     async def startup(self) -> None:
         self.events.append("startup")
 
     async def shutdown(self) -> None:
         self.events.append("shutdown")
-
-
-class TestAnApplicationThatIsNotARouter:
-    async def test_it_answers_requests(self) -> None:
-        app = Recording()
-        await app.respond(request_for("1"))
-        assert app.events == ["respond 1"]
-
-    async def test_it_resolves_numbers_without_being_told_how(self) -> None:
-        app = Recording()
-        assert app.resolve("1") == PageAddress("1")
-
-    async def test_it_has_something_to_say_about_a_page_it_has_not_got(self) -> None:
-        app = Recording()
-        page = await app.not_found("BANANA")
-        assert "BANANA" in text_of(page, row=2)
 
 
 class TestRegistrationMistakes:
@@ -357,9 +337,6 @@ class TestRingingOffForWantOfAReply:
         page = await app.timed_out(nowhere())
         assert page.frames[0].frame.last_written_row() < 20
 
-    async def test_an_application_that_is_not_a_router_has_one_too(self) -> None:
-        app = Recording()
-        assert "no reply" in text_of(await app.timed_out(nowhere()), row=2).lower()
 
 
 class TestWhereTheCallerHadGot:
@@ -783,8 +760,6 @@ class TestWhenAPageBreaks:
 
         assert text_of(await app.failed(PageAddress("8"))) == "SORRY ABOUT *8#"
 
-    async def test_an_application_that_is_not_a_router_has_one_too(self) -> None:
-        assert "SERVICE ERROR" in text_of(await Recording().failed(PageAddress("1"))).upper()
 
     async def test_it_leaves_room_to_type_beneath(self) -> None:
         page = await Sextile().failed(PageAddress("1"))
@@ -1182,7 +1157,7 @@ class TestAPageKnowingItsService:
         assert PageRequest(address=PageAddress("1")).application is None
 
     async def test_app_is_the_service_without_the_none(self) -> None:
-        seen: list[Application] = []
+        seen: list[Sextile] = []
 
         async def main(request: PageRequest) -> Page:
             seen.append(request.app)
@@ -1202,16 +1177,6 @@ class TestAPageKnowingItsService:
         request = PageRequest(address=PageAddress("1"), application=app)
 
         assert Sextile.of(request) is app
-
-    async def test_sextile_of_refuses_an_application_that_does_not_route(self) -> None:
-        class Bare(Application):
-            async def respond(self, request: PageRequest) -> Page | None:
-                return None
-
-        request = PageRequest(address=PageAddress("1"), application=Bare())
-
-        with pytest.raises(RuntimeError, match="numbering"):
-            Sextile.of(request)
 
 
 class TestHeadingAPage:

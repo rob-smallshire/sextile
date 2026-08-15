@@ -21,7 +21,7 @@ from importlib.metadata import version
 
 from sextile import keys
 from sextile.addressing import PageAddress, UnknownPageError, keyed
-from sextile.application import Application, Middleware, Next, Sextile
+from sextile.application import Middleware, Next, Sextile
 from sextile.content.transliterate import transliterate
 from sextile.declarations import Handler, PageInfo, PageRoute, page, routes_in, routes_on
 from sextile.forms import Form, Suggest, draw_form
@@ -38,7 +38,6 @@ __version__ = version("sextile")
 #  public submodules as well -- `layout`, `viewdata` and the rest are too
 #  large to flatten into this list and are public as modules.
 __all__ = [
-    "Application",
     "Arrival",
     "Converter",
     "Form",

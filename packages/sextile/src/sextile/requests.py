@@ -13,7 +13,7 @@ from typing import TYPE_CHECKING
 from sextile.addressing import PageAddress
 
 if TYPE_CHECKING:
-    from sextile.application import Application
+    from sextile.application import Sextile
 
 
 @dataclass(frozen=True)
@@ -52,7 +52,7 @@ class PageRequest:
     keeps. The terminal remembers none of it, so a service wanting to offer a
     way back through the call has to be handed the way back."""
 
-    application: "Application | None" = None
+    application: "Sextile | None" = None
     """The service this page belongs to.
 
     Starlette's `request.app`. It lets a handler be an ordinary function
@@ -73,7 +73,7 @@ class PageRequest:
     whatever the application's `lifespan` yielded."""
 
     @property
-    def app(self) -> "Application":
+    def app(self) -> "Sextile":
         """The service this page belongs to, and not None.
 
         `application` is optional because a request built by hand in a test has

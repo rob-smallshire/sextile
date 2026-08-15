@@ -29,7 +29,7 @@ alike, and are not listed.
 What a service is made of, and the types it hands about. Imported by every
 application in its first few lines.
 
-    Application  Sextile  PageRoute  PageInfo  Handler
+    Sextile  PageRoute  PageInfo  Handler
     Page  PageFrame  PageAddress  keyed
     PageRequest  Arrival  Parting  Held  GuideRow
     Middleware  Next

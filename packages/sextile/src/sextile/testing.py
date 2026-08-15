@@ -23,7 +23,7 @@ from contextlib import asynccontextmanager
 from dataclasses import dataclass, field
 
 from sextile.addressing import PageAddress
-from sextile.application import Application
+from sextile.application import Sextile
 from sextile.session.session import Session
 
 __all__ = [
@@ -82,7 +82,7 @@ class Caller:
 
 @asynccontextmanager
 async def calling(
-    application: Application, *, start: str | PageAddress | None = None
+    application: Sextile, *, start: str | PageAddress | None = None
 ) -> AsyncIterator[Caller]:
     """Open the service, ring it up, and close it again afterwards.
 

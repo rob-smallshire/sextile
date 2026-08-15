@@ -23,7 +23,7 @@ from dataclasses import dataclass
 from typing import Final
 
 from sextile.addressing import PageAddress, UnknownPageError
-from sextile.application import Application, Arrival, PageRequest, Parting
+from sextile.application import Arrival, PageRequest, Parting, Sextile
 from sextile.forms import draw_form
 from sextile.keys import (
     CONVENTIONAL_NEXT_FRAME,
@@ -119,7 +119,7 @@ class _Place:
 class Session:
     """One terminal's conversation with a service."""
 
-    def __init__(self, application: Application, *, start: PageAddress | None = None) -> None:
+    def __init__(self, application: Sextile, *, start: PageAddress | None = None) -> None:
         self._application = application
         self._parser = CommandParser()
         self._history: list[_Place] = []

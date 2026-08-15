@@ -162,10 +162,6 @@ def _shedding(items: Sequence[FooterItem], kept: Sequence[int]) -> list[int]:
     return sorted(kept, key=lambda index: (items[index].priority, -index))
 
 
-def _least_important(items: list[FooterItem]) -> FooterItem:
-    return min(items, key=lambda item: (item.priority, -items.index(item)))
-
-
 def _joined(items: Sequence[FooterItem], said: Sequence[int]) -> str:
     return _SEPARATOR.join(
         item.wordings()[step] for item, step in zip(items, said, strict=True)

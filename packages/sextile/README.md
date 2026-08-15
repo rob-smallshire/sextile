@@ -12,14 +12,12 @@ from sextile.layout import Flowing, PageLayout
 
 app = Sextile(name="My service")
 
-@app.page("1", name="main")
+@app.page("1", name="main", keywords=("MAIN",))
 async def main(request: PageRequest) -> Page:
     return PageLayout(
         title="MY SERVICE",
         parts=[Flowing(Lines(said=("Hello, 1981.",)))],
     ).build(request.address)
-
-app.alias("MAIN", "1")
 ```
 
 ```sh
@@ -33,7 +31,7 @@ nc localhost 6850                       # and call it
 `82{post_id:int}` answers every page beginning 82 and hands the rest to the
 handler already read as an integer. `app.address_for("post", post_id=...)` reads
 the same pattern backwards, so a page linking to another does not respell the
-numbering. Keywords — `*MAIN#` for `*1#` — are `app.alias`.
+numbering. Keywords — `*MAIN#` for `*1#` — are the route's `keywords=`.
 
 **Sessions that last as long as the line.** A Viewdata terminal is a display and
 nothing more: it holds the frame on screen and nothing else. So the server holds
@@ -70,7 +68,8 @@ does that arithmetic so nothing above it has to.
 ## Status
 
 Young, and extracted from a working service rather than designed in the
-abstract. Two applications use it: `stardot-viewdata` in the same repository is
-a real one, and `calendar-viewdata` is a small one written to be read.
+abstract. Three applications use it: `stardot-viewdata` in the same repository
+is a real one, `weather-viewdata` serves forecasts from met.no, and
+`calendar-viewdata` is a small one written to be read.
 
 MIT licensed.

@@ -412,8 +412,8 @@ class Canvas:
     ) -> tuple[int, str]:
         """Write wrapped text, returning the next free row and whatever did not fit.
 
-        Text that will not fit is handed back rather than dropped, so the
-        paginator can carry it to a continuation frame.
+        Text that will not fit is handed back rather than dropped, so a caller
+        laying out across frames can carry it onto the next one.
         """
         attribute_cells = 1 if colour is not None and colour is not DEFAULT_COLOUR else 0
         lines = wrap_text(text, width - attribute_cells)

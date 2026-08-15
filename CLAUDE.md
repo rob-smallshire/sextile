@@ -51,11 +51,12 @@ They are the point of the whole arrangement, and both are checkable.
    [public-surface.md](packages/sextile/docs/public-surface.md). A module not
    listed there is machinery.
 
-   That document also lists the places where the line is currently crossed, and
-   what has to happen before each can be deleted — nothing checks the surface
-   yet, which is how it came to be crossed in six places unnoticed. Read it
-   before adding an import to an application or moving a module in the
-   framework.
+   That document records where the line was crossed and how each crossing was
+   closed. `test_public_surface.py` now pins it: it reads the three
+   applications and fails if one imports a module the document does not list, or
+   a name a public module does not put in its `__all__`. The line was crossed in
+   six places unnoticed before that test existed. Read the document before
+   adding an import to an application or moving a module in the framework.
 
 ## How this project is built
 

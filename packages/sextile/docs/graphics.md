@@ -1,8 +1,8 @@
 # Graphics: blocks, composition, and large lettering
 
 Everything a teletext frame can draw that is not a letter, and the machinery for
-placing it. Three of the four layers exist; the fourth — the font renderer —
-is designed and not yet built, and is marked as such below.
+placing it. All four layers are built, up to and including the font renderer
+that sets outsized lettering from a mosaic font.
 
 ## The block grid
 
@@ -310,7 +310,9 @@ how every diagonal at this resolution is drawn.
 
 ## Large lettering
 
-Not built. The requirements, the source formats and the measurements behind
-them are in [mosaic-fonts.md](mosaic-fonts.md) — including why a format of our
-own is warranted, and why proportional spacing is required rather than merely
-nicer.
+`viewdata/lettering.py` sets a line of text in a mosaic font: `place` and
+`boxed` add it to a `Composition`, `cells_for` and `width` measure it first,
+and `Spacing` chooses between fixed, proportional and kerned advance. The
+requirements, the source formats and the measurements behind the font are in
+[mosaic-fonts.md](mosaic-fonts.md) — including why a format of our own is
+warranted, and why proportional spacing is required rather than merely nicer.

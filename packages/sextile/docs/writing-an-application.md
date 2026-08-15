@@ -452,9 +452,9 @@ shows directions, and `#` belongs in a list of keys to press.
 
 ## Built-in pages
 
-Three pages come built and registered nowhere, so a service maps them into its
-own numbering or does without. They are handlers already, so each mapping is one
-line:
+Three of the framework's own pages come as handlers, registered nowhere, so a
+service maps them into its own numbering or does without. Each is a handler
+already, so the mapping is one line:
 
 ```python
 from sextile import handlers
@@ -476,14 +476,15 @@ patterns rather than enumerating every value — `*52<user-id>#  One user`
 — which a hand-written index cannot do.
 
 Key 1 goes back one page (the same as `*0#`), 2 goes back two, and longer
-histories page with `W`/`S`/`#`. `Application.describe` labels the entries; by
-default it reads the route's name and fields, so `82{post_id:int}` named `post`
-shows as "post 489493". Override it to use the reader's own words:
+histories page with `W`/`S`/`#`. The label on each entry comes from the route
+by default, reading its name and fields, so `82{post_id:int}` named `post`
+shows as "post 489493". Register `@app.on_describe` to use the reader's own
+words instead; return `None` where the route's own label will do:
 
 ```python
-def describe(self, address: PageAddress) -> str:
-    found = self.route(address)          # the numbering, read backwards
-    ...
+@app.on_describe
+def describe(address: PageAddress) -> str | None:
+    ...          # the reader's own words for this address, or None
 ```
 
 ## PageRequest: How pages are requested

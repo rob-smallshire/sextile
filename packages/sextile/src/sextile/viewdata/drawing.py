@@ -9,11 +9,11 @@ Free functions rather than methods, so that a service can write its own beside
 them and reach for either without minding which is which. They take a canvas
 and a row, and none of them knows what a page is.
 
-This is where the mosaic graphics work belongs when it comes. The block
-characters are already how the rules and the countdown bar are drawn: the G1
-set gives each cell a 2x3 grid of blocks, so a frame is 80x72 addressable
-points, and plotting into that is a matter of setting bits in the right cell.
-`bar` is the one-dimensional case of it.
+The block characters are how the rules and the countdown bar are drawn here:
+the G1 set gives each cell a 2x3 grid of blocks, so a frame is 80x72
+addressable points, and `bar` is the one-dimensional case of plotting into
+that. The two-dimensional case -- reading a bitmap into cells and placing it --
+is `blocks.py` and `composition.py`, with `lettering.py` on top for text.
 """
 
 from typing import Final

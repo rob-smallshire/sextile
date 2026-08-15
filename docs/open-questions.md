@@ -63,11 +63,6 @@ Beeb for half an hour.
 
 ## Raised by the framework extraction
 
-- **Both applications write their own menu builder**, and the two are much
-  alike: nine choices to a frame, a line of detail beneath each, the way back on
-  0. That is a viewdata convention rather than either service's, so it belongs
-  in the framework — but with two examples the shared shape is a guess, and with
-  three it would be evidence.
 - **Mounting is gone.** It let one application answer a prefix of another's
   numbering, and no service ever used it. Removing it took with it everything
   the rest of the framework had to know about the seam. Written up in

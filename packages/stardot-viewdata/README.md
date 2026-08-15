@@ -155,16 +155,16 @@ behind it.
 so compactly:
 
 ```
-1-9 select, ←W―S→ frame, # next, 0 menu     a menu with frames either side
-S→ frame, ←A―D→ post, # next, 0 menu        a post reached through a sequence
-0 menu                                      a page reached by typing its number
+1-9 select, S page down, 0 index       a menu, with more frames below
+1, 2, 3, 4, A prev, D next, 0 index     a post reached through a sequence
+1, 2, 3, 4, 0 index                     the same post reached by its number
 ```
 
-The G0 set has left, right and up arrows but no down arrow — those three are
-there for BBC BASIC and the line editor, not as a compass — so the two
-horizontal arrows do duty as `previous` and `next` on both axes. At its longest
-the footer is exactly forty cells including its colour attribute, which is a
-whole row, and there is a test to keep it that way.
+Each key is named by its letter and what it does — `W` and `S` page a menu,
+`A` and `D` step through a sequence — and the words shorten as the row fills,
+`page down` to `down` and then to nothing. At its longest the footer is exactly
+forty cells including its colour attribute, which is a whole row, and there is a
+test to keep it that way.
 
 WASD is deliberately anachronistic: it postdates viewdata by a decade, where
 everything else here is period-correct to the byte. `#` therefore keeps working
@@ -240,7 +240,7 @@ terminal to a reply.
 | [navigation.md](../sextile/docs/navigation.md) | how a reader moves about, and why the controls are what they are |
 | [page-numbering.md](docs/page-numbering.md) | the numbering scheme and why it uses Stardot's own ids |
 | [viewdata-encoding.md](../sextile/docs/viewdata-encoding.md) | what the BBC end actually does, and how we know |
-| [spikes/README.md](../../docs/spikes/README.md) | the eight questions measured on real hardware, and their answers |
+| [spikes/README.md](../../docs/spikes/README.md) | the ten questions measured on real hardware, and their answers |
 | [feed-limitations.md](docs/feed-limitations.md) | what the Atom feed cannot tell us |
 | [phpbb-feed-code-newlines.md](docs/phpbb-feed-code-newlines.md) | a defect in phpBB's feed, found here and since fixed |
 | [open-questions.md](../../docs/open-questions.md) | known gaps, and what is deliberately not done |

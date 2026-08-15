@@ -8,7 +8,8 @@ Document            Paragraph(("lda &b5fe",))       what is to be said
         |  viewdata/typesetting.py
         v
 rows                Row("lda &b5fe", GREEN, 2)      text, colour, indent
-        |  viewdata/canvas.py, layout.py, footer.py
+        |  viewdata/canvas.py, composition.py, drawing.py, layout.py,
+        |  formatting.py, footer.py
         v
 frame               24 x 40 cells                   what the screen shows
         |  viewdata/frame.py
@@ -38,9 +39,10 @@ the frame can list it afterwards.
 
 ## Blocks to rows
 
-`viewdata/typesetting.py` flattens blocks into rows and then divides them between frames.
-Doing it in that order keeps two hard things apart: deciding what a quotation
-four deep should look like, and deciding where a screen ends.
+`viewdata/typesetting.py` flattens blocks into rows. Where a screen ends is
+decided later, by the layer that draws the rows, which keeps two hard things
+apart: deciding what a quotation four deep should look like, and deciding where
+a frame ends.
 
 Colour carries structure. A quotation is cyan, a listing green, an image or
 attachment magenta, the author's own words white. Someone reading in monochrome
@@ -124,8 +126,8 @@ that G0 simply lacks — `[ \ ] ^ _ \` { | } ~`. Their positions hold arrows,
 fractions and rules instead.
 
 `content/transliterate.py` is **total**: whatever goes in, what comes out is
-displayable. Deliberate substitutions first, then NFKD with combining marks
-dropped — which handles `café`, `Müller` and `Ångström` for free — then `?`.
+displayable. Deliberate substitutions first, then `anyascii`'s romanisation —
+which handles `café`, `Müller` and `Ångström` for free — then `?`.
 
 Two substitutions are visible in every quoted listing: `^` becomes `↑`, which is
 what BBC BASIC displays for its own exponentiation operator anyway, and `|`

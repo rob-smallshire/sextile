@@ -24,7 +24,7 @@ from sextile import (
     keyed,
     keys,
 )
-from sextile.testing import request_for, text_of
+from sextile.testing import fetch, request_for, text_of
 from sextile.viewdata import lettering
 from sextile.viewdata.blocks import BLOCKS_ACROSS, BLOCKS_DOWN
 from sextile.viewdata.charset import mosaic_pattern
@@ -122,17 +122,6 @@ async def app(repository: Repository) -> AsyncIterator[Sextile]:
     await service.startup()
     yield service
     await service.shutdown()
-
-
-#: How a reader who keyed a number arrived: from nowhere in particular.
-BY_NUMBER = Neighbours()
-
-
-async def page_at(app: Sextile, digits: str, neighbours: Neighbours = BY_NUMBER) -> Page:
-    """The page at a number, which for a number the service has is always one."""
-    page = await app.fetch(digits, neighbours=neighbours)
-    assert page is not None, f"*{digits}# is not a page here"
-    return page
 
 
 async def what_a_reader_sees(app: Sextile, digits: str) -> Page:
@@ -242,10 +231,10 @@ class TestNamedJumps:
 
 class TestRingingOff:
     async def test_the_logoff_page_drops_the_line(self, app: Sextile) -> None:
-        assert (await page_at(app, "90")).hang_up
+        assert (await fetch(app, "90")).hang_up
 
     async def test_every_other_page_does_not(self, app: Sextile) -> None:
-        assert not (await page_at(app, "1")).hang_up
+        assert not (await fetch(app, "1")).hang_up
 
 
 class TestTheArchiveIsOpenedWhenTheServiceStarts:
@@ -284,16 +273,16 @@ class TestTheArchiveIsOpenedWhenTheServiceStarts:
 
 class TestSayingWhatIsMissing:
     async def test_a_post_not_held_says_so(self, app: Sextile) -> None:
-        assert "NOT in the archive" in text_of(await page_at(app, "82999999"))
+        assert "NOT in the archive" in text_of(await fetch(app, "82999999"))
 
     async def test_a_day_with_no_posts_says_so(self, app: Sextile) -> None:
-        assert "NO POSTS" in text_of(await page_at(app, "3219811201")).upper()
+        assert "NO POSTS" in text_of(await fetch(app, "3219811201")).upper()
 
     async def test_an_empty_archive_says_so_rather_than_showing_an_empty_menu(self) -> None:
         with Repository.in_memory() as empty:
             service = build_application(repository=empty)
             await service.startup()
-            assert "NO POSTS" in text_of(await page_at(service, "4")).upper()
+            assert "NO POSTS" in text_of(await fetch(service, "4")).upper()
 
 
 class TestWhereTheKeysLead:
@@ -307,7 +296,7 @@ class TestWhereTheKeysLead:
         for digits in EVERY_PAGE:
             if PageAddress(digits) in ends:
                 continue
-            page = await page_at(app, digits)
+            page = await fetch(app, digits)
             for page_frame in page.frames:
                 assert page_frame.destination("0") == PageAddress("1")
 
@@ -317,13 +306,13 @@ class TestWhereTheKeysLead:
         #  The one exception, and the reason for it: a key offering the index
         #  on a page there is no coming back from is a key that does nothing,
         #  and a frame names only the keys that do something.
-        page = await page_at(app, "90")
+        page = await fetch(app, "90")
         assert page.frames[0].choices == {}
 
     async def test_a_post_offers_its_forum_its_author_its_day_and_its_topic(
         self, app: Sextile
     ) -> None:
-        page = await page_at(app, "82489000")
+        page = await fetch(app, "82489000")
         first = page.frames[0]
         assert first.destination("1") == PageAddress("4253")
         assert first.destination("2") == PageAddress("5210058")
@@ -331,22 +320,24 @@ class TestWhereTheKeysLead:
         assert first.destination("4") == PageAddress("7233387")
 
     async def test_a_menu_offers_the_pages_it_lists(self, app: Sextile) -> None:
-        page = await page_at(app, "8")
+        page = await fetch(app, "8")
         assert page.destinations[0] == PageAddress("82489024")
 
     async def test_a_post_reached_by_number_offers_no_neighbours(
         self, app: Sextile
     ) -> None:
-        page = await page_at(app, "82489001")
+        page = await fetch(app, "82489001")
         assert page.frames[0].destination(keys.NEXT_ITEM) is None
 
     async def test_a_post_reached_through_a_menu_offers_them(
         self, app: Sextile
     ) -> None:
-        page = await page_at(
+        page = await fetch(
             app,
             "82489001",
-            Neighbours(previous=PageAddress("82489000"), next=PageAddress("82489002")),
+            neighbours=Neighbours(
+                previous=PageAddress("82489000"), next=PageAddress("82489002")
+            ),
         )
         assert page.frames[0].destination(keys.NEXT_ITEM) == PageAddress("82489002")
         assert page.frames[0].destination(keys.PREVIOUS_ITEM) == PageAddress("82489000")
@@ -362,7 +353,7 @@ class TestUtc:
         )
         service = build_application(repository=repository)
         await service.startup()
-        page = await page_at(service, "82500000")
+        page = await fetch(service, "82500000")
         assert page.frames[0].destination("3") == PageAddress("3220260803")
 
 
@@ -378,15 +369,15 @@ class TestTheServiceNamesItself:
         assert app.name == "Stardot"
 
     async def test_the_index_is_headed_with_it(self, app: Sextile) -> None:
-        assert "STARDOT" in text_of(await page_at(app, "1"))
+        assert "STARDOT" in text_of(await fetch(app, "1"))
 
     async def test_so_is_the_about_page(self, app: Sextile) -> None:
-        assert "ABOUT STARDOT" in text_of(await page_at(app, "9"))
+        assert "ABOUT STARDOT" in text_of(await fetch(app, "9"))
 
     async def test_the_goodbye_thanks_the_reader_for_calling_it(
         self, app: Sextile
     ) -> None:
-        assert "calling Stardot" in text_of(await page_at(app, "90"))
+        assert "calling Stardot" in text_of(await fetch(app, "90"))
 
     @pytest.mark.parametrize("digits", ["1", "9", "90", "82999999"])
     async def test_no_page_a_reader_sees_names_the_framework(
@@ -394,7 +385,7 @@ class TestTheServiceNamesItself:
     ) -> None:
         #  Except where it is genuinely the subject: the about page credits
         #  what serves it, which is a different thing from being called it.
-        shown = text_of(await page_at(app, digits))
+        shown = text_of(await fetch(app, digits))
         assert "Sextile" not in shown or "Served by Sextile" in shown
 
 
@@ -416,7 +407,7 @@ class TestTheTitleFrame:
         #  produces -- compared against the font rather than a transcription of
         #  it, and by the shape of the ink rather than the cells it lands in,
         #  since where the letters sit is the composition's business.
-        frame = (await page_at(app, "0")).frames[0].frame
+        frame = (await fetch(app, "0")).frames[0].frame
         face = load_font(BANNER_FACE)
         wanted = lettering.bitmap(SERVICE_NAME, face, spacing=Spacing.KERNED)
         drawn = _blocks_of(frame, BANNER_ROW, lettering.rows_needed(face))
@@ -427,7 +418,7 @@ class TestTheTitleFrame:
     ) -> None:
         #  Which the letters do not know about: the stripe is declared once and
         #  the lettering is drawn on it.
-        frame = (await page_at(app, "0")).frames[0].frame
+        frame = (await fetch(app, "0")).frames[0].frame
         rows = range(BANNER_ROW, BANNER_ROW + 3)
         assert all(
             any(frame.cell(row, column) == Attribute.NEW_BACKGROUND for column in range(4))
@@ -443,7 +434,7 @@ class TestTheTitleFrame:
     async def test_and_says_what_it_is_underneath_in_the_same_way(
         self, app: Sextile
     ) -> None:
-        frame = (await page_at(app, "0")).frames[0].frame
+        frame = (await fetch(app, "0")).frames[0].frame
         face = load_font(SUBTITLE_FACE)
         wanted = lettering.bitmap(SERVICE_KIND, face, spacing=Spacing.KERNED)
         drawn = _blocks_of(frame, SUBTITLE_ROW, lettering.rows_needed(face))
@@ -454,7 +445,7 @@ class TestTheTitleFrame:
     ) -> None:
         #  A row of colour behind a word three rows tall, so the band runs
         #  through its waist and the rest of it is on the frame's own black.
-        frame = (await page_at(app, "0")).frames[0].frame
+        frame = (await fetch(app, "0")).frames[0].frame
         striped = [
             row
             for row in range(SUBTITLE_ROW, SUBTITLE_ROW + 3)
@@ -470,7 +461,7 @@ class TestTheTitleFrame:
     ) -> None:
         #  Unlike the name above it, which has a stripe across the frame: this
         #  one is fitted, which is what makes it read as a second line.
-        frame = (await page_at(app, "0")).frames[0].frame
+        frame = (await fetch(app, "0")).frames[0].frame
         row = SUBTITLE_ROW + 1
         assert any(
             frame.cell(row, column) == Attribute.BLACK_BACKGROUND
@@ -479,24 +470,24 @@ class TestTheTitleFrame:
 
     async def test_it_shows_no_page_number(self, app: Sextile) -> None:
         #  A number a reader cannot key is an instruction that misleads them.
-        assert "0a" not in text_of(await page_at(app, "0"))
+        assert "0a" not in text_of(await fetch(app, "0"))
 
     async def test_hash_carries_on_to_the_index(self, app: Sextile) -> None:
         #  The one key a viewdata reader tries without being told.
-        assert (await page_at(app, "0")).next_page == PageAddress("1")
+        assert (await fetch(app, "0")).next_page == PageAddress("1")
 
     async def test_so_does_the_first_digit(self, app: Sextile) -> None:
-        page = await page_at(app, "0")
+        page = await fetch(app, "0")
         assert page.frames[0].destination("1") == PageAddress("1")
 
     async def test_and_nothing_else_does(self, app: Sextile) -> None:
         #  There is one way on from here, which is the point of a title frame.
-        page = await page_at(app, "0")
+        page = await fetch(app, "0")
         assert set(page.frames[0].choices) == {"1"}
 
     async def test_it_leaves_the_bottom_rows_clear(self, app: Sextile) -> None:
         #  Room for the countdown bar, which has the footer row.
-        page = await page_at(app, "0")
+        page = await fetch(app, "0")
         assert page.frames[0].frame.last_written_row() < 22
 
 
@@ -515,11 +506,11 @@ class TestHowToGetAbout:
         assert app.resolve("ABOUT") == PageAddress("9")
 
     async def test_the_main_index_offers_it(self, app: Sextile) -> None:
-        assert PageAddress("91") in (await page_at(app, "1")).destinations
+        assert PageAddress("91") in (await fetch(app, "1")).destinations
 
     async def test_it_runs_to_more_than_one_frame(self, app: Sextile) -> None:
         #  The keys with the compass under them, then the star requests.
-        assert len((await page_at(app, "91")).frames) == 2
+        assert len((await fetch(app, "91")).frames) == 2
 
     async def test_the_first_frame_carries_the_compass_under_its_words(
         self, app: Sextile
@@ -528,7 +519,7 @@ class TestHowToGetAbout:
         #  shows are the framework's, not this service's. Under the keys the
         #  frame lists, because the words are what a reader came for and the
         #  picture is what they will remember.
-        page = await page_at(app, "91")
+        page = await fetch(app, "91")
         rows = text_of(page).splitlines()
         assert any("choose from a menu" in row for row in rows)
         spoken = max(index for index, row in enumerate(rows) if "rub out" in row)
@@ -546,7 +537,7 @@ class TestHowToGetAbout:
         self, keys: str, app: Sextile
     ) -> None:
         #  `#` travels as 0x5F, which this grid shows as the `#` the SAA5050 draws.
-        assert keys in all_text_of(await page_at(app, "91"))
+        assert keys in all_text_of(await fetch(app, "91"))
 
     async def test_it_points_at_the_generated_lists_rather_than_repeating_them(
         self, app: Sextile
@@ -554,7 +545,7 @@ class TestHowToGetAbout:
         #  It used to name half a dozen keywords itself, which is a list that
         #  goes stale the first time one is added. The two pages it now points
         #  at are generated from the registrations and cannot.
-        shown = all_text_of(await page_at(app, "91"))
+        shown = all_text_of(await fetch(app, "91"))
         assert "*93#" in shown
         assert "*94#" in shown
 
@@ -584,7 +575,7 @@ class TestThePagesSayWhatTheyAre:
     async def test_the_main_index_offers_what_the_pages_call_themselves(
         self, app: Sextile
     ) -> None:
-        page = await page_at(app, "1")
+        page = await fetch(app, "1")
         shown = "\n".join(text_of(page, index) for index in range(len(page.frames)))
         for title in ("Latest posts", "By topic", "By day", "By forum", "By contributor"):
             assert title in shown
@@ -609,14 +600,14 @@ class TestEveryPage:
     async def test_it_lists_the_pages_with_their_numbers(
         self, app: Sextile
     ) -> None:
-        shown = text_of(await page_at(app, "93"))
+        shown = text_of(await fetch(app, "93"))
         assert "*5#" in shown
         assert "By contributor" in shown
 
     async def test_a_number_with_a_field_is_shown_as_one(
         self, app: Sextile
     ) -> None:
-        assert "*52<user-id>#" in text_of(await page_at(app, "93"))
+        assert "*52<user-id>#" in text_of(await fetch(app, "93"))
 
     async def test_a_page_that_cannot_be_keyed_is_left_off(
         self, app: Sextile
@@ -625,12 +616,12 @@ class TestEveryPage:
         #  be an instruction that misleads. Everything else shown here is
         #  keyable and does something, ringing off included -- this is a
         #  directory of numbers rather than a menu of places to go.
-        assert "*0#" not in text_of(await page_at(app, "93"))
+        assert "*0#" not in text_of(await fetch(app, "93"))
 
     async def test_ringing_off_is_listed_because_it_can_be_keyed(
         self, app: Sextile
     ) -> None:
-        assert "*90#" in text_of(await page_at(app, "93"))
+        assert "*90#" in text_of(await fetch(app, "93"))
 
     @pytest.mark.parametrize("keyword", ["PAGES", "CONTENTS"])
     def test_a_keyword_reaches_it(self, keyword: str, app: Sextile) -> None:
@@ -659,12 +650,12 @@ class TestTheTitleFrameSaysWhatTheServiceDoes:
     async def test_the_number_it_names_is_the_one_the_router_builds(
         self, app: Sextile
     ) -> None:
-        assert keyed(app.address_for("help")) in text_of(await page_at(app, "0"))
+        assert keyed(app.address_for("help")) in text_of(await fetch(app, "0"))
 
     async def test_the_words_are_the_ones_the_pages_were_registered_with(
         self, app: Sextile
     ) -> None:
-        shown = text_of(await page_at(app, "0"))
+        shown = text_of(await fetch(app, "0"))
         for name in ("main", "help"):
             about = app.route(name)
             assert about is not None
@@ -673,7 +664,7 @@ class TestTheTitleFrameSaysWhatTheServiceDoes:
     async def test_and_the_key_it_says_to_press_is_one_the_frame_answers(
         self, app: Sextile
     ) -> None:
-        page = await page_at(app, "0")
+        page = await fetch(app, "0")
         assert CONVENTIONAL_NEXT_FRAME_KEY in page.frames[0].moves
         assert f"Key {CONVENTIONAL_NEXT_FRAME_KEY}" in text_of(page)
 
@@ -691,7 +682,7 @@ class TestAPageIsHeadedWithWhatItWasRegisteredAs:
     async def test_the_heading_is_the_registered_title(
         self, digits: str, app: Sextile
     ) -> None:
-        page = await page_at(app, digits)
+        page = await fetch(app, digits)
         found = app.match(PageAddress(digits))
         assert found is not None and found.name is not None
         about = app.route(found.name)
@@ -702,7 +693,7 @@ class TestAPageIsHeadedWithWhatItWasRegisteredAs:
         self, app: Sextile
     ) -> None:
         #  A day's frames are headed with the date, not with "One day".
-        shown = text_of(await page_at(app, "3220260802"))
+        shown = text_of(await fetch(app, "3220260802"))
         assert "ONE DAY" not in shown
 
 
@@ -718,7 +709,7 @@ class TestTheGuideDescribesTheServiceItIsPartOf:
     async def test_the_numbers_it_gives_are_the_ones_the_router_builds(
         self, name: str, app: Sextile
     ) -> None:
-        assert keyed(app.address_for(name)) in all_text_of(await page_at(app, "91"))
+        assert keyed(app.address_for(name)) in all_text_of(await fetch(app, "91"))
 
     @pytest.mark.parametrize(
         "key", [keys.PREVIOUS_FRAME, keys.NEXT_FRAME, keys.PREVIOUS_ITEM, keys.NEXT_ITEM]
@@ -726,12 +717,12 @@ class TestTheGuideDescribesTheServiceItIsPartOf:
     async def test_and_the_keys_are_the_ones_the_framework_sends(
         self, key: str, app: Sextile
     ) -> None:
-        assert key in all_text_of(await page_at(app, "91"))
+        assert key in all_text_of(await fetch(app, "91"))
 
     async def test_including_the_requests_the_session_answers_itself(
         self, app: Sextile
     ) -> None:
-        shown = all_text_of(await page_at(app, "91"))
+        shown = all_text_of(await fetch(app, "91"))
         for request in (keys.BACK, keys.REDISPLAY, keys.REFRESH):
             assert keyed(request) in shown
 
@@ -742,7 +733,7 @@ class TestTheGuideSKeyColumn:
     ) -> None:
         #  One column width for the whole guide, from the widest key in it, so
         #  neither frame is set by hand and a longer key widens both.
-        page = await page_at(app, "91")
+        page = await fetch(app, "91")
         starts = {
             row.index(word)
             for index in range(len(page.frames))
@@ -755,7 +746,7 @@ class TestTheGuideSKeyColumn:
     async def test_and_nothing_runs_off_the_end_of_a_row(
         self, app: Sextile
     ) -> None:
-        for row in all_text_of(await page_at(app, "91")).splitlines():
+        for row in all_text_of(await fetch(app, "91")).splitlines():
             assert len(row) <= COLUMNS
 
 
@@ -767,6 +758,6 @@ class TestHowThePlaceholdersAreWritten:
         #  reader meets one shape of placeholder and not two. The underscore
         #  of the route's own field name is not in the character set, so what
         #  reaches the screen is *82<post-id>#.
-        guide = all_text_of(await page_at(app, "91"))
+        guide = all_text_of(await fetch(app, "91"))
         assert "*<number>#" in guide and "*<keyword>#" in guide
-        assert "*82<post-id>#" in all_text_of(await page_at(app, "93"))
+        assert "*82<post-id>#" in all_text_of(await fetch(app, "93"))

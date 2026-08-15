@@ -119,11 +119,7 @@ class Frame:
         for row in range(last_row + 1):
             used = self.used_columns(row) if trim else COLUMNS
             offset = row * COLUMNS
-            for code in self._cells[offset : offset + used]:
-                if code < _BLANK:
-                    stream.extend(encode_attribute(Attribute(code)))
-                else:
-                    stream.append(code)
+            stream.extend(_encoded_cells(self._cells[offset : offset + used]))
             if row < last_row and used < COLUMNS:
                 stream.extend((ScreenControl.CARRIAGE_RETURN, ScreenControl.LINE_FEED))
         return bytes(stream)
@@ -145,14 +141,8 @@ class Frame:
         width and nothing following it.
         """
         offset = self._offset(row, 0)
-        stream = bytearray()
         width = COLUMNS if upto is None else max(0, min(upto, COLUMNS))
-        for code in self._cells[offset : offset + width]:
-            if code < _BLANK:
-                stream.extend(encode_attribute(Attribute(code)))
-            else:
-                stream.append(code)
-        return bytes(stream)
+        return _encoded_cells(self._cells[offset : offset + width])
 
     def last_written_row(self) -> int:
         """The last row with anything on it, or -1 if the frame is blank.
@@ -202,3 +192,18 @@ class Frame:
         if not (0 <= row < ROWS and 0 <= column < COLUMNS):
             raise IndexError(f"({row}, {column}) is outside a {ROWS}x{COLUMNS} frame")
         return row * COLUMNS + column
+
+
+def _encoded_cells(codes: bytes | bytearray) -> bytes:
+    """A run of cells as they travel, attributes escaped and the rest as they stand.
+
+    An attribute occupies its one cell on screen but two on the wire, which is
+    why the grid and not the byte count is the authority on layout.
+    """
+    stream = bytearray()
+    for code in codes:
+        if code < _BLANK:
+            stream.extend(encode_attribute(Attribute(code)))
+        else:
+            stream.append(code)
+    return bytes(stream)

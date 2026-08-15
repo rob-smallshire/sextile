@@ -57,9 +57,11 @@ NEXT_ITEM: Final = "D"
 #: being told.
 HASH: Final = "#"
 
-#: The page numbers a session answers itself rather than handing to a service:
-#: keyed as `*0#`, `*00#` and `*09#`. Here as well as in the parser, so a guide
-#: that lists them names the same ones.
+#: The payloads of the `*0#`, `*00#` and `*09#` commands: the page numbers a
+#: session answers itself rather than handing to a service. Here as well as in
+#: the parser, so a guide that lists them names the same ones. Not the `0` key a
+#: frame offers to go home -- that is `layout.HOME_KEY`, which happens to share
+#: the digit but is a keypress on a frame, not a command payload.
 BACK: Final = "0"
 REDISPLAY: Final = "00"
 REFRESH: Final = "09"

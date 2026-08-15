@@ -34,7 +34,7 @@ from sextile.addressing import keyed
 from sextile.compass import ROWS as COMPASS_ROWS
 from sextile.compass import compass
 from sextile.formatting import RowSequencePart
-from sextile.layout import Custom, Flow, FrameBreak, OnOneFrame, PageLayout
+from sextile.layout import HOME_KEY, Custom, Flow, FrameBreak, OnOneFrame, PageLayout
 from sextile.page import Page
 from sextile.viewdata.canvas import RowWriter
 from sextile.viewdata.composition import Composition
@@ -149,7 +149,7 @@ def guide_page(
 def _moving(home_label: str) -> list[GuideRow]:
     return [
         GuideRow(f"1-{_CHOICES}", "choose from a menu"),
-        GuideRow(keys.BACK, f"back to the {home_label}"),
+        GuideRow(HOME_KEY, f"back to the {home_label}"),
         GuideRow(keyed("<number>"), "go straight to a page"),
         GuideRow(keyed("<keyword>"), "go to a named page"),
         GuideRow(keys.HASH, "next frame of a page"),

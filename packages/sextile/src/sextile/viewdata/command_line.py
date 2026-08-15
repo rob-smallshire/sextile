@@ -22,6 +22,7 @@ from sextile.viewdata.canvas import Canvas
 from sextile.viewdata.controls import Attribute, Colour, alpha_colour
 from sextile.viewdata.encoding import ScreenControl, encode_text
 from sextile.viewdata.frame import COLUMNS, FOOTER_ROW, Frame
+from sextile.viewdata.repaint import to_row
 
 CANCEL_HINT: Final = "* cancels"
 
@@ -93,23 +94,22 @@ def command_line_bytes(entry: str) -> bytes:
     draw_command_line(canvas, entry)
     shown = entry[-BUFFER_CELLS:]
     return (
-        _to_footer_row()
+        to_row(FOOTER_ROW)
         + canvas.frame.row_bytes(FOOTER_ROW)
-        + _to_footer_row()
+        + to_row(FOOTER_ROW)
         + bytes([ScreenControl.CURSOR_RIGHT]) * (_BUFFER_ATTRIBUTES + len(shown))
         + bytes([ScreenControl.CURSOR_ON])
     )
 
 
 def footer_bytes(frame: Frame) -> bytes:
-    """The bytes that put a page's own footer back, after a request is done."""
+    """Send the footer row of a frame, cursor hidden, leaving the rest alone.
+
+    Puts a page's own footer back after a request is done, and is what the
+    idle-warning bar sends too: both draw only row 23 and reach it the same way.
+    """
     return (
         bytes([ScreenControl.CURSOR_OFF])
-        + _to_footer_row()
+        + to_row(FOOTER_ROW)
         + frame.row_bytes(FOOTER_ROW)
     )
-
-
-def _to_footer_row() -> bytes:
-    """Home, then up -- which wraps to row 23. Measured, not assumed."""
-    return bytes([ScreenControl.CURSOR_HOME, ScreenControl.CURSOR_UP])

@@ -30,9 +30,9 @@ quantity at a glance from across a room, which `======----` does not.
 from typing import Final
 
 from sextile.viewdata.canvas import Canvas
+from sextile.viewdata.command_line import footer_bytes
 from sextile.viewdata.controls import Colour, alpha_colour
 from sextile.viewdata.drawing import bar
-from sextile.viewdata.encoding import ScreenControl
 from sextile.viewdata.frame import COLUMNS, FOOTER_ROW, Frame
 
 #: What a reader has to do about it. Deliberately not naming a particular key:
@@ -82,13 +82,6 @@ def idle_warning_bytes(remaining: float) -> bytes:
         cells=BAR_CELLS,
         lit=lit_cells(remaining),
     )
-    return (
-        bytes([ScreenControl.CURSOR_OFF])
-        + _to_footer_row()
-        + frame.row_bytes(FOOTER_ROW)
-    )
-
-
-def _to_footer_row() -> bytes:
-    """Home, then up -- which wraps to row 23. Measured, not assumed."""
-    return bytes([ScreenControl.CURSOR_HOME, ScreenControl.CURSOR_UP])
+    #  The same as putting a page's footer back: hide the cursor, reach row 23,
+    #  send it. The bar is what this frame's row 23 holds rather than a prompt.
+    return footer_bytes(frame)

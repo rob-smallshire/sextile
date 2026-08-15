@@ -28,7 +28,7 @@ from collections.abc import Iterable, Sequence
 from typing import Final
 
 from sextile.viewdata.encoding import ScreenControl, encode_text
-from sextile.viewdata.frame import COLUMNS, Frame
+from sextile.viewdata.frame import COLUMNS, ROWS, Frame
 
 #: What a repaint of no rows costs.
 NOTHING: Final = b""
@@ -80,7 +80,7 @@ def rows_bytes(
     started = False
     for row in rows:
         if not started:
-            out += _to_row(row)
+            out += to_row(row)
         elif wrapped:
             #  The row before filled all forty columns and wrapped, so the
             #  cursor is already at column zero of the row after it. A carriage
@@ -154,8 +154,17 @@ def _row_of(frame: Frame, row: int) -> bytes:
     return bytes(frame.row_bytes(row))
 
 
-def _to_row(row: int) -> bytes:
-    """Home, then down. The only positioning viewdata has."""
+def to_row(row: int) -> bytes:
+    """Move the cursor to the start of a row, by the cheapest route.
+
+    Home, then down -- the only positioning viewdata has -- except the last row,
+    which home-then-up reaches in two bytes by wrapping off the top. Measured in
+    `docs/spikes/spike_cursor_output.py`, not assumed. Shared with the command
+    line and the idle-warning bar, which both draw the footer row and so take
+    that two-byte route.
+    """
+    if row == ROWS - 1:
+        return bytes([ScreenControl.CURSOR_HOME, ScreenControl.CURSOR_UP])
     return bytes([ScreenControl.CURSOR_HOME]) + bytes([ScreenControl.LINE_FEED]) * row
 
 
@@ -174,7 +183,7 @@ def caret_bytes(row: int, column: int) -> bytes:
     if not 0 <= column <= COLUMNS:
         raise ValueError(f"column {column} is not on a {COLUMNS}-column row")
     return (
-        _to_row(row)
+        to_row(row)
         + bytes([ScreenControl.CURSOR_RIGHT]) * column
         + bytes([ScreenControl.CURSOR_ON])
     )

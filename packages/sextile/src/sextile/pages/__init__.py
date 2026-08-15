@@ -17,8 +17,8 @@ What they have in common is where their content comes from. Every one is built
 from something the framework holds already -- the registrations, the router's
 aliases, the session's history, the visit log -- so none of them needs a service
 to supply anything, and none of them can know what the service is about. That is
-the first invariant holding: a contents page listing forum pages contains no
-knowledge of forums, only of what was registered.
+the first invariant holding: a contents page lists what a service registered,
+with no knowledge of what those pages are about.
 
 Where a page needs the service's own words rather than its own data, it takes a
 `describe` callable and asks. The labels then read in the service's vocabulary

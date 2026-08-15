@@ -8,7 +8,7 @@ It is a framework page rather than each service's own because there is nothing
 service-specific about it. What it lists are addresses, which the framework
 already understands, and what it calls them comes from the route names, which
 are the *application's* words -- so the labels read in the service's own
-vocabulary without the framework knowing anything about forums or calendars.
+vocabulary without the framework knowing what those pages are about.
 
 Not registered anywhere. A service maps it into its own numbering, or does not
 offer it at all:
@@ -18,8 +18,8 @@ offer it at all:
         return await self.history(request)
 
 The page leaves itself out of the list. Visiting it is a move like any other, so
-it enters the history too, and a list of places to go back to has no business
-offering the one the reader is looking at.
+it enters the history too, and a list of places to go back to should not offer
+the one the reader is looking at.
 """
 
 from collections.abc import Callable, Sequence

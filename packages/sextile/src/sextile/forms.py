@@ -1,9 +1,7 @@
 """A field on a frame that a reader types into.
 
 Everything else in this framework answers a keypress by going somewhere. A form
-answers one by *changing what is on the screen without moving* -- which is the
-one thing viewdata pages historically could not do, and the reason Prestel's
-response frames were a separate mechanism bolted on beside the numbering.
+answers one by *changing what is on the screen without moving*.
 
 The shape is deliberately narrow. A form owns some rows of a frame, says which
 keys are typing rather than navigating, redraws its rows when the value changes,
@@ -97,8 +95,8 @@ class Form(ABC):
     request it answers rather than kept and built again.
 
     A subclass numbers its rows from nought, and `at` is where the layout put
-    it. Everything a form draws or reports is offset by that, so a form needs
-    to know nothing about where the content of a frame begins.
+    it. Everything a form draws or reports is offset by that, so a form need not
+    track where the content of a frame begins.
     """
 
     #: The row this form was placed on. Nought until it has been.
@@ -184,16 +182,14 @@ class Form(ABC):
     def submit(self) -> PageAddress | None:
         """Where RETURN leads, or None if there is nowhere to send the reader.
 
-        A reader who has typed something will press RETURN without being told
-        to, so a field that did nothing with it would feel broken. The default
-        is the first thing on offer -- the same as pressing 1 -- because the
-        reader can *see* that list, and refusing something visibly on offer
-        because it is not character-for-character what they typed would be
-        perverse.
+        A reader who has typed something presses RETURN without being told to,
+        so the default is the first thing on offer -- the same as pressing 1 --
+        which the reader can see. Refusing something visibly on offer because it
+        is not character-for-character what was typed would surprise them.
 
-        None where nothing is on offer. The page will already be saying so
-        where the suggestions would be, and taking the reader somewhere is
-        worse than leaving them to correct what they typed.
+        None where nothing is on offer. The page already says so where the
+        suggestions would be, and moving the reader is worse than leaving them
+        to correct what they typed.
         """
         return next(iter(self.choices().values()), None)
 
@@ -205,10 +201,10 @@ class Suggest(Form):
     with one keypress -- with the list changing as they type instead of being
     given a page at a time.
 
-    Letters type. Digits choose. That means a place whose name contains a digit
+    Letters type. Digits choose. That means an entry whose text contains a digit
     cannot be keyed, which is a real limitation and the right trade: a service
-    holding such names should fold the digits out of what it matches against,
-    so the place is still found by the letters around it.
+    with such entries should fold the digits out of what it matches against, so
+    the entry is still found by the letters around it.
     """
 
     def __init__(
@@ -288,11 +284,10 @@ class Suggest(Form):
         #  nothing rather than becoming a character whose effect the reader
         #  cannot see.
         #
-        #  Spaces and hyphens are taken because place names hold them --
-        #  NEW YORK, STRATFORD-UPON-AVON -- and a reader should be able to
-        #  type the name as it is written. What they are matched against
-        #  folds both out, so accepting them costs nothing and saves somebody
-        #  wondering why their space bar is dead.
+        #  Spaces and hyphens are taken because a name a reader types may hold
+        #  them, and they should be able to type it as it is written. What the
+        #  text is matched against can fold both out, so accepting them costs
+        #  nothing and saves a reader wondering why their space bar is dead.
         return key == keys.RUB_OUT or (
             len(key) == 1 and key.isprintable() and not key.isdigit()
         )
@@ -302,17 +297,17 @@ class Suggest(Form):
             self._value = self._value[:-1]
         else:
             self._value += key.upper()
-        #  Nothing typed is nothing offered, rather than the whole world in
-        #  whatever order the index happens to hold it: a reader who has typed
+        #  Nothing typed is nothing offered, rather than everything the index
+        #  holds in whatever order it happens to hold it: a reader who has typed
         #  nothing has asked nothing.
         self._found = await self._look_up(self._value) if self._value else ()
 
     def named(self) -> Sequence[FooterItem]:
         #  What `#` does is marked against the suggestion it would take, which
         #  is where a reader is looking anyway, so the row has the room to say
-        #  the rest in words. A range rather than a count, as it always was:
-        #  with one match on offer, `1-3` named two keys that did nothing, and
-        #  the list numbers itself where the reader is looking.
+        #  the rest in words. A range rather than a count: with one match on
+        #  offer, `1-3` would name two keys that do nothing, and the list
+        #  numbers itself where the reader is looking.
         return (
             FooterItem("A-Z", "type a name", Priority.PRIMARY),
             FooterItem("1-9", "choose one", Priority.PRIMARY),
@@ -403,8 +398,8 @@ class Field:
     row: int
 
     takes: Callable[[str], bool]
-    """Whether a character belongs in this field. A form knows about typing;
-    what a *latitude* is made of is the service's business."""
+    """Whether a character belongs in this field. A form handles typing; what a
+    particular field's value is made of is the service's concern."""
 
     width: int = 12
     """Cells the value may take, after the label and the attributes."""
@@ -413,9 +408,8 @@ class Field:
     """What this field takes, said beneath it and always.
 
     Said beneath its own field rather than in one place that changes with the
-    caret, which is what this was first: a hint that changes is a row that
-    repaints on every TAB, and on a form of two fields the rows are there to
-    spare. Standing still it costs nothing to move about, and a reader can read
+    caret: a hint that changes is a row that repaints on every TAB, where a
+    hint that stands still costs nothing to move about and lets a reader read
     both before deciding which field to start in.
     """
 
@@ -428,9 +422,9 @@ class Field:
 #: -- or None while there is nowhere to send them.
 #:
 #: Asked whenever the form is drawn, not only when RETURN is pressed, because
-#: what RETURN would do is marked on the screen and a mark that promised a page
-#: which then did not arrive would be worse than no mark. So it is asked of
-#: half-keyed forms and empty ones, and must answer rather than raise.
+#: what RETURN would do is marked on the screen and the mark must match what
+#: RETURN actually does. So it is asked of half-keyed forms and empty ones, and
+#: must answer rather than raise.
 type Complete = Callable[[Mapping[str, str]], PageAddress | None]
 
 #: Something to say about what has been keyed so far, drawn beneath the fields.
@@ -442,19 +436,18 @@ class Fields(Form):
 
     The interaction is settled by what a viewdata keypad can send, and it is
     narrower than it looks. Two of the four arrows are unusable on a form whose
-    fields hold compass letters -- up arrives as `W` for West and down as `S`
-    for South -- so the framework no longer translates them at all and this
-    reads them as arrows. TAB shares a byte with cursor right, measured against
-    Commstar, which is the key a reader will reach for first.
+    fields hold the letters `W` and `S` as data -- up arrives as `W` and down as
+    `S` -- so the framework does not translate them, and this reads them as
+    arrows. TAB shares a byte with cursor right, measured against Commstar, which
+    is the key a reader will reach for first.
 
     And `0` cannot be the way out where digits are data, so a page carrying one
     of these should say `*1#` in its footer rather than offer a key that would
     type a zero.
 
-    Nothing advances by itself. A field that jumped to the next when it thought
-    it had enough would be a field whose caret is somewhere the reader did not
-    put it -- and with two ways of writing a coordinate, one of them ending in
-    a letter and one not, it could not even be consistent about when.
+    Nothing advances by itself. A field that jumped to the next when it judged
+    itself full would put the caret where the reader did not, and no single rule
+    for "full" fits every field.
     """
 
     #: Forward, and back. TAB is cursor right on this hardware.
@@ -477,7 +470,7 @@ class Fields(Form):
             raise ValueError("a form needs a field to type into")
         #: What else the prompt should say, over and above the keys this form
         #: answers. A page whose fields take digits cannot offer `0` for the
-        #: index -- a nought keyed into a coordinate is a nought -- so it says
+        #: index -- a nought keyed into a numeric field is a nought -- so it says
         #: how to leave some other way.
         self._advice = tuple(advice)
         self._fields = list(fields)

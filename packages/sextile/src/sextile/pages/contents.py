@@ -7,10 +7,9 @@ rather than enumerated:
     *5#            By contributor
     *52<user-id>#  One contributor
 
-Nobody can list every contributor on a screen, but everybody with a contributor
-number in their hand can be told where to put it. That is the whole idea, and it
-is only possible because the framework knows the patterns rather than a list of
-addresses somebody keeps up to date by hand.
+Nobody can list every contributor on a screen, but everybody holding a
+contributor number can be shown where to key it. This works because the
+framework knows the patterns, not a hand-maintained list of addresses.
 
 A page appears here if it was given a title when it was registered. That is how
 a title frame stays off the list without a flag of its own: giving a page a

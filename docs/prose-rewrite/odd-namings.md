@@ -43,6 +43,13 @@ beyond prose.
 | session/commands.py | "the search page told readers there was no space bar"; "Place names hold spaces, hyphens and apostrophes" (weather concepts) | "a field appeared to have no space bar"; "Text a reader types may hold spaces, hyphens and apostrophes" — fixed here |
 | session/session.py | "hanging up on somebody because one post has an awkward image caption" (Stardot concepts) | "ending it over one page's exception" — fixed here |
 | viewdata/canvas.py | `RowWriter.runs` docstring: "a place name longer than anybody expected should cost the reader the end of a sentence" (weather concept) | "a value longer than anybody expected should cost the reader the end of a line" — fixed here |
+| formatting.py | `Entry` "a post or a timestamp"; `Listing` weather page titles ("Forecast by lat/lon position"); `Prose` "a forum post" | genericised to neutral examples — fixed here |
+| forms.py | `Suggest` "a place"; `accepts` "place names — NEW YORK, STRATFORD-UPON-AVON"; `Field.takes` "a latitude"; `Fields` "compass letters / West / South / coordinate" | genericised to entry/value/field and "the letters W and S as data" — fixed here |
+| pages/__init__.py, history.py, guidance.py | "forum pages"; "forums or calendars"; guidance "a search field answers letters, a forecast answers F"; Stardot provenance of the guide | genericised; Stardot sentence cut — fixed here |
+| application.py `guide()` | "a search field answers letters, a forecast answers F" (weather) — the same phrase, matched to guidance.py | genericised — fixed here |
+| layout.py `Shortcut` | "a forecast returning to the search that found it, a post returning to the board it was on" (weather + Stardot) | "a page returning to the one that led to it" — fixed here |
+
+**Summary:** the docstring sweep found Invariant-1 (framework-must-not-know-applications) violated in framework *comments/docstrings* across ~9 files. All fixed in place. **A code-level check is still owed** — that no framework identifier, branch or string literal names a forum/post/forecast/place/coordinate concept — since that would be a defect beyond prose.
 
 ## Structural drift needing a decision
 

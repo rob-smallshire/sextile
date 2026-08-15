@@ -6,19 +6,16 @@ drifts from the thing it describes is worse than none**, and most of what a
 guide has to say is the framework's -- the digits, the way home, the syntax of
 a request, the key that turns a page.
 
-A service adds what is its own. Which keys those are is a thing only the service
-knows: a search field answers letters, a forecast answers `F`, and a framework
-that guessed would be describing a service it had not met.
+A service adds what is its own. Which keys those are is something only the
+service knows: one page may answer letters typed into a field, another a single
+key such as `F`.
 
 **Two frames, and the split is by what a reader is doing.** The first is moving
 about, and carries the compass under it; the second is asking for something.
-That division came off Stardot's hand-written guide, which is where this whole
-page came from -- it was the better of the two and the way to settle which is to
-have only one.
 
 The words are the framework's own and not taken from the routes. A description
 in a table of keys is a paraphrase and cannot come to be untrue; a *number* can,
-and did, which is why every number here is asked of the router instead.
+which is why every number here is asked of the router instead.
 
 **The division is a `Break`, not a shortage of rows.** These two frames are two
 different lists, split by what a reader is doing rather than by what will fit,
@@ -46,8 +43,8 @@ from sextile.viewdata.encoding import cell_count
 
 TITLE: Final = "HOW TO GET ABOUT"
 
-#: A reader selects with one keypress, so nine is the most a menu offers. Said
-#: here rather than imported from the templates, which are a different subject.
+#: A reader selects with one keypress, so nine is the most a menu offers. Kept
+#: here rather than imported from the layout layer, a different subject.
 _CHOICES: Final = 9
 
 #: What the rub-out key is called on a keyboard. The byte it sends has no

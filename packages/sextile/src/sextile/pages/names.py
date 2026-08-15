@@ -4,10 +4,10 @@
     *BYE#       Log off
     *MAIN#      Main index
 
-Prestel was almost entirely numeric, but other viewdata services took keywords
+Prestel was almost entirely numeric, but other viewdata services took keywords,
 and a service that offers them has to say so somewhere. Generated from the
-aliases, so it cannot drift from what the service actually answers -- which is
-precisely what a list of keywords typed into a help page does, and did here.
+aliases, so it cannot drift from what the service answers, unlike a keyword list
+typed into a help page by hand.
 
 Listed alphabetically rather than by the page they reach: somebody reading this
 is looking a word up, not browsing. Several words for one page are all shown,

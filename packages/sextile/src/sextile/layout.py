@@ -3,8 +3,9 @@
 A page's content is a short list of parts. Each is drawn once, drawn on every
 frame, or broken across as many frames as it takes, and the order of the list
 settles what sits above what. `fill` walks them and returns as many frames as
-they needed, which is the first of the two passes that build a page: nothing
-here knows how many frames there will be, and nothing here draws furniture.
+they needed. This is the first of the two passes that build a page: it does not
+decide the frame count in advance and draws no furniture; the second pass does
+both, once the count is known.
 
 See [design.md](../../docs/design.md#laying-out-a-page) for the design this
 implements and the reasoning behind it.
@@ -138,8 +139,8 @@ class Part(Protocol):
         Returns:
             The rows used, what they claim, and whatever remains for the next
             frame. Returning nought rows and `self` asks for a fresh frame,
-            which is how a part too tall for what is left declines to be
-            split.
+            which is how a part too tall for what is left is carried whole to
+            the next frame rather than split.
         """
         ...
 
@@ -166,9 +167,8 @@ class Shortcut:
             point of the page outranks one that is a convenience.
 
     A page's digits belong to its entries and change from frame to frame, but a
-    shortcut is fixed. It is for the way out that is not the way home: a
-    forecast returning to the search that found it, a post returning to the
-    board it was on.
+    shortcut is fixed. It is for the way out that is not the way home, such as a
+    page returning to the one that led to it.
     """
 
     key: str
@@ -224,7 +224,7 @@ class Every:
     """A part drawn on every frame, at its place in the order.
 
     Where it comes after any flowing part, its rows are kept back at the foot
-    of every frame before that part is asked for its, since a flowing part
+    of every frame before the flowing part is placed, since a flowing part
     takes the rows left to it and nothing after one would be drawn at all.
     Where it comes before them all, it is drawn where it stands. Several of
     either follow one another in the order the list gives them.
@@ -276,7 +276,7 @@ class Filled:
 _MOVEMENT_LETTERS: Final = frozenset(ARROW_FOR)
 
 #: The digits a frame can offer, a reader choosing with one keypress. Held here
-#: rather than in the templates because it is a fact about the keypad and the
+#: rather than in a formatter because it is a fact about the keypad and the
 #: whole frame shares it, however many parts divide it up.
 CHOICES_PER_FRAME = 9
 
@@ -373,8 +373,7 @@ def _height(part: Part, rows: range) -> int:
 
     Measured by placing it on a canvas that is then thrown away. A part is a
     description and placing one does not change it, so the second placing --
-    the one that counts -- draws the same thing in the row it belongs on. The
-    alternative was a second method on every part, asked before every draw.
+    the one that counts -- draws the same thing in the row it belongs on.
     """
     return part.place(
         Canvas(), Room(rows.start, len(rows), CHOICES_PER_FRAME)

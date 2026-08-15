@@ -1,10 +1,8 @@
 """What readers have been looking at, as pages a reader can look at.
 
 What has been read lately and what has been read most are menus rather than
-tables: every row is a page number, so every row is somewhere to go. A list of
-what other people have been reading that you cannot follow is a list that has
-been written at you. How many have called is a table of figures, there being
-nothing to follow in a count.
+tables: every row is a page number, so every row is somewhere to go. How many
+have called is a table of figures, there being nothing to follow in a count.
 
 Registered nowhere, like the history, the contents and the words. A service
 maps them into its own numbering or does without.
@@ -28,7 +26,7 @@ from sextile.viewdata.frame import COLUMNS
 from sextile.viewdata.wrapping import wrap_text
 from sextile.visits import Visit
 
-#  Shouted, as every heading is: `Sextile.heading` upper-cases the title a
+#  Upper-cased, as every heading is: `Sextile.heading` upper-cases the title a
 #  service registered, and these are what it falls back to when a service
 #  registered none. Two adjacent framework pages should not disagree about
 #  their own case.

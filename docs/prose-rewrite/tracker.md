@@ -72,15 +72,15 @@ Source docstrings + comments (src/sextile):
 - [ ] content/ (blocks.py, transliterate.py)
 - [x] declarations.py
 - [ ] demo.py
-- [ ] formatting.py
-- [ ] forms.py
-- [ ] handlers.py
+- [x] formatting.py  (fixed several Invariant-1 leaks)
+- [x] forms.py  (fixed several Invariant-1 leaks)
+- [x] handlers.py
 - [x] held.py
 - [x] keys.py
-- [ ] layout.py
+- [x] layout.py  (fixed Shortcut Invariant-1 leak)
 - [x] middleware.py  (already at target; left unchanged)
 - [x] page.py  (source-docstring register sample)
-- [ ] pages/ (contents, guidance, history, names, readership)
+- [x] pages/ (contents, guidance, history, names, readership)  (fixed Invariant-1 leaks)
 - [x] requests.py
 - [x] routing.py
 - [x] server.py

@@ -2,8 +2,8 @@
 
 A formatter is a `layout.Part` that lays out a homogeneous sequence: it takes
 as many entries as the room allows, says which of them can be chosen, and hands
-back the rest for the next frame. It knows nothing of titles, rules or keys,
-which are the layout's.
+back the rest for the next frame. It deals only with the entries; titles, rules
+and keys are the layout's.
 
 The shapes ready to use, differing in how many entries a frame holds and how
 each one is drawn:
@@ -56,10 +56,9 @@ if TYPE_CHECKING:
 class Entry(Protocol):
     """What a formatter over `Entry` values requires of them.
 
-    A protocol rather than a base class, so that a service with its own idea of
-    an entry, carrying a post or a timestamp or whatever it will need later,
-    can pass that value directly rather than copy it into a dataclass belonging
-    to the framework.
+    A protocol rather than a base class, so that a service with its own richer
+    entry type, carrying whatever it needs, can pass that value directly rather
+    than copy it into a dataclass belonging to the framework.
     """
 
     @property
@@ -286,9 +285,8 @@ class Lines(Formatter[str]):
     Attributes:
         said: The lines, in the order they are to appear. An empty one leaves a
             blank row.
-        colour: What they are drawn in. White for a notice, which is the page
-            talking; green for a note beneath a table, which is the page
-            explaining what is above it.
+        colour: What they are drawn in. White for a notice; green for a note
+            beneath a table, set apart from the table above it.
     """
 
     entries: Sequence[str] = ()
@@ -324,7 +322,7 @@ class Listing(RowFormatter[Entry]):
         column: How wide the left column is. Worked out from the entries when
             the listing is first made, and carried from frame to frame
             thereafter -- a table that set its column afresh on each frame
-            would step sideways part way down.
+            would shift its columns partway down.
     """
 
     #  Never wider than half the row: a truncated left column here would be a
@@ -340,9 +338,8 @@ class Listing(RowFormatter[Entry]):
     def widest(cls) -> int:
         """The greatest width the left column can take, in cells.
 
-        For a caller sizing the right-hand column, which has whatever is left
-        over. Without this, a page wrapping a long title into that column would
-        work the same arithmetic out again and get it slightly different.
+        For a caller sizing the right-hand column, which gets whatever is left
+        over. Computed here so a page need not repeat the arithmetic.
         """
         return cls._WIDEST
 
@@ -360,10 +357,10 @@ class Listing(RowFormatter[Entry]):
         """The entries, with any detail too long for its column carried on.
 
         The right-hand column gets whatever the left leaves, which is enough
-        for `One day` and not for `Forecast by lat/lon position`. Cut, such a
-        detail reads as a fault rather than as a shortage of room; carried on
-        to a row with an empty left column, it reads as what it is, because
-        which column a thing is in is what tells the two apart.
+        for a short detail and not for a long one. Cut, such a detail reads as a
+        fault rather than as a shortage of room; carried on to a row with an
+        empty left column, it reads as what it is, because which column a thing
+        is in is what tells the two apart.
 
         Two rows at most: a detail needing a third wants rewriting, a listing
         being a table rather than a place for prose.
@@ -441,8 +438,8 @@ class Prose(Formatter[Row]):
 
     Its entries are rendered `Row` values rather than `Entry` values. Laying
     the text out through `viewdata.typesetting` gives a notice the same
-    treatment as a forum post: quotations in cyan, listings in green, nesting
-    indented, and over-long words broken rather than dropped.
+    treatment as any long document: quotations in cyan, listings in green,
+    nesting indented, and over-long words broken rather than dropped.
     """
 
     @classmethod
@@ -488,10 +485,10 @@ def farewell_page(title: str, *lines: str, hang_up: bool = True) -> Page:
     Returns:
         A page of a single frame, offering no keys.
 
-    A footer offering the index would be a lie on a page there is no coming
-    back from, and the rows it and the rules would take up are exactly the ones
-    worth leaving blank: the reader is about to be talking to their modem, and
-    the cursor sits below the last thing said.
+    A footer offering the index would mislead on a page there is no coming back
+    from, and the rows it and the rules would take up are exactly the ones worth
+    leaving blank: the reader is about to be talking to their modem, and the
+    cursor sits below the last thing said.
     """
     return PageLayout(
         furniture=(),

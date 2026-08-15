@@ -201,8 +201,8 @@ class Application(ABC):
         the syntax of a request, the key that turns a page -- and a guide that
         drifts from the thing it describes is worse than none.
 
-        A service passes its own keys, since only it knows them: a search field
-        answers letters, a forecast answers `F`.
+        A service passes its own keys, since only it knows them: one page may
+        answer letters typed into a field, another a single key such as `F`.
         `moving` joins the first frame and `asking` the second. `items=False`
         leaves `A` and `D` off the compass, for a service that does not wire
         them to `request.arrival` and so does not answer them.

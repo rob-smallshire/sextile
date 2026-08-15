@@ -1,33 +1,15 @@
 """Breaking text into lines narrow enough for a viewdata frame.
 
-Forty columns is narrow, and writing about retrocomputing is full of URLs, hex
-dumps and assembler listings. A word that cannot fit any line is split rather
-than dropped or allowed to overrun: losing part of a link address is worse than
-an ugly break.
+Forty columns is narrow, and a word that fits no line is split rather than
+dropped or allowed to overrun. Widths are counted in cells, not characters,
+because transliteration can lengthen a string on its way to the wire -- the G0
+set draws `…` as three full stops -- so a line measured in characters can
+overrun the row it was wrapped for.
 
-Widths are counted in **cells rather than characters**, because that is what the
-frame counts. Transliteration can lengthen a string on its way to the wire -- the
-G0 set has no ellipsis, so `…` is drawn as three full stops -- and a line
-measured in characters can overrun the row it was wrapped for. That was found by
-a crash on real text rather than by thinking about it.
-
-Lines are **balanced** by default rather than filled greedily. Greedy wrapping
-takes as much as fits on each line in turn, which at forty columns leaves a
-badly ragged edge and a stranded last word often enough to be worth avoiding:
-a long word early in a paragraph pushes a short line, and every line after it
-inherits the damage. Balancing chooses the set of breaks that minimises the
-squared slack summed over the paragraph, which spreads that unavoidable gap
-across several lines instead of dumping it on one.
-
-The last line is free -- it costs nothing however short it is -- since a
-paragraph's final line is expected to be short and penalising it would cram the
-lines before it.
-
-Squared slack rather than plain slack: it is the choice that makes two lines
-three columns short preferable to one line six columns short, which is what
-"balanced" means to somebody looking at the screen. The dynamic programme is
-the textbook one, and it is affordable here because a paragraph on a forty
-column screen is a few dozen words.
+Lines are balanced by default rather than filled greedily: balancing chooses the
+breaks that minimise the squared slack over the paragraph, spreading the
+unavoidable gap across several lines rather than stranding it on one. The last
+line is free, since a paragraph's final line is expected to be short.
 """
 
 from typing import Final
@@ -44,15 +26,21 @@ _LAST_LINE: Final = 0.0
 
 
 def wrap_text(text: str, width: int, *, balanced: bool = True) -> list[str]:
-    """Break text into lines of at most ``width`` characters.
+    """Break text into lines of at most ``width`` cells.
 
-    Whitespace runs collapse to a single space and no line carries leading or
-    trailing space. A word longer than ``width`` is split across as many lines
-    as it needs.
+    Args:
+        text: The text to wrap.
+        width: The cells a line may take.
+        balanced: Whether to spread the slack across the lines (the default) or
+            fill each line greedily in turn.
 
-    ``balanced=False`` fills each line in turn instead, which is what a
-    typewriter does and what every other wrapper does by default. Kept because
-    it is the thing to compare against when a paragraph looks wrong.
+    Returns:
+        The lines. Whitespace collapses to single spaces, no line carries
+        leading or trailing space, and a word wider than `width` is split
+        across as many lines as it needs.
+
+    Raises:
+        ValueError: If `width` is less than one.
     """
     if width < 1:
         raise ValueError(f"width must be at least 1, got {width}")
@@ -64,27 +52,21 @@ def wrap_text(text: str, width: int, *, balanced: bool = True) -> list[str]:
 
 
 def wrap_within(text: str, *, cells: int, rows: int) -> list[str]:
-    """Text wrapped to a region that has a height as well as a width.
+    """Wrap text to a region with a height as well as a width, cutting to fit.
 
-    `wrap_text` knows how wide a line may be and nothing about how many there
-    is room for, so every caller with a region to fill did the same two things
-    by hand: wrap, then take the first however-many lines and hope. This is
-    that, with the hoping replaced by a rule.
+    Args:
+        text: The text to wrap.
+        cells: The cells a line may take.
+        rows: The most lines the region holds.
 
-    Wrapped as usual and then cut, and there is nothing cleverer to be done in
-    between: **balanced wrapping never costs a line.** A greedy fill was the
-    obvious fallback for a region one line short, and it turns out never to
-    help -- measured over twenty thousand random widths and word lengths, with
-    no case where balancing needed more lines than filling. Which follows from
-    the last line being free: spreading the slack cannot buy a line that the
-    greedy fill would have saved.
+    Returns:
+        The wrapped lines, at most `rows` of them; the words that do not fit are
+        the last ones, so size a region for the longest thing it can be handed.
+        Empty for a region with no room, rather than raising, since a squeezed
+        layout is a bug to fix and not a reason to fail on a live call.
 
-    So text that does not fit is text the region was never going to hold, and
-    the words that go are the last ones. Size the region for the longest thing
-    it can be handed.
-
-    A region with no room holds nothing rather than raising: a squeezed layout
-    is a bug to fix, not a reason to fail on a live call.
+    Wrapped as usual and cut: balanced wrapping never needs a line a greedy fill
+    would have saved, which follows from the last line being free.
     """
     if rows < 1 or cells < 1:
         return []

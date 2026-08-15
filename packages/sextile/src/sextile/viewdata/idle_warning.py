@@ -1,30 +1,16 @@
 """The warning that a silent line is about to be released.
 
-A caller who has been reading one frame for ten minutes has no way of knowing
-the service is about to ring off. Being disconnected without warning, on a
-service that answers slowly by design, is indistinguishable from a fault -- and
-the remedy, pressing something, is not one a reader can guess at.
+A caller reading one frame for ten minutes has no way of knowing the service is
+about to ring off, and being cut off without warning is not distinguishable from
+a fault. So after a period of silence the footer row becomes a bar that drains,
+with an instruction; the next key dismisses it. It covers a part-keyed request,
+which the parser holds and gives back the moment the reader touches anything.
 
-So after a period of silence the footer row becomes a bar that drains, with an
-instruction. It covers whatever else wanted that row, a part-keyed request
-included: what was keyed is held in the parser rather than on the screen, and
-comes back the moment the reader touches anything.
-
-Drawn over that row alone, as the command line is -- never the frame -- and only
-when what it would say has changed: twenty-five cells over several minutes
-changes about twice a minute, and the row costs 45 bytes, a third of a second at
-1200 baud.
-
-The whole row goes each time, rather than only the cell the bar has given up.
-There is no absolute cursor addressing on the wire: reaching column *c* of row
-23 costs `2 + c` bytes of `HOME`, `UP` and
-`RIGHT`. Blanking one cell at the right-hand end of a full bar therefore costs
-42 bytes against the row's 45, and only becomes worthwhile as the bar empties
-and the cell to change moves leftward. Three bytes is not worth a second way of
-drawing this.
-
-The bar is mosaic graphics rather than punctuation because it has to read as a
-quantity at a glance from across a room, which `======----` does not.
+Drawn over that row alone, never the frame, and only when what it would say has
+changed. The whole row is redrawn each time rather than the one cell the bar
+gave up: the wire has no absolute cursor addressing, so reaching the cell to
+change costs about as much as the row. The bar is mosaic graphics rather than
+punctuation so it reads as a quantity at a glance.
 """
 
 from typing import Final
@@ -53,10 +39,14 @@ _URGENT: Final = 0.25
 
 
 def lit_cells(remaining: float) -> int:
-    """How much of the bar is still lit, for a fraction of the time remaining.
+    """Return how many bar cells are lit for the fraction of time remaining.
 
-    Rounded up while any time is left, so that a bar which has emptied means the
-    line has gone rather than merely that it is about to.
+    Args:
+        remaining: The fraction of the warning period left, 1.0 to 0.0.
+
+    Returns:
+        Cells lit, rounded up while any time is left so an emptied bar means the
+        line has gone rather than that it is about to.
     """
     fraction = min(max(remaining, 0.0), 1.0)
     if fraction <= 0.0:
@@ -65,7 +55,15 @@ def lit_cells(remaining: float) -> int:
 
 
 def idle_warning_bytes(remaining: float) -> bytes:
-    """The bytes that draw the warning, leaving the page beneath alone."""
+    """Draw the warning bar and return its bytes, leaving the page beneath alone.
+
+    Args:
+        remaining: The fraction of the warning period left, which sets how much
+            of the bar is lit and turns it red near the end.
+
+    Returns:
+        The bytes that redraw the footer row as the bar.
+    """
     colour = Colour.RED if remaining <= _URGENT else Colour.YELLOW
     canvas = Canvas(Frame())
     frame = canvas.frame

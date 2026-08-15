@@ -1,13 +1,9 @@
 """A calendar, as a Viewdata service.
 
-It exists to be a second application. Sextile is meant to be a general framework,
-not the first service reworked to look like one, and the way to test that is to
-write something with nothing in common with the first and see what the framework
-asks for. Everything here comes out of the standard library: no archive, no
-network, nothing to configure.
-
-It is also the worked example the framework's documentation is written against,
-so it is meant to be read.
+The framework's worked example, written to be read: everything it shows comes
+from the standard library, with no archive, no network and nothing to configure.
+It exists to be a second application, so the framework is exercised by a service
+with nothing in common with the first.
 
     1           the index
     2           the date and time now
@@ -16,19 +12,15 @@ so it is meant to be read.
     4           the days to come
     42<date>    one day
     9           about
-    90          goodbye
-
-A service is a list of pages given to a constructor, and a page is an ordinary
-function. Nothing here closes over anything: a page takes the clock from what
-the service holds and the numbering from the service itself, both through the
-request it is given.
+    90          log off
+    92 93 94    history, contents, keywords (the framework's own)
 """
 
 import calendar
 from collections.abc import AsyncIterator, Callable, Sequence
 from contextlib import asynccontextmanager
 from datetime import UTC, date, datetime, timedelta
-from typing import Final, Protocol
+from typing import Final
 
 from sextile import (
     Custom,
@@ -38,7 +30,7 @@ from sextile import (
     Page,
     PageLayout,
     PageRequest,
-    PageRoute,
+    PageRouter,
     Sextile,
     Shortcut,
     StateKey,
@@ -58,19 +50,18 @@ SERVICE_NAME: Final = "CALENDAR"
 #: How far ahead the days-to-come menu looks.
 DAYS_AHEAD: Final = 28
 
-class Clock(Protocol):
-    """How the service finds out the time: any callable answering a datetime."""
 
-    def __call__(self) -> datetime: ...
+#: How the service finds out the time: any callable answering a datetime.
+type Clock = Callable[[], datetime]
 
-
-#: What the clock is held under, in what the service holds. It is the only
-#: thing this service depends on that is not a pure function, which is why it
-#: is a parameter at all: a service whose pages change under it cannot
-#: otherwise be tested.
+#: What the clock is held under. The one thing this service depends on that is
+#: not a pure function, and so the one thing it holds.
 CLOCK: Final = StateKey[Clock]("clock")
 
 _WEEKDAYS: Final = ("MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN")
+
+#: Collects the pages declared below, spread into the service in build_application.
+router = PageRouter()
 
 
 def _now(request: PageRequest) -> datetime:
@@ -84,8 +75,9 @@ def _today(request: PageRequest) -> date:
 # -- the pages ---------------------------------------------------------------
 
 
+@router.page("1", name="main", title="The index", keywords=("MAIN", "INDEX"))
 async def main(request: PageRequest) -> Page:
-    """The index: today's date, and the four pages the service offers."""
+    """Show today's date and a menu of the four pages the service offers."""
     app = request.app
     today = _today(request)
     return menu_page(
@@ -104,8 +96,12 @@ async def main(request: PageRequest) -> Page:
     )
 
 
+@router.page(
+    "2", name="now", title="The time now", detail="to the second",
+    keywords=("TIME", "NOW"),
+)
 async def now_page(request: PageRequest) -> Page:
-    """The time now, to the second, with the key that asks again."""
+    """Show the date and time now, with the key that asks again."""
     moment = _now(request)
     return notice_page(
         request,
@@ -118,18 +114,27 @@ async def now_page(request: PageRequest) -> Page:
     )
 
 
+@router.page(
+    "3", name="this_month", title="This month", detail="as a grid",
+    keywords=("MONTH",),
+)
 async def this_month(request: PageRequest) -> Page:
-    """The current month as a grid, taken from the request's own clock."""
+    """Show the current month as a grid."""
     return _month_page(request, _today(request))
 
 
+@router.page("32{day:date}", name="month", title="One month")
 async def month(request: PageRequest, day: date) -> Page:
-    """The month a given day falls in, as a grid."""
+    """Show the month a given day falls in, as a grid."""
     return _month_page(request, day)
 
 
+@router.page(
+    "4", name="ahead", title="The days to come", detail=f"the next {DAYS_AHEAD}",
+    keywords=("AHEAD",),
+)
 async def ahead(request: PageRequest) -> Page:
-    """The next `DAYS_AHEAD` days, each with how far off it is in words."""
+    """List the next `DAYS_AHEAD` days, each with how far off it is in words."""
     app = request.app
     today = _today(request)
     days = [today + timedelta(days=offset) for offset in range(DAYS_AHEAD)]
@@ -142,8 +147,9 @@ async def ahead(request: PageRequest) -> Page:
     )
 
 
+@router.page("42{day:date}", name="day", title="One day")
 async def one_day(request: PageRequest, day: date) -> Page:
-    """One day, with its place in the week, the month and the year."""
+    """Show one day, with its place in the week, the month and the year."""
     app = request.app
     _, weeks_in_year, _ = day.isocalendar()
     lines = [
@@ -155,10 +161,6 @@ async def one_day(request: PageRequest, day: date) -> Page:
         "",
         _in_words(day - _today(request)),
     ]
-    #  Whichever menu the reader came through decides what "next" means, and a
-    #  day reached by keying its number came through none: the layout wires
-    #  `A`/`D` to whichever neighbours the request carries, and names neither
-    #  where there are none.
     return PageLayout(
         title=_month_name(day),
         shortcuts=[
@@ -170,8 +172,9 @@ async def one_day(request: PageRequest, day: date) -> Page:
     ).build(request)
 
 
+@router.page("9", name="about", title="About this service", keywords=("ABOUT", "HELP"))
 async def about(request: PageRequest) -> Page:
-    """What the service is, and why a calendar was chosen for it."""
+    """Say what the service is and why a calendar was chosen for it."""
     return prose_page(
         request,
         "A calendar, served as Viewdata frames.",
@@ -182,44 +185,28 @@ async def about(request: PageRequest) -> Page:
     )
 
 
+#  Titled, so the log-off page is listed in the contents, where a reader looks
+#  for how to ring off.
+@router.page("90", name="goodbye", title="Log off", keywords=("BYE",))
 async def goodbye(request: PageRequest) -> Page:
-    """The farewell frame, after which the line drops."""
+    """Show the farewell frame, after which the line drops."""
     return farewell_page(request, "GOODBYE", "Thank you for calling.", "", "Ring off.")
 
 
-#: What the service is made of. Everything about a page is on one line of it:
-#: where it is in the numbering, what builds it, what it is called where it is
-#: listed rather than shown, and the words that reach it.
-PAGES: Final = (
-    PageRoute("1", main, name="main", title="The index",
-              keywords=("MAIN", "INDEX")),
-    PageRoute("2", now_page, name="now", title="The time now",
-              detail="to the second", keywords=("TIME", "NOW")),
-    PageRoute("3", this_month, name="this_month", title="This month",
-              detail="as a grid", keywords=("MONTH",)),
-    PageRoute("32{day:date}", month, name="month", title="One month"),
-    PageRoute("4", ahead, name="ahead", title="The days to come",
-              detail=f"the next {DAYS_AHEAD}", keywords=("AHEAD",)),
-    PageRoute("42{day:date}", one_day, name="day", title="One day"),
-    PageRoute("9", about, name="about", title="About this service",
-              keywords=("ABOUT", "HELP")),
-    #  Listed: the contents page is a directory of numbers that do something,
-    #  and a reader looking for how to ring off should find it there.
-    PageRoute("90", goodbye, name="goodbye", title="Log off",
-              keywords=("BYE",)),
-    #  Three the framework builds and hands over, mapped into this service's
-    #  numbering by one call. They are here as much to show what a service gets
-    #  for nothing as to be useful: the calendar wrote none of them.
-    *standard_pages(history="92", contents="93", keywords="94"),
-)
+def build_application(now: Clock | None = None) -> Sextile:
+    """Assemble the service, optionally told how to find out the time.
 
+    Args:
+        now: What reads the current time, for a test to control. The real UTC
+            clock by default. It is a parameter because the clock is the one
+            thing this service depends on that is not a pure function, and a
+            service whose pages change under it cannot otherwise be tested. A
+            service with nothing to inject would write `app = Sextile(...)` at
+            module level instead of a factory.
 
-def build_application(now: Callable[[], datetime] | None = None) -> Sextile:
-    """The service, optionally told how to find out the time.
-
-    The clock is a parameter because a service whose pages change under it
-    cannot otherwise be tested. It is the only thing this application depends
-    on that is not a pure function, so it is the only thing the service holds.
+    Returns:
+        The service, its own pages spread with the framework's history, contents
+        and keywords pages mapped into this numbering.
     """
     reading = now or (lambda: datetime.now(UTC))
 
@@ -228,7 +215,11 @@ def build_application(now: Callable[[], datetime] | None = None) -> Sextile:
         app.state[CLOCK] = reading
         yield
 
-    return Sextile(name=SERVICE_NAME.title(), pages=PAGES, lifespan=lifespan)
+    return Sextile(
+        name=SERVICE_NAME.title(),
+        pages=[*router, *standard_pages(history="92", contents="93", keywords="94")],
+        lifespan=lifespan,
+    )
 
 
 # -- drawing -----------------------------------------------------------------
@@ -240,8 +231,8 @@ def _month_page(request: PageRequest, day: date) -> Page:
     previous, following = _months_either_side(day)
     return PageLayout(
         title=_month_name(day).upper(),
-        #  A grid is placed by cell rather than written along its rows. It is
-        #  the whole of the page's content, and needs no flowing part at all.
+        #  A grid is the whole of the page's content and is placed by cell, so
+        #  it is a `Custom` part rather than a flowing one.
         parts=[
             OnOneFrame(
                 Custom(
@@ -269,19 +260,15 @@ def _month_page(request: PageRequest, day: date) -> Page:
 def _draw_month(
     canvas: Canvas, row: int, day: date, weeks: Sequence[Sequence[int]]
 ) -> None:
-    """The weekday headings and the weeks beneath them, from `row` down."""
+    """Draw the weekday headings and the weeks beneath them, from `row` down."""
     canvas.row(row).text("  ".join(weekday[:2] for weekday in _WEEKDAYS), Colour.CYAN)
     for offset, week in enumerate(weeks):
         cells = " ".join(f"{number:>3}" if number else "   " for number in week)
-        #  The week the day falls in, rather than the day itself: a colour
-        #  attribute occupies a cell, and there is no spare cell inside a row
-        #  of seven three-column figures to put one in.
+        #  The week the day falls in is coloured, not the day: a colour attribute
+        #  occupies a cell, and a row of seven three-column figures has no spare
+        #  one to put it in.
         colour = Colour.YELLOW if day.day in week else Colour.WHITE
         canvas.row(row + 1 + offset).text(cells.rstrip(), colour)
-
-
-
-
 
 
 # -- helpers -----------------------------------------------------------------
@@ -313,5 +300,3 @@ def _in_words(gap: timedelta) -> str:
     if days > 0:
         return f"in {days} days"
     return f"{-days} days ago"
-
-

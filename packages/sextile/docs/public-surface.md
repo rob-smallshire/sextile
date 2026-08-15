@@ -137,7 +137,7 @@ this module.
 
 ### `sextile.forms` — a field on a frame
 
-    Form  Field  Fields  TypeAhead  Complete  Note  Lookup  draw_form  SUGGESTIONS
+    Form  Field  FieldSet  TypeAhead  Complete  Note  Lookup  draw_form  SUGGESTIONS
 
 `Form`, `TypeAhead` and `draw_form` are also at the top level, those three being
 what a page with one field needs.

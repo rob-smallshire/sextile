@@ -124,7 +124,7 @@ class Claim:
 
         Raises:
             ValueError: If both carry a form. A frame has one field to type
-                into; `forms.Fields` is what composes several into one.
+                into; `forms.FieldSet` is what composes several into one.
         """
         if self.form is not None and other.form is not None:
             raise ValueError("a frame can carry only one form")

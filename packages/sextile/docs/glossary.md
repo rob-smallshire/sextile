@@ -67,4 +67,5 @@ as "was X" so a reader coming from older code or docs can find it.
   read-only view of what the lifespan opened, keyed by `StateKey`.
 - **form** — rows of a frame a reader types into, a field with furniture around
   it. `forms.Form`, `forms.Field`. `TypeAhead` (was `Suggest`) is a field with
-  the best few matches beneath it, changing as the reader types.
+  the best few matches beneath it, changing as the reader types; `FieldSet`
+  (was `Fields`) is a form of several fields at once.

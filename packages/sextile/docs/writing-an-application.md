@@ -584,7 +584,7 @@ return PageLayout(
 
 A form answers a keypress by redrawing part of the frame rather than by moving
 to another page. `TypeAhead` is a field with the best few matches beneath it, each
-on a digit; `Fields` is several fields moved between with TAB and the arrows.
+on a digit; `FieldSet` is several fields moved between with TAB and the arrows.
 Both are `Form`s, and a service that wants a third shape subclasses `Form`.
 
 **A form is a part**, so it is given the row it begins on and counts its own rows
@@ -613,7 +613,7 @@ Three constraints the wire imposes, so a service need not rediscover them:
   offer `0` for the index; put `*1#` in the footer instead, rather than a key
   that would swallow a digit.
 - **Say what RETURN will do where it does it**, and only while it would do
-  something. `TypeAhead` marks the suggestion it would take; `Fields` marks the
+  something. `TypeAhead` marks the suggestion it would take; `FieldSet` marks the
   last field once every field is filled.
 
 If a page's keys should also answer the cursor keys, say so. The framework knows

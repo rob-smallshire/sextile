@@ -111,7 +111,7 @@ rather than sequences:
 | | |
 |---|---|
 | `Custom(rows, draw)` | A part of a stated height, drawn cell by cell by `draw(canvas, row)`. For a picture, a grid, a masthead. |
-| a `Form` | A field the reader types into. `TypeAhead` and `Fields` are parts, and a frame carries one. |
+| a `Form` | A field the reader types into. `TypeAhead` and `FieldSet` are parts, and a frame carries one. |
 
 ## The keys a frame answers
 
@@ -241,4 +241,4 @@ lettered `a` to `z` and there are no more letters.
 that answered with no frames could not be shown.
 
 **Two parts carrying a form** on one frame raise `ValueError`. A frame has one
-field to type into; `forms.Fields` composes several fields into one form.
+field to type into; `forms.FieldSet` composes several fields into one form.

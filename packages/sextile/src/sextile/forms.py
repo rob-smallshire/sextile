@@ -40,7 +40,7 @@ from sextile.viewdata.frame import COLUMNS, Frame
 __all__ = [
     "Complete",
     "Field",
-    "Fields",
+    "FieldSet",
     "Form",
     "Lookup",
     "Note",
@@ -443,7 +443,7 @@ type Complete = Callable[[Mapping[str, str]], PageAddress | None]
 type Note = Callable[[Mapping[str, str]], Awaitable[str]]
 
 
-class Fields(Form):
+class FieldSet(Form):
     """Several fields, one of them live, and something said beneath them.
 
     The interaction is settled by what a viewdata keypad can send, and it is

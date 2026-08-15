@@ -16,7 +16,7 @@ from sextile.forms import (
     HINT_COLOUR,
     NOTE_COLOUR,
     Field,
-    Fields,
+    FieldSet,
     draw_form,
 )
 from sextile.session.session import Session
@@ -45,8 +45,8 @@ def where(values: Mapping[str, str]) -> PageAddress | None:
     return PageAddress("42" + "".join(c for c in "".join(values.values()) if c.isdigit()))
 
 
-def a_form(**wanted: object) -> Fields:
-    return Fields(
+def a_form(**wanted: object) -> FieldSet:
+    return FieldSet(
         fields=[
             Field("latitude", "LATITUDE", FIRST_ROW, _takes("NS")),
             Field("longitude", "LONGITUDE", FIRST_ROW + 1, _takes("EW")),
@@ -56,7 +56,7 @@ def a_form(**wanted: object) -> Fields:
     )
 
 
-async def typing(form: Fields, keyed: str) -> Fields:
+async def typing(form: FieldSet, keyed: str) -> FieldSet:
     for key in keyed:
         await form.typed(key)
     return form
@@ -188,7 +188,7 @@ class TestWhatIsOnTheScreen:
         assert frame.text_at(row, column - len("54.0N"), len("54.0N")) == "54.0N"
 
     async def test_each_field_explains_itself_beneath_itself(self) -> None:
-        form = Fields(
+        form = FieldSet(
             fields=[
                 Field("latitude", "LATITUDE", FIRST_ROW, _takes("NS"),
                       hint="54.0N or 54.0", hint_row=FIRST_ROW + 1),
@@ -206,7 +206,7 @@ class TestWhatIsOnTheScreen:
     async def test_and_goes_on_saying_it_when_the_caret_moves(self) -> None:
         #  A hint that changed with the caret would be a row repainting on
         #  every TAB, and standing still it costs nothing to move about.
-        form = Fields(
+        form = FieldSet(
             fields=[
                 Field("latitude", "LATITUDE", FIRST_ROW, _takes("NS"),
                       hint="54.0N or 54.0", hint_row=FIRST_ROW + 1),
@@ -232,7 +232,7 @@ class TestWhatIsOnTheScreen:
 
 
 class TestThroughASession:
-    async def _session(self) -> tuple[Session, Fields]:
+    async def _session(self) -> tuple[Session, FieldSet]:
         form = a_form()
 
         async def position(request: PageRequest) -> Page:
@@ -287,8 +287,8 @@ class TestTheBarIsTheFieldsWidth:
     of six characters promises about thirty.
     """
 
-    def _bounded(self) -> Fields:
-        return Fields(
+    def _bounded(self) -> FieldSet:
+        return FieldSet(
             fields=[Field("latitude", "LAT", FIRST_ROW, _takes("NS"), width=6)],
             complete=where,
         )
@@ -325,8 +325,8 @@ class TestSayingWhatReturnWillDo:
     On the last there is nothing left to finish, so it finishes the form.
     """
 
-    def _sending(self) -> Fields:
-        return Fields(
+    def _sending(self) -> FieldSet:
+        return FieldSet(
             fields=[
                 Field("latitude", "LAT", FIRST_ROW, _takes("NS"), width=6),
                 Field("longitude", "LON", FIRST_ROW + 1, _takes("EW"), width=6),
@@ -398,11 +398,11 @@ class TestAHintAndANoteAreNotTheSameThing:
         assert _colour_of(frame, NOTE_ROW) != _colour_of(frame, HINT_ROW)
 
 
-def _noted() -> Fields:
+def _noted() -> FieldSet:
     async def note(values: Mapping[str, str]) -> str:
         return f"nearest to {values['where']}" if values.get("where") else ""
 
-    return Fields(
+    return FieldSet(
         fields=[Field(name="where", label="WHERE", row=2, takes=str.isdigit,
                       hint="a number", hint_row=HINT_ROW)],
         complete=lambda values: None,

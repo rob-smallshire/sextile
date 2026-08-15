@@ -229,13 +229,6 @@ async def topics_index(request: PageRequest) -> Page:
     """
     app = request.app
     topics = await _read(request, lambda repository: repository.topics(limit=60))
-    if not topics:
-        return prose_page(
-            request,
-            "NO TOPICS held yet.",
-            "Topics are known only for posts seen since the board's feed began "
-            "carrying them. Older posts have none.",
-        )
     items = [
         MenuItem(
             title,
@@ -244,7 +237,17 @@ async def topics_index(request: PageRequest) -> Page:
         )
         for topic_id, title, count in topics
     ]
-    return menu_page(request, items=items)
+    return menu_page(
+        request,
+        items=items,
+        empty=[
+            "NO TOPICS held yet.",
+            "",
+            "Topics are known only for posts",
+            "seen since the board's feed began",
+            "carrying them. Older posts have none.",
+        ],
+    )
 
 
 @router.page("72{topic_id:int}", name="topic", title="One topic", label="Topic {topic_id}")

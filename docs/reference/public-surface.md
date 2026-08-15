@@ -102,6 +102,10 @@ drift. Each name links to its entry from the {doc}`API reference <api/index>`.
 
 `COLUMNS` `FOOTER_ROW` `Frame` `ROWS`
 
+## `sextile.viewdata.html`
+
+`font_face` `render_html` `stylesheet`
+
 ## `sextile.viewdata.lettering`
 
 `Spacing` `boxed` `cells_needed` `place` `rows_needed` `width`

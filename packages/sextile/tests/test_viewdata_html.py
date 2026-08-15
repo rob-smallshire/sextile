@@ -28,11 +28,18 @@ def displayed_rows(rendered: str) -> list[str]:
 
 
 def fixture() -> Frame:
-    """A frame exercising text, colour, a separated rule and a background."""
+    """A frame exercising text, colour, a rule and stacked mosaic cells."""
     canvas = Canvas()
     canvas.row(0).text("SEXTILE", Colour.CYAN)
     canvas.row(1).text("the weather <today>", Colour.YELLOW)
     rule(canvas, 3, Colour.GREEN)
+    #  Two vertically stacked full-block cells, contiguous and separated, so the
+    #  rendered page proves the row-to-row join: the contiguous pair butts with no
+    #  seam, the separated pair keeps its gap.
+    solid = (0b111111, 0b111111)
+    for row in (5, 6):
+        canvas.row(row).starting_at(1).mosaic(solid, Colour.WHITE)
+        canvas.row(row).starting_at(6).mosaic(solid, Colour.WHITE, separated=True)
     return canvas.frame
 
 

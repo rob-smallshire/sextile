@@ -32,6 +32,7 @@ modules/sextile.viewdata.controls
 modules/sextile.viewdata.drawing
 modules/sextile.viewdata.font
 modules/sextile.viewdata.frame
+modules/sextile.viewdata.html
 modules/sextile.viewdata.lettering
 modules/sextile.viewdata.measure
 modules/sextile.viewdata.typesetting

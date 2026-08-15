@@ -24,6 +24,7 @@ from sextile.server import (
 )
 from sextile.viewdata.ansi import render_ansi
 from sextile.viewdata.frame import Frame
+from sextile.viewdata.html import font_face, render_html, stylesheet
 
 __all__ = [
     "ApplicationSpecError",
@@ -36,9 +37,10 @@ __all__ = [
 ]
 
 #: How a frame can be shown on a terminal that is not a BBC Micro.
-FORMS: Final = ("ansi", "grid", "bytes")
+FORMS: Final = ("ansi", "grid", "bytes", "html")
 
 _FORM_HELP: Final = (
+    "html: a self-contained web page, drawn with Bedstead; "
     "ansi: colour, as the Beeb would draw it; "
     "grid: character and attribute layers; "
     "bytes: the wire stream, as a hex dump"
@@ -292,9 +294,11 @@ def run_standard(
 
 
 def rendered(frame: Frame, form: str, *, colour: bool) -> str:
-    """One frame, in whichever of the three forms was asked for."""
+    """One frame, in whichever of the forms was asked for."""
     if form == "ansi":
         return render_ansi(frame, colour=colour)
+    if form == "html":
+        return _html_page(frame)
     if form == "grid":
         characters, attributes = frame.to_grid()
         return "\n".join(
@@ -306,6 +310,14 @@ def rendered(frame: Frame, form: str, *, colour: bool) -> str:
             ]
         )
     return hex_dump(frame.to_bytes())
+
+
+def _html_page(frame: Frame) -> str:
+    """A frame as a self-contained HTML page: the font, the stylesheet, the frame."""
+    return (
+        '<!doctype html>\n<meta charset="utf-8">\n<style>\n'
+        f"{font_face()}\n{stylesheet()}</style>\n{render_html(frame)}\n"
+    )
 
 
 def hex_dump(data: bytes, width: int = 16) -> str:

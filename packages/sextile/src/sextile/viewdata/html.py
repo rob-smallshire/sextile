@@ -8,6 +8,7 @@ the terminal render uses; separated mosaics are Bedstead's Private Use glyphs,
 which no terminal font has. The stylesheet is shipped beside this module.
 """
 
+import base64
 from collections.abc import Callable
 from html import escape
 from importlib.resources import files
@@ -18,6 +19,7 @@ from sextile.viewdata.display import CellStyle, StyledRun, styled_cells
 from sextile.viewdata.frame import Frame
 
 __all__ = [
+    "font_face",
     "render_html",
     "stylesheet",
 ]
@@ -44,6 +46,24 @@ def stylesheet() -> str:
     """The viewdata stylesheet text, shipped with the package."""
     resource = files("sextile.viewdata") / "static" / "viewdata.css"
     return resource.read_text(encoding="utf-8")
+
+
+def font_face() -> str:
+    """An `@font-face` rule for Bedstead, the font embedded as a data URI.
+
+    For a self-contained page -- a `sextile render --form html` a reader opens
+    with no server -- so the mosaics draw without the font being fetched. A page
+    that serves the font itself, as the documentation does, writes its own rule
+    pointing at the file instead.
+    """
+    data = (files("sextile.viewdata") / "static" / "bedstead.woff2").read_bytes()
+    encoded = base64.b64encode(data).decode("ascii")
+    return (
+        "@font-face {\n"
+        '  font-family: "Bedstead";\n'
+        f'  src: url("data:font/woff2;base64,{encoded}") format("woff2");\n'
+        "}"
+    )
 
 
 def _span(run: StyledRun) -> str:

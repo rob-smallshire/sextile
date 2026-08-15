@@ -221,9 +221,6 @@ class Sextile:
         """What was said about a named page when it was registered."""
         return self._pages.get(name)
 
-    def advertised(self) -> tuple[PageInfo, ...]:
-        return self.pages()
-
     def pages(self) -> tuple[PageInfo, ...]:
         """Every page this service advertises, in the order it registered them.
 
@@ -622,7 +619,7 @@ class Sextile:
         """
         return contents_page(
             address=request.address,
-            pages=self.advertised(),
+            pages=self.pages(),
             home=self.index,
             title=self.heading(request.address, contents.TITLE),
         )

@@ -14,12 +14,10 @@ is looking a word up, not browsing. Several words for one page are all shown,
 each on its own line, because the reader has one of them in mind and wants to
 find it rather than to learn that it has synonyms.
 
-Registered nowhere, like `history` and `contents`. A service maps it into its
-numbering or does without:
+Registered nowhere, like `history` and `contents`. A service gives it a number
+with `standard_pages` or does without:
 
-    @page("94", name="keywords", title="Words you can key", keywords=("KEYWORDS",))
-    async def _names(self, request: PageRequest) -> Page:
-        return await self.keywords_page(request)
+    Sextile(pages=list(standard_pages(keywords="94")))
 """
 
 from collections.abc import Callable, Mapping

@@ -19,7 +19,7 @@ from datetime import date
 from pathlib import Path
 from typing import Final
 
-from sextile import Page, PageAddress, PageRoute, Parting, Sextile, routes_in, standard_pages
+from sextile import Page, PageAddress, PageRoute, Parting, Sextile, standard_pages
 from stardot_viewdata import handlers
 from stardot_viewdata.handlers import ARCHIVE, SERVICE_NAME, day_title, ringing_off, unknown_page
 from stardot_viewdata.store.repository import Repository
@@ -33,7 +33,7 @@ DEFAULT_DATABASE_FILEPATH: Final = Path("stardot.sqlite")
 #: that build them and gathered in the order the numbering runs, and three the
 #: framework builds and hands over as handlers, mapped into this numbering.
 PAGES: Final = (
-    *routes_in(handlers),
+    *handlers.router,
     *standard_pages(history="92", contents="93", keywords="94"),
 )
 

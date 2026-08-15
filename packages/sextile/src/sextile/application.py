@@ -50,9 +50,6 @@ from sextile.declarations import (
     PageRoute,
     PageRouter,
     declaring,
-    page,
-    routes_in,
-    routes_on,
 )
 from sextile.formatting import MenuItem
 from sextile.layout import CHOICES_PER_FRAME, HOME_KEY
@@ -74,9 +71,6 @@ __all__ = [
     "PageRouter",
     "Parting",
     "Sextile",
-    "page",
-    "routes_in",
-    "routes_on",
 ]
 
 #: How much of a mistyped request is worth quoting back.
@@ -137,16 +131,10 @@ class Sextile:
         wanted = self._home if index is None else index
         self._index = wanted if isinstance(wanted, PageAddress) else PageAddress(wanted)
         #  Before the declared pages, not after: a page declared beside the
-        #  method that builds it is registered here, so a pattern using a field
-        #  shape of the service's own would otherwise name a converter that did
-        #  not exist yet. `self.converter(...)` in a subclass constructor is
-        #  always too late, there being nowhere to put it before `super()`.
+        #  page given here would otherwise name a converter that did not exist
+        #  yet, a page number using a field shape of the service's own.
         for shape, converter in (converters or {}).items():
             self._router.converter(shape, converter)
-        #  Class declarations first, then the ones given here, so that a
-        #  subclass assembled by a factory can add to what its class declared
-        #  rather than being unable to say anything at all.
-        self._register_declared()
         for route in pages:
             self.add_page(route)
 
@@ -218,11 +206,6 @@ class Sextile:
             detail=detail,
             keywords=keywords,
         )
-
-    def _register_declared(self) -> None:
-        """Register the pages this class declared with `@page`."""
-        for route in routes_on(self):
-            self.add_page(route)
 
     def page_info(self, name: str) -> PageInfo | None:
         """What was said about a named page when it was registered."""

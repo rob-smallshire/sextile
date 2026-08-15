@@ -49,6 +49,16 @@ class TestWhatARouterCollects:
 
         assert list(router)[0].name is None
 
+    def test_a_given_name_wins_over_the_handler_s(self) -> None:
+        #  The function is `_days`; the route is `days`, because it says so.
+        router = PageRouter()
+
+        @router.page("3", name="days")
+        async def _days(request: PageRequest) -> Page:
+            return await _blank(request)
+
+        assert list(router)[0].name == "days"
+
     def test_the_routes_come_out_in_declaration_order(self) -> None:
         router = PageRouter()
 
@@ -101,6 +111,28 @@ class TestAServiceBuiltFromARouter:
         (page_info,) = app.pages()
         assert page_info.title == "By day"
         assert app.resolve("WHO") == PageAddress("3")
+
+    async def test_a_field_in_the_pattern_is_captured(self) -> None:
+        router = PageRouter()
+
+        @router.page("82{post_id:int}", name="post", title="One post")
+        async def post(request: PageRequest, post_id: int) -> Page:
+            return await _blank(request)
+
+        app = Sextile(pages=router)
+        assert app.address_for("post", post_id=489493) == PageAddress("82489493")
+        assert app.route(PageAddress("82489493")) is not None
+
+    def test_a_page_with_no_title_is_routed_but_not_advertised(self) -> None:
+        router = PageRouter()
+
+        @router.page("90")
+        async def goodbye(request: PageRequest) -> Page:
+            return await _blank(request)
+
+        app = Sextile(pages=router)
+        assert app.route(PageAddress("90")) is not None
+        assert app.pages() == ()
 
 
 class TestTheTwoDecoratorsCannotDiverge:

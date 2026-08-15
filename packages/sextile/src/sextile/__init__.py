@@ -24,15 +24,7 @@ from sextile.addressing import PageAddress, UnknownPageError, keyed
 from sextile.application import Middleware, Next, Sextile
 from sextile.builtin.guidance import GuideRow
 from sextile.content.transliterate import transliterate
-from sextile.declarations import (
-    Handler,
-    PageInfo,
-    PageRoute,
-    PageRouter,
-    page,
-    routes_in,
-    routes_on,
-)
+from sextile.declarations import Handler, PageInfo, PageRoute, PageRouter
 from sextile.forms import Form, Suggest, draw_form
 from sextile.handlers import standard_pages
 from sextile.page import Page, PageFrame
@@ -77,10 +69,7 @@ __all__ = [
     "keys",
     "menu_page",
     "notice_page",
-    "page",
     "prose_page",
-    "routes_in",
-    "routes_on",
     "standard_pages",
     "transliterate",
 ]

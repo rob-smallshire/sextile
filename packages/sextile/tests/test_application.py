@@ -11,7 +11,6 @@ thing as being logged in.
 
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
-from types import ModuleType
 
 import pytest
 
@@ -24,8 +23,6 @@ from sextile.application import (
     PageRoute,
     Parting,
     Sextile,
-    page,
-    routes_in,
 )
 from sextile.page import Page, PageFrame
 from sextile.routing import Converter, NoSuchRouteError
@@ -566,166 +563,6 @@ class TestWhereZeroGoes:
         assert page.frames[0].destination("0") == PageAddress("1")
 
 
-class TestDeclaringPagesOnTheClass:
-    """`@page` beside the handler, for a service that is a class.
-
-    `app.page(...)` is already a decorator, but only where an application object
-    exists to hang it on. A service whose handlers are methods -- which is every
-    service holding an archive or a client -- has no `self` at class-definition
-    time, so the metadata ends up in a registration block a long way from the
-    function it describes. This puts it back.
-    """
-
-    def build(self) -> Sextile:
-        class Board(Sextile):
-            @page("1", title="Main index")
-            async def main(self, request: PageRequest) -> Page:
-                return saying("MAIN")
-
-            @page("82{post_id:int}", name="post", title="One post")
-            async def a_post(self, request: PageRequest, post_id: int) -> Page:
-                return saying(f"POST {post_id}")
-
-            @page("90")
-            async def logoff(self, request: PageRequest) -> Page:
-                return one_frame()
-
-        return Board()
-
-    async def test_a_declared_page_is_registered(self) -> None:
-        assert text_of(await self.build().ask("1")) == "MAIN"
-
-    async def test_with_its_fields(self) -> None:
-        page_shown = await self.build().ask("82489493")
-        assert text_of(page_shown) == "POST 489493"
-
-    def test_the_route_takes_the_method_s_name(self) -> None:
-        assert self.build().address_for("main") == PageAddress("1")
-
-    def test_unless_it_is_given_one(self) -> None:
-        #  The method is `a_post`; the route is `post`, because it says so.
-        assert self.build().address_for("post", post_id=1) == PageAddress("821")
-
-    def test_the_title_travels_with_it(self) -> None:
-        found = self.build().page_info("main")
-        assert found is not None
-        assert found.title == "Main index"
-
-    def test_they_are_listed_in_the_order_they_are_written(self) -> None:
-        assert [about.name for about in self.build().pages()] == ["main", "post"]
-
-    def test_a_page_with_no_title_is_still_registered(self) -> None:
-        #  It simply is not advertised.
-        assert self.build().route(PageAddress("90")) is not None
-
-
-class TestDeclaringPagesInAModule:
-    """`@page` beside a module-level handler, gathered by `routes_in`.
-
-    The same declaration as on a class, for the service whose handlers are
-    ordinary functions: the route sits on the function that builds the page,
-    and the factory says `pages=routes_in(module)` instead of keeping a list
-    that has to trail its handlers.
-    """
-
-    def build_module(self) -> ModuleType:
-        module = ModuleType("some_service_pages")
-
-        @page("1", title="Main index", keywords=("MAIN",))
-        async def main(request: PageRequest) -> Page:
-            return saying("MAIN")
-
-        @page("82{post_id:int}", name="post", title="One post")
-        async def _a_post(request: PageRequest, post_id: int) -> Page:
-            return saying(f"POST {post_id}")
-
-        async def helper(request: PageRequest) -> Page:
-            #  Undecorated, so not a page: a module is allowed helpers.
-            return one_frame()
-
-        module.main = main  # type: ignore[attr-defined]
-        module._a_post = _a_post  # type: ignore[attr-defined]
-        module.helper = helper  # type: ignore[attr-defined]
-        return module
-
-    def build(self) -> Sextile:
-        return Sextile(pages=routes_in(self.build_module()))
-
-    async def test_a_declared_page_is_registered(self) -> None:
-        assert text_of(await self.build().ask("1")) == "MAIN"
-
-    async def test_with_its_fields(self) -> None:
-        page_shown = await self.build().ask("82489493")
-        assert text_of(page_shown) == "POST 489493"
-
-    def test_the_route_takes_the_function_s_name(self) -> None:
-        assert self.build().address_for("main") == PageAddress("1")
-
-    def test_unless_it_is_given_one(self) -> None:
-        #  The function is `_a_post`; the route is `post`, because it says so.
-        assert self.build().address_for("post", post_id=1) == PageAddress("821")
-
-    def test_an_undecorated_function_is_not_a_page(self) -> None:
-        assert len(routes_in(self.build_module())) == 2
-
-    def test_they_are_listed_in_the_order_they_are_written(self) -> None:
-        assert [about.name for about in self.build().pages()] == ["main", "post"]
-
-    def test_the_keywords_travel_with_the_page(self) -> None:
-        assert self.build().resolve("MAIN") == PageAddress("1")
-
-
-class TestDeclaringKeywordsToo:
-    def test_keywords_go_beside_the_page_they_reach(self) -> None:
-        class Board(Sextile):
-            @page("1", title="Main index", keywords=("MAIN", "HOME"))
-            async def main(self, request: PageRequest) -> Page:
-                return one_frame()
-
-        app = Board()
-        assert app.resolve("MAIN") == PageAddress("1")
-        assert app.resolve("HOME") == PageAddress("1")
-
-
-class TestDeclaringAndInheriting:
-    def test_a_base_class_s_pages_are_registered_too(self) -> None:
-        class Base(Sextile):
-            @page("1", title="Main index")
-            async def main(self, request: PageRequest) -> Page:
-                return saying("BASE")
-
-        class Board(Base):
-            @page("8", title="Latest")
-            async def latest(self, request: PageRequest) -> Page:
-                return one_frame()
-
-        assert [about.name for about in Board().pages()] == ["main", "latest"]
-
-    async def test_an_overridden_page_uses_the_override(self) -> None:
-        class Base(Sextile):
-            @page("1", title="Main index")
-            async def main(self, request: PageRequest) -> Page:
-                return saying("BASE")
-
-        class Board(Base):
-            @page("1", title="Main index")
-            async def main(self, request: PageRequest) -> Page:
-                return saying("MINE")
-
-        assert text_of(await Board().ask("1")) == "MINE"
-
-    def test_declaring_the_same_number_twice_is_still_refused(self) -> None:
-        class Board(Sextile):
-            @page("1")
-            async def one(self, request: PageRequest) -> Page:
-                return one_frame()
-
-            @page("1")
-            async def other(self, request: PageRequest) -> Page:
-                return one_frame()
-
-        with pytest.raises(ValueError):
-            Board()
 
 
 class TestWhenAPageBreaks:
@@ -768,13 +605,12 @@ class TestWhenAPageBreaks:
 class TestFieldShapesOfAnApplicationsOwn:
     """A service may need a field the framework does not offer.
 
-    Registering one after construction is too late for a page declared with
-    `@page` beside the method that builds it -- those are registered by the
-    constructor, and a subclass has nowhere to put a call before `super()`.
-    So the constructor takes them.
+    The constructor takes its converters as well as its pages, and registers
+    the converters first, so a page given in `pages=` may use a field shape of
+    the service's own without the order of the two arguments mattering.
     """
 
-    def test_a_declared_page_may_use_one(self) -> None:
+    def test_a_page_given_at_construction_may_use_one(self) -> None:
         tens = Converter(
             field_pattern=r"[0-9]{2}",
             width=2,
@@ -782,15 +618,13 @@ class TestFieldShapesOfAnApplicationsOwn:
             format=lambda value: f"{int(value) // 10:02d}",  # type: ignore[call-overload]
         )
 
-        class Service(Sextile):
-            def __init__(self) -> None:
-                super().__init__(converters={"tens": tens})
+        async def counted(request: PageRequest, count: int) -> Page:
+            return Page(frames=(PageFrame(frame=Canvas().frame),))
 
-            @page("7{count:tens}", name="counted")
-            async def _counted(self, request: PageRequest, count: int) -> Page:
-                return Page(frames=(PageFrame(frame=Canvas().frame),))
-
-        app = Service()
+        app = Sextile(
+            converters={"tens": tens},
+            pages=[PageRoute("7{count:tens}", counted, name="counted")],
+        )
         assert app.address_for("counted", count=420) == PageAddress("742")
         assert app.route(PageAddress("742")) is not None
 

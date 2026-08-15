@@ -15,12 +15,10 @@ A page appears here if it was given a title when it was registered. That is how
 a title frame stays off the list without a flag of its own: giving a page a
 title is a service saying it may be advertised.
 
-Registered nowhere, like the history page. A service maps it into its numbering
-or does without:
+Registered nowhere, like the history page. A service gives it a number with
+`standard_pages` or does without:
 
-    @page("93", name="contents", title="Every page")
-    async def _contents(self, request: PageRequest) -> Page:
-        return await self.contents_page(request)
+    Sextile(pages=list(standard_pages(contents="93")))
 """
 
 from collections.abc import Sequence

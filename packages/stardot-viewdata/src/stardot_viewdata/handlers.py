@@ -11,9 +11,10 @@ slowly a reader has no way to tell the difference.
 
 The pages are ordinary functions. Nothing here closes over anything: a page
 takes the archive from what the service holds and the numbering from the
-service itself, both through the request it is given. The `@page` declaration
-above each is everything the service says about it, and the order they are
-written in is the order the contents page lists them.
+service itself, both through the request it is given. The `@router.page`
+declaration above each is everything the service says about it, and the order
+they are written in is the order the contents page lists them; the assembly
+spreads `router` into the service.
 
 The numbering is documented in docs/page-numbering.md. Its one rule worth
 repeating here is that every identifier comes from Stardot -- post, forum, topic
@@ -31,6 +32,7 @@ from sextile import (
     GuideRow,
     Page,
     PageRequest,
+    PageRouter,
     Parting,
     Sextile,
     StateKey,
@@ -38,7 +40,6 @@ from sextile import (
     keyed,
     menu_page,
     notice_page,
-    page,
     prose_page,
 )
 from sextile.formatting import MenuItem
@@ -69,6 +70,10 @@ SERVICE_NAME: Final = "STARDOT"
 #: mistyped key fails by name.
 ARCHIVE: Final = StateKey[Repository]("archive")
 
+#: The service's own pages, each declared beside its handler below. The assembly
+#: spreads this into `Sextile(pages=...)`; declaration order is contents order.
+router: Final = PageRouter()
+
 
 async def _read[T](request: PageRequest, query: Callable[[Repository], T]) -> T:
     """Ask the archive something, off the event loop.
@@ -79,7 +84,7 @@ async def _read[T](request: PageRequest, query: Callable[[Repository], T]) -> T:
     return await asyncio.to_thread(query, request.state[ARCHIVE])
 
 
-@page("0")
+@router.page("0")
 async def title(request: PageRequest) -> Page:
     """The frame the line opens on: what this is, and how to get in.
 
@@ -124,7 +129,7 @@ async def title(request: PageRequest) -> Page:
     ).build(request)
 
 
-@page("1", name="main", title="Main index", keywords=("MAIN", "INDEX", "HOME"))
+@router.page("1", name="main", title="Main index", keywords=("MAIN", "INDEX", "HOME"))
 async def main_index(request: PageRequest) -> Page:
     """The index: what the service offers, and how many posts it holds."""
     app = request.app
@@ -151,7 +156,7 @@ async def main_index(request: PageRequest) -> Page:
     )
 
 
-@page("3", name="days", title="By day", detail="browse by date", keywords=("DAYS",))
+@router.page("3", name="days", title="By day", detail="browse by date", keywords=("DAYS",))
 async def days_index(request: PageRequest) -> Page:
     """The sixty most recent days posts were made on, the newest first."""
     app = request.app
@@ -169,14 +174,14 @@ async def days_index(request: PageRequest) -> Page:
     return menu_page(request, items=items)
 
 
-@page("32{day:date}", name="day", title="One day")
+@router.page("32{day:date}", name="day", title="One day")
 async def one_day(request: PageRequest, day: date) -> Page:
     """Every post held from one day, in the order they were published."""
     posts = await _read(request, lambda repository: repository.posts_on(day))
     return _posts_menu(request, posts, day_title(day))
 
 
-@page("4", name="forums", title="By forum", detail="browse by section",
+@router.page("4", name="forums", title="By forum", detail="browse by section",
       keywords=("FORUMS",))
 async def forums_index(request: PageRequest) -> Page:
     """The forums posts have been seen in, with how many are held from each."""
@@ -195,7 +200,7 @@ async def forums_index(request: PageRequest) -> Page:
     return menu_page(request, items=items)
 
 
-@page("42{forum_id:int}", name="forum", title="One forum")
+@router.page("42{forum_id:int}", name="forum", title="One forum")
 async def one_forum(request: PageRequest, forum_id: int) -> Page:
     """The newest posts held from one forum."""
     posts = await _read(request, lambda repository: repository.posts_in_forum(forum_id))
@@ -208,7 +213,7 @@ async def one_forum(request: PageRequest, forum_id: int) -> Page:
     return _posts_menu(request, posts, title)
 
 
-@page("5", name="contributors", title="By contributor", detail="browse by poster",
+@router.page("5", name="contributors", title="By contributor", detail="browse by poster",
       keywords=("WHO", "USERS"))
 async def contributors_index(request: PageRequest) -> Page:
     """Everyone who has posted, the most prolific first."""
@@ -227,7 +232,7 @@ async def contributors_index(request: PageRequest) -> Page:
     return menu_page(request, items=items)
 
 
-@page("52{user_id:int}", name="contributor", title="One contributor")
+@router.page("52{user_id:int}", name="contributor", title="One contributor")
 async def one_contributor(request: PageRequest, user_id: int) -> Page:
     """The newest posts held from one contributor."""
     posts = await _read(request, lambda repository: repository.posts_by_author(user_id))
@@ -235,7 +240,7 @@ async def one_contributor(request: PageRequest, user_id: int) -> Page:
     return _posts_menu(request, posts, title)
 
 
-@page("7", name="topics", title="By topic", detail="read whole threads",
+@router.page("7", name="topics", title="By topic", detail="read whole threads",
       keywords=("TOPICS",))
 async def topics_index(request: PageRequest) -> Page:
     """The sixty topics most recently posted to, the newest first.
@@ -263,7 +268,7 @@ async def topics_index(request: PageRequest) -> Page:
     return menu_page(request, items=items)
 
 
-@page("72{topic_id:int}", name="topic", title="One topic")
+@router.page("72{topic_id:int}", name="topic", title="One topic")
 async def one_topic(request: PageRequest, topic_id: int) -> Page:
     """Every post held from one topic."""
     posts = await _read(request, lambda repository: repository.posts_in_topic(topic_id))
@@ -271,7 +276,7 @@ async def one_topic(request: PageRequest, topic_id: int) -> Page:
     return _posts_menu(request, posts, title)
 
 
-@page("8", name="posts", title="Latest posts", detail="the newest first",
+@router.page("8", name="posts", title="Latest posts", detail="the newest first",
       keywords=("LATEST", "NEW", "POSTS"))
 async def latest_posts(request: PageRequest) -> Page:
     """The sixty newest posts held, whatever forum or topic they are from."""
@@ -279,7 +284,7 @@ async def latest_posts(request: PageRequest) -> Page:
     return _posts_menu(request, posts)
 
 
-@page("82{post_id:int}", name="post", title="One post")
+@router.page("82{post_id:int}", name="post", title="One post")
 async def one_post(request: PageRequest, post_id: int) -> Page:
     """One post in full, or a notice where the archive has not seen it."""
     post = await _read(request, lambda repository: repository.post(post_id))
@@ -294,7 +299,7 @@ async def one_post(request: PageRequest, post_id: int) -> Page:
     return post_page(request, post, untitled=SERVICE_NAME)
 
 
-@page("9", name="about", title="About this service", keywords=("ABOUT",))
+@router.page("9", name="about", title="About this service", keywords=("ABOUT",))
 async def about(request: PageRequest) -> Page:
     """What the service is, how much it holds, and how its numbering works."""
     app = request.app
@@ -315,7 +320,7 @@ async def about(request: PageRequest) -> Page:
 #  do something rather than a menu of places to go, and a reader looking
 #  for how to ring off should find it there. 9 is the system namespace,
 #  where the second digit is a function, so *90# keeps its Prestel meaning.
-@page("90", name="logoff", title="Log off", keywords=("BYE", "OFF"))
+@router.page("90", name="logoff", title="Log off", keywords=("BYE", "OFF"))
 async def logoff(request: PageRequest) -> Page:
     """The farewell frame, after which the line drops."""
     app = request.app
@@ -324,7 +329,7 @@ async def logoff(request: PageRequest) -> Page:
     )
 
 
-@page("91", name="help", title="How to get about",
+@router.page("91", name="help", title="How to get about",
       detail="the keys, and what they do", keywords=("HELP", "GUIDE", "KEYS"))
 async def guide(request: PageRequest) -> Page:
     """How to get about: the framework's guide, with this service's own rows.

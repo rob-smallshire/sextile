@@ -10,12 +10,10 @@ already understands, and what it calls them comes from the route names, which
 are the *application's* words -- so the labels read in the service's own
 vocabulary without the framework knowing what those pages are about.
 
-Not registered anywhere. A service maps it into its own numbering, or does not
-offer it at all:
+Not registered anywhere. A service gives it a number with `standard_pages`, or
+does not offer it at all:
 
-    @page("92", name="history", title="Where you have been")
-    async def _history(self, request: PageRequest) -> Page:
-        return await self.history_page(request)
+    Sextile(pages=list(standard_pages(history="92")))
 
 The page leaves itself out of the list. Visiting it is a move like any other, so
 it enters the history too, and a list of places to go back to should not offer

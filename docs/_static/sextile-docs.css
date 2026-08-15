@@ -10,3 +10,13 @@ pre.viewdata {
   border-radius: 4px;
   margin: 1rem 0;
 }
+
+/* A :frames: directive stacks frames, each with a small caption. */
+figure.viewdata-frame {
+  margin: 1rem 0;
+}
+figure.viewdata-frame figcaption {
+  font: 0.8rem/1.4 monospace;
+  color: #888;
+  margin-bottom: 0.2rem;
+}

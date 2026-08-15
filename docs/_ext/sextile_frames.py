@@ -21,10 +21,12 @@ needs a fixed clock or a hand-built frame::
        app = build_application(now=lambda: datetime(2026, 8, 1, tzinfo=UTC))
        frame = fetch(app, "3")
 
-`:frame:` picks a frame other than the first; `:keys:` drives a session from the
-page and renders what is on screen after; `:show-code:` also shows the snippet.
-Anything that goes wrong is a build error, so a frame that stops rendering stops
-the build.
+`:frame:` picks a frame other than the first; `:frames: a,b` renders several
+frames of a page stacked, each captioned; `:keys:` drives a session from the page
+and renders what is on screen after; `:show-code:` shows the snippet, and
+`:hide-lines:` (an emphasize-lines-style spec) hides lines from what is shown
+while still running them. Anything that goes wrong is a build error, so a frame
+that stops rendering stops the build.
 
 The stylesheet and the Bedstead font are registered from the package and copied
 into the build's `_static` when the build finishes.
@@ -33,6 +35,7 @@ into the build's `_static` when the build finishes.
 from __future__ import annotations
 
 import asyncio
+from html import escape
 from importlib.resources import files
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
@@ -53,23 +56,25 @@ if TYPE_CHECKING:
     from sphinx.application import Sphinx
 
 
-def _fetch(app: Sextile, page: str = "1", *, frame: int = 0) -> Frame:
-    """Fetch one frame of a page, opening and closing the service around it."""
+def _fetch_page(app: Sextile, page: str) -> Page:
+    """Fetch a page, opening and closing the service around it."""
 
-    async def run() -> Frame:
+    async def run() -> Page:
         await app.startup()
         try:
             found = await app.fetch(page)
             if found is None:
                 raise ValueError(f"{page!r} is not a page of the service")
-            one = found.frame(frame)
-            if one is None:
-                raise ValueError(f"page {page!r} has no frame {frame}")
-            return one.frame
+            return found
         finally:
             await app.shutdown()
 
     return asyncio.run(run())
+
+
+def _fetch(app: Sextile, page: str = "1", *, frame: int = 0) -> Frame:
+    """Fetch one frame of a page, for a snippet that wants just the frame."""
+    return _page_frame(_fetch_page(app, page), frame)
 
 
 def _page_frame(page: Page, index: int) -> Frame:
@@ -102,6 +107,7 @@ class SextileFrame(SphinxDirective):
         "app": directives.unchanged,
         "page": directives.unchanged,
         "frame": directives.nonnegative_int,
+        "frames": directives.unchanged,
         "keys": directives.unchanged,
         "show-code": directives.flag,
         "hide-lines": directives.unchanged,
@@ -109,15 +115,39 @@ class SextileFrame(SphinxDirective):
 
     def run(self) -> list[nodes.Node]:
         try:
-            frame = self._frame()
+            html = self._render()
         except Exception as error:
             raise self.severe(f"sextile-frame could not render: {error}") from error
         produced: list[nodes.Node] = []
         if "show-code" in self.options and self.content:
             source = self._shown_source()
             produced.append(nodes.literal_block(source, source, language="python"))
-        produced.append(nodes.raw("", render_html(frame), format="html"))
+        produced.append(nodes.raw("", html, format="html"))
         return produced
+
+    def _render(self) -> str:
+        resolved = self._resolve()
+        spec = self.options.get("frames")
+        if spec:
+            if not isinstance(resolved, Page):
+                raise ValueError(":frames: needs a page, from `page` or `app` with :page:")
+            return self._render_frames(resolved, spec)
+        frame = resolved if isinstance(resolved, Frame) else _page_frame(resolved, self._index())
+        return render_html(frame)
+
+    def _render_frames(self, page: Page, spec: str) -> str:
+        figures = []
+        for letter in (part.strip() for part in spec.split(",") if part.strip()):
+            frame = _page_frame(page, ord(letter) - ord("a"))
+            figures.append(
+                f'<figure class="viewdata-frame">'
+                f"<figcaption>frame {escape(letter)}</figcaption>\n"
+                f"{render_html(frame)}</figure>"
+            )
+        return "\n".join(figures)
+
+    def _index(self) -> int:
+        return self.options.get("frame", 0)
 
     def _shown_source(self) -> str:
         """The snippet as shown, with `:hide-lines:` removed but still executed.
@@ -132,42 +162,34 @@ class SextileFrame(SphinxDirective):
             line for number, line in enumerate(self.content) if number not in hidden
         )
 
-    def _frame(self) -> Frame:
+    def _resolve(self) -> Frame | Page:
+        """The frame or page the directive draws, from its snippet or options."""
         if self.content:
-            return self._from_snippet()
-        return self._from_options()
-
-    def _from_options(self) -> Frame:
+            namespace: dict[str, Any] = {"fetch": _fetch}
+            exec("\n".join(self.content), namespace)  # noqa: S102 -- the docs' own snippet
+            frame = namespace.get("frame")
+            if isinstance(frame, Frame):
+                return frame
+            page = namespace.get("page")
+            if isinstance(page, Page):
+                return page
+            #  A snippet that is nothing but the lesson leaves `app`, and :page:
+            #  says which page -- so the shown code carries no fetch scaffolding.
+            app = namespace.get("app")
+            if isinstance(app, Sextile) and "page" in self.options:
+                return self._from_app(app)
+            raise ValueError(
+                "the snippet must leave `frame` or `page`, or define `app` with :page:"
+            )
         if "app" not in self.options or "page" not in self.options:
             raise ValueError("give :app: and :page:, or a snippet body")
-        app = load_application(self.options["app"])
-        index = self.options.get("frame", 0)
+        return self._from_app(load_application(self.options["app"]))
+
+    def _from_app(self, app: Sextile) -> Frame | Page:
         keys = self.options.get("keys")
         if keys:
-            return _drive(app, self.options["page"], keys, index)
-        return _fetch(app, self.options["page"], frame=index)
-
-    def _from_snippet(self) -> Frame:
-        namespace: dict[str, Any] = {"fetch": _fetch}
-        exec("\n".join(self.content), namespace)  # noqa: S102 -- the docs' own snippet
-        index = self.options.get("frame", 0)
-        frame = namespace.get("frame")
-        if isinstance(frame, Frame):
-            return frame
-        page = namespace.get("page")
-        if isinstance(page, Page):
-            return _page_frame(page, index)
-        #  A snippet that is nothing but the lesson leaves `app`, and :page: says
-        #  which page to draw -- so the shown code carries no fetch scaffolding.
-        app = namespace.get("app")
-        if isinstance(app, Sextile) and "page" in self.options:
-            keys = self.options.get("keys")
-            if keys:
-                return _drive(app, self.options["page"], keys, index)
-            return _fetch(app, self.options["page"], frame=index)
-        raise ValueError(
-            "the snippet must leave `frame` or `page`, or define `app` with :page:"
-        )
+            return _drive(app, self.options["page"], keys, self._index())
+        return _fetch_page(app, self.options["page"])
 
 
 def _copy_assets(app: Sphinx, exception: Exception | None) -> None:

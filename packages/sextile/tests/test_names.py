@@ -23,7 +23,7 @@ def listed(**named: str) -> Page:
     return names_page(
         request=request_for(_APP, at("94")),
         named={word: at(digits) for word, digits in named.items()},
-        describe=lambda where: f"page {where}",
+        label=lambda where: f"page {where}",
     )
 
 

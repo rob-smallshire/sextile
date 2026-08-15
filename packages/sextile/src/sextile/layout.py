@@ -25,7 +25,7 @@ from dataclasses import dataclass, field
 from enum import Enum, auto
 from typing import TYPE_CHECKING, Final, Protocol, runtime_checkable
 
-from sextile.addressing import FRAMES_PER_PAGE, PageAddress
+from sextile.addressing import FRAMES_PER_PAGE, PageAddress, keyed
 from sextile.keys import (
     ARROW_FOR,
     NEXT_FRAME,
@@ -719,7 +719,15 @@ class PageLayout:
             The finished page: one frame for each the parts needed, each
             carrying the keys that work while it is showing.
         """
-        title = self.title if self.title is not None else request.app.heading_for(request.address)
+        #  A page that gave no title of its own is headed with the registered
+        #  title of its address, shouted, or with its keyed number where the
+        #  address is unrouted or untitled. A title the page did give is drawn
+        #  as it is, so a forum name or a place name keeps its own case.
+        if self.title is not None:
+            title = self.title
+        else:
+            registered = request.app.title_for(request.address)
+            title = (registered or keyed(request.address)).upper()
         home = request.app.index if isinstance(self.home, _DefaultHome) else self.home
         return self._render(address=request.address, title=title, home=home)
 

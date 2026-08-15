@@ -15,13 +15,12 @@ mapped into the numbering, and the words it uses for a page it has not got.
 import asyncio
 from collections.abc import AsyncIterator, Sequence
 from contextlib import asynccontextmanager
-from datetime import date
 from pathlib import Path
 from typing import Final
 
-from sextile import Page, PageAddress, PageRoute, Parting, Sextile, standard_pages
+from sextile import Page, PageRoute, Parting, Sextile, standard_pages
 from stardot_viewdata import handlers
-from stardot_viewdata.handlers import ARCHIVE, SERVICE_NAME, day_title, ringing_off, unknown_page
+from stardot_viewdata.handlers import ARCHIVE, SERVICE_NAME, ringing_off, unknown_page
 from stardot_viewdata.store.repository import Repository
 
 #: Named for the service rather than for the framework serving it, and
@@ -78,34 +77,12 @@ def build_application(
         lifespan=lifespan,
     )
 
-    @app.on_describe
-    def better_words(address: PageAddress) -> str | None:
-        """What to call a page where one is listed rather than shown.
-
-        Only the pages whose numbers carry a field need saying here: the rest
-        are titled where they are registered, and the framework reads those.
-        "One post" is the right title in a list of *kinds* of page and the
-        wrong one in a list of pages a reader has been to, which is what this
-        overrides. Returning None means the registration's own words will do.
-
-        Subjects and forum names are deliberately not looked up. A history
-        frame lists nine pages, which would be nine queries for a label, and
-        the page number beside each entry already says which post it is.
-        """
-        found = app.route(address)
-        if found is not None and found.params:
-            match found.name, found.params:
-                case "post", {"post_id": int() as post_id}:
-                    return f"Post {post_id}"
-                case "topic", {"topic_id": int() as topic_id}:
-                    return f"Topic {topic_id}"
-                case "forum", {"forum_id": int() as forum_id}:
-                    return f"Forum {forum_id}"
-                case "contributor", {"user_id": int() as user_id}:
-                    return f"Contributor {user_id}"
-                case "day", {"day": date() as day}:
-                    return day_title(day)
-        return None
+    #  The labels for pages whose number carries a field -- "Post 489493"
+    #  rather than "One post" in a list of visited pages -- are declared as
+    #  `label=` beside each of those routes in `handlers`, where the title is.
+    #  Subjects and forum names are deliberately not looked up: a history frame
+    #  lists nine pages, which would be nine queries for a label, and the page
+    #  number beside each entry already says which post it is.
 
     @app.on_not_found
     async def unknown(target: str) -> Page:

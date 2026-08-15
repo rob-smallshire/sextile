@@ -13,7 +13,7 @@ fake in a test, and a service that wants its log somewhere else writes forty
 lines rather than going without the pages.
 
 **The record is the address.** `52<id>` is what the reader keyed, what the
-router can parse back, and what `describe` can name -- so there is nothing else
+router can parse back, and what `label_for` can name -- so there is nothing else
 to store and nothing that can come to disagree with it. A prefix filter is then
 a namespace filter, which is what a first digit already means.
 

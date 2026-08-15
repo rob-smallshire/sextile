@@ -230,7 +230,7 @@ class TestThePagesThatComeFree:
     async def test_the_pages_are_titled_where_they_are_written(
         self, app: Sextile
     ) -> None:
-        assert app.describe(PageAddress("4")) == "The days to come"
+        assert app.label_for(PageAddress("4")) == "The days to come"
 
     async def test_the_words_you_can_key(self, app: Sextile) -> None:
         shown = text_of(await page_at(app, "94"))

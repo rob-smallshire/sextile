@@ -41,7 +41,7 @@ class TestLatelyRead:
         page = recent_page(
             request=request_for(_APP, "96"),
             visits=[visit("3"), visit("1")],
-            describe=describe,
+            label=describe,
             now=NOON,
         )
         found = page.frame(0)
@@ -57,7 +57,7 @@ class TestLatelyRead:
                 visit("3", ago=timedelta(hours=2)),
                 visit("321333", ago=timedelta(days=3)),
             ],
-            describe=describe,
+            label=describe,
             now=NOON,
         )
         shown = text_of(page)
@@ -69,7 +69,7 @@ class TestLatelyRead:
         page = recent_page(
             request=request_for(_APP, "96"),
             visits=[visit("1", ago=timedelta(hours=1))],
-            describe=describe,
+            label=describe,
             now=NOON,
         )
         assert "1 hour ago" in text_of(page)
@@ -81,7 +81,7 @@ class TestLatelyRead:
         page = recent_page(
             request=request_for(_APP, "96"),
             visits=[visit("9999"), visit("1")],
-            describe=describe,
+            label=describe,
             now=NOON,
         )
         found = page.frame(0)
@@ -94,7 +94,7 @@ class TestLatelyRead:
         page = recent_page(
             request=request_for(_APP, "96"),
             visits=[],
-            describe=describe,
+            label=describe,
             now=NOON,
         )
         assert "Nothing has been read yet." in text_of(page)
@@ -106,7 +106,7 @@ class TestLatelyRead:
         page = recent_page(
             request=request_for(_APP, "96"),
             visits=[visit("1") for _ in range(20)],
-            describe=describe,
+            label=describe,
             now=NOON,
         )
         assert len(page.frames) == 3
@@ -117,7 +117,7 @@ class TestMostRead:
         page = popular_page(
             request=request_for(_APP, "97"),
             visits=[visit("1", times=12), visit("3", times=1)],
-            describe=describe,
+            label=describe,
         )
         shown = text_of(page)
         assert "read 12 times" in shown
@@ -127,7 +127,7 @@ class TestMostRead:
         page = popular_page(
             request=request_for(_APP, "97"),
             visits=[visit("321333", times=4)],
-            describe=describe,
+            label=describe,
         )
         assert "*321333#" in text_of(page)
 

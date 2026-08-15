@@ -609,17 +609,17 @@ class TestThePagesSayWhatTheyAre:
     def test_a_page_with_no_field_is_described_by_its_title(
         self, app: Sextile
     ) -> None:
-        assert app.describe(PageAddress("5")) == "By contributor"
+        assert app.label_for(PageAddress("5")) == "By contributor"
 
     def test_one_with_a_field_says_which(self, app: Sextile) -> None:
         #  "One contributor" is the right title in a list of kinds of page and
         #  the wrong one in a list of pages a reader has been to.
-        assert app.describe(PageAddress("5210058")) == "Contributor 10058"
+        assert app.label_for(PageAddress("5210058")) == "Contributor 10058"
 
     def test_a_day_is_described_as_a_reader_would_say_it(
         self, app: Sextile
     ) -> None:
-        assert app.describe(PageAddress("3220260802")) == "SUN 02 AUG 2026"
+        assert app.label_for(PageAddress("3220260802")) == "SUN 02 AUG 2026"
 
 
 class TestEveryPage:

@@ -56,6 +56,14 @@ class PageRoute:
     keywords: Sequence[str] = ()
     """Words a reader may key instead of the number."""
 
+    label: str | Callable[..., str] | None = None
+    """What to call the page in a list of *visited* pages, where the listed
+    title is wrong because the number carried a field: "One post" names the kind
+    of page, "Post 489493" names the one a reader was on. A `str.format` template
+    over the route's captured fields (`label="Post {post_id}"`), or a callable
+    taking them as keyword arguments (`label=lambda day: day_title(day)`). None
+    leaves `Sextile.label_for` to build one from the title and the fields."""
+
     keyed: str = ""
     """The number a reader keys, fields shown as `<name>`: `52<user_id>`. Filled
     in when a service registers the route, from the numbering it registers it
@@ -70,6 +78,7 @@ def declaring[H: Handler](
     title: str,
     detail: str,
     keywords: Sequence[str],
+    label: str | Callable[..., str] | None,
 ) -> Callable[[H], H]:
     """A `@page`-style decorator that hands the `PageRoute` it builds to `keep`.
 
@@ -85,6 +94,8 @@ def declaring[H: Handler](
         title: What to call it where it is listed rather than shown.
         detail: A second line, wherever the title gets one.
         keywords: Words a reader may key instead of the number.
+        label: What to call the page in a list of visited pages, when the title
+            is wrong because the number carried a field. See `PageRoute.label`.
 
     Returns:
         A decorator that registers its handler and returns it unchanged.
@@ -99,6 +110,7 @@ def declaring[H: Handler](
                 title=title,
                 detail=detail,
                 keywords=keywords,
+                label=label,
             )
         )
         return handler
@@ -135,6 +147,7 @@ class PageRouter:
         title: str = "",
         detail: str = "",
         keywords: Sequence[str] = (),
+        label: str | Callable[..., str] | None = None,
     ) -> Callable[[H], H]:
         """Declare a page beside the function that builds it.
 
@@ -148,6 +161,8 @@ class PageRouter:
             title: What to call it where it is listed. Untitled is unadvertised.
             detail: A second line, wherever the title gets one.
             keywords: Words a reader may key instead of the number.
+            label: What to call it in a list of visited pages, when the title is
+                wrong because the number carried a field. See `PageRoute.label`.
 
         Returns:
             A decorator that collects its handler's route and returns it
@@ -160,6 +175,7 @@ class PageRouter:
             title=title,
             detail=detail,
             keywords=keywords,
+            label=label,
         )
 
     def include(self, routes: Iterable[PageRoute]) -> None:

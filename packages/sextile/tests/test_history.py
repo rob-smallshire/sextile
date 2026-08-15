@@ -28,7 +28,7 @@ def built(*been: str, address: str = "92") -> Page:
     return history_page(
         request=request_for(_APP, at(address)),
         been=tuple(at(digits) for digits in been),
-        describe=lambda where: f"page {where}",
+        label=lambda where: f"page {where}",
     )
 
 
@@ -126,7 +126,7 @@ class TestWhatItLooksLike:
         page = history_page(
             request=request_for(_APP, at("92")),
             been=(at("1"),),
-            describe=lambda where: "somewhere",
+            label=lambda where: "somewhere",
             title="RECENTLY READ",
         )
         assert "RECENTLY READ" in text_of(page)

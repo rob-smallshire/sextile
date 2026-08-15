@@ -174,7 +174,15 @@ async def days_index(request: PageRequest) -> Page:
     return menu_page(request, items=items)
 
 
-@router.page("32{day:date}", name="day", title="One day")
+@router.page(
+    "32{day:date}",
+    name="day",
+    title="One day",
+    #  In a list of visited pages "One day" is the wrong words, naming the kind
+    #  of page rather than the day. day_title is defined below this, so the
+    #  label is deferred to a lambda rather than named directly.
+    label=lambda day: day_title(day),
+)
 async def one_day(request: PageRequest, day: date) -> Page:
     """Every post held from one day, in the order they were published."""
     posts = await _read(request, lambda repository: repository.posts_on(day))
@@ -200,7 +208,7 @@ async def forums_index(request: PageRequest) -> Page:
     return menu_page(request, items=items)
 
 
-@router.page("42{forum_id:int}", name="forum", title="One forum")
+@router.page("42{forum_id:int}", name="forum", title="One forum", label="Forum {forum_id}")
 async def one_forum(request: PageRequest, forum_id: int) -> Page:
     """The newest posts held from one forum."""
     posts = await _read(request, lambda repository: repository.posts_in_forum(forum_id))
@@ -232,7 +240,9 @@ async def contributors_index(request: PageRequest) -> Page:
     return menu_page(request, items=items)
 
 
-@router.page("52{user_id:int}", name="contributor", title="One contributor")
+@router.page(
+    "52{user_id:int}", name="contributor", title="One contributor", label="Contributor {user_id}"
+)
 async def one_contributor(request: PageRequest, user_id: int) -> Page:
     """The newest posts held from one contributor."""
     posts = await _read(request, lambda repository: repository.posts_by_author(user_id))
@@ -268,7 +278,7 @@ async def topics_index(request: PageRequest) -> Page:
     return menu_page(request, items=items)
 
 
-@router.page("72{topic_id:int}", name="topic", title="One topic")
+@router.page("72{topic_id:int}", name="topic", title="One topic", label="Topic {topic_id}")
 async def one_topic(request: PageRequest, topic_id: int) -> Page:
     """Every post held from one topic."""
     posts = await _read(request, lambda repository: repository.posts_in_topic(topic_id))
@@ -284,7 +294,7 @@ async def latest_posts(request: PageRequest) -> Page:
     return _posts_menu(request, posts)
 
 
-@router.page("82{post_id:int}", name="post", title="One post")
+@router.page("82{post_id:int}", name="post", title="One post", label="Post {post_id}")
 async def one_post(request: PageRequest, post_id: int) -> Page:
     """One post in full, or a notice where the archive has not seen it."""
     post = await _read(request, lambda repository: repository.post(post_id))

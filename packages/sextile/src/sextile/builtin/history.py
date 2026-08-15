@@ -40,19 +40,19 @@ def history_page(
     *,
     request: "PageRequest",
     been: Sequence[PageAddress],
-    describe: Callable[[PageAddress], str],
+    label: Callable[[PageAddress], str],
     title: str = TITLE,
 ) -> Page:
     """Build the history page.
 
     ``been`` is oldest first, as the session keeps it; the page shows it newest
     first, so that key 1 means the same as `*0#` and the numbers count backwards
-    through the call.
+    through the call. ``label`` says what to call each visited address.
     """
     address = request.address
     entries = [
         MenuItem(
-            text=describe(where),
+            text=label(where),
             #  How far back it is, because the digit only counts the steps on
             #  the first frame -- keys run 1-9 on every frame, as any other
             #  viewdata menu's do, so that no entry is shown which cannot be

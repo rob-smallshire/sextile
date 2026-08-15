@@ -406,21 +406,21 @@ class TestAskingWhatAnAddressIs:
         assert Sextile().route(PageAddress("6")) is None
 
 
-class TestDescribingAPage:
-    """What to call a page in a list of them.
+class TestLabellingAPage:
+    """What to call a page in a list of pages a reader has visited.
 
-    Route names are the application's own words, so a generic description comes
-    out in the service's vocabulary without the framework knowing any of it.
+    Route names are the application's own words, so a generic label comes out in
+    the service's vocabulary without the framework knowing any of it.
     """
 
-    def test_a_page_is_described_by_its_route(self) -> None:
+    def test_a_page_is_labelled_by_its_route(self) -> None:
         app = Sextile()
 
         @app.page("8", name="latest posts")
         async def posts(request: PageRequest) -> Page:
             return one_frame()
 
-        assert app.describe(PageAddress("8")) == "latest posts"
+        assert app.label_for(PageAddress("8")) == "latest posts"
 
     def test_its_fields_come_after_the_name(self) -> None:
         app = Sextile()
@@ -429,17 +429,40 @@ class TestDescribingAPage:
         async def post(request: PageRequest, post_id: int) -> Page:
             return one_frame()
 
-        assert app.describe(PageAddress("82489493")) == "post 489493"
+        assert app.label_for(PageAddress("82489493")) == "post 489493"
 
-    def test_an_unrouted_page_is_described_by_its_number(self) -> None:
-        assert Sextile().describe(PageAddress("6")) == "*6#"
+    def test_an_unrouted_page_is_labelled_by_its_number(self) -> None:
+        assert Sextile().label_for(PageAddress("6")) == "*6#"
 
-    def test_a_service_can_describe_its_own_pages(self) -> None:
-        class Mine(Sextile):
-            def describe(self, address: PageAddress) -> str:
-                return f"page {address}, obviously"
+    def test_a_route_may_give_a_label_template_over_its_fields(self) -> None:
+        #  What replaced the describe hook: the words for a field page go beside
+        #  the route, as a format template filled from the captured fields.
+        app = Sextile(
+            pages=[
+                PageRoute(
+                    "82{post_id:int}", _nothing, name="post", title="One post",
+                    label="Post {post_id}",
+                )
+            ]
+        )
+        assert app.label_for(PageAddress("82489493")) == "Post 489493"
 
-        assert Mine().describe(PageAddress("8")) == "page 8, obviously"
+    def test_a_label_may_be_a_callable_over_the_fields(self) -> None:
+        app = Sextile(
+            pages=[
+                PageRoute(
+                    "82{post_id:int}", _nothing, name="post", title="One post",
+                    label=lambda post_id: f"#{post_id}",
+                )
+            ]
+        )
+        assert app.label_for(PageAddress("82489493")) == "#489493"
+
+    def test_a_route_without_a_label_falls_back_to_the_title(self) -> None:
+        app = Sextile(
+            pages=[PageRoute("1", _nothing, name="main", title="Main index")]
+        )
+        assert app.label_for(PageAddress("1")) == "Main index"
 
 
 class TestSayingWhatAPageIsAtRegistration:
@@ -471,23 +494,23 @@ class TestSayingWhatAPageIsAtRegistration:
         assert found is not None
         assert found.detail == "who registered"
 
-    def test_the_title_is_what_describes_it(self) -> None:
+    def test_the_title_is_what_labels_it(self) -> None:
         app = Sextile()
 
         @app.page("5", name="users", title="By user")
         async def users(request: PageRequest) -> Page:
             return one_frame()
 
-        assert app.describe(PageAddress("5")) == "By user"
+        assert app.label_for(PageAddress("5")) == "By user"
 
-    def test_a_titled_page_with_fields_is_described_with_them(self) -> None:
+    def test_a_titled_page_with_fields_is_labelled_with_them(self) -> None:
         app = Sextile()
 
         @app.page("52{user_id:int}", name="user", title="User")
         async def user(request: PageRequest, user_id: int) -> Page:
             return one_frame()
 
-        assert app.describe(PageAddress("5210058")) == "User 10058"
+        assert app.label_for(PageAddress("5210058")) == "User 10058"
 
     def test_an_untitled_page_falls_back_to_its_route_name(self) -> None:
         app = Sextile()
@@ -496,7 +519,7 @@ class TestSayingWhatAPageIsAtRegistration:
         async def users(request: PageRequest) -> Page:
             return one_frame()
 
-        assert app.describe(PageAddress("5")) == "users"
+        assert app.label_for(PageAddress("5")) == "users"
 
     def test_asking_about_a_page_there_is_not(self) -> None:
         assert Sextile().page_info("nothing") is None
@@ -999,12 +1022,19 @@ class TestAPageKnowingItsService:
 
 
 class TestHeadingAPage:
-    def test_the_heading_is_the_registered_title_shouted(self) -> None:
+    def test_title_for_is_the_registered_title_as_registered(self) -> None:
         app = Sextile(
             pages=[PageRoute("5", _nothing, name="users", title="By user")]
         )
+        assert app.title_for(PageAddress("5")) == "By user"
 
-        assert app.heading_for(PageAddress("5")) == "BY USER"
+    def test_an_untitled_or_unrouted_address_has_no_title(self) -> None:
+        #  The layout shouts a registered title into the header where the page
+        #  gave none; that a page so headed reads "WHERE YOU HAVE BEEN" is
+        #  covered where a whole page is built. Here only the value it reads.
+        app = Sextile(pages=[PageRoute("5", _nothing, name="users")])
+        assert app.title_for(PageAddress("5")) is None
+        assert app.title_for(PageAddress("6")) is None
 
 
 class TestAskingForAPageWithoutASocket:
@@ -1051,46 +1081,3 @@ class TestAskingForAPageWithoutASocket:
         app = Sextile(pages=[PageRoute("1", main, name="main")])
         await app.ask("1", neighbours=Neighbours(next=PageAddress("2")))
         assert seen == [PageAddress("2")]
-
-
-class TestBetterWordsForAPage:
-    """`describe` reads what a page said about itself when it was registered.
-
-    Right for a page whose number is fixed, wrong for one whose number carries
-    a field: "One post" is the right title in a list of *kinds* of page and the
-    wrong one in a list of pages a reader has been to.
-    """
-
-    def test_a_service_may_say_it_differently(self) -> None:
-        app = Sextile(
-            pages=[PageRoute("82{post_id:int}", _nothing, name="post", title="One post")]
-        )
-
-        @app.on_describe
-        def better(address: PageAddress) -> str | None:
-            found = app.route(address)
-            if found is not None and found.name == "post":
-                return f"Post {found.params['post_id']}"
-            return None
-
-        assert app.describe(PageAddress("82489493")) == "Post 489493"
-
-    def test_and_need_only_say_what_it_means_to_change(self) -> None:
-        #  None means the registration's own words will do, so a handler is a
-        #  list of exceptions rather than a reimplementation.
-        app = Sextile(
-            pages=[
-                PageRoute("1", _nothing, name="main", title="Main index"),
-                PageRoute("82{post_id:int}", _nothing, name="post", title="One post"),
-            ]
-        )
-
-        @app.on_describe
-        def better(address: PageAddress) -> str | None:
-            return None
-
-        assert app.describe(PageAddress("1")) == "Main index"
-
-    def test_a_service_without_one_is_unaffected(self) -> None:
-        app = Sextile(pages=[PageRoute("1", _nothing, name="main", title="Main index")])
-        assert app.describe(PageAddress("1")) == "Main index"

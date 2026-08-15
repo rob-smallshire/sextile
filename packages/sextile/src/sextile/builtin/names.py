@@ -40,12 +40,12 @@ def names_page(
     *,
     request: "PageRequest",
     named: Mapping[str, PageAddress],
-    describe: Callable[[PageAddress], str],
+    label: Callable[[PageAddress], str],
     title: str = TITLE,
 ) -> Page:
     """Build the page of named jumps, one row per word."""
     entries = [
-        MenuItem(text=keyed(word), detail=describe(named[word])) for word in sorted(named)
+        MenuItem(text=keyed(word), detail=label(named[word])) for word in sorted(named)
     ]
     return PageLayout(
         title=title, parts=[Flowing(Listing(entries=entries, empty=_NOTHING))]

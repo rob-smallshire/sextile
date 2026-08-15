@@ -21,7 +21,7 @@ the first invariant holding: a contents page lists what a service registered,
 with no knowledge of what those pages are about.
 
 Where a page needs the service's own words rather than its own data, it takes a
-`describe` callable and asks. The labels then read in the service's vocabulary
+`label` callable and asks. The labels then read in the service's vocabulary
 without the framework ever holding it.
 
 The handlers a `PageRoute` points at are `sextile.handlers`, not here. These

@@ -97,7 +97,6 @@ why it does not need one: a service that wants it wraps its pages.
 
 type Lifespan = Callable[["Sextile"], AbstractAsyncContextManager[None]]
 type ResolveHandler = Callable[[str], PageAddress | None]
-type DescribeHandler = Callable[[PageAddress], str | None]
 
 
 class Sextile:
@@ -121,7 +120,6 @@ class Sextile:
         self._timed_out: PartingHandler | None = None
         self._failed: FailureHandler | None = None
         self._unresolved: ResolveHandler | None = None
-        self._describing: DescribeHandler | None = None
         self._middleware = tuple(middleware)
         self._lifespan = lifespan
         self._running: AbstractAsyncContextManager[None] | None = None
@@ -173,6 +171,7 @@ class Sextile:
         title: str = "",
         detail: str = "",
         keywords: Sequence[str] = (),
+        label: str | Callable[..., str] | None = None,
     ) -> Callable[[H], H]:
         """Register a handler for every page number matching ``pattern``.
 
@@ -190,6 +189,10 @@ class Sextile:
         the same reason the title is: a page should say what it is in one
         place.
 
+        ``label`` is what to call the page in a list of visited pages, when the
+        listed title is wrong because the number carried a field. See
+        `PageRoute.label`.
+
         Generic in the handler so that decorating one does not throw its own
         signature away: a service checked strictly should stay checked strictly
         on the far side of the decorator.
@@ -204,6 +207,7 @@ class Sextile:
             title=title,
             detail=detail,
             keywords=keywords,
+            label=label,
         )
 
     def page_info(self, name: str) -> PageRoute | None:
@@ -267,20 +271,6 @@ class Sextile:
     def on_failed[H: FailureHandler](self, handler: H) -> H:
         """Register what this service says when a page will not build."""
         self._failed = handler
-        return handler
-
-    def on_describe[H: DescribeHandler](self, handler: H) -> H:
-        """Register better words for a page than its registration can give.
-
-        `describe` reads what a page said about itself, which is right for a
-        page whose number is fixed and wrong for one whose number carries a
-        field: "One item" is the right title in a list of *kinds* of page and
-        the wrong one in a list of pages a reader has been to.
-
-        Returning None means the registration's own words will do, so a handler
-        need only say what it means to say differently.
-        """
-        self._describing = handler
         return handler
 
     def on_unresolved[H: ResolveHandler](self, handler: H) -> H:
@@ -438,23 +428,39 @@ class Sextile:
         """
         return self._router.match(address)
 
-    def describe(self, address: PageAddress) -> str:
-        if self._describing is not None:
-            said = self._describing(address)
-            if said is not None:
-                return said
+    def title_for(self, address: PageAddress) -> str | None:
+        """The title a page was registered with, as registered.
+
+        None where the address is unrouted or its route was given no title. Not
+        upper-cased: the layout shouts it as it draws the heading, and a listing
+        reads it as it is.
+        """
+        found = self.route(address)
+        about = self._pages.get(found.name) if found and found.name else None
+        return about.title if about and about.title else None
+
+    def label_for(self, address: PageAddress) -> str:
+        """What to call a page in a list of pages a reader has visited.
+
+        The route's `label` when it set one, so a page whose number carries a
+        field reads as the page a reader was on ("Post 489493") rather than as
+        the kind of page it is ("One post"). A `str.format` template is filled
+        from the captured fields; a callable is passed them as keyword arguments.
+
+        With no `label`, the registered title followed by the field values, or
+        the keyed number for a page that is unrouted or untitled.
+        """
         found = self.route(address)
         if found is None or found.name is None:
             return keyed(address)
         about = self._pages.get(found.name)
+        if about is not None and about.label is not None:
+            if callable(about.label):
+                return about.label(**found.params)
+            return about.label.format(**found.params)
         called = about.title if about is not None else found.name
         fields = " ".join(str(value) for value in found.params.values())
         return f"{called} {fields}".strip()
-
-    def heading(self, address: PageAddress, default: str) -> str:
-        found = self.route(address)
-        about = self._pages.get(found.name) if found and found.name else None
-        return about.title.upper() if about and about.title else default
 
     def keywords(self) -> dict[str, PageAddress]:
         """The named jumps, for a page that wants to list them."""
@@ -487,15 +493,6 @@ class Sextile:
             self._running = None
         self._state.clear()
 
-    def heading_for(self, address: PageAddress) -> str:
-        """What to head a page with: what it was registered as, in upper case.
-
-        A page whose heading is its registered name gets it from here rather
-        than repeating it in its own chrome. A page whose heading is not its
-        registered name writes its own instead of calling this.
-        """
-        return self.describe(address).upper()
-
     async def history_page(self, request: PageRequest) -> Page:
         """Where this caller has been, newest first, as a menu of shortcuts.
 
@@ -511,8 +508,8 @@ class Sextile:
         return history_page(
             request=request,
             been=request.history,
-            describe=self.describe,
-            title=self.heading(request.address, history.TITLE),
+            label=self.label_for,
+            title=(self.title_for(request.address) or history.TITLE).upper(),
         )
 
     async def guide_page(
@@ -542,8 +539,8 @@ class Sextile:
         """
         return guidance.guide_page(
             request=request,
-            title=self.heading(request.address, guidance.TITLE),
-            home_called=self.describe(self.index).lower(),
+            title=(self.title_for(request.address) or guidance.TITLE).upper(),
+            home_called=self.label_for(self.index).lower(),
             moving=moving,
             asking=asking,
             items=items,
@@ -576,8 +573,8 @@ class Sextile:
         return readership.recent_page(
             request=request,
             visits=await visits.recent(limit, prefix=prefix),
-            describe=self.describe,
-            title=self.heading(request.address, readership.RECENT_TITLE),
+            label=self.label_for,
+            title=(self.title_for(request.address) or readership.RECENT_TITLE).upper(),
         )
 
     async def popular_page(
@@ -603,8 +600,8 @@ class Sextile:
         return readership.popular_page(
             request=request,
             visits=await visits.popular(limit, prefix=prefix, since=since),
-            describe=self.describe,
-            title=self.heading(request.address, readership.POPULAR_TITLE),
+            label=self.label_for,
+            title=(self.title_for(request.address) or readership.POPULAR_TITLE).upper(),
         )
 
     async def callers_page(
@@ -627,7 +624,7 @@ class Sextile:
                 (said, await visits.callers(since=when - window))
                 for window, said in periods
             ],
-            title=self.heading(request.address, readership.CALLERS_TITLE),
+            title=(self.title_for(request.address) or readership.CALLERS_TITLE).upper(),
         )
 
     async def keywords_page(self, request: PageRequest) -> Page:
@@ -640,8 +637,8 @@ class Sextile:
         return names_page(
             request=request,
             named=self.keywords(),
-            describe=self.describe,
-            title=self.heading(request.address, names.TITLE),
+            label=self.label_for,
+            title=(self.title_for(request.address) or names.TITLE).upper(),
         )
 
     async def contents_page(self, request: PageRequest) -> Page:
@@ -655,7 +652,7 @@ class Sextile:
         return contents_page(
             request=request,
             pages=self.pages(),
-            title=self.heading(request.address, contents.TITLE),
+            title=(self.title_for(request.address) or contents.TITLE).upper(),
         )
 
     async def ask(

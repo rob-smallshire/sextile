@@ -10,7 +10,7 @@ maps them into its own numbering or does without.
 **A page that no longer exists is left off.** A log is a record of what was
 fetched and a menu is an offer, so the two are not the same list: a number that
 answered last week and does not answer now belongs in one and not the other.
-`describe` is asked, and a page the service will not name is not offered.
+`label` is asked, and a page the service will not name is not offered.
 """
 
 from collections.abc import Callable, Sequence
@@ -71,7 +71,7 @@ def recent_page(
     *,
     request: "PageRequest",
     visits: Sequence[Visit],
-    describe: Callable[[PageAddress], str],
+    label: Callable[[PageAddress], str],
     title: str = RECENT_TITLE,
     now: datetime | None = None,
 ) -> Page:
@@ -84,7 +84,7 @@ def recent_page(
         entries=[
             (visit, _ago(when - visit.at.astimezone(UTC))) for visit in visits
         ],
-        describe=describe,
+        label=label,
     )
 
 
@@ -92,7 +92,7 @@ def popular_page(
     *,
     request: "PageRequest",
     visits: Sequence[Visit],
-    describe: Callable[[PageAddress], str],
+    label: Callable[[PageAddress], str],
     title: str = POPULAR_TITLE,
 ) -> Page:
     """What has been looked at most, the most read first."""
@@ -101,7 +101,7 @@ def popular_page(
         title=title,
         empty=_NOTHING_READ,
         entries=[(visit, _times(visit.times)) for visit in visits],
-        describe=describe,
+        label=label,
     )
 
 
@@ -111,7 +111,7 @@ def _menu(
     title: str,
     empty: str,
     entries: Sequence[tuple[Visit, str]],
-    describe: Callable[[PageAddress], str],
+    label: Callable[[PageAddress], str],
 ) -> Page:
     return PageLayout(
         title=title,
@@ -125,7 +125,7 @@ def _menu(
                             destination=visit.page,
                         )
                         for visit, said in entries
-                        if (named := describe(visit.page))
+                        if (named := label(visit.page))
                     ],
                     empty=empty,
                 )

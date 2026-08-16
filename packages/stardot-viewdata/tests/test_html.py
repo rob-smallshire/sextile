@@ -28,8 +28,8 @@ from stardot_viewdata.feed.atom import parse_feed
 from stardot_viewdata.html import parse_post_body
 
 FIXTURES = Path(__file__).parent / "data"
-BOARD_POSTS = parse_feed((FIXTURES / "board-feed.xml").read_text()).posts
-TOPIC_POSTS = parse_feed((FIXTURES / "topic-28000-feed.xml").read_text()).posts
+BOARD_POSTS = parse_feed((FIXTURES / "board-feed.xml").read_text(encoding="utf-8")).posts
+TOPIC_POSTS = parse_feed((FIXTURES / "topic-28000-feed.xml").read_text(encoding="utf-8")).posts
 ALL_POSTS = BOARD_POSTS + TOPIC_POSTS
 
 

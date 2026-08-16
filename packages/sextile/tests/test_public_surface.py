@@ -71,7 +71,7 @@ _WORKSPACE: Final = pathlib.Path(__file__).resolve().parents[3]
 def imports_of(service: str) -> Iterator[tuple[pathlib.Path, str]]:
     """Every module of `sextile` that one service imports, and where from."""
     for found in sorted((_WORKSPACE / "packages" / service).rglob("*.py")):
-        tree = ast.parse(found.read_text())
+        tree = ast.parse(found.read_text(encoding="utf-8"))
         for node in ast.walk(tree):
             if isinstance(node, ast.ImportFrom) and node.level == 0:
                 named = node.module or ""
@@ -97,7 +97,7 @@ def named_imports_of(service: str) -> Iterator[tuple[pathlib.Path, str, str]]:
     accept it as such.
     """
     for found in sorted(_service_src_dirpath(service).rglob("*.py")):
-        tree = ast.parse(found.read_text())
+        tree = ast.parse(found.read_text(encoding="utf-8"))
         for node in ast.walk(tree):
             if isinstance(node, ast.ImportFrom) and node.level == 0:
                 named = node.module or ""
@@ -227,7 +227,7 @@ _MODULE_LINE: Final = re.compile(r"^\s*modules/(sextile(?:\.\w+)*)\s*$")
 def _api_reference_modules() -> set[str]:
     return {
         match.group(1)
-        for line in _API_INDEX.read_text().splitlines()
+        for line in _API_INDEX.read_text(encoding="utf-8").splitlines()
         if (match := _MODULE_LINE.match(line))
     }
 

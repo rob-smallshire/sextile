@@ -245,7 +245,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     )
     arguments = parser.parse_args(argv)
     font = convert(
-        parse(arguments.source_filepath.read_text(errors="replace")),
+        parse(arguments.source_filepath.read_text(encoding="utf-8", errors="replace")),
         name=arguments.name,
         tracking=arguments.tracking,
         space=arguments.space,

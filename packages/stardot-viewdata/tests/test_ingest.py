@@ -16,7 +16,7 @@ from stardot_viewdata.model import Feed
 from stardot_viewdata.store.repository import Repository
 
 FIXTURES = Path(__file__).parent / "data"
-BOARD_FEED = (FIXTURES / "board-feed.xml").read_text()
+BOARD_FEED = (FIXTURES / "board-feed.xml").read_text(encoding="utf-8")
 
 
 class FakeSource:

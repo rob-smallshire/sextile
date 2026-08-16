@@ -17,7 +17,7 @@ import pytest
 from stardot_viewdata.feed.robots import RobotsRules
 
 FIXTURES = Path(__file__).parent / "data"
-STARDOT_ROBOTS = (FIXTURES / "stardot-robots.txt").read_text()
+STARDOT_ROBOTS = (FIXTURES / "stardot-robots.txt").read_text(encoding="utf-8")
 
 AGENT = "Sextile/0.1 (+viewdata gateway for Stardot)"
 

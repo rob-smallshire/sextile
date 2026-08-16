@@ -17,9 +17,9 @@ from stardot_viewdata.model import Feed
 
 FIXTURES = Path(__file__).parent / "data"
 
-BOARD_FEED = (FIXTURES / "board-feed.xml").read_text()
-TOPIC_FEED = (FIXTURES / "topic-28000-feed.xml").read_text()
-FORUM_FEED = (FIXTURES / "forum-53-feed.xml").read_text()
+BOARD_FEED = (FIXTURES / "board-feed.xml").read_text(encoding="utf-8")
+TOPIC_FEED = (FIXTURES / "topic-28000-feed.xml").read_text(encoding="utf-8")
+FORUM_FEED = (FIXTURES / "forum-53-feed.xml").read_text(encoding="utf-8")
 
 ALL_FEEDS = [
     pytest.param(BOARD_FEED, id="board"),

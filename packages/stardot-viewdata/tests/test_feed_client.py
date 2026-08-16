@@ -15,7 +15,7 @@ import pytest
 from stardot_viewdata.feed.client import FeedClient, ForbiddenByRobotsError
 
 FIXTURES = Path(__file__).parent / "data"
-BOARD_FEED = (FIXTURES / "board-feed.xml").read_text()
+BOARD_FEED = (FIXTURES / "board-feed.xml").read_text(encoding="utf-8")
 
 ROBOTS = """
 User-agent: *

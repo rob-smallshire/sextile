@@ -48,7 +48,7 @@ class Repository:
         self._connection.row_factory = sqlite3.Row
         self._lock = threading.Lock()
         with self._lock:
-            self._connection.executescript(_SCHEMA_FILEPATH.read_text())
+            self._connection.executescript(_SCHEMA_FILEPATH.read_text(encoding="utf-8"))
 
     @classmethod
     def open(cls, database_filepath: Path | str) -> Self:

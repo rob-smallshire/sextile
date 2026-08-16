@@ -1,0 +1,95 @@
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+  workflow_dispatch:
+
+jobs:
+  test:
+    name: Test on ${{ matrix.os }} / Python ${{ matrix.python-version }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        python-version: ["3.12", "3.13"]
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v8.0.0
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache-dependency-glob: |
+            pyproject.toml
+            packages/*/pyproject.toml
+
+      - name: Sync third-party dependencies only (no workspace packages)
+        # No editable installs: the workspace members go in from freshly-built
+        # wheels below, so the tests run against the distribution artefacts and
+        # a missing package-data declaration fails here rather than in an
+        # installed copy.
+        run: uv sync --no-install-workspace
+
+      - name: Ruff
+        # Lint and type-check against the source tree, which is fine; only the
+        # tests must run against the wheels.
+        run: uv run --no-project ruff check .
+
+      - name: Mypy (strict)
+        # mypy reads the workspace sources from mypy_path (a set of file paths,
+        # not installed packages), so it needs no editable install.
+        run: uv run --no-project mypy
+
+      - name: Build every workspace wheel
+        run: uv build --all-packages --out-dir dist/
+
+      - name: Install the wheels
+        # bash so the dist/*.whl glob expands the same way on Windows.
+        shell: bash
+        run: uv pip install dist/*.whl
+
+      - name: Guard - sextile must import from the wheel, not the source
+        run: uv run --no-project python scripts/check-wheel-import.py
+
+      - name: Tests against the installed wheels
+        # --no-project stops uv re-syncing (which would reinstate editable
+        # installs) so pytest imports from the wheels in site-packages.
+        run: uv run --no-project pytest -v
+
+  docs:
+    name: Build docs
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v8.0.0
+        with:
+          python-version: "3.13"
+          cache-dependency-glob: |
+            pyproject.toml
+            packages/*/pyproject.toml
+
+      - name: Sync documentation dependencies (no workspace packages)
+        run: uv sync --no-install-workspace --group docs
+
+      - name: Build every workspace wheel
+        run: uv build --all-packages --out-dir dist/
+
+      - name: Install the wheels
+        # The documentation renders live Viewdata frames from the installed
+        # package's fonts and CSS, so building it against the wheels catches the
+        # same package-data bugs the test job does.
+        shell: bash
+        run: uv pip install dist/*.whl
+
+      - name: Guard - sextile must import from the wheel, not the source
+        run: uv run --no-project python scripts/check-wheel-import.py
+
+      - name: Build the documentation (warnings are errors)
+        run: uv run --no-project sphinx-build -n -W --keep-going -b html docs docs/_build/html

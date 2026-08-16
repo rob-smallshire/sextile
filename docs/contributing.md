@@ -89,5 +89,7 @@ from the package.
 ```{toctree}
 :hidden:
 
+open-questions
+spikes/README
 /plans/revealing-sextile
 ```

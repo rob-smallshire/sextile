@@ -12,13 +12,13 @@ but if `updated` does not move, an edit will only be noticed while the post is
 still inside the feed's ten-post window.
 
 **Do the Stardot administrators want to fix the feed?**
-[phpbb-feed-code-newlines.md](../packages/stardot-viewdata/docs/phpbb-feed-code-newlines.md) is written to be
+`packages/stardot-viewdata/docs/phpbb-feed-code-newlines.md` is written to be
 handed over. It would make code listings legible, which on a board largely about
 6502 assembler is the single biggest improvement available.
 
 **Would they host a small read-only endpoint?** They would: the administrator
 has proposed a phpBB extension, which is better than the endpoint we were going
-to ask for. See [target-architecture.md](target-architecture.md) for the shape
+to ask for. See {doc}`target-architecture` for the shape
 of it and the phases between here and there.
 
 ## Wanted, once a real screen has been watched
@@ -66,9 +66,9 @@ Beeb for half an hour.
 - **Mounting is gone.** It let one application answer a prefix of another's
   numbering, and no service ever used it. Removing it took with it everything
   the rest of the framework had to know about the seam. Written up in
-  [sextile/docs/design.md](../packages/sextile/docs/design.md); if a service
-  ever genuinely needs to be assembled from parts, that is the place to start
-  reading and the reasons will still be there.
+  {doc}`explanation/design-decisions`; if a service ever genuinely needs to be
+  assembled from parts, that is the place to start reading and the reasons will
+  still be there.
 - **`sextile.viewdata` is a large surface for an application to reach into.**
   Canvas, colours, drawing, composition and the frame itself are all public, and
   an application needs most of them. Whether some of it should be a smaller,
@@ -138,8 +138,7 @@ Beeb for half an hour.
 
 - **Mosaic fonts** — large lettering drawn out of block graphics, for banners
   and title frames. The layer beneath it is built; the requirements, the source
-  formats and the measurements are written up in
-  [mosaic-fonts.md](../packages/sextile/docs/mosaic-fonts.md).
+  formats and the measurements are written up in {doc}`explanation/mosaic-fonts`.
 
 ## Deliberately not done
 

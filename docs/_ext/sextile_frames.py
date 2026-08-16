@@ -139,7 +139,7 @@ class SextileFrame(SphinxDirective):
             produced.append(nodes.raw("", rendered, format="html"))
         return produced
 
-    def _render(self) -> "str | _AsText":
+    def _render(self) -> str | _AsText:
         resolved = self._resolve()
         spec = self.options.get("frames")
         if spec:

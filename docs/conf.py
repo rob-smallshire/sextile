@@ -47,10 +47,7 @@ exclude_patterns = [
     "Thumbs.db",
     ".DS_Store",
     "discussions/**",
-    "spikes/**",
-    "architecture.md",
-    "target-architecture.md",
-    "open-questions.md",
+    "spikes/*.py",
     "**/__pycache__/**",
 ]
 

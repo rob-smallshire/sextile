@@ -17,19 +17,17 @@ to convention.
 
 Each is written up as built, and those are the documents to read:
 
-| | |
-|---|---|
-| [sextile/docs/design.md](../packages/sextile/docs/design.md) | the framework: the seam, addressing, routing, the session, the wire |
-| [stardot-viewdata/docs/design.md](../packages/stardot-viewdata/docs/design.md) | the numbering, the archive, the polite ingest, phpBB's HTML |
-| [calendar-viewdata/docs/design.md](../packages/calendar-viewdata/docs/design.md) | the second application, and what it was for |
-| [weather-viewdata/docs/design.md](../packages/weather-viewdata/docs/design.md) | the third: place search, met.no, drawing the weather, and the twenty-odd things it asked of the framework |
-| [sextile/docs/public-surface.md](../packages/sextile/docs/public-surface.md) | which of the framework an application may import, and where that line is currently crossed |
-| [sextile/docs/layout.md](../packages/sextile/docs/layout.md) | how a page is laid out: furniture, parts, and the keys a frame answers |
+The framework's own design is written up here — its choices in
+{doc}`explanation/design-decisions`, its surface in
+{doc}`reference/public-surface`, its layout in {doc}`reference/layout`, its wire
+in {doc}`reference/viewdata-encoding`. Each application keeps its own design note
+beside its code, at `packages/stardot-viewdata/docs/design.md`,
+`packages/calendar-viewdata/docs/design.md` and
+`packages/weather-viewdata/docs/design.md`.
 
-[target-architecture.md](target-architecture.md) says where all this is going
-and why — the phpBB extension, and the phases between here and it.
-[open-questions.md](open-questions.md) lists what is known to be missing and
-what is deliberately not done.
+{doc}`target-architecture` says where all this is going and why — the phpBB
+extension, and the phases between here and it. {doc}`open-questions` lists what is
+known to be missing and what is deliberately not done.
 
 ## The seams
 
@@ -67,15 +65,9 @@ a change to it.
 
 ## Where to start reading
 
-Two narratives follow the arrows end to end, and are the quickest way in:
-
-- [rendering.md](../packages/sextile/docs/rendering.md) takes one document from
-  its source to the wire.
-- [navigation.md](../packages/sextile/docs/navigation.md) takes one keypress
-  from the terminal to a reply.
-
-To write a service of your own,
-[writing-an-application.md](../packages/sextile/docs/writing-an-application.md).
+{doc}`explanation/rendering-pipeline` follows one document from its source to the
+wire. To write a service of your own, the {doc}`tutorial/index` builds one step
+by step and the {doc}`how-to/index` answers particular questions.
 
 ## What was measured rather than assumed
 
@@ -84,12 +76,11 @@ Beebium rather than on documentation: attributes must travel escaped, a frame is
 24 × 40 and wraps rather than scrolling, `RETURN` transmits 0x5F, page numbers
 have no practical length limit.
 
-The scripts that settled each question are indexed in
-[spikes/README.md](spikes/README.md); they need a local Beebium checkout and are
-not part of the test suite. What they established is written up in
-[viewdata-encoding.md](../packages/sextile/docs/viewdata-encoding.md), which
-distinguishes what was **verified** from what was **inferred**. Keep that
-distinction in anything new.
+The scripts that settled each question are indexed in {doc}`spikes/README`; they
+need a local Beebium checkout and are not part of the test suite. What they
+established is written up in {doc}`reference/viewdata-encoding`, which
+distinguishes what was verified from what was inferred. Keep that distinction in
+anything new.
 
 ## Testing
 

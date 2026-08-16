@@ -29,6 +29,9 @@ describes what exists today.
 
 ## Why the boundaries fall there
 
+The lifecycle argument in its framework form is in {doc}`explanation/why-sextile`;
+this is the same fact read as a strategy for integrating with phpBB.
+
 **The lifecycle mismatch is the decisive argument.** phpBB is built around a
 short-lived request: bootstrap, authenticate, query, render, end. A Viewdata
 service is the opposite shape — a connection opens, and the session lasts until
@@ -101,6 +104,6 @@ archive once the board can be asked directly.
 material. Named for its responsibility rather than its current consumer, because
 a Viewdata service is only the first front end it could serve.
 
-The reasoning is recorded at length in
-[discussions/ChatGPT-phpBB-extension-integration.md](discussions/ChatGPT-phpBB-extension-integration.md),
-with a sketch of the same picture beside it.
+The reasoning is recorded at length in the repository, at
+`docs/discussions/ChatGPT-phpBB-extension-integration.md`, with a sketch of the
+same picture beside it.

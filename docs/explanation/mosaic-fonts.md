@@ -119,8 +119,89 @@ async def proportional(request: PageRequest) -> Page:
 app = Sextile(name="Fonts", pages=[*router])
 ```
 
-Measured with the shipped `acorn` face, the same difference decides whether a
-banner fits the row at all:
+## The Sextile mosaic font format
+
+`font.read_font`/`write_font` read and write a human-readable, dependency-free
+format, because none of the importable bitmap formats carries the thing most
+needed — a per-glyph advance in blocks — and a vendored font must be reviewed like
+any other file. Glyphs are named by code point, not by the character, so a space,
+`#` and `.` need no quoting in a file whose picture rows are drawn in `#` and `.`.
+
+## Built-in mosaic font faces
+
+`font_names()` lists the shipped faces, each vendored and recorded in the
+repository's `NOTICE.md` with its source and terms. Check those before vendoring
+another: three sources were found to be not what a summary of them said — the
+"MIT fonts" are MIT in their source only, each font carrying its own Creative
+Commons or SIL OFL terms. The catalogue below is drawn from `font_names()`, a
+specimen a face — upper case, lower case and digits — with its name, height,
+whether it has lower case, and its provenance beneath.
+
+```{sextile-frame}
+:catalogue:
+
+from sextile import Custom, OnOneFrame, Page, PageLayout, PageRequest, PageRouter, Sextile
+from sextile.viewdata import lettering
+from sextile.viewdata.canvas import Canvas
+from sextile.viewdata.composition import Composition
+from sextile.viewdata.controls import Colour
+from sextile.viewdata.font import load_font, font_names
+from sextile.viewdata.lettering import Spacing, cells_needed, rows_needed
+
+_LINES = ("HAMBURGERS", "hamburgers", "0123456789")
+
+
+def _fit(word: str, face: object) -> str:
+    while word and cells_needed(word, face, spacing=Spacing.PROPORTIONAL) > 38:
+        word = word[:-1]
+    return word
+
+
+def _specimen(face: object) -> Custom:
+    tall = rows_needed(face)
+
+    def draw(canvas: Canvas, row: int) -> None:
+        for index, line in enumerate(_LINES):
+            layout = Composition()
+            lettering.place(
+                layout, row + index * (tall + 1), _fit(line, face), face,
+                Colour.WHITE, column=1, spacing=Spacing.PROPORTIONAL,
+            )
+            layout.draw(canvas)
+
+    return Custom(rows=3 * tall + 2, draw=draw)
+
+
+def _handler(face: object):
+    async def handler(request: PageRequest) -> Page:
+        return PageLayout(parts=[OnOneFrame(_specimen(face))], numbered=False).build(request)
+
+    return handler
+
+
+def _brief(text: str) -> str:
+    return text.split(",")[0].split(" http")[0].split(" (")[0].strip()
+
+
+router = PageRouter()
+captions: dict[str, str] = {}
+for _number, _name in enumerate(sorted(font_names()), start=1):
+    _face = load_font(_name)
+    _rows = rows_needed(_face)
+    _low = "lower case" if all(c in _face for c in "abcdefghijklmnopqrstuvwxyz") else "caps only"
+    captions[str(_number)] = (
+        f"{_name} — {_rows} row{'s' if _rows != 1 else ''}, {_low}, "
+        f"{_brief(_face.source)}, {_brief(_face.terms)}"
+    )
+    router.page(str(_number), name=_name, title=_name)(_handler(_face))
+
+app = Sextile(name="Fonts", pages=[*router])
+```
+
+## Fitting a banner to the row
+
+The spacing decides whether a banner fits the forty columns at all. Measured with
+the shipped `acorn` face:
 
 | | blocks | cells, with the attribute | fits on a row? |
 |---|---|---|---|
@@ -169,32 +250,3 @@ async def banner(request: PageRequest) -> Page:
 
 app = Sextile(name="Fonts", pages=[*router])
 ```
-
-## The faces shipped
-
-`font_names()` lists them; each is measured by how many rows of the frame it
-takes.
-
-| rows | faces |
-|---|---|
-| 1 | `3x3-mono` |
-| 2 | `arcade`, `pixelplace` |
-| 3 | `acorn`, `boldbash`, `console`, `console-bold`, and others |
-| 4 | `grotesque`, `scientifica`, and their variants |
-| 5 | `pixeloperator` and its variants |
-| 6 | `garland` |
-
-## A format of Sextile's own
-
-`font.read_font`/`write_font` read and write a human-readable, dependency-free
-format, because none of the importable bitmap formats carries the thing most
-needed — a per-glyph advance in blocks — and a vendored font must be reviewed like
-any other file. Glyphs are named by code point, not by the character, so a space,
-`#` and `.` need no quoting in a file whose picture rows are drawn in `#` and `.`.
-
-## Provenance
-
-Every vendored font is recorded in the repository's `NOTICE.md` with its source
-and terms. Three sources were checked and none was what a summary of it said: the
-"MIT fonts" are MIT in their source only, each font carrying its own Creative
-Commons or SIL OFL terms. Check before vendoring, not after.

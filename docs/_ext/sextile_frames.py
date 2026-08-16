@@ -122,6 +122,7 @@ class SextileFrame(SphinxDirective):
         "show-code": directives.flag,
         "hide-lines": directives.unchanged,
         "form": directives.unchanged,
+        "catalogue": directives.flag,
     }
 
     def run(self) -> list[nodes.Node]:
@@ -140,6 +141,8 @@ class SextileFrame(SphinxDirective):
         return produced
 
     def _render(self) -> str | _AsText:
+        if "catalogue" in self.options:
+            return self._render_catalogue()
         resolved = self._resolve()
         spec = self.options.get("frames")
         if spec:
@@ -156,6 +159,30 @@ class SextileFrame(SphinxDirective):
                 raise ValueError(f":form: is one of {', '.join(_TEXT_FORMS)}, not {form!r}")
             return _AsText(rendered(frame, form, colour=False))
         return render_html(frame)
+
+    def _render_catalogue(self) -> str:
+        """Every page of the snippet's `app`, each captioned from `captions`.
+
+        For a catalogue that cannot drift from what the code offers: the snippet
+        builds one page per item and a `captions` mapping of page number to the
+        line drawn beneath it, both generated from the source of truth.
+        """
+        namespace: dict[str, Any] = {"fetch": _fetch}
+        exec("\n".join(self.content), namespace)  # noqa: S102 -- the docs' own snippet
+        app = namespace.get("app")
+        if not isinstance(app, Sextile):
+            raise ValueError(":catalogue: needs the snippet to define `app`")
+        captions = namespace.get("captions", {})
+        figures = []
+        for route in sorted(app.routes(), key=lambda route: int(route.pattern)):
+            frame = _fetch(app, route.pattern)
+            caption = captions.get(route.pattern, route.title or route.pattern)
+            figures.append(
+                f'<figure class="viewdata-frame">'
+                f"{render_html(frame)}"
+                f"<figcaption>{escape(caption)}</figcaption></figure>"
+            )
+        return "\n".join(figures)
 
     def _render_frames(self, page: Page, spec: str) -> str:
         figures = []

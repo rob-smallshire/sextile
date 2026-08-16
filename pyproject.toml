@@ -2,7 +2,7 @@
 #  lockfile they share, and the tooling they are all held to.
 [project]
 name = "sextile-workspace"
-version = "0.1.1"
+version = "0.1.2"
 description = "Sextile, and the Viewdata services built on it"
 readme = "README.md"
 license = "MIT"
@@ -113,7 +113,7 @@ packages/sextile/tests"""
 #  commits and tags `v<version>`; pushing the tag runs
 #  .github/workflows/release.yml, which publishes sextile to PyPI.
 [tool.bumpversion]
-current_version = "0.1.1"
+current_version = "0.1.2"
 commit = true
 tag = true
 tag_name = "v{new_version}"

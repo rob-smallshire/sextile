@@ -155,15 +155,17 @@ class TypeAhead(Form):
         self._found = await self._lookup(self._value) if self._value else ()
 
     def footer_items(self) -> Sequence[FooterItem]:
-        #  What `#` does is marked against the suggestion it would take, which
-        #  is where a reader is looking anyway, so the row has the room to say
-        #  the rest in words. A range rather than a count: with one match on
-        #  offer, `1-3` would name two keys that do nothing, and the list
-        #  numbers itself where the reader is looking.
-        return (
-            FooterItem("A-Z", "type a name", Priority.PRIMARY),
-            FooterItem("1-9", "choose one", Priority.PRIMARY),
-        )
+        #  Only the digits: that a field is typed into is plain from the block
+        #  of colour with the cursor in it, so a word saying so would spend
+        #  footer room on what the reader can see. What `#` does is marked
+        #  against the suggestion it would take, which is where a reader is
+        #  looking anyway. The digits named are the ones on offer -- two matches
+        #  say `1-2`, one says `1` -- and where nothing has been typed the field
+        #  says how many it can offer, the footer being drawn once, with an
+        #  empty field, so a bare count would say nothing of the choice to come.
+        offered = len(self.choices()) or self._limit
+        keyed = "1" if offered == 1 else f"1-{offered}"
+        return (FooterItem(keyed, "choose one", Priority.PRIMARY),)
 
     def choices(self) -> Mapping[str, PageAddress]:
         return {

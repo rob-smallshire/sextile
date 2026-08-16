@@ -142,6 +142,26 @@ class TestWhatIsOffered:
         assert len(form.found) > 1
 
 
+class TestThePromptNamesTheDigitsOffered:
+    @staticmethod
+    def _choose(form: TypeAhead) -> list[str]:
+        return [item.key for item in form.footer_items() if item.label == "choose one"]
+
+    async def test_nothing_typed_names_the_field_capacity(self) -> None:
+        #  The footer is drawn once, with the field empty, so it says how many
+        #  the field can offer rather than nothing about the choice to come.
+        assert self._choose(a_field()) == ["1-3"]
+
+    async def test_one_match_names_the_one_digit(self) -> None:
+        assert self._choose(await typing(a_field(), "TROM")) == ["1"]
+
+    async def test_two_matches_name_two_digits(self) -> None:
+        assert self._choose(await typing(a_field(), "TRONDH")) == ["1-2"]
+
+    async def test_three_matches_name_three_digits(self) -> None:
+        assert self._choose(await typing(a_field(), "TRO")) == ["1-3"]
+
+
 class TestDrawing:
     async def test_the_field_shows_what_was_typed(self) -> None:
         frame = Frame()

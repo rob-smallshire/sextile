@@ -27,7 +27,7 @@ Example:
 """
 
 from abc import ABC, abstractmethod
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field, replace
 from typing import ClassVar, Protocol, runtime_checkable
 
@@ -112,7 +112,9 @@ class SequencePart[E](ABC):
     * ``numbered``: whether entries take a digit, and so whether the reader can
       choose them.
     * ``choose_hint``: what the prompt says about choosing, on frames with
-      something to choose.
+      something to choose. Its ``key`` is a placeholder: the frame names the
+      digits it actually offered, so a full frame says ``1-9`` and a short one
+      ``1-3``.
 
     Attributes:
         entries: The values to draw, in the order they are to appear.
@@ -192,10 +194,23 @@ class SequencePart[E](ABC):
             rows=taking * (self.rows_per_entry + self.gap) - self.gap,
             claim=Claim(
                 choices=choices,
-                named=[self.choose_hint] if choices and self.choose_hint else [],
+                named=self._prompt(choices),
             ),
             remainder=replace(self, entries=rest) if rest else None,
         )
+
+    def _prompt(self, choices: Mapping[str, PageAddress]) -> list[FooterItem]:
+        """The choose hint, its keys named as the digits offered on this frame.
+
+        A twelve-entry menu offers `1-9` on its first frame and `1-3` on its
+        second, and a single entry offers `1`; the prompt says what a reader can
+        actually key rather than a range that overpromises on the last frame.
+        """
+        if not choices or self.choose_hint is None:
+            return []
+        digits = sorted(int(key) for key in choices)
+        offered = str(digits[0]) if len(digits) == 1 else f"{digits[0]}-{digits[-1]}"
+        return [replace(self.choose_hint, key=offered)]
 
     def _fitting(self, space: Space) -> int:
         """How many entries go in this space.

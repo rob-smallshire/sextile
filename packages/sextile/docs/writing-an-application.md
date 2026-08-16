@@ -589,8 +589,9 @@ Both are `Form`s, and a service that wants a third shape subclasses `Form`.
 from zero. `TypeAhead` puts its field on its first row and its suggestions two rows
 below unless told otherwise, and a page that moves the form up or down moves the
 part, not the offsets inside it. The form also supplies the prompt's words for
-the keys it answers — `A-Z type a name` and `1-9 choose one` — so a page carrying
-one need not name them itself.
+the keys it answers — `1-3 choose one`, naming the digits actually on offer — so a
+page carrying one need not name them itself. That a field is typed into is left
+unsaid: the block of colour with the cursor in it shows it.
 
 **Keep the form in the session**, not in the handler: it holds one caller's
 typing and lasts as long as their line.

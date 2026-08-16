@@ -22,7 +22,7 @@ from sextile.formatting import (
 )
 from sextile.layout import CHOICES_PER_FRAME, Flow, OnOneFrame, PageLayout, Space
 from sextile.page import PageAddress
-from sextile.testing import request_for
+from sextile.testing import request_for, text_of
 from sextile.viewdata.canvas import Canvas
 from sextile.viewdata.controls import Colour
 from sextile.viewdata.frame import COLUMNS
@@ -84,9 +84,25 @@ class TestAMenuAsAPart:
         placed = Menu(entries=entries).place(Canvas(), whole_frame())
         assert placed.claim.choices == {"2": at("81")}
 
-    def test_it_says_it_offers_a_choice(self) -> None:
-        placed = Menu(entries=items(3)).place(Canvas(), whole_frame())
+    def test_it_names_the_digits_a_full_frame_offers(self) -> None:
+        placed = Menu(entries=items(12)).place(Canvas(), whole_frame())
         assert [one.key for one in placed.claim.named] == ["1-9"]
+
+    def test_it_names_the_digits_a_short_frame_offers(self) -> None:
+        #  Fewer than nine entries offer fewer than nine digits, and the prompt
+        #  says the range a reader can actually key.
+        placed = Menu(entries=items(3)).place(Canvas(), whole_frame())
+        assert [one.key for one in placed.claim.named] == ["1-3"]
+
+    def test_a_single_entry_names_the_one_digit(self) -> None:
+        placed = Menu(entries=items(1)).place(Canvas(), whole_frame())
+        assert [one.key for one in placed.claim.named] == ["1"]
+
+    def test_it_names_the_digits_offered_when_the_first_leads_nowhere(self) -> None:
+        entries = [MenuItem(text="Just words"), *items(1)]
+        placed = Menu(entries=entries).place(Canvas(), whole_frame())
+        assert placed.claim.choices == {"2": at("81")}
+        assert [one.key for one in placed.claim.named] == ["2"]
 
     def test_nothing_to_show_says_so(self) -> None:
         placed = Menu(entries=[], empty="Nothing yet.").place(Canvas(), whole_frame())
@@ -126,6 +142,15 @@ class TestAMenuInAPage:
         assert first is not None and second is not None
         assert first.destination("9") == at("89")
         assert second.destination("1") == at("810")
+
+    def test_each_frame_names_the_digits_it_offers(self) -> None:
+        #  The full first frame offers nine, the second offers the last three,
+        #  and each says so on its own prompt rather than both saying 1-9.
+        page = PageLayout(
+            title="ITEMS", home=at("1"), parts=[Flow(Menu(entries=items(12)))]
+        ).build(request_for(_APP, at("8")))
+        assert "1-9 select" in text_of(page, 0)
+        assert "1-3 select" in text_of(page, 1)
 
     def test_a_lead_in_takes_room_from_the_first_frame_only(self) -> None:
         page = PageLayout(

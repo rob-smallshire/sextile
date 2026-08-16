@@ -56,12 +56,15 @@ docs = [
 
 [tool.pytest.ini_options]
 testpaths = ["packages", "tools"]
+#  The repo root, so a smoke test can import the examples package.
+pythonpath = ["."]
 asyncio_mode = "auto"
 
 [tool.ruff]
 line-length = 100
 src = [
     "tools",
+    "examples",
     "packages/sextile/src",
     "packages/stardot-viewdata/src",
     "packages/calendar-viewdata/src",
@@ -93,11 +96,12 @@ convention = "google"
 
 [tool.mypy]
 strict = true
-files = ["packages", "tools"]
+files = ["packages", "tools", "examples"]
 #  Each member's tests are a top-level package of their own, so two members may
 #  both have a tests/ directory without one shadowing the other.
 explicit_package_bases = true
 mypy_path = """\
+.:\
 tools:\
 packages/sextile/src:\
 packages/stardot-viewdata/src:\

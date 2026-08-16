@@ -11,6 +11,8 @@ from importlib.metadata import PackageNotFoundError, version
 
 #  The Viewdata-frame directive lives beside the docs, not in the package.
 sys.path.insert(0, os.path.abspath("_ext"))
+#  The repo root, so the directive can draw the hero example (examples/hero.py).
+sys.path.insert(0, os.path.abspath(".."))
 
 project = "Sextile"
 author = "Robert Smallshire"

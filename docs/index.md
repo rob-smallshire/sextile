@@ -35,6 +35,15 @@ async def main(request):
 frame = fetch(app, "1")
 ```
 
+And Sextile's own title frame — the `examples/hero.py` demo, drawn from block
+graphics and mosaic lettering, the same page a BBC Micro would show:
+
+```{sextile-frame}
+:page: "1"
+
+from examples.hero import app
+```
+
 The documentation is in five parts. The **tutorial** teaches the framework by
 building one service; the **how-to** guides answer particular questions; the
 **reference** states the surface, the glossary and the wire; the **explanation**

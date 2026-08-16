@@ -1,5 +1,7 @@
 # Sextile
 
+![Sextile](docs/images/sextile-hero.png)
+
 [![CI](https://github.com/rob-smallshire/sextile/actions/workflows/ci.yml/badge.svg)](https://github.com/rob-smallshire/sextile/actions/workflows/ci.yml)
 [![PyPI](https://img.shields.io/pypi/v/sextile.svg)](https://pypi.org/project/sextile/)
 [![Python](https://img.shields.io/pypi/pyversions/sextile.svg)](https://pypi.org/project/sextile/)

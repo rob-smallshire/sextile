@@ -10,12 +10,22 @@ from collections.abc import Sequence
 
 import pytest
 
-from sextile import Page, PageAddress, PageFrame, PageRequest, PageRoute, Sextile, keys
+from sextile import (
+    OnOneFrame,
+    Page,
+    PageAddress,
+    PageFrame,
+    PageLayout,
+    PageRequest,
+    PageRoute,
+    Sextile,
+    keys,
+)
 from sextile.formatting import Entry, MenuItem
 from sextile.forms import SUGGESTIONS, TypeAhead, draw_form
 from sextile.forms.base import SUBMIT_MARK
 from sextile.session.session import Session
-from sextile.testing import text_of
+from sextile.testing import fetch, text_of
 from sextile.viewdata.canvas import Canvas
 from sextile.viewdata.encoding import ScreenControl
 from sextile.viewdata.frame import Frame
@@ -142,24 +152,25 @@ class TestWhatIsOffered:
         assert len(form.found) > 1
 
 
-class TestThePromptNamesTheDigitsOffered:
-    @staticmethod
-    def _choose(form: TypeAhead) -> list[str]:
-        return [item.key for item in form.footer_items() if item.label == "choose one"]
+class TestThePromptNamesNoDigits:
+    async def test_the_footer_of_a_type_ahead_page_names_no_digit_range(self) -> None:
+        #  The suggestions are numbered where the reader is looking, so the
+        #  prompt does not name the digits again -- it holds only the way out.
+        async def search(request: PageRequest) -> Page:
+            return PageLayout(parts=[OnOneFrame(a_field())]).build(request)
 
-    async def test_nothing_typed_names_the_field_capacity(self) -> None:
-        #  The footer is drawn once, with the field empty, so it says how many
-        #  the field can offer rather than nothing about the choice to come.
-        assert self._choose(a_field()) == ["1-3"]
+        app = Sextile(pages=[PageRoute("3", search, name="search", title="Find")])
+        await app.startup()
+        try:
+            footer = text_of(await fetch(app, "3")).splitlines()[-1]
+        finally:
+            await app.shutdown()
+        assert "choose" not in footer
+        assert "1-" not in footer
 
-    async def test_one_match_names_the_one_digit(self) -> None:
-        assert self._choose(await typing(a_field(), "TROM")) == ["1"]
-
-    async def test_two_matches_name_two_digits(self) -> None:
-        assert self._choose(await typing(a_field(), "TRONDH")) == ["1-2"]
-
-    async def test_three_matches_name_three_digits(self) -> None:
-        assert self._choose(await typing(a_field(), "TRO")) == ["1-3"]
+    async def test_the_field_itself_contributes_nothing_to_the_prompt(self) -> None:
+        assert not a_field().footer_items()
+        assert not (await typing(a_field(), "TRO")).footer_items()
 
 
 class TestDrawing:

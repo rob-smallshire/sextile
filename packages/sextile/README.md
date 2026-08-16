@@ -13,7 +13,7 @@ the pages say. The [documentation](https://rob-smallshire.github.io/sextile/)
 opens with what Viewdata is.
 
 ```sh
-pip install sextile
+uv add sextile          # or pip install sextile
 ```
 
 ```python

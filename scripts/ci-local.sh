@@ -37,6 +37,11 @@ rm -rf dist/
 uv build --all-packages --out-dir dist/
 ls -1 dist/*.whl
 
+# Metadata check only, local to this script -- publishing itself is `uv publish`
+# (no twine anywhere in the repo). twine is fetched ephemerally, not depended on.
+echo "-- twine metadata check (local only) --"
+uv run --no-project --with twine twine check dist/*
+
 echo "== 5/7 install the wheels into the environment =="
 uv pip install dist/*.whl
 

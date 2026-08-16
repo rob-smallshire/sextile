@@ -28,7 +28,7 @@ It owns everything whose natural lifetime is the call, and an application says
 what the pages are:
 
 ```sh
-pip install sextile
+uv add sextile          # or pip install sextile
 ```
 
 ```python

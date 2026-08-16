@@ -11,7 +11,7 @@ uv sync
 
 This tutorial works inside the Sextile workspace, where `uv sync` installs
 everything the steps need. For a project of your own, once Sextile is published,
-`pip install sextile` is the same thing.
+`uv add sextile` (or `pip install sextile`) is the same thing.
 
 ## Write a one-page service
 

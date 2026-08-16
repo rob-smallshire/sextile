@@ -21,3 +21,4 @@ wheels/
 
 # Sphinx build output and autosummary-generated stubs
 docs/_build/
+uv.lock

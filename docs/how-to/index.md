@@ -13,6 +13,7 @@ empty-and-missing
 end-the-call
 customise-notices
 accept-typed-input
+type-ahead-completion
 draw-a-custom-frame
 draw-mosaics
 large-lettering

@@ -1,14 +1,25 @@
 # Sextile
 
-Viewdata — Prestel in Britain — was the interactive information service of the
-early 1980s: a terminal dialled a computer over the telephone line, and the
-computer answered with pages of text, twenty-four rows of forty characters in
-seven colours and block mosaics, that the reader moved through by keying page
-numbers. The BBC Micro and other home computers of the day spoke it.
+```{sextile-frame}
+:page: "1"
+
+from examples.hero import app
+```
+
+Viewdata or Videotex services, such as Prestel in Britain, were among the
+earliest interactive services of the information age: a terminal dialled a
+remote computer over a telephone line equipped with a modem, and the computer
+answered with pages of text. The display was simple, twenty-four rows of forty
+characters in seven colours with block mosaics, and the reader moved through the
+pages by keying page numbers on a telephone keypad, a dedicated terminal or a
+microcomputer. The BBC Micro and other home computers of the day ran software
+that could dial and display such a service.
 
 Sextile builds such services today, in Python. It is to a Viewdata service what
-Flask or Starlette is to a web application: it owns the connection, the session,
-the page numbering and the frames on the wire, and you write what the pages say.
+Flask or Starlette is to a web application: it manages the connection, the
+caller's session, the page numbering and the frames of text and graphics. You
+write what the pages say and how the reader interacts with them. Sextile is the
+framework; the Viewdata services built on it are Sextile applications.
 
 ```python
 from sextile import Page, PageRequest, Sextile, notice_page
@@ -33,15 +44,6 @@ async def main(request):
     return notice_page(request, "Hello, 1981.")
 
 frame = fetch(app, "1")
-```
-
-And Sextile's own title frame — the `examples/hero.py` demo, drawn from block
-graphics and mosaic lettering, the same page a BBC Micro would show:
-
-```{sextile-frame}
-:page: "1"
-
-from examples.hero import app
 ```
 
 The documentation is in five parts. The **tutorial** teaches the framework by

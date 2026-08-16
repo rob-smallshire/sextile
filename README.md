@@ -11,11 +11,22 @@
 A framework for Prestel-style Viewdata services in Python, and the services built
 on it. Named after the star key on a viewdata keypad.
 
-Viewdata was the interactive information service of the early 1980s: a terminal
-dialled a computer over the telephone line, and the computer answered with pages
-of text — twenty-four rows of forty characters in seven colours and block mosaics
-— keyed by page number. The [documentation](docs/index.md) opens with the whole
-of that story.
+Viewdata or Videotex services, such as Prestel in Britain, were among the
+earliest interactive services of the information age: a terminal dialled a
+remote computer over a telephone line equipped with a modem, and the computer
+answered with pages of text. The display was simple, twenty-four rows of forty
+characters in seven colours with block mosaics, and the reader moved through the
+pages by keying page numbers on a telephone keypad, a dedicated terminal or a
+microcomputer. The BBC Micro and other home computers of the day ran software
+that could dial and display such a service.
+
+Sextile builds such services today, in Python. It is to a Viewdata service what
+Flask or Starlette is to a web application: it manages the connection, the
+caller's session, the page numbering and the frames of text and graphics. You
+write what the pages say and how the reader interacts with them. Sextile is the
+framework; the Viewdata services built on it are Sextile applications.
+
+See the [documentation](docs/index.md) for more.
 
 ```
 packages/sextile/              the framework: connections, sessions, routing,
@@ -25,13 +36,14 @@ packages/calendar-viewdata/    a calendar; the framework's worked example
 packages/weather-viewdata/     the weather, from met.no and a local gazetteer
 ```
 
-Sextile is to a Viewdata service what Flask or Starlette is to a web application.
-It owns everything whose natural lifetime is the call, and an application says
-what the pages are:
+Installation is easiest with [`uv`](https://docs.astral.sh/uv/), which handles
+Python installation and virtual environments for you.
 
 ```sh
 uv add sextile          # or pip install sextile
 ```
+
+A simple Sextile service, answering page 1 with a notice, is:
 
 ```python
 from sextile import Page, PageRequest, Sextile, notice_page
@@ -46,16 +58,16 @@ async def main(request: PageRequest) -> Page:
 ```sh
 uv run sextile serve my_service:app                 # answer calls on port 6850
 nc localhost 6850                                   # and call it
-uv run sextile render my_service:app --page 1       # or draw a page without a Beeb
+uv run sextile render my_service:app --page 1       # or draw a page without a terminal
 ```
 
-`render` draws a frame as the Beeb would (`--form ansi`), as its character and
+`render` draws a frame as a Viewdata terminal would (`--form ansi`), as its character and
 attribute layers (`grid`), as the wire stream (`bytes`), or as a self-contained
 web page with the font embedded (`--form html`).
 
 ## Documentation
 
-Built with Sphinx from [`docs/`](docs/index.md), in five parts: a **tutorial**
+Built from [`docs/`](docs/index.md), in five parts: a **tutorial**
 that builds one service, **how-to** guides, a **reference** for the surface, the
 glossary and the wire, an **explanation** of why it is shaped as it is, and the
 three **applications** worked through.

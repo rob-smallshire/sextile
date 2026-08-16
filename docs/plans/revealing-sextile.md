@@ -1,15 +1,13 @@
 # Revealing Sextile: the comprehensibility plan
 
 Status: approved 2026-08-15; Phases 0-3, 5 and 6 complete 2026-08-15, Phase 4
-deferred to the Sphinx rewrite. This file is the working reference for the
-rework; the architect session owns it and the developer session executes
-against it.
+(the Sphinx documentation set) complete 2026-08-16. This file is the working
+reference for the rework; the architect session owns it and the developer
+session executes against it.
 
-**Documentation is deferred.** The Markdown docs will be rewritten from scratch
-under Sphinx (with a Markdown extension). Until then: do not invest in the
-legacy `docs/*.md` beyond keeping them from stating falsehoods about code that
-has changed. Phase 4 below is therefore parked; phase 5's CLAUDE.md work still
-applies.
+**Documentation is done under Sphinx.** The legacy `docs/*.md` and
+`packages/sextile/docs/*.md` were superseded rather than ported line for line;
+what remains of the latter is either a pointer or an app-internal design note.
 
 ## Final status
 
@@ -28,7 +26,13 @@ moved out of the apps into it; each app shrank (calendar 381 -> 312, stardot
 - **Phase 2 -- done.** The rename families above landed one commit each, no shims.
 - **Phase 3 -- done.** Module splits and duplicate collapses as recorded in the
   Phase 3 section.
-- **Phase 4 -- DEFERRED to the Sphinx rewrite** (see below).
+- **Phase 4 -- done 2026-08-16.** The Sphinx documentation set: a seven-step
+  tutorial, fifteen how-to recipes, a reference (surface, glossary, keys, cli,
+  layout, content, the wire and display semantics), an explanation
+  (why-sextile, a 28-entry decision log, the rendering pipeline, graphics and
+  mosaic fonts), three worked-example application pages, and the workspace notes
+  pulled into the tree. Frames are drawn live by the `sextile-frame` directive;
+  the `-n -W` docs build is now part of the gate.
 - **Phase 5 -- done.** Docstrings contract-first; CLAUDE.md to 117 lines with the
   document-level rules.
 - **Phase 6 -- done.** Calendar the canonical example (312 src lines); one factory
@@ -59,16 +63,23 @@ The rewrite starts from a truthful base, not a blank one:
 
 ## Next
 
-- **Done, alongside the docs**: frames render as HTML with the Bedstead font --
-  `viewdata.display` (the shared display walk), `viewdata.html` `render_html`,
-  `sextile render --form html` (a self-contained page), and the `sextile-frame`
-  Sphinx directive drawing live frames in the docs. Display semantics measured
-  against Beebium in `docs/reference/display-semantics.md`.
-- The Sphinx documentation set (Phase 4): the rewrite proper, from the base above.
-- The `sextile.viewdata` facade question in `docs/open-questions.md`: whether the
-  wire/drawing internals want a single public facade or stay a set of submodules.
-- A decision log for the design rationale, per decision 7, replacing the argue-
-  don't-instruct prose the Sphinx rewrite removes.
+- **Done:** frames render as HTML with the Bedstead font -- `viewdata.display`,
+  `viewdata.html` `render_html`, `sextile render --form html`, and the
+  `sextile-frame` directive drawing live frames (now with a `:form:` option for
+  bytes/grid text). Display semantics measured against Beebium in
+  `docs/reference/display-semantics.md`.
+- **Done:** the Sphinx documentation set (Phase 4), and the decision log
+  (`docs/explanation/design-decisions.md`, per decision 7).
+- Still open -- the `sextile.viewdata` facade question in
+  `docs/open-questions.md`: whether the wire/drawing internals want a single
+  public facade or stay a set of submodules.
+- Noted while writing the docs: a form's footer is drawn once, with the field
+  empty, so `TypeAhead`'s per-match digit hint (`1-2` when two match) only ever
+  displays the empty-field capacity; making it track live matches would mean
+  repainting the footer row on each keystroke.
+- Later cleanup: `packages/sextile/docs/{design,layout,navigation,rendering}.md`
+  survive as fuller internal narrative whose rationale is only partly homed in
+  the tree; `navigation` has no explanation-page home yet.
 
 ## Diagnosis
 

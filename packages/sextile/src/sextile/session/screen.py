@@ -40,11 +40,22 @@ class Screen:
         #  How much of the idle-warning bar is lit, or None when it is not
         #  showing. Kept so an unchanged bar costs nothing on the wire.
         self._warning_cells: int | None = None
+        #  The last whole frame the wire was told, which is not always the
+        #  frame the reader is on: a not-found or failed notice is sent over
+        #  the page they were left on. A form redraws its frame in place, so
+        #  this holds the live frame their typing goes on rather than a copy.
+        self._painted: Frame | None = None
+
+    @property
+    def painted(self) -> Frame | None:
+        """The last whole frame sent to the terminal, or None before the first."""
+        return self._painted
 
     # -- whole frames -------------------------------------------------------
 
     def full_frame(self, showing: PageFrame) -> bytes:
         """The whole of a frame, and the caret where a field wants it."""
+        self._painted = showing.frame
         frame = showing.frame.to_bytes()
         if showing.form is None:
             return frame
@@ -59,6 +70,7 @@ class Screen:
         """A page's first frame, sent without going to it: said, not gone to."""
         first = page.frame(0)
         assert first is not None, "a page must have at least one frame"
+        self._painted = first.frame
         return first.frame.to_bytes()
 
     def handback(self, frame: Frame | None) -> bytes:

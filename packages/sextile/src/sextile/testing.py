@@ -159,11 +159,16 @@ class Caller:
     def screen(self) -> str:
         """What is on the screen, as rows of text.
 
+        The last whole frame the terminal was sent, which is not always the
+        page the reader is on: a not-found or failed notice is shown over the
+        page they were left on, so this reads the notice while `address` still
+        names their page.
+
         The characters only. Colour and the attribute codes that carry it are
         left out, a test about what a page says needing no knowledge of how an
         attribute cell is spelt.
         """
-        frame = self.session.current_frame()
+        frame = self.session.displayed_frame()
         if frame is None:
             return ""
         characters, _ = frame.to_grid()

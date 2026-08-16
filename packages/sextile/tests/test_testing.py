@@ -86,6 +86,23 @@ class TestCallingAService:
             await caller.press("1")
             assert caller.sent, "nothing was sent to the terminal"
 
+    async def test_an_unknown_number_shows_the_notice_the_terminal_was_sent(self) -> None:
+        #  The reader keys a page that is not there. The terminal is sent the
+        #  service's not-found notice, so that is what the screen shows, even
+        #  though the reader has not moved off the page they were on.
+        async with connect(service()) as caller:
+            await caller.press("*7#")
+            assert caller.address == PageAddress("1")
+            assert "not a page" in caller.screen.lower()
+
+    async def test_the_next_key_returns_to_the_page_still_held(self) -> None:
+        #  The notice does not move the reader: *00# redisplays the page they
+        #  were on, and the terminal shows it again.
+        async with connect(service()) as caller:
+            await caller.press("*7#")
+            await caller.press("*00#")
+            assert "INDEX" in caller.screen
+
 
 class TestTheServiceIsOpenedAndClosedAroundTheCall:
     async def test_the_lifespan_runs(self) -> None:

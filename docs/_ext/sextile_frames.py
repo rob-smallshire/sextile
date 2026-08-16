@@ -91,7 +91,7 @@ def _drive(app: Sextile, start: str, keys: str, frame: int) -> Frame:
     async def run() -> Frame:
         async with connect(app, start=start) as caller:
             await caller.press(keys)
-            on_screen = caller.session.current_frame()
+            on_screen = caller.session.displayed_frame()
             if on_screen is None:
                 raise ValueError(f"nothing on screen after keying {keys!r}")
             return on_screen

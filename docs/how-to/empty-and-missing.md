@@ -32,13 +32,14 @@ a string for one row, a sequence for several.
 A page that could exist but does not — a message the archive has not got — is a
 different thing. Return `None`, and the session shows the service's not-found
 notice and leaves the reader where they were; do not draw a blank page that looks
-like the message. Keying a page the service has not got shows the same notice:
+like the message. Keying `*7#`, a page this service has not got, shows the notice
+over the inbox — the reader's next key works from the inbox still:
 
 ```{sextile-frame}
-import asyncio
+:page: "1"
+:keys: "*7#"
 
 from sextile import Page, PageRequest, PageRouter, Sextile, menu_page
-from sextile.testing import request_for
 
 router = PageRouter()
 
@@ -49,14 +50,4 @@ async def inbox(request: PageRequest) -> Page:
 
 
 app = Sextile(name="Mail", pages=[*router])
-
-
-async def _missing() -> Page:
-    await app.startup()
-    page = await app.not_found(request_for(app, app.index), "7")
-    await app.shutdown()
-    return page
-
-
-page = asyncio.run(_missing())
 ```

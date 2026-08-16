@@ -107,6 +107,15 @@ class Session:
         found = self._page.frame(self._frame_index)
         return found.frame if found else None
 
+    def displayed_frame(self) -> Frame | None:
+        """The last whole frame the terminal was sent.
+
+        Not always the frame the reader is on: a not-found or failed notice is
+        sent over the page they were left on, so this shows the notice while
+        `current_frame` still names their page.
+        """
+        return self._screen.painted
+
     async def greeting(self) -> bytes:
         """The first frame, sent when a terminal connects."""
         await self._arrive(self._address)

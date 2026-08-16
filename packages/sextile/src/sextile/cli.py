@@ -70,6 +70,12 @@ def load_application(spec: str) -> Sextile:
     module_name, separator, attribute = spec.partition(":")
     if not module_name or not separator or not attribute:
         raise ApplicationSpecError(f"{spec!r} is not a module:name specification")
+    #  Resolve the module from the working directory as well as the installed
+    #  packages, the way an ASGI server does: `sextile serve my_service:app` is
+    #  run beside the file it names, which is not otherwise on the path when the
+    #  command is an installed console script.
+    if "" not in sys.path:
+        sys.path.insert(0, "")
     try:
         module = importlib.import_module(module_name)
     except ImportError as error:

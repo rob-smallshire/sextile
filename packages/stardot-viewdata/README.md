@@ -52,45 +52,12 @@ interrupted; the archive keeps what it has.)
 uv run stardot-viewdata serve             # answers on port 6850
 ```
 
-**3. Bridge TCP to an emulated modem — third shell**
+**3. Put a Beeb or emulator in front of it**
 
-```sh
-tcpser -v 25232 -s 9600 -l 4 -t sS -n 1=localhost:6850
-```
-
-`-n 1=…` puts Sextile in the modem's phonebook as number 1, so it can be dialled
-without typing a hostname through an emulated keyboard. `-t sS` traces the bytes
-in both directions, which is the best debugging tool in the whole arrangement.
-
-**4. Point an emulator's serial port at it — fourth shell**
-
-Here a Beebium instance named `Terminator`, with a Commstar ROM in a sideways
-slot:
-
-```sh
-./beebium-model-b start \
-    --sideways 13:rom:../../../roms/commstar_1_40_SN882A.rom \
-    --ip232-serial host=localhost:port=25232 \
-    --machine-name "Terminator" --advertise
-```
-
-Then in the Beebium front end, **File > Connect…** and choose `Terminator`.
-
-BeebEm should work too, having its own IP232 support, though it has not been
-tried here. So should a real BBC Micro with one of the ESP-based WiFi modems.
-
-**5. Dial from Commstar — at the emulated BBC's keyboard**
-
-```
-*COMMSTAR         start the comms ROM
-#                 switch to Prestel emulation
-C                 enter chat mode
-ATDT1  CTRL-M     dial phonebook entry 1
-```
-
-`CTRL-M` rather than `RETURN`, because in Prestel mode `RETURN` transmits the
-viewdata `#` (0x5F) rather than a carriage return, and an AT command needs a
-real one.
+The remaining steps — bridging TCP to an emulated modem with tcpser, pointing an
+emulator's serial port at it, and dialling from Commstar — are the same for any
+Sextile service and are written up in the how-to guide
+[Connect a BBC Micro](../../docs/how-to/connect-a-bbc.md).
 
 ![Sextile page 1 on a BBC Micro](../../docs/images/sextile-page-1.png)
 

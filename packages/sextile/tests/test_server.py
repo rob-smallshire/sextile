@@ -394,8 +394,15 @@ class TestHandingTheTerminalBack:
             Board(), host="127.0.0.1", port=0, idle_timeout=0.3, warn_after=0
         )
         reader, writer = await connect_to(running)
-        await read_frame(reader)
-        parting = await asyncio.wait_for(reader.read(4096), timeout=5.0)
+        #  Read to the far end closing rather than a fixed number of bytes: the
+        #  greeting and the parting may each arrive in several chunks, and a
+        #  `read(n)` after the greeting would race the chunking and pick up a
+        #  remainder. The parting is the last frame, and being a whole frame it
+        #  opens with the preamble that clears the screen and homes the cursor,
+        #  so a second preamble is present.
+        everything = await _everything_left(reader)
+        assert everything.count(FRAME_PREAMBLE) >= 2
+        parting = everything[everything.rfind(FRAME_PREAMBLE) :]
         assert parting.startswith(FRAME_PREAMBLE)
         assert "RINGING OFF" in printable(parting)
         await close(writer, running)

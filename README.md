@@ -1,5 +1,11 @@
 # Sextile
 
+[![CI](https://github.com/rob-smallshire/sextile/actions/workflows/ci.yml/badge.svg)](https://github.com/rob-smallshire/sextile/actions/workflows/ci.yml)
+[![PyPI](https://img.shields.io/pypi/v/sextile.svg)](https://pypi.org/project/sextile/)
+[![Python](https://img.shields.io/pypi/pyversions/sextile.svg)](https://pypi.org/project/sextile/)
+[![Licence](https://img.shields.io/pypi/l/sextile.svg)](https://github.com/rob-smallshire/sextile/blob/master/LICENSE)
+[![Docs](https://img.shields.io/badge/docs-github.io-blue)](https://rob-smallshire.github.io/sextile/)
+
 A framework for Prestel-style Viewdata services in Python, and the services built
 on it. Named after the star key on a viewdata keypad.
 
@@ -20,6 +26,10 @@ packages/weather-viewdata/     the weather, from met.no and a local gazetteer
 Sextile is to a Viewdata service what Flask or Starlette is to a web application.
 It owns everything whose natural lifetime is the call, and an application says
 what the pages are:
+
+```sh
+pip install sextile
+```
 
 ```python
 from sextile import Page, PageRequest, Sextile, notice_page

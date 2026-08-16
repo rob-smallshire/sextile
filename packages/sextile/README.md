@@ -31,7 +31,8 @@ numbering. Keywords — `*MAIN#` for `*1#` — are the route's `keywords=`.
 **Sessions that last as long as the line.** A Viewdata terminal is a display and
 nothing more: it holds the frame on screen and nothing else. So the server holds
 where the reader is, what they have seen, and the menu they came through, and a
-handler is a function of a request rather than of a number.
+handler is a function of a request rather than of a number. The reasoning is in
+[docs/explanation/why-sextile.md](../../docs/explanation/why-sextile.md).
 
 **The wire, measured rather than assumed.** Attributes travel as `ESC` + code +
 0x40, a frame is 24 rows of 40 that wraps at the bottom-right back to the top

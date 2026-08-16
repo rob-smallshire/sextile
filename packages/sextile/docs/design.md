@@ -63,26 +63,11 @@ cells of a forty-cell row here.
 
 ## The lifecycle, which is the whole design
 
-A Viewdata terminal is a display and nothing more. It holds the frame on screen
-and nothing besides: not the page it came from, not the menu that led there, not
-who is logged in. All of that is held at the server, for as long as the line is
-up.
-
-This is the opposite of the web, where the client carries a cookie and the
-server may forget. It is why the shapes here differ from a web framework's in
-three ways:
-
-**The connection is the session.** There is no session store, no identifier, no
-expiry policy. `Session` is an object that lives as long as the socket, and
-`PageRequest.session` is a plain mutable mapping hanging off it.
-
-**A handler is a function of a request, not of a page number.** Two callers
-keying the same number can legitimately be shown different things — because of
-the menu they arrived through, and later because of who they are.
-
-**Everything is async.** Not for concurrency at scale — a viewdata board serves
-a handful of callers — but because a handler that goes to a database or an HTTP
-API would otherwise stop every other caller while it waited.
+The terminal holds only the frame on screen, so the server holds the session,
+so a handler is a function of a request rather than a page number, and everything
+is async. That argument and its consequences now live in the explanation
+documentation, at
+[docs/explanation/why-sextile.md](../../../docs/explanation/why-sextile.md).
 
 ## Addressing
 

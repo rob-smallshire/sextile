@@ -43,17 +43,11 @@ uv run stardot-viewdata serve           # answer calls
 
 ## Why the split
 
-The service began as one program that was both of these things at once.
-Separating them was worth doing on its own, but the shape to separate into was
-settled by a second question: how to integrate properly with the phpBB board
-behind Stardot, rather than reconstructing it from an Atom feed.
-
-The decisive point is a lifecycle mismatch. phpBB answers a request and forgets
-it. A Viewdata session lasts until the caller rings off, and because the terminal
-holds nothing but the frame on screen, the server holds all of it. So phpBB
-provides resources, and Sextile provides conversations with them — and neither
-has to adopt the other's execution model.
-
+The decisive point is a lifecycle mismatch: phpBB answers a request and forgets
+it, while a Viewdata session lasts until the caller rings off and the server
+holds all of it. So phpBB provides resources and Sextile provides conversations
+with them. The argument, and what follows from it, is in
+[docs/explanation/why-sextile.md](docs/explanation/why-sextile.md);
 [docs/target-architecture.md](docs/target-architecture.md) has the whole picture
 and the invariants that keep it honest.
 

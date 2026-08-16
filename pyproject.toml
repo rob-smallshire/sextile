@@ -110,8 +110,8 @@ packages/weather-viewdata/src:\
 packages/sextile/tests"""
 
 #  Releasing: `uv run bump-my-version bump patch|minor|major` edits the version,
-#  dates a new changelog entry, commits and tags `v<version>`; pushing the tag
-#  runs .github/workflows/release.yml, which publishes sextile to PyPI.
+#  commits and tags `v<version>`; pushing the tag runs
+#  .github/workflows/release.yml, which publishes sextile to PyPI.
 [tool.bumpversion]
 current_version = "0.1.0"
 commit = true
@@ -123,9 +123,3 @@ message = "Bump sextile to {new_version}"
 filename = "packages/sextile/pyproject.toml"
 search = 'version = "{current_version}"'
 replace = 'version = "{new_version}"'
-
-#  A new dated entry opens under the Unreleased heading, Keep-a-Changelog style.
-[[tool.bumpversion.files]]
-filename = "CHANGELOG.md"
-search = "## [Unreleased]"
-replace = "## [Unreleased]\n\n## [{new_version}] - {now:%Y-%m-%d}"

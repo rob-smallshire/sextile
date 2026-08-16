@@ -40,7 +40,6 @@ Homepage = "https://github.com/rob-smallshire/sextile"
 Documentation = "https://rob-smallshire.github.io/sextile/"
 Repository = "https://github.com/rob-smallshire/sextile"
 Issues = "https://github.com/rob-smallshire/sextile/issues"
-Changelog = "https://github.com/rob-smallshire/sextile/blob/master/CHANGELOG.md"
 
 [build-system]
 requires = ["hatchling"]

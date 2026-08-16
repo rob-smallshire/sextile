@@ -24,6 +24,11 @@ by its own width. Kerned lets glyphs overlap, so the arm of a `T` may sit over
 the tail of an `A`; at this resolution a block is a large fraction of a letter and
 the row only 78 blocks wide, so a block recovered on each pair is worth having.
 
+The shipped `grotesque` face, which has lower-case glyphs, sets each word three
+ways, the row saying which. `AVATAR` is the kerning case: its `A`/`V` and `A`/`T`
+pairs lean into one another, so kerned takes 16 cells against 18 proportional and
+23 fixed.
+
 ```{sextile-frame}
 :page: "1"
 :show-code:
@@ -31,38 +36,91 @@ the row only 78 blocks wide, so a block recovered on each pair is worth having.
 from sextile import Custom, OnOneFrame, Page, PageLayout, PageRequest, PageRouter, Sextile
 from sextile.viewdata import lettering
 from sextile.viewdata.canvas import Canvas
-from sextile.viewdata.composition import Composition
+from sextile.viewdata.composition import Composition, Style
 from sextile.viewdata.controls import Colour
 from sextile.viewdata.font import load_font
-from sextile.viewdata.lettering import Spacing
+from sextile.viewdata.lettering import Spacing, rows_needed
 
-_FACE = load_font("acorn")
-_SPACINGS = (Spacing.FIXED, Spacing.PROPORTIONAL, Spacing.KERNED)
+_FACE = load_font("grotesque")
+_SPACINGS = [("Fixed", Spacing.FIXED), ("Proportional", Spacing.PROPORTIONAL), ("Kerned", Spacing.KERNED)]
+
+
+def _spelled(word: str) -> Custom:
+    tall = rows_needed(_FACE)
+
+    def draw(canvas: Canvas, row: int) -> None:
+        for index, (label, spacing) in enumerate(_SPACINGS):
+            top = row + index * (tall + 1)
+            layout = Composition()
+            layout.text(top, 0, label, style=Style(colour=Colour.WHITE))
+            lettering.place(layout, top, word, _FACE, Colour.YELLOW, column=13, spacing=spacing)
+            layout.draw(canvas)
+
+    return Custom(rows=3 * (tall + 1), draw=draw)
+
 
 router = PageRouter()
 
 
-@router.page("1", name="spacing", title="Spacing")
-async def spacing(request: PageRequest) -> Page:
-    tall = lettering.rows_needed(_FACE)
+@router.page("1", name="kerning", title="Kerning")
+async def kerning(request: PageRequest) -> Page:
+    return PageLayout(parts=[OnOneFrame(_spelled("AVATAR"))]).build(request)
 
-    def draw(canvas: Canvas, row: int) -> None:
-        layout = Composition()
-        for index, chosen in enumerate(_SPACINGS):
-            lettering.place(
-                layout, row + index * (tall + 1), "SEXTILE", _FACE, Colour.CYAN,
-                column=1, spacing=chosen,
-            )
-        layout.draw(canvas)
 
-    return PageLayout(parts=[OnOneFrame(Custom(rows=3 * (tall + 1), draw=draw))]).build(request)
+@router.page("2", name="proportional", title="Proportional")
+async def proportional(request: PageRequest) -> Page:
+    return PageLayout(parts=[OnOneFrame(_spelled("million"))]).build(request)
 
 
 app = Sextile(name="Fonts", pages=[*router])
 ```
 
-Top to bottom: fixed, proportional, kerned. Measured with the shipped `acorn`
-face, the difference decides whether a banner fits the row at all:
+`million` is the proportional case: the narrow `i`, `l` and `m` take 14 cells set
+proportionally against 27 fixed, since a fixed face pays for its widest glyph on
+every letter. There is nothing left for kerning to close, so kerned is 14 too.
+
+```{sextile-frame}
+:page: "2"
+
+from sextile import Custom, OnOneFrame, Page, PageLayout, PageRequest, PageRouter, Sextile
+from sextile.viewdata import lettering
+from sextile.viewdata.canvas import Canvas
+from sextile.viewdata.composition import Composition, Style
+from sextile.viewdata.controls import Colour
+from sextile.viewdata.font import load_font
+from sextile.viewdata.lettering import Spacing, rows_needed
+
+_FACE = load_font("grotesque")
+_SPACINGS = [("Fixed", Spacing.FIXED), ("Proportional", Spacing.PROPORTIONAL), ("Kerned", Spacing.KERNED)]
+
+
+def _spelled(word: str) -> Custom:
+    tall = rows_needed(_FACE)
+
+    def draw(canvas: Canvas, row: int) -> None:
+        for index, (label, spacing) in enumerate(_SPACINGS):
+            top = row + index * (tall + 1)
+            layout = Composition()
+            layout.text(top, 0, label, style=Style(colour=Colour.WHITE))
+            lettering.place(layout, top, word, _FACE, Colour.YELLOW, column=13, spacing=spacing)
+            layout.draw(canvas)
+
+    return Custom(rows=3 * (tall + 1), draw=draw)
+
+
+router = PageRouter()
+
+
+@router.page("2", name="proportional", title="Proportional")
+async def proportional(request: PageRequest) -> Page:
+    return PageLayout(parts=[OnOneFrame(_spelled("million"))]).build(request)
+
+
+app = Sextile(name="Fonts", pages=[*router])
+```
+
+Measured with the shipped `acorn` face, the same difference decides whether a
+banner fits the row at all:
 
 | | blocks | cells, with the attribute | fits on a row? |
 |---|---|---|---|

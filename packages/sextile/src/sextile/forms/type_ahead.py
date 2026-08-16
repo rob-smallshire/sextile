@@ -187,10 +187,22 @@ class TypeAhead(Form):
         #  attributes occupy cells and show as spaces already.
         field.background(self._field_colour, text=self._text_colour)
         field.text(fitted(self._value, field.remaining), self._text_colour)
+        #  The row RETURN takes, by position rather than by destination: it is
+        #  the first suggestion a digit leads anywhere, which is what `submit`
+        #  returns. Comparing destinations instead marks every row that shares
+        #  the first one's, and suggestions may legitimately share a page.
+        marked_offset = next(
+            (
+                offset
+                for offset, entry in enumerate(self._found[: self._limit])
+                if entry.destination is not None
+            ),
+            None,
+        )
         for offset in range(self._limit):
             row = canvas.row(self.top_row + self._suggestions_row + offset)
             if offset < len(self._found):
-                self._draw_one(row, offset, self._found[offset])
+                self._draw_one(row, offset, self._found[offset], marked=offset == marked_offset)
             elif offset == 0 and self._value and self._no_match:
                 #  Said rather than shown blank: on a service that answers
                 #  slowly a reader cannot tell nothing-found from not-answered.
@@ -208,7 +220,7 @@ class TypeAhead(Form):
     #: squeeze out the name it is there to qualify.
     _DETAIL_SHARE: Final = 2
 
-    def _draw_one(self, row: RowWriter, offset: int, entry: Entry) -> None:
+    def _draw_one(self, row: RowWriter, offset: int, entry: Entry, *, marked: bool) -> None:
         row.text(f"{_FIRST_DIGIT + offset} ", Colour.YELLOW)
         detail = fitted(entry.detail, (row.remaining - 2) // self._DETAIL_SHARE)
         name = fitted(entry.text, min(self._NAME_CELLS, row.remaining - 1))
@@ -221,6 +233,5 @@ class TypeAhead(Form):
         #  At the end of the entry rather than in front of the digit, where a
         #  mark and a 1 run together and read as "number 1" instead of as two
         #  keys that do the same thing.
-        marked = entry.destination is not None and entry.destination == self.submit()
         if marked and row.remaining > _MARK_CELLS:
             row.text(f" {SUBMIT_MARK}", Colour.YELLOW)

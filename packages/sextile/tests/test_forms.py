@@ -395,6 +395,27 @@ class TestMarkingWhatReturnWouldTake:
         assert SUBMIT_MARK not in rows[FIRST_ROW + 1]
         assert SUBMIT_MARK not in rows[FIRST_ROW + 2]
 
+    async def test_only_the_first_when_matches_share_a_destination(self) -> None:
+        #  Every suggestion may legitimately lead to the same page. RETURN still
+        #  takes the first, so the mark is the row it takes, not every row whose
+        #  destination happens to equal it.
+        async def to_one(typed: str) -> list[MenuItem]:
+            del typed
+            return [
+                MenuItem(text=name, detail="", destination=PageAddress("31"))
+                for name in ("Trondheim", "Tromso", "Troon")
+            ]
+
+        field = TypeAhead(
+            lookup=to_one, field_row=FIELD_ROW, suggestions_row=FIRST_ROW, label="PLACE:"
+        )
+        frame = Frame()
+        draw_form(frame, await typing(field, "TRO"))
+        rows = text_of(frame).splitlines()
+        assert rows[FIRST_ROW].rstrip().endswith(SUBMIT_MARK)
+        assert SUBMIT_MARK not in rows[FIRST_ROW + 1]
+        assert SUBMIT_MARK not in rows[FIRST_ROW + 2]
+
     async def test_it_does_not_run_into_the_digit(self) -> None:
         #  In front of the digit it abutted it, and "#1" reads as "number 1"
         #  rather than as two keys that do the same thing.

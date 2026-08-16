@@ -35,11 +35,12 @@ async def main(request):
 frame = fetch(app, "1")
 ```
 
-The documentation is in four parts. The **tutorial** teaches the framework by
+The documentation is in five parts. The **tutorial** teaches the framework by
 building one service; the **how-to** guides answer particular questions; the
-**reference** states the surface, the glossary and the wire; and the
-**explanation** says why the framework is shaped as it is. **Contributing**
-covers the gate and the two invariants.
+**reference** states the surface, the glossary and the wire; the **explanation**
+says why the framework is shaped as it is; and the **applications** are the three
+services built on it, worked through. **Contributing** covers the gate and the
+two invariants.
 
 ```{toctree}
 :maxdepth: 2
@@ -49,5 +50,6 @@ tutorial/index
 how-to/index
 reference/index
 explanation/index
+applications/index
 contributing
 ```

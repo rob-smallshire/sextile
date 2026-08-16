@@ -2,18 +2,27 @@
  *
  * The frame itself is viewdata.css, shipped with the package. This adds only a
  * bezel, so the black screen reads as a screen against the page rather than
- * merging into it -- in dark mode the frame's black is close to the content
- * background. A mid grey border works in both themes. */
+ * merging into it -- in dark mode the frame's black (#000) sits on furo's near
+ * black content background (#131416) and needs a clear edge to be a screen. The
+ * grey reads against both furo's dark and light backgrounds; the padding is a
+ * black margin inside the bezel, like a monitor's surround. */
 
 pre.viewdata {
-  border: 1px solid #666;
-  border-radius: 4px;
+  /* The 24em width is the forty columns; content-box keeps padding and border
+   * outside them, so the frame stays exactly forty columns wide in both themes. */
+  box-sizing: content-box;
+  padding: 0.4em 0.6em;
+  border: 2px solid #6e6e6e;
+  border-radius: 6px;
+  background-clip: padding-box;
   margin: 1rem 0;
 }
 
-/* A :frames: directive stacks frames, each with a small caption. */
+/* A :frames: directive stacks frames, each with a small caption. Each frame's
+ * own pre.viewdata carries the bezel above, so a and b each read as a screen;
+ * the tighter gap between them keeps the pair reading as one device shown twice. */
 figure.viewdata-frame {
-  margin: 1rem 0;
+  margin: 0.5rem 0;
 }
 figure.viewdata-frame figcaption {
   font: 0.8rem/1.4 monospace;

@@ -31,7 +31,17 @@ from sextile.middleware import CallNext, Middleware
 from sextile.page import Page, PageAddress, PageFrame, UnknownPageError, keyed
 from sextile.pages import farewell_page, menu_page, notice_page, prose_page, title_page
 from sextile.requests import Neighbours, PageRequest
-from sextile.routing import Converter, Handler, NoSuchRouteError, PageRoute, PageRouter, RouteError
+from sextile.routing import (
+    DATE,
+    INTEGER,
+    Converter,
+    Handler,
+    NoSuchRouteError,
+    PageRoute,
+    PageRouter,
+    RouteError,
+    fixed_integer,
+)
 from sextile.state import StateKey
 
 __version__ = version("sextile")
@@ -42,6 +52,8 @@ __version__ = version("sextile")
 #  large to flatten into this list and are public as modules.
 __all__ = [
     "Neighbours",
+    "DATE",
+    "INTEGER",
     "CallNext",
     "Converter",
     "Custom",
@@ -71,6 +83,7 @@ __all__ = [
     "__version__",
     "draw_form",
     "farewell_page",
+    "fixed_integer",
     "handlers",
     "keyed",
     "keys",

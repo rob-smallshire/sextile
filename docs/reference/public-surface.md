@@ -8,7 +8,7 @@ drift. Each name links to its entry from the {doc}`API reference <api/index>`.
 
 ## `sextile`
 
-`Neighbours` `CallNext` `Converter` `Custom` `Flow` `Form` `GuideRow` `Handler` `Lines` `MenuItem` `Middleware` `NoSuchRouteError` `OnOneFrame` `Page` `PageAddress` `PageFrame` `PageLayout` `PageRequest` `PageRoute` `PageRouter` `Prose` `RouteError` `Sextile` `Shortcut` `StateKey` `TypeAhead` `UnknownPageError` `__version__` `draw_form` `farewell_page` `handlers` `keyed` `keys` `menu_page` `notice_page` `prose_page` `standard_pages` `title_page` `transliterate`
+`Neighbours` `DATE` `INTEGER` `CallNext` `Converter` `Custom` `Flow` `Form` `GuideRow` `Handler` `Lines` `MenuItem` `Middleware` `NoSuchRouteError` `OnOneFrame` `Page` `PageAddress` `PageFrame` `PageLayout` `PageRequest` `PageRoute` `PageRouter` `Prose` `RouteError` `Sextile` `Shortcut` `StateKey` `TypeAhead` `UnknownPageError` `__version__` `draw_form` `farewell_page` `fixed_integer` `handlers` `keyed` `keys` `menu_page` `notice_page` `prose_page` `standard_pages` `title_page` `transliterate`
 
 ## `sextile.cli`
 

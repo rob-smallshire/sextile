@@ -33,7 +33,8 @@ application in its first few lines.
     Page  PageFrame  PageAddress  keyed
     PageRequest  Neighbours  StateKey  GuideRow
     Middleware  CallNext
-    Converter  UnknownPageError  NoSuchRouteError  RouteError
+    Converter  fixed_integer  INTEGER  DATE
+    UnknownPageError  NoSuchRouteError  RouteError
     Form  TypeAhead  draw_form
     PageLayout  Flow  Custom  OnOneFrame  Shortcut
     Lines  Prose  MenuItem
@@ -256,7 +257,7 @@ Everything else, and specifically:
 |---|---|
 | `application`, `requests` | their public names are re-exported by `sextile` |
 | `page` | likewise: `PageAddress`, `keyed`, `UnknownPageError`, `Page`, `PageFrame` |
-| `routing` | a service declares routes; the router matches them. `PageRoute`, `PageRouter` and `Handler` are declared here and re-exported by `sextile`; `Converter` is the extension point, and it and the two errors it raises are at the top level |
+| `routing` | a service declares routes; the router matches them. `PageRoute`, `PageRouter` and `Handler` are declared here and re-exported by `sextile`; `Converter` is the extension point, with `fixed_integer`, `INTEGER` and `DATE` the building blocks behind the `int` and `date` fields, and it and the two errors it raises are at the top level |
 | `pages` | reached through `sextile.handlers` or the `Sextile` methods |
 | `session`, `server` | how a call is answered, which no page takes part in |
 | `viewdata.encoding` | the wire half: `ScreenControl`, `encode_attribute`, `encode_text` |

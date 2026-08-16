@@ -4,11 +4,25 @@ version = "0.1.0"
 description = "A framework for Prestel-style Viewdata services"
 readme = "README.md"
 license = "MIT"
-license-files = ["LICENSE"]
+license-files = ["LICENSE", "NOTICE.md"]
 authors = [
     { name = "Robert Smallshire", email = "robert@smallshire.org.uk" }
 ]
 requires-python = ">=3.12"
+keywords = ["viewdata", "prestel", "teletext", "videotex", "bbc-micro", "retrocomputing"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Framework :: AsyncIO",
+    "Intended Audience :: Developers",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Communications",
+    "Topic :: Terminals",
+    "Topic :: Software Development :: Libraries",
+]
 #  One. Everything a framework for talking to terminals over a socket needs is
 #  in the standard library, except this: reducing arbitrary Unicode to what a
 #  1974 character set can draw is a large and specialised subject, and a table
@@ -20,6 +34,13 @@ dependencies = [
 
 [project.scripts]
 sextile = "sextile.__main__:main"
+
+[project.urls]
+Homepage = "https://github.com/rob-smallshire/sextile"
+Documentation = "https://rob-smallshire.github.io/sextile/"
+Repository = "https://github.com/rob-smallshire/sextile"
+Issues = "https://github.com/rob-smallshire/sextile/issues"
+Changelog = "https://github.com/rob-smallshire/sextile/blob/master/CHANGELOG.md"
 
 [build-system]
 requires = ["hatchling"]

@@ -35,6 +35,8 @@ The one thing it depends on that is not a pure function is the clock, which is
 therefore a constructor argument. A service whose pages change under it cannot
 be tested otherwise.
 
-[docs/design.md](docs/design.md) is the design as built.
+[docs/design.md](docs/design.md) is the design as built, and the worked example
+in the documentation, [docs/applications/calendar.md](../../docs/applications/calendar.md),
+draws a page of it live.
 
 MIT licensed.

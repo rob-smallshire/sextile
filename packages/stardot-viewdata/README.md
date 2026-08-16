@@ -201,6 +201,7 @@ terminal to a reply.
 
 | | |
 |---|---|
+| [applications/stardot.md](../../docs/applications/stardot.md) | the worked example, with a page drawn live |
 | [design.md](docs/design.md) | this service as built: numbering, archive, ingest, phpBB's HTML |
 | [architecture.md](../../docs/architecture.md) | the workspace, and where the seams are |
 | [rendering.md](../sextile/docs/rendering.md) | how a post becomes bytes, stage by stage |

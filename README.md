@@ -1,9 +1,13 @@
 # Sextile
 
-A framework for Prestel-style Viewdata services in Python, and the service it
-was extracted from.
+A framework for Prestel-style Viewdata services in Python, and the services built
+on it. Named after the star key on a viewdata keypad.
 
-Named after the star key on a viewdata keypad.
+Viewdata was the interactive information service of the early 1980s: a terminal
+dialled a computer over the telephone line, and the computer answered with pages
+of text — twenty-four rows of forty characters in seven colours and block mosaics
+— keyed by page number. The [documentation](docs/index.md) opens with the whole
+of that story.
 
 ```
 packages/sextile/              the framework: connections, sessions, routing,
@@ -13,84 +17,48 @@ packages/calendar-viewdata/    a calendar; the framework's worked example
 packages/weather-viewdata/     the weather, from met.no and a local gazetteer
 ```
 
-Sextile is to a Viewdata service what Flask or Starlette is to a web
-application. It owns everything whose natural lifetime is the call, and an
-application says what the pages are:
+Sextile is to a Viewdata service what Flask or Starlette is to a web application.
+It owns everything whose natural lifetime is the call, and an application says
+what the pages are:
 
 ```python
-from sextile import Page, PageRequest, Sextile
+from sextile import Page, PageRequest, Sextile, notice_page
 
-app = Sextile()
+app = Sextile(name="My service")
 
-@app.page("82{post_id:int}", name="post")
-async def post(request: PageRequest, post_id: int) -> Page:
-    ...
+@app.page("1", name="main", keywords=("MAIN",))
+async def main(request: PageRequest) -> Page:
+    return notice_page(request, "Hello, 1981.")
 ```
 
 ```sh
-uv run sextile serve my_service:app     # answer calls on port 6850
-nc localhost 6850                       # and call it
+uv run sextile serve my_service:app                 # answer calls on port 6850
+nc localhost 6850                                   # and call it
+uv run sextile render my_service:app --page 1       # or draw a page without a Beeb
 ```
 
-`stardot-viewdata` is the first such application, and the one all of this was
-learned from. To run it, and to dial it from a real BBC Micro, see
-[its README](packages/stardot-viewdata/README.md):
+`render` draws a frame as the Beeb would (`--form ansi`), as its character and
+attribute layers (`grid`), as the wire stream (`bytes`), or as a self-contained
+web page with the font embedded (`--form html`).
+
+## Documentation
+
+Built with Sphinx from [`docs/`](docs/index.md), in five parts: a **tutorial**
+that builds one service, **how-to** guides, a **reference** for the surface, the
+glossary and the wire, an **explanation** of why it is shaped as it is, and the
+three **applications** worked through.
 
 ```sh
-uv run stardot-viewdata ingest --once   # fetch something to look at
-uv run stardot-viewdata serve           # answer calls
+uv run --group docs sphinx-build -n -W --keep-going -b html docs docs/_build/html
 ```
-
-## Why the split
-
-The decisive point is a lifecycle mismatch: phpBB answers a request and forgets
-it, while a Viewdata session lasts until the caller rings off and the server
-holds all of it. So phpBB provides resources and Sextile provides conversations
-with them. The argument, and what follows from it, is in
-[docs/explanation/why-sextile.md](docs/explanation/why-sextile.md);
-[docs/target-architecture.md](docs/target-architecture.md) has the whole picture
-and the invariants that keep it honest.
-
-## Where things are written up
-
-Each package is documented as built:
-
-| | |
-|---|---|
-| [sextile](packages/sextile/docs/design.md) | the seam, addressing, routing, the session, the wire |
-| [stardot-viewdata](packages/stardot-viewdata/docs/design.md) | the numbering, the archive, the polite ingest, phpBB's HTML |
-| [calendar-viewdata](packages/calendar-viewdata/docs/design.md) | the second application, and what it was for |
-
-[docs/architecture.md](docs/architecture.md) maps the whole workspace, and
-[writing-an-application.md](packages/sextile/docs/writing-an-application.md) is
-the framework's front door.
-
-## What was measured rather than assumed
-
-Much of the design rests on facts established by driving real Commstar under an
-emulator rather than on documentation:
-
-- Attributes must be escape-encoded as `ESC` + code + 0x40. The SAA5050's own
-  0x80-0x9F codes do not survive Prestel's 7E1 line.
-- A frame is exactly 24 rows of 40 cells. Column 40 wraps by itself, and the
-  bottom-right cell wraps back to the top left rather than scrolling.
-- `RETURN` transmits 0x5F, not 0x23, so a page request ends with 0x5F.
-- Page numbers have no practical length limit.
-
-The scripts that settled each are in [docs/spikes/](docs/spikes/), and what they
-established is written up in
-[viewdata-encoding.md](packages/sextile/docs/viewdata-encoding.md), which distinguishes what
-was verified from what was inferred. **Keep that distinction** in anything new.
 
 ## Working on it
 
 ```sh
 uv run pytest        # the whole workspace
 uv run ruff check .
-uv run mypy
+uv run mypy          # --strict, including the tests
 ```
 
-All three must pass; `mypy` is `--strict`, including the tests.
-
-MIT licensed. Some material in this repository is not ours to license — see
-[NOTICE.md](NOTICE.md).
+All four — the three above and the docs build — must pass. MIT licensed; some
+material in this repository is not ours to license, see [NOTICE.md](NOTICE.md).

@@ -38,7 +38,7 @@ handler is a function of a request rather than of a number. The reasoning is in
 0x40, a frame is 24 rows of 40 that wraps at the bottom-right back to the top
 left, `RETURN` transmits 0x5F. Those were settled by driving real Commstar under
 an emulator, and are written up in
-[docs/viewdata-encoding.md](docs/viewdata-encoding.md).
+[the encoding reference](../../docs/reference/viewdata-encoding.md).
 
 **Nobody is cut off without warning.** After half the idle timeout a silent
 caller's footer becomes a bar that drains, reading `Press a key`. The first key
@@ -49,22 +49,20 @@ hand. Every service gets this without writing anything.
 so a row that changes colour twice has thirty-eight columns for text. `Canvas`
 does that arithmetic so nothing above it has to.
 
-**Previewable as HTML.** `sextile render --form html` writes a self-contained
-page — the Bedstead font embedded, the frame drawn as the Beeb would — that opens
-from disk with no server, and the documentation renders live frames with the same
-code rather than pasting screenshots.
+**Drawable without a Beeb.** `sextile render` draws any page four ways: `ansi`
+colour as the Beeb would draw it, `grid` for the character and attribute layers,
+`bytes` for the wire stream, and `html` for a self-contained web page with the
+Bedstead font embedded, opening from disk with no server. The documentation
+renders live frames with the same code rather than pasting screenshots.
 
 ## Documentation
 
-| | |
-|---|---|
-| [design.md](docs/design.md) | the framework as built, and which decisions are load-bearing |
-| [writing-an-application.md](docs/writing-an-application.md) | how to write a service |
-| [rendering.md](docs/rendering.md) | how a document becomes bytes, stage by stage |
-| [navigation.md](docs/navigation.md) | how a reader moves about, and why the controls are what they are |
-| [graphics.md](docs/graphics.md) | blocks, and the compositor that places them |
-| [mosaic-fonts.md](docs/mosaic-fonts.md) | large lettering: the faces, the format and the spacings |
-| [viewdata-encoding.md](docs/viewdata-encoding.md) | what the BBC end actually does, and how we know |
+The framework is documented in the workspace docs, built with Sphinx:
+[the tutorial](../../docs/tutorial/index.md) builds a service step by step, the
+[how-to guides](../../docs/how-to/index.md) answer particular questions, the
+[reference](../../docs/reference/index.md) states the surface, the glossary and
+the wire, and the [explanation](../../docs/explanation/index.md) says why the
+framework is shaped as it is.
 
 ## Status
 

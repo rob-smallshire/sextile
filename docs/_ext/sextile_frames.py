@@ -46,7 +46,7 @@ from sphinx.util import parselinenos
 from sphinx.util.docutils import SphinxDirective
 
 from sextile.application import Sextile
-from sextile.cli import load_application
+from sextile.cli import load_application, rendered
 from sextile.page import Page
 from sextile.testing import connect
 from sextile.viewdata.frame import Frame
@@ -54,6 +54,16 @@ from sextile.viewdata.html import render_html, stylesheet
 
 if TYPE_CHECKING:
     from sphinx.application import Sphinx
+
+#: The `:form:` values that render a frame as text rather than as a drawn frame.
+_TEXT_FORMS = ("bytes", "grid", "ansi")
+
+
+class _AsText:
+    """A frame rendered to text, for `run` to emit as a literal block."""
+
+    def __init__(self, text: str) -> None:
+        self.text = text
 
 
 def _fetch_page(app: Sextile, page: str) -> Page:
@@ -111,21 +121,25 @@ class SextileFrame(SphinxDirective):
         "keys": directives.unchanged,
         "show-code": directives.flag,
         "hide-lines": directives.unchanged,
+        "form": directives.unchanged,
     }
 
     def run(self) -> list[nodes.Node]:
         try:
-            html = self._render()
+            rendered = self._render()
         except Exception as error:
             raise self.severe(f"sextile-frame could not render: {error}") from error
         produced: list[nodes.Node] = []
         if "show-code" in self.options and self.content:
             source = self._shown_source()
             produced.append(nodes.literal_block(source, source, language="python"))
-        produced.append(nodes.raw("", html, format="html"))
+        if isinstance(rendered, _AsText):
+            produced.append(nodes.literal_block(rendered.text, rendered.text))
+        else:
+            produced.append(nodes.raw("", rendered, format="html"))
         return produced
 
-    def _render(self) -> str:
+    def _render(self) -> "str | _AsText":
         resolved = self._resolve()
         spec = self.options.get("frames")
         if spec:
@@ -133,6 +147,14 @@ class SextileFrame(SphinxDirective):
                 raise ValueError(":frames: needs a page, from `page` or `app` with :page:")
             return self._render_frames(resolved, spec)
         frame = resolved if isinstance(resolved, Frame) else _page_frame(resolved, self._index())
+        form = self.options.get("form")
+        if form:
+            #  The same frame as bytes on the wire or as its two grids, for a
+            #  page showing what the visual frame is made of. Colour is off: a
+            #  hex dump reads as text, not as an ANSI-coloured terminal.
+            if form not in _TEXT_FORMS:
+                raise ValueError(f":form: is one of {', '.join(_TEXT_FORMS)}, not {form!r}")
+            return _AsText(rendered(frame, form, colour=False))
         return render_html(frame)
 
     def _render_frames(self, page: Page, spec: str) -> str:

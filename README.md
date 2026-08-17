@@ -8,8 +8,8 @@
 [![Licence](https://img.shields.io/pypi/l/sextile.svg)](https://github.com/rob-smallshire/sextile/blob/master/LICENSE)
 [![Docs](https://img.shields.io/badge/docs-github.io-blue)](https://rob-smallshire.github.io/sextile/)
 
-A framework for Prestel-style Viewdata services in Python, and the services built
-on it. Named after the star key on a viewdata keypad.
+A framework for Prestel-style Viewdata services in Python. Named after the star
+key on a viewdata keypad.
 
 Viewdata or Videotex services, such as Prestel in Britain, were among the
 earliest interactive services of the information age: a terminal dialled a
@@ -55,15 +55,29 @@ async def main(request: PageRequest) -> Page:
     return notice_page(request, "Hello, 1981.")
 ```
 
+Start the Sextile server. It will answer on its default TCP port 16650
+
 ```sh
-uv run sextile serve my_service:app                 # answer calls on port 6850
-nc localhost 6850                                   # and call it
+uv run sextile serve my_service:app                 # answer calls on port 16650
+```
+
+Call it using `netcat` on port 16650,
+
+```
+nc localhost 16650                                   # and call it
+```
+
+or render a page directly to Unicode text,
+
+```
 uv run sextile render my_service:app --page 1       # or draw a page without a terminal
 ```
 
-`render` draws a frame as a Viewdata terminal would (`--form ansi`), as its character and
-attribute layers (`grid`), as the wire stream (`bytes`), or as a self-contained
-web page with the font embedded (`--form html`).
+or as self-contained HTML,
+
+```
+uv run sextile render my_service:app --page 1 --form html      # or draw a page without a terminal
+```
 
 ## Documentation
 
@@ -84,5 +98,6 @@ uv run ruff check .
 uv run mypy          # --strict, including the tests
 ```
 
-All four — the three above and the docs build — must pass. MIT licensed; some
-material in this repository is not ours to license, see [NOTICE.md](NOTICE.md).
+All four — the three above and the docs build — must pass. The Sextile code is MIT licensed;
+however, some  material in this repository is not ours to license and
+is licenced separately, see [NOTICE.md](NOTICE.md)

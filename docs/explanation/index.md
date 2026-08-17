@@ -13,4 +13,5 @@ graphics
 mosaic-fonts
 ../architecture
 ../target-architecture
+../deployment
 ```

@@ -28,7 +28,7 @@ serving and bridging for you:
 examples/capture-hero.sh
 ```
 
-It serves the hero on port 6850 with the line held open (so the frame stays up
+It serves the hero on port 16650 with the line held open (so the frame stays up
 for the photo) and starts `tcpser`, then prints the emulator and Commstar steps.
 Photograph the emulator window, crop to the screen, and save it as
 `docs/images/sextile-hero.png` — the READMEs already point at that path.

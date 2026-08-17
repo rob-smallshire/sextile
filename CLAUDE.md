@@ -106,10 +106,10 @@ under `packages/stardot-viewdata/tests/data/` to fresh requests.
 ```sh
 uv run sextile serve calendar_viewdata:app          # a whole service, no forum
 uv run stardot-viewdata ingest --seed               # fill the archive first (an hour)
-uv run stardot-viewdata serve                       # then answer calls on port 6850
+uv run stardot-viewdata serve                       # then answer calls on port 16650
 uv run weather-viewdata import-places               # fill the gazetteer first (seconds)
 uv run weather-viewdata render --page 3213133880    # then Trondheim's forecast
-nc localhost 6850                                   # and call it
+nc localhost 16650                                   # and call it
 
 uv run --group docs sphinx-build -n -W --keep-going -b html docs docs/_build/html   # build the docs
 ```

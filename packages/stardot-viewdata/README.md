@@ -49,7 +49,7 @@ interrupted; the archive keeps what it has.)
 **2. Serve it — second shell**
 
 ```sh
-uv run stardot-viewdata serve             # answers on port 6850
+uv run stardot-viewdata serve             # answers on port 16650
 ```
 
 **3. Put a Beeb or emulator in front of it**
@@ -73,7 +73,7 @@ uv run stardot-viewdata render --page 1 --form grid   # character and attributes
 uv run stardot-viewdata render --page 1 --form bytes  # the wire, as a hex dump
 
 uv run stardot-viewdata archive                      # what the archive holds
-nc localhost 6850                           # call the server from a terminal
+nc localhost 16650                           # call the server from a terminal
 ```
 
 `render --page` also prints, to standard error, where each key would lead —

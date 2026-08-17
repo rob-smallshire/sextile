@@ -8,7 +8,7 @@ each needs its own shell.
 ## Serve the application
 
 ```sh
-uv run sextile serve calendar_viewdata:app     # answers on port 6850
+uv run sextile serve calendar_viewdata:app     # answers on port 16650
 ```
 
 Any application, named `module:name`. `--port` and `--host` move where it listens;
@@ -17,7 +17,7 @@ Any application, named `module:name`. `--port` and `--host` move where it listen
 ## Call it from a terminal first
 
 ```sh
-nc localhost 6850
+nc localhost 16650
 ```
 
 `nc` (or `telnet`) is a viewdata client good enough to page through the service and
@@ -26,7 +26,7 @@ confirm it answers before any emulator is in the way.
 ## Bridge TCP to an emulated modem
 
 ```sh
-tcpser -v 25232 -s 9600 -l 4 -t sS -n 1=localhost:6850
+tcpser -v 25232 -s 9600 -l 4 -t sS -n 1=localhost:16650
 ```
 
 [tcpser](https://github.com/go4retro/tcpser) presents the TCP service as an

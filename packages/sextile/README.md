@@ -29,8 +29,8 @@ async def main(request: PageRequest) -> Page:
 ```
 
 ```sh
-sextile serve my_service:app     # answer calls on port 6850
-nc localhost 6850                # and call it
+sextile serve my_service:app     # answer calls on port 16650
+nc localhost 16650                # and call it
 ```
 
 ## What it gives you

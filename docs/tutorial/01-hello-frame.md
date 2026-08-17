@@ -86,7 +86,7 @@ uv run sextile serve my_calendar:app
 In another terminal, dial in the way a Viewdata terminal would, over a modem:
 
 ```sh
-nc localhost 6850
+nc localhost 16650
 ```
 
 You arrive on `*1#`. Key `0` to go to the index — the same page, for now — and

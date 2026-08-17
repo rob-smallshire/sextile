@@ -4,7 +4,7 @@ A calendar, served as Viewdata frames.
 
 ```sh
 uv run sextile serve calendar_viewdata:app
-nc localhost 6850
+nc localhost 16650
 ```
 
 ```

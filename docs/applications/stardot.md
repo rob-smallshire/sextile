@@ -19,7 +19,7 @@ id — so a page number means the same thing on the web forum as on a BBC Micro:
 
 ```sh
 uv run stardot-viewdata ingest --seed    # fill the archive first (about an hour)
-uv run stardot-viewdata serve            # then answer calls on port 6850
+uv run stardot-viewdata serve            # then answer calls on port 16650
 uv run stardot-viewdata render --page 8  # or just draw a page
 ```
 

@@ -96,7 +96,7 @@ def printable(data: bytes) -> str:
 
 class TestConnecting:
     async def test_the_default_port(self) -> None:
-        assert DEFAULT_PORT == 6850
+        assert DEFAULT_PORT == 16650
 
     async def test_a_frame_arrives_unasked_on_connecting(self, server: asyncio.Server) -> None:
         reader, writer = await connect(server)

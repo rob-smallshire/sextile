@@ -4,7 +4,7 @@ Sextile is a plain TCP server and knows nothing of ip232. tcpser is already the
 ip232 endpoint an emulator connects to, so Sextile is dialled exactly as any
 other viewdata board is:
 
-    tcpser -v 25232 -s 9600 -l 4 -t sS -n 1=localhost:6850
+    tcpser -v 25232 -s 9600 -l 4 -t sS -n 1=localhost:16650
 
 Two constraints, both measured against a real board. A caller who walks away is
 released after a silence, or a single-line service held open locks everyone else
@@ -25,8 +25,9 @@ from sextile.application import Sextile
 from sextile.session.session import Session
 from sextile.viewdata.idle_warning import BAR_CELLS
 
-#: After the MC6850 ACIA, which drives the BBC Micro's serial port.
-DEFAULT_PORT: Final = 6850
+#: After the 16650 UART, a famous serial part whose number is not already an
+#: allocated TCP port.
+DEFAULT_PORT: Final = 16650
 
 #: How long a caller may say nothing before the line is released. None holds the
 #: line indefinitely, which is right for a dedicated terminal and wrong for a

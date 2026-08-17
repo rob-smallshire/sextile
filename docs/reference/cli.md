@@ -16,7 +16,7 @@ Answers calls from terminals on a TCP port.
 | Option | Default | Does |
 |---|---|---|
 | `--host` | `127.0.0.1` | the address to listen on |
-| `--port` | `6850` | the port to listen on |
+| `--port` | `16650` | the port to listen on |
 | `--idle-timeout SECONDS` | `900` | release a caller who says nothing this long; `0` holds the line indefinitely |
 | `--warn-after SECONDS` | half the idle timeout | warn a silent caller with a draining bar; `0` for no warning |
 

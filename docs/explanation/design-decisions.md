@@ -288,3 +288,12 @@ Because: two halves of one function cannot drift, and the resource is an ordinar
 local held across the `yield`.
 Rejected: separate startup and shutdown handlers; they must be kept in step by
 hand and must stash what they open where both reach it.
+
+### Deployed services live in their own repository
+
+Decision: a deployed service lives in its own repository and depends on the
+published `sextile`; the in-tree applications keep the framework honest.
+Because: one workspace has one lockfile, and a library must not commit one while
+a deployment must — and a service on its own is exercised as a consumer would be.
+Rejected: keeping the service in-tree with an ignored lock, or committing the
+lock and pinning the library to it.

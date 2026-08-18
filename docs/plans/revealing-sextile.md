@@ -63,6 +63,11 @@ The rewrite starts from a truthful base, not a blank one:
 
 ## Next
 
+- **Done 2026-08-18:** `weather-viewdata` extracted to its own repository
+  (deployed services live outside the workspace; see
+  `docs/explanation/design-decisions.md`); the in-tree honesty apps are now
+  `calendar-viewdata` and `stardot-viewdata`, so the line counts above read as
+  historical.
 - **Done:** frames render as HTML with the Bedstead font -- `viewdata.display`,
   `viewdata.html` `render_html`, `sextile render --form html`, and the
   `sextile-frame` directive drawing live frames (now with a `:form:` option for

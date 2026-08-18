@@ -11,13 +11,16 @@ rework is. Each package is written up as built in its own `docs/design.md`.
 ## The two invariants
 
 Both are checkable; `test_public_surface.py` pins the second, and the calendar
-and weather services keep the first honest.
+and forum services keep the first honest in-tree.
 
 1. **Nothing in `packages/sextile/` may know about a forum, phpBB, Stardot, a
    calendar or the weather** -- not in the code, and preferably not in the
-   comments. `calendar-viewdata` and `weather-viewdata` exist to keep this
-   honest. An application finding the framework *awkward* is a framework defect
-   to fix and write down, not a seam moving.
+   comments. `calendar-viewdata` and `stardot-viewdata` keep this honest
+   in-tree; a deployed service such as `weather-viewdata`
+   (github.com/rob-smallshire/weather-viewdata) lives in its own repository and
+   depends on the published `sextile`, so the framework is also exercised as a
+   consumer would. An application finding the framework *awkward* is a framework
+   defect to fix and write down, not a seam moving.
 2. **Nothing in an application may reach into the framework's internals.** The
    surface is a stated set of public submodules and names, in
    [public-surface.md](packages/sextile/docs/public-surface.md); a module not
@@ -107,15 +110,13 @@ under `packages/stardot-viewdata/tests/data/` to fresh requests.
 uv run sextile serve calendar_viewdata:app          # a whole service, no forum
 uv run stardot-viewdata ingest --seed               # fill the archive first (an hour)
 uv run stardot-viewdata serve                       # then answer calls on port 16650
-uv run weather-viewdata import-places               # fill the gazetteer first (seconds)
-uv run weather-viewdata render --page 3213133880    # then Trondheim's forecast
 nc localhost 16650                                   # and call it
 
 uv run --group docs sphinx-build -n -W --keep-going -b html docs docs/_build/html   # build the docs
 ```
 
-`ingest` and `import-places` default to SQLite files in the working directory,
-so run them and `serve` from the same place.
+`ingest` defaults to a SQLite file in the working directory, so run it and
+`serve` from the same place.
 
 [docs/open-questions.md](docs/open-questions.md) lists what is known to be
 missing, and what is deliberately not done.

@@ -19,7 +19,10 @@ uv run --group docs sphinx-build -n -W --keep-going -b html docs docs/_build/htm
 ## The two invariants
 
 1. Nothing in `packages/sextile/` may know about any particular service — not a
-   forum, a calendar or the weather. The applications exist to keep this honest.
+   forum, a calendar or the weather. `calendar-viewdata` and `stardot-viewdata`
+   keep this honest in-tree; a deployed service such as `weather-viewdata` lives
+   in its own repository against the published framework, exercising it as a
+   consumer would.
 2. Nothing in an application may reach past the framework's public surface. The
    surface is the set of modules and names in {doc}`reference/public-surface`,
    and `test_public_surface.py` fails if an application imports past it.

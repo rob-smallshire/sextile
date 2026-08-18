@@ -33,8 +33,10 @@ packages/sextile/              the framework: connections, sessions, routing,
                                page numbering, frames on the wire
 packages/stardot-viewdata/     the Stardot phpBB forum, as Viewdata
 packages/calendar-viewdata/    a calendar; the framework's worked example
-packages/weather-viewdata/     the weather, from met.no and a local gazetteer
 ```
+
+The weather service, the first deployed one, lives in its own repository:
+[rob-smallshire/weather-viewdata](https://github.com/rob-smallshire/weather-viewdata).
 
 Installation is easiest with [`uv`](https://docs.astral.sh/uv/), which handles
 Python installation and virtual environments for you.

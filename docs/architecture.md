@@ -7,7 +7,6 @@ packages/sextile/              the framework: connections, sessions, routing,
                                page numbering, frames on the wire
 packages/stardot-viewdata/     the Stardot phpBB forum, as Viewdata
 packages/calendar-viewdata/    a calendar; the framework's worked example
-packages/weather-viewdata/     the weather, from met.no and a local gazetteer
 ```
 
 The framework depends on nothing at all; the applications depend on it and not
@@ -20,10 +19,10 @@ Each is written up as built, and those are the documents to read:
 The framework's own design is written up here — its choices in
 {doc}`explanation/design-decisions`, its surface in
 {doc}`reference/public-surface`, its layout in {doc}`reference/layout`, its wire
-in {doc}`reference/viewdata-encoding`. Each application keeps its own design note
-beside its code, at `packages/stardot-viewdata/docs/design.md`,
-`packages/calendar-viewdata/docs/design.md` and
-`packages/weather-viewdata/docs/design.md`.
+in {doc}`reference/viewdata-encoding`. Each in-tree application keeps its own
+design note beside its code, at `packages/stardot-viewdata/docs/design.md` and
+`packages/calendar-viewdata/docs/design.md`; the weather service keeps its own in
+its repository.
 
 {doc}`target-architecture` says where all this is going and why — the phpBB
 extension, and the phases between here and it. {doc}`open-questions` lists what is
@@ -45,10 +44,10 @@ Atom adapter is the first implementation; the phpBB Content Provider extension
 is the intended second, and should arrive without disturbing the numbering, the
 renderer or the session.
 
-**`weather_viewdata/forecast/source.py` — the `ForecastSource` port.** The same
-seam again, and the one that shows it is a shape rather than a coincidence:
-everything above it deals in `Forecast` and `Moment` and has never heard of
-met.no, JSON or HTTP.
+**`ForecastSource`, in the weather service — the same seam again.** It shows the
+port is a shape rather than a coincidence: everything above it deals in `Forecast`
+and `Moment` and has never heard of met.no, JSON or HTTP. The weather service now
+lives in its own repository, depending on the framework as a published library.
 
 **`sextile/visits.py` — the `Visits` port.** The third time the same shape has
 been wanted, and the first time in the framework rather than an application: a

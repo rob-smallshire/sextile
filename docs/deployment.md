@@ -107,12 +107,13 @@ its place on the web plane has nothing to do on the Viewdata plane.
 [Unit]
 Description=weather-viewdata Viewdata service
 After=network-online.target
+Wants=network-online.target
 
 [Service]
 User=weather-viewdata
 StateDirectory=weather-viewdata
 WorkingDirectory=/var/lib/weather-viewdata
-ExecStart=/srv/weather-viewdata/.venv/bin/sextile serve weather_viewdata:app --port 16651
+ExecStart=/srv/weather-viewdata/.venv/bin/weather-viewdata serve --host 0.0.0.0 --port 16651 --index /var/lib/weather-viewdata/places.sqlite
 EnvironmentFile=-/etc/sextile/weather-viewdata.env
 Restart=on-failure
 
@@ -129,6 +130,23 @@ with no secrets needs no file and no edit to this unit.
 Why systemd over containers: for a few tiny long-lived sockets on a 2 GB box,
 one unit per service is lighter than Docker and asks nothing of the RAM the small
 host is chosen to save.
+
+## Seeding and refreshing data
+
+```ini
+# /etc/systemd/system/weather-viewdata-import.service  (Type=oneshot, User=weather-viewdata)
+ExecStart=/srv/weather-viewdata/.venv/bin/weather-viewdata import-places --index /var/lib/weather-viewdata/places.sqlite
+ExecStartPost=+/usr/bin/systemctl try-restart weather-viewdata
+```
+
+A companion `oneshot` unit populates the service's data, paired with a timer for
+scheduled refreshes; a code deploy never runs it. The `+` prefix on
+`ExecStartPost` restarts the service as root after the unprivileged import, so it
+reopens the finished file.
+
+Why separate from the deploy: data is seeded once and refreshed on a timer, in
+`/var/lib` where no deploy reaches, so a push replaces code and restarts while the
+database survives untouched.
 
 ## The web plane, with Caddy
 
@@ -183,20 +201,22 @@ only a Caddyfile block, never another DNS change.
 ## Repository and build
 
 ```
-packages/sextile/            published to PyPI, versioned (see the changelog)
-packages/weather-viewdata/   depends on the published sextile, deployed on its own
+sextile            the framework: one repository, a library, no committed lockfile
+weather-viewdata   a deployed service: its own repository, its own committed lockfile
 ```
 
-The workspace stays as it is; services are not extracted to their own
-repositories. Deployment decouples by **publishing `sextile`** as an installable
-dependency, so a service installs on the box without the workspace around it, and
-a push builds and ships one service alone.
+Each deployed service lives in **its own repository** and depends on the published
+`sextile` from PyPI, with a committed `uv.lock`. A deploy clones the service
+repository and runs `uv sync --frozen`, so the box installs exactly what was
+tested and resolves nothing itself.
 
-Why not one repo per service: `calendar-viewdata` and `weather-viewdata` keep the
-framework's first invariant honest by living in-tree (see
-[architecture](architecture.md)); moving a service out removes an application
-that exercises the framework in the same test run, which is a real cost and buys
-nothing deployment cannot get from a published dependency.
+Why a repository per deployed service: a uv workspace has one lockfile, and a
+library must not commit one while a deployment must, so the framework and a
+deployable service cannot both be right in one workspace (see
+[design-decisions](explanation/design-decisions.md)). The in-tree
+`calendar-viewdata` and `stardot-viewdata` keep the framework's first invariant
+honest; extracting a deployed service also exercises the framework as a published
+dependency, the way a stranger's service would.
 
 ## Secrets
 

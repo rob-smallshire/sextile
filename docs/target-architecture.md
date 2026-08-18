@@ -68,8 +68,8 @@ moved and should be moved back.
    forum vocabulary may appear in the framework. If they do, the boundary has
    drifted into Python.
 
-The second invariant is checkable today, and the calendar and weather
-applications exist to keep checking it.
+The second invariant is checkable today: the calendar keeps checking it in-tree,
+and the weather service does so from its own repository.
 
 ## Phases
 

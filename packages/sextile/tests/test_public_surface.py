@@ -63,7 +63,7 @@ PUBLIC: Final = frozenset(
 #: and the parts between closed the last of them.
 CROSSINGS: Final[frozenset[str]] = frozenset()
 
-SERVICES: Final = ("stardot-viewdata", "weather-viewdata", "calendar-viewdata")
+SERVICES: Final = ("stardot-viewdata", "calendar-viewdata")
 
 _WORKSPACE: Final = pathlib.Path(__file__).resolve().parents[3]
 

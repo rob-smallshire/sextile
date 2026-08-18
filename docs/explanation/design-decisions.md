@@ -91,6 +91,19 @@ service could not build something that is.
 Rejected: reusing the not-found notice; it sends the reader away thinking they
 mistyped and hides the fault from whoever could fix it.
 
+### The board has a finite number of lines
+
+Decision: `serve` caps live callers at `max_connections` (64 by default) and
+turns a caller over the ceiling away with the application's busy frame — an
+`on_busy` hook, like the not-found and timeout notices — rather than holding the
+line.
+Because: nothing else stops one caller opening connections without limit and
+locking everyone out; the idle timeout releases a silent caller, not one who
+keeps a line active.
+Rejected: an unbounded server, or a silent TCP refusal; the first is a denial of
+service anyone can mount, the second leaves a caller at a dead line rather than a
+busy signal they can read.
+
 ## Pages and frames
 
 ### A page is a type, with choices per frame

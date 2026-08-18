@@ -19,6 +19,7 @@ from sextile.application import Sextile
 from sextile.page import PageAddress, UnknownPageError, keyed
 from sextile.server import (
     DEFAULT_IDLE_TIMEOUT,
+    DEFAULT_MAX_CONNECTIONS,
     DEFAULT_PORT,
     DEFAULT_WARN_FRACTION,
     serve,
@@ -106,8 +107,8 @@ def add_listening_arguments(parser: argparse.ArgumentParser) -> None:
     """Add to a parser the arguments for where a service answers and for how long.
 
     Args:
-        parser: The parser to add `--host`, `--port`, `--idle-timeout` and
-            `--warn-after` to.
+        parser: The parser to add `--host`, `--port`, `--idle-timeout`,
+            `--warn-after` and `--max-connections` to.
     """
     parser.add_argument("--host", default="127.0.0.1", help="Address to listen on")
     parser.add_argument(
@@ -131,6 +132,16 @@ def add_listening_arguments(parser: argparse.ArgumentParser) -> None:
         help=(
             "Warn a silent caller after this long, with a bar that drains "
             f"(default: {DEFAULT_WARN_FRACTION:.0%} of the idle timeout; 0 for no warning)"
+        ),
+    )
+    parser.add_argument(
+        "--max-connections",
+        type=int,
+        default=DEFAULT_MAX_CONNECTIONS,
+        metavar="N",
+        help=(
+            f"How many callers may be on the line at once "
+            f"(default {DEFAULT_MAX_CONNECTIONS}; 0 for no ceiling)"
         ),
     )
 
@@ -218,6 +229,9 @@ async def run_service(application: Sextile, arguments: argparse.Namespace) -> in
             port=arguments.port,
             idle_timeout=idle_timeout,
             warn_after=arguments.warn_after,
+            #  Zero means no ceiling, the way zero means hold the line for the
+            #  idle timeout.
+            max_connections=arguments.max_connections or None,
         )
         print(
             f"Sextile answering on {arguments.host}:{arguments.port}, "

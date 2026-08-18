@@ -34,6 +34,11 @@ DEFAULT_PORT: Final = 16650
 #: service anyone can dial.
 DEFAULT_IDLE_TIMEOUT: Final = 15 * 60.0
 
+#: How many callers may be on the line at once. A real board had a fixed number
+#: of lines; this is the same ceiling, so no one can open connections without
+#: limit and lock everyone else out. None removes it, for a dedicated terminal.
+DEFAULT_MAX_CONNECTIONS: Final = 64
+
 #: How much of the idle timeout passes before the warning appears, when nothing
 #: else is said. Half leaves as long to respond as the silence that raised it.
 DEFAULT_WARN_FRACTION: Final = 0.5
@@ -54,6 +59,7 @@ async def serve(
     port: int = DEFAULT_PORT,
     idle_timeout: float | None = DEFAULT_IDLE_TIMEOUT,
     warn_after: float | None = None,
+    max_connections: int | None = DEFAULT_MAX_CONNECTIONS,
 ) -> asyncio.Server:
     """Start listening. Returns the server, so a caller can close it.
 
@@ -62,19 +68,53 @@ async def serve(
     all, for a terminal that would rather not be written to unprompted; with no
     idle timeout there is nothing to warn about and none is given either way.
 
+    ``max_connections`` is how many callers may be on the line at once. A caller
+    over it is turned away with the application's busy frame and the line drops,
+    so no one can hold every line and lock the rest out; None removes the ceiling
+    for a dedicated terminal.
+
     Starting and stopping the application is the caller's job, not this
     function's: the server does not open or close an application's resources.
     """
     if warn_after is None and idle_timeout is not None:
         warn_after = idle_timeout * DEFAULT_WARN_FRACTION
 
+    #  A plain count, safe without a lock: the check and the increment below run
+    #  with no await between them, so two connections cannot both pass the
+    #  ceiling. The finally frees the line whether the call ended well or not.
+    live = 0
+
     async def handle(reader: asyncio.StreamReader, writer: asyncio.StreamWriter) -> None:
-        await _converse(reader, writer, application, idle_timeout, warn_after)
+        nonlocal live
+        if max_connections is not None and live >= max_connections:
+            await _turn_away(writer, application)
+            return
+        live += 1
+        try:
+            await _converse(reader, writer, application, idle_timeout, warn_after)
+        finally:
+            live -= 1
 
     server = await asyncio.start_server(handle, host, port)
     for socket in server.sockets:
         _logger.info("Sextile listening on %s", socket.getsockname())
     return server
+
+
+async def _turn_away(writer: asyncio.StreamWriter, application: Sextile) -> None:
+    """Show a caller the board has no room for its busy frame, then hang up."""
+    caller = writer.get_extra_info("peername")
+    _logger.info("Board full; turned %s away", caller)
+    session = Session(application)
+    try:
+        await _write(writer, await session.busy())
+        await _write(writer, session.hangup())
+    except (ConnectionError, asyncio.IncompleteReadError):
+        pass
+    except Exception:
+        _logger.exception("Turning %s away failed", caller)
+    finally:
+        await _hang_up(writer)
 
 
 async def _converse(

@@ -123,6 +123,17 @@ class Session:
 
     # -- ringing off --------------------------------------------------------
 
+    async def busy(self) -> bytes:
+        """The frame shown to a caller the board has no room for, then hang up.
+
+        Built and drawn like the greeting, so a turned-away caller sees a whole
+        frame in the service's own furniture rather than a line that dies silent.
+        """
+        self._page = await self._application.busy(self._request(self._address))
+        self._frame_index = 0
+        self._finished = True
+        return self._send()
+
     async def time_out(self) -> bytes:
         """The frame shown as the line is released for want of a reply.
 

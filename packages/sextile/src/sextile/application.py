@@ -66,6 +66,7 @@ _QUOTED: Final = 30
 type NotFoundHandler = Callable[[PageRequest, str], Awaitable[Page]]
 type TimeoutHandler = Callable[[PageRequest, int], Awaitable[Page]]
 type FailureHandler = Callable[[PageRequest, Exception], Awaitable[Page]]
+type BusyHandler = Callable[[PageRequest], Awaitable[Page]]
 
 type Lifespan = Callable[["Sextile"], AbstractAsyncContextManager[None]]
 type ResolveHandler = Callable[[str], PageAddress | None]
@@ -109,6 +110,7 @@ class Sextile:
         self._not_found: NotFoundHandler | None = None
         self._timed_out: TimeoutHandler | None = None
         self._failed: FailureHandler | None = None
+        self._busy: BusyHandler | None = None
         self._unresolved: ResolveHandler | None = None
         self._middleware = tuple(middleware)
         self._lifespan = lifespan
@@ -275,6 +277,11 @@ class Sextile:
         self._failed = handler
         return handler
 
+    def on_busy[H: BusyHandler](self, handler: H) -> H:
+        """Register the handler that builds the frame shown when the board is full."""
+        self._busy = handler
+        return handler
+
     def on_unresolved[H: ResolveHandler](self, handler: H) -> H:
         """Register a resolver for a keyed target the numbering does not name.
 
@@ -385,6 +392,31 @@ class Sextile:
             f"You were reading *{request.address}#.",
             *(["", f"Thank you for calling {self.name}."] if self.name else []),
             title="RINGING OFF",
+            home=None,
+            furniture=(),
+            hang_up=True,
+        )
+
+    async def busy(self, request: PageRequest) -> Page:
+        """Build the frame shown to a caller the board has no room for.
+
+        Args:
+            request: The page the caller would have arrived on.
+
+        Returns:
+            The page an `on_busy` handler builds, or the framework's own. A whole
+            frame and then the line drops: a busy signal a caller can read,
+            rather than a line that opens and dies without a word.
+        """
+        if self._busy is not None:
+            return await self._busy(request)
+        return notice_page(
+            request,
+            "All lines are busy just now.",
+            "",
+            "Please call again shortly.",
+            *(["", f"Thank you for trying {self.name}."] if self.name else []),
+            title="LINES BUSY",
             home=None,
             furniture=(),
             hang_up=True,

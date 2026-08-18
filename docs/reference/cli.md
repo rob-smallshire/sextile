@@ -19,6 +19,7 @@ Answers calls from terminals on a TCP port.
 | `--port` | `16650` | the port to listen on |
 | `--idle-timeout SECONDS` | `900` | release a caller who says nothing this long; `0` holds the line indefinitely |
 | `--warn-after SECONDS` | half the idle timeout | warn a silent caller with a draining bar; `0` for no warning |
+| `--max-connections N` | `64` | how many callers may be on the line at once; `0` for no ceiling |
 
 ## `sextile render`
 

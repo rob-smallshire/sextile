@@ -18,7 +18,7 @@ from exemplar import Board
 
 from sextile.application import PageRequest
 from sextile.page import Page, PageAddress
-from sextile.server import DEFAULT_PORT, serve
+from sextile.server import DEFAULT_MAX_CONNECTIONS, DEFAULT_PORT, serve
 from sextile.viewdata.encoding import ScreenControl
 from sextile.viewdata.frame import FRAME_PREAMBLE
 
@@ -378,6 +378,56 @@ async def close(writer: asyncio.StreamWriter, running: asyncio.Server) -> None:
         await writer.wait_closed()
     running.close()
     await running.wait_closed()
+
+
+class TestTheBoardHasAFiniteNumberOfLines:
+    """A ceiling on live callers, so no one can lock every line.
+
+    A caller over it is turned away with a whole frame, not a silent line, the
+    way the timeout says goodbye rather than just dropping.
+    """
+
+    async def test_the_ceiling_is_sixty_four_by_default(self) -> None:
+        assert DEFAULT_MAX_CONNECTIONS == 64
+
+    async def test_a_caller_over_the_ceiling_is_turned_away(self) -> None:
+        running = await serve(Board(), host="127.0.0.1", port=0, max_connections=1)
+        held_reader, held_writer = await connect_to(running)
+        await read_frame(held_reader)  # the one line is taken
+        turned_reader, turned_writer = await connect_to(running)
+        #  A whole frame, then the far end closes: read to the close.
+        turned_away = await _everything_left(turned_reader)
+        assert turned_away.startswith(FRAME_PREAMBLE)
+        assert "BUSY" in printable(turned_away)
+        turned_writer.close()
+        await close(held_writer, running)
+
+    async def test_a_line_frees_when_a_caller_rings_off(self) -> None:
+        running = await serve(Board(), host="127.0.0.1", port=0, max_connections=1)
+        first_reader, first_writer = await connect_to(running)
+        await read_frame(first_reader)
+        first_writer.close()
+        await first_writer.wait_closed()
+        await asyncio.sleep(SETTLE)  # let the server notice the far end has gone
+        second_reader, second_writer = await connect_to(running)
+        served = await read_frame(second_reader)
+        assert "BUSY" not in printable(served)
+        await close(second_writer, running)
+
+    async def test_a_service_can_word_the_busy_frame_itself(self) -> None:
+        board = Board()
+
+        @board.on_busy
+        async def full(request: PageRequest) -> Page:
+            return board.menu(PageAddress("1"), "COME BACK SOON", [])
+
+        running = await serve(board, host="127.0.0.1", port=0, max_connections=1)
+        held_reader, held_writer = await connect_to(running)
+        await read_frame(held_reader)
+        turned_reader, turned_writer = await connect_to(running)
+        assert "COME BACK SOON" in printable(await _everything_left(turned_reader))
+        turned_writer.close()
+        await close(held_writer, running)
 
 
 class TestHandingTheTerminalBack:

@@ -4,13 +4,13 @@
 # under Beebium (or BeebEm, or real hardware with a WiFi modem) can dial in and
 # be photographed for docs/images/sextile-hero.png.
 #
-# This does the two long-running steps for you -- serving on 6850 and bridging
+# This does the two long-running steps for you -- serving on 16650 and bridging
 # with tcpser -- and prints the emulator steps. Leave it running, capture the
 # screen from the emulator, then Ctrl-C here.
 set -euo pipefail
 cd "$(cd "$(dirname "$0")/.." && pwd)"
 
-PORT="${PORT:-6850}"
+PORT="${PORT:-16650}"
 
 echo "== serving the hero on port $PORT (line held open for the photo) =="
 uv run sextile serve examples.hero:app --port "$PORT" --idle-timeout 0 &

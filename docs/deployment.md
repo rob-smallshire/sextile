@@ -151,6 +151,35 @@ dial; it is not the service, only the notice beside its door.
 Why Caddy: automatic TLS for every subdomain with near-zero configuration, which
 is the whole of what the web plane needs.
 
+## Bringing up the web plane
+
+DNS at the `viewdata.no` registrar points every subdomain at the host with one
+wildcard record, and the apex alongside it:
+
+| Type | Name | Value | TTL |
+| --- | --- | --- | --- |
+| `A` | `*` | `<VPS_IP>` | 300 |
+| `A` | `@` | `<VPS_IP>` | 300 |
+
+The firewall opens the web ports (80 for the ACME challenge, 443 for traffic and
+HTTP/3):
+
+```sh
+sudo ufw allow 80/tcp
+sudo ufw allow 443/tcp
+sudo ufw allow 443/udp
+```
+
+Caddy installs from its official apt repository, runs as an unprivileged `caddy`
+user under `systemd`, and reads `/etc/caddy/Caddyfile`; each service's landing
+page lives under `/srv/www/<service>`. On reload Caddy fetches, and thereafter
+renews, the certificate for each name in the Caddyfile.
+
+Why this order: Caddy proves control of a name by answering Let's Encrypt on
+port 80, so the record must resolve and 80 must be open before Caddy starts, or
+the challenge retries in a loop. The wildcard record means a new service needs
+only a Caddyfile block, never another DNS change.
+
 ## Repository and build
 
 ```

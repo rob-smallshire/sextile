@@ -17,6 +17,73 @@ low-load, so a single small box carries a handful or two of them at once.
 Why one box: the cost of a second is not repaid by the load, and one host keeps
 the DNS, the firewall and the deploy path in one place.
 
+## Users on the host
+
+| User | Kind | Login | `sudo` | Owns |
+| --- | --- | --- | --- | --- |
+| `<admin>` | a person | SSH key | full | administers the box |
+| per service, e.g. `weather-viewdata` | system account | none (`nologin`) | none | its own process |
+| `deploy` | CI account | SSH key, added when CI is wired | one `systemctl restart` | the code under `/srv` |
+
+```sh
+# one locked-down system account per service
+sudo adduser --system --group --no-create-home --shell /usr/sbin/nologin weather-viewdata
+```
+
+Three classes, split by how much each can do. A service account cannot log in or
+`sudo`, so a reached service is a dead end; `deploy` can update code and restart
+one unit and no more; only `<admin>` holds real power, and only over a key. A
+service's writable state is not a hand-chowned home directory but a `systemd`
+`StateDirectory`, created and owned for the service on start.
+
+Why split them: the internet-facing account and the CI account each hold the
+least that lets them do their one job, so a compromise of either stops there.
+
+## Hardening the host
+
+The host is Debian 13. The admin account is created with a password for `sudo`
+and a public key, and root's own SSH login is then closed:
+
+```sh
+sudo adduser <admin>
+sudo usermod -aG sudo <admin>
+sudo install -d -m 700 -o <admin> -g <admin> /home/<admin>/.ssh
+# the admin's public key goes in /home/<admin>/.ssh/authorized_keys, mode 0600
+```
+
+```
+# /etc/ssh/sshd_config.d/10-hardening.conf
+PermitRootLogin no
+PasswordAuthentication no
+KbdInteractiveAuthentication no
+PubkeyAuthentication yes
+```
+
+The firewall denies inbound by default and opens each port only as the thing
+behind it goes in; SSH is rate-limited rather than merely allowed:
+
+```sh
+sudo ufw default deny incoming
+sudo ufw default allow outgoing
+sudo ufw limit 22/tcp
+sudo ufw enable
+```
+
+`fail2ban` installs with its `sshd` jail enabled and bans persistent probers;
+`unattended-upgrades` applies security updates daily:
+
+```sh
+sudo apt install -y fail2ban unattended-upgrades
+# /etc/apt/apt.conf.d/20auto-upgrades
+APT::Periodic::Update-Package-Lists "1";
+APT::Periodic::Unattended-Upgrade "1";
+```
+
+Why in this order: a proven key login and a `ufw` rule admitting SSH come before
+the sshd restart and before `ufw enable`, so no step locks the box against the
+person running it. Password auth being off makes `fail2ban` belt-and-braces, kept
+for the log quiet and the blocked scanners.
+
 ## Two planes
 
 | Plane    | Protocol | Port            | Reaches                     | Routed by  |
@@ -43,7 +110,8 @@ After=network-online.target
 
 [Service]
 User=weather-viewdata
-WorkingDirectory=/srv/weather-viewdata
+StateDirectory=weather-viewdata
+WorkingDirectory=/var/lib/weather-viewdata
 ExecStart=/srv/weather-viewdata/.venv/bin/sextile serve weather_viewdata:app --port 16651
 EnvironmentFile=-/etc/sextile/weather-viewdata.env
 Restart=on-failure
@@ -53,8 +121,10 @@ WantedBy=multi-user.target
 ```
 
 Each service is one unit: an unprivileged user, a fixed high port, `Restart` so a
-crash recovers. The `-` on `EnvironmentFile` makes the file optional, so a
-service with no secrets needs no file and no edit to this unit.
+crash recovers. `StateDirectory` gives it a `/var/lib/weather-viewdata` it owns
+for its SQLite file, and `WorkingDirectory` runs it there while the code stays
+under `/srv`. The `-` on `EnvironmentFile` makes the file optional, so a service
+with no secrets needs no file and no edit to this unit.
 
 Why systemd over containers: for a few tiny long-lived sockets on a 2 GB box,
 one unit per service is lighter than Docker and asks nothing of the RAM the small

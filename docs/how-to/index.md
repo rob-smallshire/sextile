@@ -22,7 +22,8 @@ large-lettering
 letter-on-a-background
 boxed-banners
 a-custom-part
-add-middleware
+log-every-page
+restrict-access
 the-visits-log
 write-a-converter
 preview-a-page

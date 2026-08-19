@@ -9,6 +9,7 @@ entry leaves out. Read to understand, not to look something up.
 why-sextile
 design-decisions
 rendering-pipeline
+middleware
 graphics
 mosaic-fonts
 ../architecture

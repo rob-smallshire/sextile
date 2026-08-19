@@ -104,3 +104,61 @@ text format that carries a per-glyph advance in blocks — the measurement the
 importable bitmap formats leave out. Name glyphs by code point and draw each in
 `#` and `.`; see {py:mod}`sextile.viewdata.font` for the format and
 {doc}`../reference/fonts` for the faces already shipped.
+
+## Use a font from the hoard
+
+Load a YAFF font — the format of the [hoard of
+bitfonts](https://github.com/robhagemans/hoard-of-bitfonts) — with `read_yaff`,
+and set it exactly like a shipped face:
+
+```python
+from pathlib import Path
+
+from sextile.viewdata.yaff import read_yaff
+
+_FACE = read_yaff(Path("saa5050-uk.yaff").read_text("utf-8"))
+```
+
+```{sextile-frame}
+:page: "8"
+
+from sextile import Custom, OnOneFrame, Page, PageLayout, PageRequest, PageRouter, Sextile
+from sextile.viewdata import lettering
+from sextile.viewdata.canvas import Canvas
+from sextile.viewdata.composition import Align, Composition
+from sextile.viewdata.controls import Colour
+from sextile.viewdata.font import load_font
+from sextile.viewdata.frame import COLUMNS
+from sextile.viewdata.lettering import Spacing
+
+router = PageRouter()
+
+_FACE = load_font("acorn")
+
+
+@router.page("8", name="report", title="Report")
+async def report(request: PageRequest) -> Page:
+    def draw(canvas: Canvas, row: int) -> None:
+        layout = Composition()
+        stripe = layout.panel(
+            row, Align.START, colour=Colour.MAGENTA, width=COLUMNS - 1, rows=lettering.rows_needed(_FACE)
+        )
+        lettering.place(
+            layout, Align.CENTRE, "REPORT", _FACE, Colour.WHITE, within=stripe, spacing=Spacing.KERNED
+        )
+        layout.draw(canvas)
+
+    return PageLayout(
+        parts=[OnOneFrame(Custom(rows=lettering.rows_needed(_FACE), draw=draw))],
+    ).build(request)
+
+
+app = Sextile(name="Reports", pages=[*router])
+```
+
+The frame is drawn with the shipped `acorn` face; a hoard face loaded with
+`read_yaff` sets the same way. `read_yaff` keeps the glyphs a `Font` needs and
+copies the file's licence into `font.terms` — the hoard's licences are per font,
+so check the one you load. `teletext/saa5050-uk.yaff` in the hoard is the SAA5050
+viewdata display font itself; the format and what is read are in
+{doc}`../reference/fonts` and {py:mod}`sextile.viewdata.yaff`.

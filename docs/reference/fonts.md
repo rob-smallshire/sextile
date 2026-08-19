@@ -73,3 +73,25 @@ face is vendored and recorded in `NOTICE.md` with its source and licence; check
 those before vendoring another, since a summary is not the licence — the "MIT
 fonts" are MIT in their repository only, each font carrying its own Creative
 Commons or SIL Open Font Licence terms.
+
+## Loading other fonts
+
+`yaff.read_yaff(text)` reads a font in the YAFF format — the format of the
+[hoard of bitfonts](https://github.com/robhagemans/hoard-of-bitfonts), a large
+collection of bitmap faces — into a `Font`, so a face can be set in large
+lettering without vendoring it:
+
+```python
+from pathlib import Path
+
+from sextile.viewdata.yaff import read_yaff
+
+face = read_yaff(Path("saa5050-uk.yaff").read_text("utf-8"))
+```
+
+A YAFF pixel is one mosaic block, so `read_yaff` keeps the character-labelled
+glyphs, trims each so it sets proportionally, and copies any `copyright` or
+`notice` the file carries into `font.terms`. `teletext/saa5050-uk.yaff` in the
+hoard is the SAA5050 viewdata display font itself. The hoard's licences are per
+font and per directory — check the one you load, since many files carry no
+terms of their own. Setting a loaded face is {doc}`../how-to/large-lettering`.

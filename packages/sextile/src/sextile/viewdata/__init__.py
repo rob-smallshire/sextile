@@ -15,4 +15,5 @@ __all__ = [
     "measure",
     "typesetting",
     "wrapping",
+    "yaff",
 ]

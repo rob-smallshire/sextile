@@ -23,6 +23,10 @@ as "was X" so a reader coming from older code or docs can find it.
 - **outsized letters** — `lettering.place` draws a string in double or quadruple
   size; `rows_needed` (was `rows_for`) and `cells_needed` (was `cells_for`) say
   how many rows and cells it will take before it is drawn.
+- **mosaic font** — a bitmap face measured in blocks, drawn as lettering. The
+  shipped faces are read by `font.read_font` from the framework's own text
+  format; `yaff.read_yaff` reads the YAFF format instead, so a face from a
+  collection such as the hoard of bitfonts can be loaded without vendoring it.
 - **part** — a piece of a page's body between the rules: a menu, some lines, a
   picture, a form. `layout.Part`. A part says which frames it appears on:
   `OnOneFrame` (was `Once`), `OnEveryFrame` (was `Every`), `Flow` (was

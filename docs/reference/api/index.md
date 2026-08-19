@@ -37,5 +37,6 @@ modules/sextile.viewdata.lettering
 modules/sextile.viewdata.measure
 modules/sextile.viewdata.typesetting
 modules/sextile.viewdata.wrapping
+modules/sextile.viewdata.yaff
 modules/sextile.visits
 ```

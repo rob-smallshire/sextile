@@ -14,6 +14,7 @@ keys
 cli
 layout
 content
+fonts
 viewdata-encoding
 display-semantics
 ```

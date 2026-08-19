@@ -23,3 +23,6 @@ app = Sextile(name="Service", pages=[*router])
 home, there being none to come back from, and drops the line once it has been
 shown. Pass `hang_up=False` to show it without releasing the line — for a parting
 the session itself is about to make.
+
+`farewell_page` is one of the framework's page shapes; giving the not-found and
+failed notices the service's own words is {doc}`customise-notices`.

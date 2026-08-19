@@ -35,3 +35,8 @@ row it begins on. `canvas.row(n)` gives a writer for that row; `.text(string,
 Colour.RED)` appends text, spending a cell on a colour attribute where the colour
 changes. Reach for `Custom` only for a picture no layout has a shape for — a
 chart, a masthead, a grid — and prefer a layout otherwise.
+
+For runs placed at positions with a checked fit, rather than a row at a time, use
+{doc}`compose-a-frame`; for a sequence drawn its own way, a
+{doc}`a-custom-part`. The parts model is {doc}`../reference/layout`, and the cost
+of the colour attribute a row spends is in {doc}`../explanation/graphics`.

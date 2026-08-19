@@ -38,3 +38,7 @@ same for a handler that raised and one that ran too long. Each returns a `Page`,
 so it is built with `notice_page` or any layout. The session shows it over the
 page the reader was on and leaves them there — keying `*7#` above draws the notice
 without moving off page `1` — so it names a way on rather than assuming one.
+
+Why the failed notice is a page of its own, distinct from not-found, and why a
+raised handler costs its page and not the call, is in
+{doc}`../explanation/design-decisions`.

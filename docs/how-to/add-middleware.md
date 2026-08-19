@@ -42,3 +42,7 @@ read the request, call `call_next` and change what comes back, or answer instead
 and never call it. The first in the list is outermost. `log_pages` is the one the
 framework ships for the log; `record_visits` is the other, feeding the readership
 pages.
+
+The middleware API is {py:mod}`sextile.middleware`; wiring `record_visits` to the
+readership pages is {doc}`the-visits-log`, and why it takes the state key rather
+than the log is in {doc}`../explanation/design-decisions`.

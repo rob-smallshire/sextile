@@ -52,3 +52,6 @@ ATDT1  CTRL-M     dial phonebook entry 1
 
 Key `CTRL-M` rather than `RETURN`: in Prestel mode `RETURN` transmits the viewdata
 `#` (0x5F) rather than a carriage return, and an AT command needs a real one.
+
+The keys a service answers, `#` among them, are {doc}`../reference/keys`; the
+bytes on the wire are {doc}`../reference/viewdata-encoding`.

@@ -64,3 +64,8 @@ app = Sextile(name="Desk", pages=[*router])
 A field takes digits as data — a nought keyed into it is a nought — so a page
 carrying a form cannot offer `0` for the index. Name a way out in the footer
 instead, with the `FieldSet`'s `footer_items`.
+
+The form API is {py:mod}`sextile.forms`; why a form is a menu whose choices
+change, and why a digit chooses while a letter types, is in
+{doc}`../explanation/design-decisions`. For a field with matches beneath it, see
+{doc}`type-ahead-completion`.

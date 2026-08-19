@@ -38,4 +38,7 @@ that entry's `destination` says — and RETURN takes the one marked with `#`.
 
 Why three suggestions and not nine: the list is redrawn on the wire at each
 keystroke, and nine rows cost nearly three seconds at 1200 baud where three cost
-about one. The measurement is in {doc}`../reference/viewdata-encoding`.
+about one. The measurement is in {doc}`../reference/viewdata-encoding`, the
+reasoning in {doc}`../explanation/design-decisions`. The form API is
+{py:mod}`sextile.forms`; for a plain field the reader types into, see
+{doc}`accept-typed-input`.

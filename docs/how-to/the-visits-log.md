@@ -63,3 +63,7 @@ routes the framework's own "looked at lately" page at `9`, reading that same log
 `popular=` and `callers=` add the most-read page and the caller count the same
 way. Each caller is an opaque token, so the count says how many and nothing about
 who.
+
+Middleware in general is {doc}`add-middleware`; why `record_visits` is handed the
+state key and why the log keeps its own file are in
+{doc}`../explanation/design-decisions`.

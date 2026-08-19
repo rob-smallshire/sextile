@@ -32,3 +32,7 @@ app = Sextile(name="Gazetteer", pages=[*router])
 `menu_page` takes as many entries as you give it and lays out nine to a frame,
 carrying the rest onto the next. The footer names `S` and `W` to page down and up;
 `#` turns the frame too. Nothing above has to know how many frames there will be.
+
+A menu is a `Part` the layout paginates; the parts model is in
+{doc}`../reference/layout`, and why a page carries its choices per frame is in
+{doc}`../explanation/design-decisions`.

@@ -35,3 +35,7 @@ title, detail and number — so the menu shows what the page calls itself.
 `app.address_for("headlines")` is the same read as a bare address, for a link that
 is not a menu entry. `keywords=` gives a page a word to key instead of its number:
 `*NEWS#` reaches `*11#`.
+
+Number a page by a field of your own with {doc}`write-a-converter`. Why a page
+number is one name shared by everyone, keyed and drawn alike, is in
+{doc}`../explanation/design-decisions`.

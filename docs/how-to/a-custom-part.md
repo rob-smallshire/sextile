@@ -41,3 +41,8 @@ carries the overflow onto further frames. For a picture positioned by cell,
 subclass `SequencePart` and draw the cells yourself; for entries a reader chooses
 by digit, subclass `NumberedRowSequencePart` and override `destination`. A part of
 the frame's furniture — a header or footer — is a `Furnishing` instead.
+
+The parts, wrappers and furniture are catalogued in {doc}`../reference/layout`,
+and why furniture is kept separate from the parts down the middle is in
+{doc}`../explanation/design-decisions`. For a placed picture rather than a
+sequence, see {doc}`draw-a-custom-frame` and {doc}`compose-a-frame`.

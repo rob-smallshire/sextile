@@ -35,4 +35,6 @@ page in its own right — for sending someone a frame to look at.
 
 A frame in a doc is drawn with the `sextile-frame` directive rather than pasted,
 so it is the frame the code produces at build time. See {doc}`../contributing`
-for its two forms.
+for its two forms. The full option list for both subcommands is
+{doc}`../reference/cli`, and what `bytes` and `grid` mean on the wire is in
+{doc}`../reference/viewdata-encoding`.

@@ -51,3 +51,7 @@ async def inbox(request: PageRequest) -> Page:
 
 app = Sextile(name="Mail", pages=[*router])
 ```
+
+Why a missing page returns `None` rather than a notice, and how that differs from
+a page that failed, is in {doc}`../explanation/design-decisions`. Give the
+not-found notice the service's own words with {doc}`customise-notices`.

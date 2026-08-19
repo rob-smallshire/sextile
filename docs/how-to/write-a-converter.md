@@ -36,3 +36,8 @@ plain integer would not check. Name the converters in `converters=` and referenc
 each by name in a pattern — `{month:month}`. `parse` may raise `ValueError` to
 reject digits its pattern could not, and the contents page shows a field as a
 placeholder rather than enumerating it.
+
+Reaching a page by name rather than respelling its number is
+{doc}`link-between-pages`; why page numbers are patterns of fields, matched most-
+literal-first and needing only to be distinct, is in
+{doc}`../explanation/design-decisions`.

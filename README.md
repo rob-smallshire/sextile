@@ -8,6 +8,8 @@
 [![Licence](https://img.shields.io/pypi/l/sextile.svg)](https://github.com/rob-smallshire/sextile/blob/master/LICENSE)
 [![Docs](https://img.shields.io/badge/docs-github.io-blue)](https://rob-smallshire.github.io/sextile/)
 
+**[Documentation](https://rob-smallshire.github.io/sextile/)** — tutorial, how-to guides, reference and explanation.
+
 A framework for Prestel-style Viewdata services in Python. Named after the star
 key on a viewdata keypad.
 

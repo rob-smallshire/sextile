@@ -15,8 +15,12 @@ customise-notices
 accept-typed-input
 type-ahead-completion
 draw-a-custom-frame
-draw-mosaics
+compose-a-frame
+draw-icons
+draw-charts
 large-lettering
+letter-on-a-background
+boxed-banners
 a-custom-part
 add-middleware
 the-visits-log

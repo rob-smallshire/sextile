@@ -4,8 +4,8 @@ Reference: the built-in mosaic font faces, one specimen to a face. The
 catalogue is drawn from `font_names()`; each specimen sets upper case, lower
 case and digits, with the face's name, height in rows, whether it carries lower
 case, and its provenance beneath. The API is {py:mod}`sextile.viewdata.font`
-and {py:mod}`sextile.viewdata.lettering`; the lettering recipe is
-{doc}`../how-to/large-lettering`.
+and {py:mod}`sextile.viewdata.lettering`; the lettering recipes are
+{doc}`../how-to/large-lettering` and {doc}`../how-to/boxed-banners`.
 
 ```{sextile-frame}
 :catalogue:

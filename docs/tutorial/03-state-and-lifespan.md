@@ -173,3 +173,25 @@ async def lifespan(app: Sextile) -> AsyncIterator[None]:
 
 app = Sextile(name="CALENDAR", pages=[*router], lifespan=lifespan)
 ```
+
+## One caller's state
+
+The clock is service state — shared, and the same for every caller. A page can
+also keep *this* caller's own state in `request.session`, under a `StateKey`
+exactly as the clock sits in `app.state`, but writable, because it is nobody
+else's to change. A day page could remember the last day this caller looked at:
+
+```python
+LAST_SEEN = StateKey[date]("last-seen")
+
+
+@router.page("42{day:date}", name="day", title="One day")
+async def one_day(request: PageRequest, day: date) -> Page:
+    request.session[LAST_SEEN] = day
+    ...
+```
+
+`request.session` lasts as long as the line is up and is gone when the caller
+rings off, because the connection is the session — a viewdata terminal keeps
+nothing but the frame on screen. A worked example, bookmarks a caller collects as
+they move through a service, is {doc}`../how-to/remember-a-caller`.

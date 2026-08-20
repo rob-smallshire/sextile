@@ -49,7 +49,8 @@ the handler, so every page it guards shows this frame and no page is built behin
 it. It is outermost in `middleware=[...]`, so it decides before any inner
 middleware or the page runs. Restrict some pages and not others by testing
 `request.address` before you refuse, and take the caller's identity from
-`request.session`, which lasts exactly as long as their line.
+`request.session`, which lasts exactly as long as their line —
+{doc}`remember-a-caller` keeps state there.
 
 Why the framework offers no sign-in of its own: who may reach a page is the
 service's policy, and the chain gives it the place to enforce one. The moves and

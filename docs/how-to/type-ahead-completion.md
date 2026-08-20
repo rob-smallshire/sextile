@@ -42,3 +42,7 @@ about one. The measurement is in {doc}`../reference/viewdata-encoding`, the
 reasoning in {doc}`../explanation/design-decisions`. The form API is
 {py:mod}`sextile.forms`; for a plain field the reader types into, see
 {doc}`accept-typed-input`.
+
+What the reader has typed so far is held for the connection — the session drives
+the form between keystrokes, so the terminal keeps nothing. Session state in
+general is {doc}`remember-a-caller`.

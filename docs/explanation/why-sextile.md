@@ -18,8 +18,10 @@ Three shapes follow, and they are where the framework departs from a web
 framework:
 
 - **The connection is the session.** There is no session store, identifier or
-  expiry: `PageRequest.session` is a plain mutable mapping that lives exactly as
-  long as the socket.
+  expiry: `PageRequest.session` is a writable `State`, keyed by `StateKey`, that
+  lives exactly as long as the socket and is gone when the caller rings off.
+  Keeping something for one caller across their pages is
+  {doc}`../how-to/remember-a-caller`.
 - **A handler is a function of a request, not of a page number.** Two callers
   keying the same number may be shown different things — the menu they arrived
   through, and later who they are — so a `PageRequest` carries the address, the

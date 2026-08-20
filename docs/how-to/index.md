@@ -24,6 +24,7 @@ boxed-banners
 a-custom-part
 log-every-page
 restrict-access
+remember-a-caller
 the-visits-log
 write-a-converter
 preview-a-page

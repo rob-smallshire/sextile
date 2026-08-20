@@ -22,6 +22,7 @@ from sextile.formatting import Listing, MenuItem
 from sextile.layout import Flow, PageLayout
 from sextile.page import Page, PageAddress
 from sextile.session.session import Session
+from sextile.state import StateKey
 from sextile.viewdata.frame import FRAME_PREAMBLE
 
 
@@ -260,10 +261,12 @@ class TestSessionState:
     ) -> None:
         seen: list[str] = []
 
+        been_key = StateKey[int]("been")
+
         @board.page("7", name="counter")
         async def counter(request: PageRequest) -> Page:
-            been = int(str(request.session.get("been", 0)))
-            request.session["been"] = been + 1
+            been = request.session.get(been_key, 0) or 0
+            request.session[been_key] = been + 1
             seen.append(f"{been}")
             return await board.notice(request)
 
@@ -274,9 +277,10 @@ class TestSessionState:
         assert seen == ["0", "1"]
 
     async def test_two_callers_do_not_share_it(self, board: Board) -> None:
+        user = StateKey[str]("user")
         first, second = Session(board), Session(board)
-        first.state["user"] = "komadori"
-        assert second.state == {}
+        first.state[user] = "komadori"
+        assert user not in second.state
 
 
 class TestWhatIsSent:

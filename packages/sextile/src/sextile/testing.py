@@ -18,7 +18,7 @@ For testing a service, not the framework. The framework's own tests drive
 `Session` directly, that being the thing they are testing.
 """
 
-from collections.abc import AsyncIterator, MutableMapping
+from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from dataclasses import dataclass, field
 
@@ -26,6 +26,7 @@ from sextile.application import Sextile
 from sextile.page import Page, PageAddress, keyed
 from sextile.requests import Neighbours, PageRequest
 from sextile.session.session import Session
+from sextile.state import State
 from sextile.viewdata.frame import Frame
 
 __all__ = [
@@ -67,7 +68,7 @@ def request_for(
     target: str | PageAddress = "1",
     *,
     neighbours: Neighbours | None = None,
-    session: MutableMapping[str, object] | None = None,
+    session: State | None = None,
     history: tuple[PageAddress, ...] = (),
 ) -> PageRequest:
     """A request for a page on a service, for a test that has no session.
@@ -89,7 +90,7 @@ def request_for(
         address=address,
         app=app,
         neighbours=neighbours or Neighbours(),
-        session=session if session is not None else {},
+        session=session if session is not None else State(),
         history=history,
     )
 

@@ -136,7 +136,7 @@ def _token() -> str:
 #: What a caller's token is kept under, in what that caller has accumulated.
 #: The session's, so it lasts exactly as long as their line and goes when they
 #: ring off.
-CALLER: Final = "sextile.caller"
+CALLER: Final = StateKey[str]("caller")
 
 
 def record_visits(
@@ -167,7 +167,7 @@ def record_visits(
             #  visit goes unrecorded rather than the page going unsent.
             return page
         caller = request.session.get(CALLER)
-        if not isinstance(caller, str):
+        if caller is None:
             caller = token()
             request.session[CALLER] = caller
         await log.record(request.address, caller=caller, found=page is not None)

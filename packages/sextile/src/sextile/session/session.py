@@ -46,6 +46,7 @@ from sextile.session.commands import (
 )
 from sextile.session.navigation import History, _Sequence
 from sextile.session.screen import Screen
+from sextile.state import State
 from sextile.viewdata.frame import Frame
 
 _logger = logging.getLogger(__name__)
@@ -75,7 +76,7 @@ class Session:
         self._finished = False
         self._address: PageAddress = start or application.home
         self._sequence: _Sequence | None = None
-        self._state: dict[str, object] = {}
+        self._state = State()
         #  Built on greeting rather than here: an application answers when it is
         #  asked, and asking is something that has to be awaited.
         self._page: Page | None = None
@@ -97,7 +98,7 @@ class Session:
         return self._finished
 
     @property
-    def state(self) -> dict[str, object]:
+    def state(self) -> State:
         """What this caller has accumulated, which handlers may add to."""
         return self._state
 

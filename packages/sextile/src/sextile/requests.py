@@ -6,7 +6,6 @@ two callers keying the same number can be shown different things: because they
 arrived through different menus, or because one is logged in.
 """
 
-from collections.abc import MutableMapping
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING
 
@@ -57,10 +56,14 @@ class PageRequest:
     """The pages either side of this one in the sequence the reader is following,
     or a `Neighbours` of two Nones for a page reached by keying its number."""
 
-    session: MutableMapping[str, object] = field(default_factory=dict)
-    """What this caller has accumulated over their connection. The connection is
-    the session -- the terminal keeps nothing but the frame on screen -- so this
-    is where anything outlasting a single page belongs."""
+    session: State = field(default_factory=State)
+    """What this caller has accumulated over their connection, keyed by
+    `StateKey`. The connection is the session -- the terminal keeps nothing but
+    the frame on screen -- so this is where anything outlasting a single page
+    belongs.
+
+    Writable, where `state` is read-only: this is one caller's own store, so a
+    page writing `request.session[KEY]` changes nothing another caller can see."""
 
     history: tuple[PageAddress, ...] = ()
     """Where this caller has been, oldest first, as far back as the session

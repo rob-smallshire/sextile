@@ -24,7 +24,6 @@ from collections.abc import (
     Callable,
     Iterable,
     Mapping,
-    MutableMapping,
     Sequence,
 )
 from contextlib import AbstractAsyncContextManager
@@ -545,7 +544,7 @@ class Sextile:
         target: str | PageAddress,
         *,
         neighbours: Neighbours | None = None,
-        session: MutableMapping[str, object] | None = None,
+        session: State | None = None,
         history: tuple[PageAddress, ...] = (),
     ) -> Page | None:
         """Fetch a page by its number, in process, as a session would request it.
@@ -560,7 +559,7 @@ class Sextile:
             PageRequest(
                 address=address,
                 neighbours=neighbours or Neighbours(),
-                session=session if session is not None else {},
+                session=session if session is not None else State(),
                 history=history,
                 state=self._state,
                 app=self,

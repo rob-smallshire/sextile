@@ -25,7 +25,7 @@ from sextile.middleware import CallNext, Middleware
 from sextile.page import Page, PageAddress, PageFrame, UnknownPageError
 from sextile.routing import Converter, NoSuchRouteError
 from sextile.session.session import Session
-from sextile.state import StateKey
+from sextile.state import State, StateKey
 from sextile.viewdata.canvas import Canvas
 from sextile.viewdata.frame import Frame
 
@@ -173,26 +173,29 @@ class TestSessionState:
 
     async def test_a_request_carries_the_caller_s_own_state(self) -> None:
         app = Sextile()
-        state: dict[str, object] = {"user": "komadori"}
+        user = StateKey[str]("user")
+        session = State()
+        session[user] = "komadori"
 
         @app.page("1")
         async def main(request: PageRequest) -> Page:
-            return saying(str(request.session["user"]))
+            return saying(request.session[user])
 
-        page = await app.fetch("1", session=state)
+        page = await app.fetch("1", session=session)
         assert row_of(page) == "komadori"
 
     async def test_a_handler_can_leave_something_behind(self) -> None:
         app = Sextile()
-        state: dict[str, object] = {}
+        seen = StateKey[bool]("seen")
+        session = State()
 
         @app.page("1")
         async def main(request: PageRequest) -> Page:
-            request.session["seen"] = True
+            request.session[seen] = True
             return one_frame()
 
-        await app.fetch("1", session=state)
-        assert state == {"seen": True}
+        await app.fetch("1", session=session)
+        assert session[seen] is True
 
 
 class TestNeighbours:

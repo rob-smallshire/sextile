@@ -13,7 +13,7 @@ import logging
 import pytest
 
 from sextile import Page, PageAddress, PageFrame, PageRequest, PageRoute, Sextile, StateKey
-from sextile.middleware import Middleware, log_pages, record_visits
+from sextile.middleware import CALLER, Middleware, log_pages, record_visits
 from sextile.state import State
 from sextile.viewdata.canvas import Canvas
 from sextile.visits import SqliteVisits, Visits
@@ -150,7 +150,7 @@ class TestRecordingVisits:
     async def test_one_caller_is_one_token_however_many_pages(self) -> None:
         log = SqliteVisits.open(":memory:")
         recording = record_visits(VISITS)
-        session: dict[str, object] = {}
+        session = State()
         for number in ("1", "3", "4"):
             await _through(recording, PageAddress(number), session=session, state=_holding(log))
         assert await log.callers() == 1
@@ -159,19 +159,19 @@ class TestRecordingVisits:
         log = SqliteVisits.open(":memory:")
         recording = record_visits(VISITS)
         for _ in range(2):
-            await _through(recording, PageAddress("1"), session={}, state=_holding(log))
+            await _through(recording, PageAddress("1"), session=State(), state=_holding(log))
         assert await log.callers() == 2
 
     async def test_the_token_says_nothing_about_who(self) -> None:
         #  Nothing identifying is asked for and nothing is stored: a service
         #  that keeps what it does not need has to be trusted about it.
         log = SqliteVisits.open(":memory:")
-        session: dict[str, object] = {}
+        session = State()
         await _through(
             record_visits(VISITS), PageAddress("1"), session=session, state=_holding(log)
         )
-        (token,) = session.values()
-        assert isinstance(token, str)
+        token = session.get(CALLER)
+        assert token is not None
         assert token.isalnum()
 
     async def test_a_service_holding_no_log_still_gets_its_page(self) -> None:
@@ -195,7 +195,7 @@ async def _through(
     address: PageAddress,
     *,
     page: Page | None = _SOMETHING,
-    session: dict[str, object] | None = None,
+    session: State | None = None,
     state: State | None = None,
 ) -> Page | None:
     async def build(request: PageRequest) -> Page | None:
@@ -205,7 +205,7 @@ async def _through(
         PageRequest(
             address=address,
             app=Sextile(),
-            session=session if session is not None else {},
+            session=session if session is not None else State(),
             state=state if state is not None else State(),
         ),
         build,

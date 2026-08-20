@@ -120,9 +120,11 @@ as "was X" so a reader coming from older code or docs can find it.
   `countdown.countdown_bytes`) draws the bar that warns an idle caller before
   they are released.
 - **session vs service state** — session state is one caller's own, lasting as
-  long as the line is up (`request.session`); service state is shared across
-  callers for the life of the service. Service state is `request.state`, a
-  read-only view of what the lifespan opened, keyed by `StateKey`.
+  long as the line is up (`request.session`, was a string-keyed mapping);
+  service state is shared across callers for the life of the service
+  (`request.state`). Both are keyed by `StateKey`: session state is writable, so
+  a page may keep this caller's own state; service state is a read-only view of
+  what the lifespan opened, since a change would reach every caller at once.
 - **connect** (was `calling`) — `sextile.testing.connect(app)` opens a service,
   rings it up and closes it, yielding a `Caller`. The caller presses keys with
   `caller.press(...)` (was `key`) and reads `caller.screen` (was `shown`).

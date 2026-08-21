@@ -138,3 +138,9 @@ as "was X" so a reader coming from older code or docs can find it.
   `SubmitHandler` (was `Complete`) and `Footnote` (was `Note`). A `Form`
   subclass overrides `footer_items()` (was `named()`) and reads `top_row` (was
   `at`), the row the layout placed it on.
+- **command line** — the `sextile` command and a service's own are Click groups.
+  `standard_commands` (was `add_standard_subcommands`) returns the shared `render`
+  and `serve` commands a service adds to its group; `form_options` and
+  `listening_options` (were `add_form_arguments` and `add_listening_arguments`)
+  add their options to a command; `load_application` resolves a `module:name`.
+  Click routes to each command, so the old `run_standard` dispatcher is gone.

@@ -12,7 +12,7 @@ drift. Each name links to its entry from the {doc}`API reference <api/index>`.
 
 ## `sextile.cli`
 
-`ApplicationSpecError` `add_form_arguments` `add_listening_arguments` `add_standard_subcommands` `render_page` `run_service` `run_standard`
+`CONTEXT_SETTINGS` `ApplicationSpecError` `form_options` `listening_options` `load_application` `render_page` `run_service` `standard_commands`
 
 ## `sextile.content`
 

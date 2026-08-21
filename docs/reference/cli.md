@@ -43,11 +43,25 @@ where the page, frame or number is not there.
 
 ## Building your own
 
-A service with its own command line assembles it from the pieces `sextile`
-itself uses: `add_listening_arguments` and `add_form_arguments` add the options
-above to an `argparse` parser, `load_application` resolves a `module:name`, and
-`render_page` and `run_service` carry out the two commands. See
-{py:mod}`sextile.cli`.
+A service with its own command line builds a `click.Group` and adds the pieces
+`sextile` itself uses. `standard_commands(load)` returns the `render` and `serve`
+commands to add to it, given a `load` that builds the application; its `options=`
+are added to both, for a flag such as a database path, and `page_example=` sets
+what `render --page`'s help shows. `form_options` and `listening_options` add the
+option tables above to a command of your own, `load_application` resolves a
+`module:name`, and `render_page` and `run_service` carry out the two commands.
+See {py:mod}`sextile.cli`.
+
+```python
+import click
+from sextile.cli import CONTEXT_SETTINGS, standard_commands
+
+@click.group(context_settings=CONTEXT_SETTINGS)
+def cli() -> None: ...
+
+for command in standard_commands(lambda context: build_application(...)):
+    cli.add_command(command)
+```
 
 Why a `module:name`: the framework serves an application it is told about at the
 command line rather than one it imports, so a service is a library the `sextile`

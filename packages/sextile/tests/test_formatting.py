@@ -19,6 +19,7 @@ from sextile.formatting import (
     MenuItem,
     Prose,
     SequencePart,
+    TextAlign,
 )
 from sextile.layout import CHOICES_PER_FRAME, Flow, OnOneFrame, PageLayout, Space
 from sextile.page import PageAddress
@@ -26,6 +27,7 @@ from sextile.testing import request_for, text_of
 from sextile.viewdata.canvas import Canvas
 from sextile.viewdata.controls import Colour
 from sextile.viewdata.frame import COLUMNS
+from sextile.viewdata.measure import fitted
 
 CONTENT = range(2, 22)
 
@@ -335,3 +337,49 @@ class TestAServiceWithItsOwnShape:
         assert placed.rows == 7
         assert isinstance(placed.remainder, self.Blocks)
         assert list(placed.remainder.entries) == list("cdefg")
+
+
+class TestLinesAlignment:
+    """Where a `Lines` part places each line across the row.
+
+    Alignment is placement, computed per line at draw time: the content is the
+    same, only where it sits changes. Centre and right reuse the frame's own
+    centring, so an odd spare cell goes one fewer on the left.
+    """
+
+    @staticmethod
+    def _row(align: TextAlign) -> str:
+        canvas = Canvas()
+        #  "ABCDE" is five cells; 40 - 5 is odd, so the centre split is the case
+        #  the floor convention has to decide.
+        Lines(["ABCDE"], align=align).place(canvas, whole_frame())
+        characters, _ = canvas.frame.to_grid()
+        return characters[CONTENT.start]
+
+    def test_left_is_the_default(self) -> None:
+        assert self._row(TextAlign.LEFT) == self._row(TextAlign.LEFT)
+        canvas = Canvas()
+        Lines(["ABCDE"]).place(canvas, whole_frame())
+        characters, _ = canvas.frame.to_grid()
+        assert characters[CONTENT.start] == self._row(TextAlign.LEFT)
+
+    def test_left_stays_flush_left_bit_identical(self) -> None:
+        #  Pin: the default draw is unchanged from the plain row writer.
+        old = Canvas()
+        old.row(CONTENT.start).text(fitted("ABCDE", COLUMNS - 1), Colour.WHITE)
+        new = Canvas()
+        Lines(["ABCDE"], align=TextAlign.LEFT).place(new, whole_frame())
+        assert new.frame.to_bytes() == old.frame.to_bytes()
+
+    def test_centre_puts_the_odd_cell_on_the_right(self) -> None:
+        row = self._row(TextAlign.CENTRE)
+        leading = len(row) - len(row.lstrip(" "))
+        trailing = len(row) - len(row.rstrip(" "))
+        assert row.strip() == "ABCDE"
+        assert leading == 17
+        assert trailing == 18  # one fewer on the left
+
+    def test_right_is_flush_right(self) -> None:
+        row = self._row(TextAlign.RIGHT)
+        assert row.strip() == "ABCDE"
+        assert row.endswith("ABCDE")  # nothing after it

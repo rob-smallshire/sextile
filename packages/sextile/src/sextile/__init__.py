@@ -23,7 +23,7 @@ from sextile import keys
 from sextile.application import Sextile
 from sextile.builtin.guidance import GuideRow
 from sextile.content.transliterate import transliterate
-from sextile.formatting import Lines, MenuItem, Prose
+from sextile.formatting import Lines, MenuItem, Prose, TextAlign
 from sextile.forms import Form, TypeAhead, draw_form
 from sextile.handlers import standard_pages
 from sextile.layout import Custom, Flow, OnOneFrame, PageLayout, Shortcut
@@ -62,6 +62,7 @@ __all__ = [
     "GuideRow",
     "Handler",
     "Lines",
+    "TextAlign",
     "MenuItem",
     "Middleware",
     "NoSuchRouteError",

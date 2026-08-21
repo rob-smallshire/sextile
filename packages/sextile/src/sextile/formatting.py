@@ -29,13 +29,15 @@ Example:
 from abc import ABC, abstractmethod
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field, replace
-from typing import ClassVar, Protocol, runtime_checkable
+from enum import Enum
+from typing import ClassVar, Final, Protocol, runtime_checkable
 
 from sextile.content.blocks import Document, Paragraph
 from sextile.layout import Claim, Placed, Space
 from sextile.layout.footer import FooterItem, Priority
 from sextile.page import PageAddress
 from sextile.viewdata.canvas import Canvas, RowWriter
+from sextile.viewdata.composition import Align, Composition, Style
 from sextile.viewdata.controls import Colour
 from sextile.viewdata.drawing import key_row
 from sextile.viewdata.frame import COLUMNS
@@ -54,7 +56,35 @@ __all__ = [
     "NumberedRowSequencePart",
     "Prose",
     "RowSequencePart",
+    "TextAlign",
 ]
+
+
+class TextAlign(Enum):
+    """Where a line of text sits across the row it is drawn on.
+
+    Separate from `composition.Align`, which places anything along an axis:
+    text alignment is spelled `LEFT`/`RIGHT`, and keeping the two apart means a
+    justified mode, were one ever added, could not leak into a placement.
+
+    Attributes:
+        LEFT: Against the left of the row, the default.
+        CENTRE: In the middle, an odd spare cell going one fewer on the left.
+        RIGHT: Against the right of the row.
+    """
+
+    LEFT = "left"
+    CENTRE = "centre"
+    RIGHT = "right"
+
+
+#: The placement `TextAlign` asks a `Composition` for. Centre and right thus
+#: reuse the frame's own centring and its floor convention.
+_PLACED_AS: Final = {
+    TextAlign.LEFT: Align.START,
+    TextAlign.CENTRE: Align.CENTRE,
+    TextAlign.RIGHT: Align.END,
+}
 
 
 
@@ -351,16 +381,28 @@ class Lines(SequencePart[str]):
             without a keyword. An empty one leaves a blank row.
         colour: What they are drawn in. White for a notice; green for a note
             beneath a table, set apart from the table above it.
+        align: Where each line sits across the row, `TextAlign.LEFT` by default.
+            Centre a wrapped display string by wrapping it with
+            `Breaking.DISPLAY` and drawing it `TextAlign.CENTRE`.
     """
 
     entries: Sequence[str] = field(default=(), kw_only=False)
     colour: Colour = Colour.WHITE
+    align: TextAlign = TextAlign.LEFT
 
     def draw_entry(
         self, canvas: Canvas, row: int, entry: str
     ) -> None:
         if entry:
-            canvas.row(row).text(fitted(entry, COLUMNS - 1), self.colour)
+            #  Placement, not padding: a Composition centres or right-justifies
+            #  the run without spending cells on leading spaces, and shares the
+            #  frame's floor convention for an odd spare cell.
+            Composition().text(
+                row,
+                _PLACED_AS[self.align],
+                fitted(entry, COLUMNS - 1),
+                style=Style(colour=self.colour),
+            ).draw(canvas)
 
 
 @dataclass(frozen=True, kw_only=True)

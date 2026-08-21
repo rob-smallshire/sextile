@@ -150,3 +150,8 @@ as "was X" so a reader coming from older code or docs can find it.
   with the last line free (the default, for body text), `DISPLAY` balances with
   the last line counted (for a centred string, so a short title breaks into two
   even lines rather than a full one and an orphan).
+- **text alignment** — where a `Lines` part places each line across the row,
+  chosen by `TextAlign` (`LEFT`, the default, `CENTRE`, `RIGHT`). Kept separate
+  from `composition.Align` (which places anything along an axis) so a justified
+  mode could never leak into a placement. Centre and right reuse the frame's own
+  centring, an odd spare cell going one fewer on the left.

@@ -1,6 +1,6 @@
 [project]
 name = "sextile"
-version = "0.3.0"
+version = "0.4.0"
 description = "A framework for Prestel-style Viewdata services"
 readme = "README.md"
 license = "MIT"

@@ -21,6 +21,7 @@ draw-charts
 large-lettering
 letter-on-a-background
 boxed-banners
+centre-wrapped-text
 a-custom-part
 log-every-page
 restrict-access

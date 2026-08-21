@@ -8,7 +8,7 @@ longer than the whole line -- are the point rather than the exception.
 import pytest
 
 from sextile.viewdata.measure import cell_count
-from sextile.viewdata.wrapping import wrap_text, wrap_within
+from sextile.viewdata.wrapping import Breaking, wrap_text, wrap_within
 
 
 class TestOrdinaryWrapping:
@@ -79,7 +79,7 @@ class TestBalancing:
     def test_the_ragged_edge_is_narrower(self) -> None:
         text = "The quick brown fox jumps over the lazy dog and keeps running"
         balanced = wrap_text(text, 20)
-        greedy = wrap_text(text, 20, balanced=False)
+        greedy = wrap_text(text, 20, breaking=Breaking.GREEDY)
         assert _raggedness(balanced) < _raggedness(greedy)
 
     def test_no_line_is_ever_wider_than_asked_for(self) -> None:
@@ -110,7 +110,7 @@ class TestBalancing:
 
 class TestGreedyIsStillThere:
     def test_it_fills_each_line_in_turn(self) -> None:
-        assert wrap_text("aaa bbb ccc ddd", 7, balanced=False) == ["aaa bbb", "ccc ddd"]
+        assert wrap_text("aaa bbb ccc ddd", 7, breaking=Breaking.GREEDY) == ["aaa bbb", "ccc ddd"]
 
     def test_and_can_differ_from_the_balanced_answer(self) -> None:
         #  Real prose from the calendar's about page. Greedy crams line two and
@@ -119,7 +119,7 @@ class TestGreedyIsStillThere:
             "It exists to demonstrate that Sextile is a framework and not one "
             "service: nothing here knows about forums."
         )
-        assert wrap_text(text, 30, balanced=False)[1].endswith("and not")
+        assert wrap_text(text, 30, breaking=Breaking.GREEDY)[1].endswith("and not")
         assert wrap_text(text, 30)[1].endswith("and")
 
 
@@ -187,7 +187,7 @@ class TestWrappingIntoAFixedNumberOfRows:
         for words in range(1, 13):
             text = " ".join("x" * ((step % width) + 1) for step in range(words))
             assert len(wrap_text(text, width)) <= len(
-                wrap_text(text, width, balanced=False)
+                wrap_text(text, width, breaking=Breaking.GREEDY)
             )
 
     def test_what_will_not_fit_is_cut(self) -> None:
@@ -202,3 +202,61 @@ class TestWrappingIntoAFixedNumberOfRows:
         #  layout to fix, and a page that fell over would say so at the far end
         #  of a telephone line.
         assert wrap_within("something", cells=10, rows=0) == []
+
+
+class TestDisplayBreaking:
+    """Balancing that counts the last line, for a centred or display string.
+
+    The paragraph convention leaves the last line free, which for a short
+    display string degenerates to the greedy split: any break whose first line
+    fills completely is unbeatable, however stranded the second line. Counting
+    the last line's slack picks the even split instead. Issue #2.
+    """
+
+    #: The board description from the issue: a full first line and an orphan
+    #: under the paragraph convention, two even lines under display.
+    _DESCRIPTION = "Local development board for the Content Provider API"
+
+    def test_a_display_string_breaks_evenly(self) -> None:
+        assert wrap_text(self._DESCRIPTION, 39, breaking=Breaking.DISPLAY) == [
+            "Local development board for",
+            "the Content Provider API",
+        ]
+
+    def test_the_issue_second_fixture(self) -> None:
+        assert wrap_text("one two three four five", 18, breaking=Breaking.DISPLAY) == [
+            "one two three",
+            "four five",
+        ]
+
+    def test_paragraph_keeps_the_top_heavy_split(self) -> None:
+        #  Pinned: the default is unchanged where display now differs, so body
+        #  text is not disturbed by the new mode.
+        assert wrap_text(self._DESCRIPTION, 39) == [
+            "Local development board for the Content",
+            "Provider API",
+        ]
+        assert wrap_text(self._DESCRIPTION, 39) != wrap_text(
+            self._DESCRIPTION, 39, breaking=Breaking.DISPLAY
+        )
+
+    def test_it_agrees_where_the_greedy_last_line_is_already_full(self) -> None:
+        #  Nothing to even out: display only ever changes the top-heavy cases.
+        text = "Local development board for the Content Provider API"
+        assert wrap_text(text, 20, breaking=Breaking.DISPLAY) == wrap_text(text, 20)
+
+    @pytest.mark.parametrize("width", range(3, 21))
+    def test_display_never_costs_a_line(self, width: int) -> None:
+        #  wrap_within cuts to a row count, so display wrapping must never use
+        #  more lines than a greedy fill would, or the cut would drop words.
+        for words in range(1, 13):
+            text = " ".join("x" * ((step % width) + 1) for step in range(words))
+            assert len(wrap_text(text, width, breaking=Breaking.DISPLAY)) <= len(
+                wrap_text(text, width, breaking=Breaking.GREEDY)
+            )
+
+    def test_wrap_within_threads_the_mode(self) -> None:
+        assert wrap_within(self._DESCRIPTION, cells=39, rows=2, breaking=Breaking.DISPLAY) == [
+            "Local development board for",
+            "the Content Provider API",
+        ]

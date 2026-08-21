@@ -144,3 +144,9 @@ as "was X" so a reader coming from older code or docs can find it.
   `listening_options` (were `add_form_arguments` and `add_listening_arguments`)
   add their options to a command; `load_application` resolves a `module:name`.
   Click routes to each command, so the old `run_standard` dispatcher is gone.
+- **line breaking** — how `wrapping.wrap_text` and `wrap_within` lay the slack
+  across the lines they break text into, chosen by `Breaking` (was the
+  `balanced=` boolean): `GREEDY` fills each line in turn, `PARAGRAPH` balances
+  with the last line free (the default, for body text), `DISPLAY` balances with
+  the last line counted (for a centred string, so a short title breaks into two
+  even lines rather than a full one and an orphan).

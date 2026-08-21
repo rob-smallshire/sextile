@@ -120,7 +120,7 @@ drift. Each name links to its entry from the {doc}`API reference <api/index>`.
 
 ## `sextile.viewdata.wrapping`
 
-`wrap_text` `wrap_within`
+`Breaking` `wrap_text` `wrap_within`
 
 ## `sextile.viewdata.yaff`
 

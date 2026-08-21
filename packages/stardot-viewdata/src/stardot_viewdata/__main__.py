@@ -7,17 +7,20 @@ Serving and drawing are the framework's, and could be done with
 but the archive is this application's own, and so is filling it. This command
 does both, and defaults the archive's location so that the two halves of the
 service agree about where it is without being told twice.
+
+The framework's `render` and `serve` are added to this service's own Click
+group; `ingest` and `archive` are the service's own beside them.
 """
 
-import argparse
 import asyncio
 import sys
-from collections.abc import Sequence
 from contextlib import suppress
 from pathlib import Path
 
+import click
+
 from sextile import Sextile
-from sextile.cli import add_standard_subcommands, run_standard
+from sextile.cli import CONTEXT_SETTINGS, standard_commands
 from stardot_viewdata import __version__
 from stardot_viewdata.application import DEFAULT_DATABASE_FILEPATH, build_application
 from stardot_viewdata.feed.client import FeedClient
@@ -31,100 +34,85 @@ from stardot_viewdata.feed.ingest import (
 from stardot_viewdata.feed.source import STARDOT_BASE_URL, AtomFeedSource
 from stardot_viewdata.store.repository import Repository
 
-
-def build_parser() -> argparse.ArgumentParser:
-    """The command line this service answers to, subcommands and all."""
-    parser = argparse.ArgumentParser(
-        prog="stardot-viewdata", description="A Viewdata service for the Stardot forum"
-    )
-    parser.add_argument("--version", action="version", version=f"stardot-viewdata {__version__}")
-    subcommands = parser.add_subparsers(dest="command")
-
-    add_standard_subcommands(
-        subcommands, configure=_add_database_argument, page_example="1 or 82489493"
-    )
-
-    ingest = subcommands.add_parser("ingest", help="Fetch the feed into the archive")
-    ingest.add_argument("--once", action="store_true", help="Poll once and stop")
-    ingest.add_argument(
-        "--seed",
-        action="store_true",
-        help="Sweep every route the board publishes, to fill a new archive",
-    )
-    ingest.add_argument(
-        "--interval",
-        type=float,
-        default=DEFAULT_POLL_INTERVAL,
-        help=f"Seconds between polls (default {DEFAULT_POLL_INTERVAL:.0f})",
-    )
-    _add_database_argument(ingest)
-
-    archive = subcommands.add_parser("archive", help="Report what the archive holds")
-    _add_database_argument(archive)
-
-    return parser
+#: The archive's location, shared by every subcommand so the halves of the
+#: service agree about where it is without being told twice.
+_database_option = click.option(
+    "--database-filepath",
+    type=Path,
+    default=DEFAULT_DATABASE_FILEPATH,
+    help=f"Where the archive lives (default: {DEFAULT_DATABASE_FILEPATH})",
+)
 
 
-def _add_database_argument(parser: argparse.ArgumentParser) -> None:
-    parser.add_argument(
-        "--database-filepath",
-        type=Path,
-        default=DEFAULT_DATABASE_FILEPATH,
-        help=f"Where the archive lives (default: {DEFAULT_DATABASE_FILEPATH})",
-    )
+@click.group(context_settings=CONTEXT_SETTINGS, invoke_without_command=True)
+@click.version_option(
+    __version__, "--version", prog_name="stardot-viewdata", message="%(prog)s %(version)s"
+)
+@click.pass_context
+def main(context: click.Context) -> None:
+    """A Viewdata service for the Stardot forum."""
+    if context.invoked_subcommand is None:
+        click.echo(context.get_help())
 
 
-def main(argv: Sequence[str] | None = None) -> int:
-    """Run one command.
-
-    Args:
-        argv: The arguments after the program name, or None to take
-            them from `sys.argv`.
-
-    Returns:
-        The process exit status: nought where the command succeeded.
-    """
-    parser = build_parser()
-    arguments = parser.parse_args(argv)
-
-    standard = run_standard(arguments, load=_application)
-    if standard is not None:
-        return standard
-
-    match arguments.command:
-        case "ingest":
-            return asyncio.run(_ingest(arguments))
-        case "archive":
-            return _archive(arguments)
-        case _:
-            parser.print_help()
-            return 0
+def _application(context: click.Context) -> Sextile:
+    return build_application(context.params["database_filepath"])
 
 
-def _application(arguments: argparse.Namespace) -> Sextile:
-    return build_application(arguments.database_filepath)
+for _command in standard_commands(
+    _application, options=[_database_option], page_example="1 or 82489493"
+):
+    main.add_command(_command)
 
 
-async def _ingest(arguments: argparse.Namespace) -> int:
-    with Repository.open(arguments.database_filepath) as repository:
+@main.command(help="Fetch the feed into the archive")
+@click.option("--once", is_flag=True, help="Poll once and stop")
+@click.option(
+    "--seed",
+    "seeding",
+    is_flag=True,
+    help="Sweep every route the board publishes, to fill a new archive",
+)
+@click.option(
+    "--interval",
+    type=float,
+    default=DEFAULT_POLL_INTERVAL,
+    help=f"Seconds between polls (default {DEFAULT_POLL_INTERVAL:.0f})",
+)
+@_database_option
+def ingest(once: bool, seeding: bool, interval: float, database_filepath: Path) -> None:
+    """Fetch the feed into the archive."""
+    code = asyncio.run(_ingest(database_filepath, once=once, seeding=seeding, interval=interval))
+    raise SystemExit(code)
+
+
+@main.command(help="Report what the archive holds")
+@_database_option
+def archive(database_filepath: Path) -> None:
+    """Report what the archive holds."""
+    raise SystemExit(_archive(database_filepath))
+
+
+async def _ingest(database_filepath: Path, *, once: bool, seeding: bool, interval: float) -> int:
+    with Repository.open(database_filepath) as repository:
         async with FeedClient(STARDOT_BASE_URL) as client:
             source = AtomFeedSource(client)
-            if arguments.seed:
+            if seeding:
                 print(
                     "Seeding from every route the board publishes. The site asks for "
                     "60 seconds\nbetween requests, so this takes a few minutes.",
                     file=sys.stderr,
                 )
                 await seed(source, repository, on_result=_report)
-            elif arguments.once:
+            elif once:
                 _report(await ingest_once(source, repository))
             else:
                 print(
-                    f"Polling every {arguments.interval:.0f}s. Interrupt to stop.",
+                    f"Polling every {interval:.0f}s. Interrupt to stop.",
                     file=sys.stderr,
                 )
                 with suppress(KeyboardInterrupt, asyncio.CancelledError):
-                    await poll(source, repository, interval=arguments.interval, on_result=_report)
+                    await poll(source, repository, interval=interval, on_result=_report)
         print(f"{repository.count_posts()} posts held.", file=sys.stderr)
     return 0
 
@@ -149,8 +137,8 @@ def _ingest_note(result: IngestResult) -> str:
     return ""
 
 
-def _archive(arguments: argparse.Namespace) -> int:
-    with Repository.open(arguments.database_filepath) as repository:
+def _archive(database_filepath: Path) -> int:
+    with Repository.open(database_filepath) as repository:
         print(f"{repository.count_posts()} posts held")
         days = repository.days(limit=10)
         if days:
@@ -166,4 +154,4 @@ def _archive(arguments: argparse.Namespace) -> int:
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    main()

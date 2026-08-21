@@ -96,7 +96,10 @@ nitpick_ignore = [
 
 # -- intersphinx --------------------------------------------------------------
 
-intersphinx_mapping = {"python": ("https://docs.python.org/3", None)}
+intersphinx_mapping = {
+    "python": ("https://docs.python.org/3", None),
+    "click": ("https://click.palletsprojects.com/en/stable/", None),
+}
 
 # -- HTML ---------------------------------------------------------------------
 

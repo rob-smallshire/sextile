@@ -3,17 +3,22 @@
 Sextile has a command of its own, which can serve or draw any application, and
 an application generally needs one too -- if only to say where its data lives.
 Neither should have to reimplement the other, so what they share is here.
+
+The command line is Click. A service builds its own `click.Group` and adds the
+`render` and `serve` commands `standard_commands` returns; the framework's own
+command line is that same pair over a `module:name`.
 """
 
-import argparse
 import asyncio
 import importlib
 import logging
 import sys
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 from contextlib import suppress
 from html import escape
-from typing import Final
+from typing import Any, Final
+
+import click
 
 from sextile.application import Sextile
 from sextile.page import PageAddress, UnknownPageError, keyed
@@ -29,13 +34,14 @@ from sextile.viewdata.frame import Frame
 from sextile.viewdata.html import font_face, render_html, stylesheet
 
 __all__ = [
+    "CONTEXT_SETTINGS",
     "ApplicationSpecError",
-    "add_form_arguments",
-    "add_listening_arguments",
-    "add_standard_subcommands",
+    "form_options",
+    "listening_options",
+    "load_application",
     "render_page",
     "run_service",
-    "run_standard",
+    "standard_commands",
 ]
 
 #: How a frame can be shown on a terminal that is not a BBC Micro.
@@ -47,6 +53,9 @@ _FORM_HELP: Final = (
     "grid: character and attribute layers; "
     "bytes: the wire stream, as a hex dump"
 )
+
+#: `-h` as well as `--help`, the way argparse offered both, on every command.
+CONTEXT_SETTINGS: Final = {"help_option_names": ["-h", "--help"]}
 
 
 class ApplicationSpecError(ValueError):
@@ -92,52 +101,42 @@ def load_application(spec: str) -> Sextile:
     return found
 
 
-def add_form_arguments(parser: argparse.ArgumentParser) -> None:
-    """Add to a parser the arguments that choose how a frame is shown.
+#: A Click decorator: something that adds options to a command and returns it.
+_Decorator = Callable[[Any], Any]
+
+
+def form_options(command: Any) -> Any:
+    """Add `--frame`, `--form` and `--no-colour` to a Click command.
 
     Args:
-        parser: The parser to add `--frame`, `--form` and `--no-colour` to.
+        command: The command to add them to.
+
+    Returns:
+        The command, so it composes as a decorator.
     """
-    parser.add_argument("--frame", type=int, default=0, help="Which frame of it (0 for the first)")
-    parser.add_argument("--form", choices=FORMS, default="ansi", help=_FORM_HELP)
-    parser.add_argument("--no-colour", action="store_true", help="Suppress ANSI colour")
+    #  Applied last-to-first: Click reverses the options it collects, so this
+    #  order is what `--help` lists top to bottom (frame, form, no-colour).
+    command = click.option("--no-colour", is_flag=True, help="Suppress ANSI colour")(command)
+    command = click.option(
+        "--form", type=click.Choice(FORMS), default="ansi", help=_FORM_HELP
+    )(command)
+    return click.option(
+        "--frame", type=int, default=0, help="Which frame of it (0 for the first)"
+    )(command)
 
 
-def add_listening_arguments(parser: argparse.ArgumentParser) -> None:
-    """Add to a parser the arguments for where a service answers and for how long.
+def listening_options(command: Any) -> Any:
+    """Add `--host`, `--port`, `--idle-timeout`, `--warn-after` and `--max-connections`.
 
     Args:
-        parser: The parser to add `--host`, `--port`, `--idle-timeout`,
-            `--warn-after` and `--max-connections` to.
+        command: The command to add them to.
+
+    Returns:
+        The command, so it composes as a decorator.
     """
-    parser.add_argument("--host", default="127.0.0.1", help="Address to listen on")
-    parser.add_argument(
-        "--port", type=int, default=DEFAULT_PORT, help=f"Port to listen on (default {DEFAULT_PORT})"
-    )
-    parser.add_argument(
-        "--idle-timeout",
-        type=_seconds,
-        default=DEFAULT_IDLE_TIMEOUT,
-        metavar="SECONDS",
-        help=(
-            f"Release a caller who says nothing for this long "
-            f"(default {DEFAULT_IDLE_TIMEOUT:.0f}; 0 to hold the line indefinitely)"
-        ),
-    )
-    parser.add_argument(
-        "--warn-after",
-        type=_seconds,
-        default=None,
-        metavar="SECONDS",
-        help=(
-            "Warn a silent caller after this long, with a bar that drains "
-            #  "percent" spelled out, not "%": argparse formats a help string as
-            #  a printf template, so a literal % in one breaks --help (issue #1).
-            f"(default: {DEFAULT_WARN_FRACTION * 100:.0f} percent of the idle "
-            "timeout; 0 for no warning)"
-        ),
-    )
-    parser.add_argument(
+    #  Applied last-to-first: Click reverses the options it collects, so this is
+    #  the order `--help` lists (host, port, idle-timeout, warn-after, then max).
+    command = click.option(
         "--max-connections",
         type=int,
         default=DEFAULT_MAX_CONNECTIONS,
@@ -146,63 +145,84 @@ def add_listening_arguments(parser: argparse.ArgumentParser) -> None:
             f"How many callers may be on the line at once "
             f"(default {DEFAULT_MAX_CONNECTIONS}; 0 for no ceiling)"
         ),
-    )
+    )(command)
+    command = click.option(
+        "--warn-after",
+        type=click.FloatRange(min=0),
+        default=None,
+        metavar="SECONDS",
+        help=(
+            "Warn a silent caller after this long, with a bar that drains "
+            f"(default: {DEFAULT_WARN_FRACTION * 100:.0f} percent of the idle "
+            "timeout; 0 for no warning)"
+        ),
+    )(command)
+    command = click.option(
+        "--idle-timeout",
+        type=click.FloatRange(min=0),
+        default=DEFAULT_IDLE_TIMEOUT,
+        metavar="SECONDS",
+        help=(
+            f"Release a caller who says nothing for this long "
+            f"(default {DEFAULT_IDLE_TIMEOUT:.0f}; 0 to hold the line indefinitely)"
+        ),
+    )(command)
+    command = click.option(
+        "--port", type=int, default=DEFAULT_PORT, help=f"Port to listen on (default {DEFAULT_PORT})"
+    )(command)
+    return click.option("--host", default="127.0.0.1", help="Address to listen on")(command)
 
 
-def _seconds(text: str) -> float:
-    """A non-negative number of seconds, for argparse to report on."""
-    try:
-        value = float(text)
-    except ValueError:
-        raise argparse.ArgumentTypeError(f"{text!r} is not a number of seconds") from None
-    if value < 0:
-        #  A negative timeout would release the line before the greeting had
-        #  finished arriving, which looks like a fault rather than a setting.
-        raise argparse.ArgumentTypeError(f"{text!r} is not a length of time")
-    return value
-
-
-async def render_page(application: Sextile, arguments: argparse.Namespace) -> int:
+async def render_page(
+    application: Sextile,
+    *,
+    page: str,
+    frame: int = 0,
+    form: str = "ansi",
+    colour: bool = True,
+) -> int:
     """Render one frame of one page to standard output, its keys to standard error.
 
     Args:
         application: The service to fetch the page from.
-        arguments: The parsed `--page`, `--frame`, `--form` and `--no-colour`.
+        page: The page number to draw.
+        frame: Which frame of a page that runs to several, the first by default.
+        form: One of `FORMS`.
+        colour: Whether the `ansi` form carries colour.
 
     Returns:
         A process exit code: 0 drawn, 2 where the page, frame or number is not
         there.
     """
     try:
-        address = PageAddress(arguments.page)
+        address = PageAddress(page)
     except UnknownPageError as error:
         print(error, file=sys.stderr)
         return 2
 
     await application.startup()
     try:
-        page = await application.fetch(address)
-        if page is None:
+        drawn = await application.fetch(address)
+        if drawn is None:
             print(f"{keyed(address)} is not a page there.", file=sys.stderr)
             return 2
-        index = int(arguments.frame)
-        found = page.frame(index)
+        found = drawn.frame(frame)
         if found is None:
-            print(f"That page has {len(page.frames)} frame(s).", file=sys.stderr)
+            print(f"That page has {len(drawn.frames)} frame(s).", file=sys.stderr)
             return 2
         choices = ", ".join(
             f"{key}->*{destination}#" for key, destination in sorted(found.choices.items())
         )
         print(
-            f"{keyed(address.frame_number(index))}   choices: {choices}",
+            f"{keyed(address.frame_number(frame))}   choices: {choices}",
             file=sys.stderr,
         )
         print(
             rendered(
                 found.frame,
-                arguments.form,
-                colour=not arguments.no_colour,
-                title=keyed(address.frame_number(index)),
+                form,
+                colour=colour,
+                title=keyed(address.frame_number(frame)),
             )
         )
     finally:
@@ -210,12 +230,27 @@ async def render_page(application: Sextile, arguments: argparse.Namespace) -> in
     return 0
 
 
-async def run_service(application: Sextile, arguments: argparse.Namespace) -> int:
+async def run_service(
+    application: Sextile,
+    *,
+    host: str = "127.0.0.1",
+    port: int = DEFAULT_PORT,
+    idle_timeout: float = DEFAULT_IDLE_TIMEOUT,
+    warn_after: float | None = None,
+    max_connections: int = DEFAULT_MAX_CONNECTIONS,
+) -> int:
     """Serve the application until interrupted.
 
     Args:
         application: The service to serve.
-        arguments: The parsed listening arguments.
+        host: The address to listen on.
+        port: The port to listen on.
+        idle_timeout: Seconds a caller may be silent before the line is released;
+            0 holds it indefinitely.
+        warn_after: Seconds before the draining warning appears, or None for half
+            the idle timeout.
+        max_connections: How many callers may be on the line at once; 0 for no
+            ceiling.
 
     Returns:
         A process exit code, 0 once interrupted.
@@ -223,25 +258,25 @@ async def run_service(application: Sextile, arguments: argparse.Namespace) -> in
     #  Zero means hold the line indefinitely, which is what `asyncio.wait_for`
     #  spells as no timeout at all. Zero seconds would otherwise mean releasing
     #  a caller the instant they stopped typing.
-    idle_timeout = arguments.idle_timeout or None
+    timeout = idle_timeout or None
     await application.startup()
     try:
         server = await serve(
             application,
-            host=arguments.host,
-            port=arguments.port,
-            idle_timeout=idle_timeout,
-            warn_after=arguments.warn_after,
+            host=host,
+            port=port,
+            idle_timeout=timeout,
+            warn_after=warn_after,
             #  Zero means no ceiling, the way zero means hold the line for the
             #  idle timeout.
-            max_connections=arguments.max_connections or None,
+            max_connections=max_connections or None,
         )
         print(
-            f"Sextile answering on {arguments.host}:{arguments.port}, "
-            f"{_releasing(idle_timeout)}.\n"
+            f"Sextile answering on {host}:{port}, "
+            f"{_releasing(timeout)}.\n"
             f"Dial it with:  tcpser -v 25232 -s 9600 -l 4 -t sS "
-            f"-n 1={arguments.host}:{arguments.port}\n"
-            f"Or try it with:  nc {arguments.host} {arguments.port}",
+            f"-n 1={host}:{port}\n"
+            f"Or try it with:  nc {host} {port}",
             file=sys.stderr,
         )
         async with server:
@@ -259,69 +294,115 @@ def _releasing(idle_timeout: float | None) -> str:
     return f"releasing idle callers after {idle_timeout:.0f}s"
 
 
-def add_standard_subcommands(
-    subcommands: "argparse._SubParsersAction[argparse.ArgumentParser]",
+def standard_commands(
+    load: Callable[[click.Context], Sextile],
     *,
-    configure: Callable[[argparse.ArgumentParser], None] = lambda parser: None,
+    options: Sequence[_Decorator] = (),
     page_example: str = "1",
-) -> None:
-    """Add the `render` and `serve` subcommands every service's command line shares.
+) -> tuple[click.Command, click.Command]:
+    """The `render` and `serve` commands every service's command line shares.
 
-    A service adds its own subcommands to the same `subcommands` afterwards --
-    Stardot its `ingest`, the weather its `import-places`. `run_standard`
-    dispatches the two added here.
+    A service adds these to its own `click.Group`, and its own commands beside
+    them -- Stardot its `ingest`, the weather its `import-places`. Click routes to
+    each, so there is nothing to dispatch by hand.
 
     Args:
-        subcommands: The action returned by `parser.add_subparsers`, to add
-            `render` and `serve` to.
-        configure: Called with each of the two subparsers, to add the arguments
-            a service needs to find its own data, such as a database path. The
-            same call runs against both, so `render` and `serve` agree about
-            where the data lives without the service saying it twice.
+        load: Builds the application from a command's `click.Context`, whose
+            `params` hold the values the `options` collected. Called only for a
+            command that needs it, and for `render` only once `--page` is present,
+            so an unfindable data path fails no earlier than the command reading
+            it.
+        options: Click option decorators added to both commands, for the
+            arguments a service needs to find its data, such as a database path.
+            The same decorators run against both, so `render` and `serve` agree
+            about where the data lives without the service saying it twice.
         page_example: A page number to show in `render --page`'s help, such as
             `"1 or 82489493"`.
-    """
-    render = subcommands.add_parser("render", help="Show a frame without a BBC Micro")
-    render.add_argument("--page", help=f"Render a page by its number, such as {page_example}")
-    add_form_arguments(render)
-    configure(render)
-
-    serve = subcommands.add_parser("serve", help="Answer calls from terminals")
-    add_listening_arguments(serve)
-    configure(serve)
-
-
-def run_standard(
-    arguments: argparse.Namespace,
-    load: Callable[[argparse.Namespace], Sextile],
-) -> int | None:
-    """Run `render` or `serve`, or return None where the command is neither.
-
-    The counterpart of `add_standard_subcommands`: a service's `main` calls this
-    and, where it returns None, dispatches its own subcommands instead.
-
-    Args:
-        arguments: The parsed command line, whose `command` selects what runs.
-        load: Builds the service from the arguments, called only for a command
-            that needs it, so an unfindable data path fails no earlier than the
-            command that reads it.
 
     Returns:
-        The process exit status for `render` or `serve`, or None where the
-        command is one the caller handles itself.
+        The `render` and `serve` commands, for `group.add_command`.
+
+    Example:
+        >>> import click
+        >>> @click.group()
+        ... def app() -> None: ...
+        >>> for command in standard_commands(lambda context: ...):  # doctest: +SKIP
+        ...     app.add_command(command)
     """
-    if arguments.command == "render":
-        if arguments.page is None:
-            print("Nothing to render: pass --page <number>.", file=sys.stderr)
-            return 2
-        return asyncio.run(render_page(load(arguments), arguments))
-    if arguments.command == "serve":
-        #  A server logs page by page as it answers; without this the middleware's
-        #  lines would go nowhere. The timestamp is what a log of a long-running
-        #  service is read by.
-        logging.basicConfig(level=logging.INFO, format="%(asctime)s  %(message)s")
-        return asyncio.run(run_service(load(arguments), arguments))
-    return None
+
+    @click.command(
+        "render", context_settings=CONTEXT_SETTINGS, help="Show a frame without a BBC Micro"
+    )
+    @click.option(
+        "--page", default=None, help=f"Render a page by its number, such as {page_example}"
+    )
+    @form_options
+    @click.pass_context
+    def render(context: click.Context, /, **_: object) -> None:
+        context.exit(_run_render(context, load))
+
+    @click.command(
+        "serve", context_settings=CONTEXT_SETTINGS, help="Answer calls from terminals"
+    )
+    @listening_options
+    @click.pass_context
+    def serve_command(context: click.Context, /, **_: object) -> None:
+        context.exit(_run_serve(context, load))
+
+    for option in options:
+        render = option(render)
+        serve_command = option(serve_command)
+    return render, serve_command
+
+
+def _load(context: click.Context, load: Callable[[click.Context], Sextile]) -> Sextile | None:
+    """Build the application, or print why not and leave the caller to exit 2."""
+    try:
+        return load(context)
+    except ApplicationSpecError as error:
+        print(error, file=sys.stderr)
+        return None
+
+
+def _run_render(context: click.Context, load: Callable[[click.Context], Sextile]) -> int:
+    """Draw a page for a `render` command, refusing before the data is opened."""
+    page = context.params["page"]
+    if page is None:
+        print("Nothing to render: pass --page <number>.", file=sys.stderr)
+        return 2
+    application = _load(context, load)
+    if application is None:
+        return 2
+    return asyncio.run(
+        render_page(
+            application,
+            page=page,
+            frame=context.params["frame"],
+            form=context.params["form"],
+            colour=not context.params["no_colour"],
+        )
+    )
+
+
+def _run_serve(context: click.Context, load: Callable[[click.Context], Sextile]) -> int:
+    """Serve for a `serve` command, logging as it answers."""
+    application = _load(context, load)
+    if application is None:
+        return 2
+    #  A server logs page by page as it answers; without this the middleware's
+    #  lines would go nowhere. The timestamp is what a log of a long-running
+    #  service is read by.
+    logging.basicConfig(level=logging.INFO, format="%(asctime)s  %(message)s")
+    return asyncio.run(
+        run_service(
+            application,
+            host=context.params["host"],
+            port=context.params["port"],
+            idle_timeout=context.params["idle_timeout"],
+            warn_after=context.params["warn_after"],
+            max_connections=context.params["max_connections"],
+        )
+    )
 
 
 def rendered(frame: Frame, form: str, *, colour: bool, title: str = "") -> str:

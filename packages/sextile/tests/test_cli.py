@@ -1,60 +1,37 @@
 """The pieces both command lines are built from.
 
-Argument plumbing is worth a test of its own: an option that is parsed but never
-passed on is the kind of fault that looks like it works.
+Argument plumbing is worth a test of its own: an option parsed but never passed
+on is the kind of fault that looks like it works. The commands are Click, so a
+test drives them through a `CliRunner` and reads back what the options became.
 """
 
-import argparse
 import asyncio
 from typing import Any
 
+import click
 import pytest
+from click.testing import CliRunner
 from exemplar import Board
 
 from sextile.application import Sextile
 from sextile.cli import (
     ApplicationSpecError,
-    add_listening_arguments,
-    add_standard_subcommands,
     load_application,
     rendered,
-    run_service,
-    run_standard,
+    standard_commands,
 )
 from sextile.page import Page
 from sextile.pages import notice_page
 from sextile.requests import PageRequest
 from sextile.routing import PageRoute
-from sextile.server import DEFAULT_IDLE_TIMEOUT, DEFAULT_PORT
+from sextile.server import DEFAULT_IDLE_TIMEOUT, DEFAULT_MAX_CONNECTIONS, DEFAULT_PORT
 
 
-def parse(*argv: str) -> argparse.Namespace:
-    parser = argparse.ArgumentParser()
-    add_listening_arguments(parser)
-    return parser.parse_args(argv)
+async def _greeting(request: PageRequest, **fields: object) -> Page:
+    return notice_page(request, "Hello.")
 
 
-class TestListeningArguments:
-    def test_the_defaults(self) -> None:
-        arguments = parse()
-        assert arguments.host == "127.0.0.1"
-        assert arguments.port == DEFAULT_PORT
-        assert arguments.idle_timeout == DEFAULT_IDLE_TIMEOUT
-
-    def test_an_idle_timeout_is_read_as_seconds(self) -> None:
-        assert parse("--idle-timeout", "90").idle_timeout == 90.0
-
-    def test_a_fractional_timeout_is_allowed(self) -> None:
-        #  Not useful on a real line, but a test that wants one wants it short.
-        assert parse("--idle-timeout", "0.5").idle_timeout == 0.5
-
-    def test_zero_is_accepted_and_means_never(self) -> None:
-        assert parse("--idle-timeout", "0").idle_timeout == 0.0
-
-    def test_a_negative_timeout_is_refused(self) -> None:
-        #  It would otherwise release the line before the greeting arrived.
-        with pytest.raises(SystemExit):
-            parse("--idle-timeout", "-1")
+_APP = Sextile(pages=[PageRoute("1", _greeting, name="hello", title="Hello")])
 
 
 class _StoppedServer:
@@ -73,41 +50,85 @@ class _StoppedServer:
         raise asyncio.CancelledError
 
 
+def _service(*, load: Any = lambda context: _APP, options: Any = ()) -> click.Group:
+    """A service's Click group: the shared render and serve, and nothing else."""
+
+    @click.group()
+    def cli() -> None: ...
+
+    for command in standard_commands(load, options=options):
+        cli.add_command(command)
+    return cli
+
+
+def _intercept_serve(monkeypatch: pytest.MonkeyPatch) -> dict[str, Any]:
+    """Replace `serve` with one that records what it was called with."""
+    seen: dict[str, Any] = {}
+
+    async def fake_serve(application: Sextile, **keywords: Any) -> _StoppedServer:
+        seen.update(keywords)
+        seen["application"] = application
+        return _StoppedServer()
+
+    monkeypatch.setattr("sextile.cli.serve", fake_serve)
+    return seen
+
+
+class TestListeningArguments:
+    def test_the_defaults(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        seen = _intercept_serve(monkeypatch)
+        result = CliRunner().invoke(_service(), ["serve"])
+        assert result.exit_code == 0
+        assert seen["host"] == "127.0.0.1"
+        assert seen["port"] == DEFAULT_PORT
+        assert seen["idle_timeout"] == DEFAULT_IDLE_TIMEOUT
+        assert seen["max_connections"] == DEFAULT_MAX_CONNECTIONS
+
+    def test_an_idle_timeout_is_read_as_seconds(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        seen = _intercept_serve(monkeypatch)
+        CliRunner().invoke(_service(), ["serve", "--idle-timeout", "90"])
+        assert seen["idle_timeout"] == 90.0
+
+    def test_a_fractional_timeout_is_allowed(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        #  Not useful on a real line, but a test that wants one wants it short.
+        seen = _intercept_serve(monkeypatch)
+        CliRunner().invoke(_service(), ["serve", "--idle-timeout", "0.5"])
+        assert seen["idle_timeout"] == 0.5
+
+    def test_zero_becomes_no_timeout_at_all(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        #  `asyncio.wait_for` takes None to mean "wait", and zero seconds would
+        #  otherwise mean "drop the line immediately", which nobody wants.
+        seen = _intercept_serve(monkeypatch)
+        CliRunner().invoke(_service(), ["serve", "--idle-timeout", "0"])
+        assert seen["idle_timeout"] is None
+
+    def test_a_negative_timeout_is_refused(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        #  It would otherwise release the line before the greeting arrived.
+        seen = _intercept_serve(monkeypatch)
+        result = CliRunner().invoke(_service(), ["serve", "--idle-timeout", "-1"])
+        assert result.exit_code == 2
+        assert seen == {}
+
+
 class TestRunningAService:
     """What `serve` is actually called with, which is the point of the options."""
 
-    async def test_the_listening_options_are_passed_on(
-        self, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
-        seen: dict[str, Any] = {}
-
-        async def fake_serve(application: Sextile, **keywords: Any) -> _StoppedServer:
-            seen.update(keywords)
-            return _StoppedServer()
-
-        monkeypatch.setattr("sextile.cli.serve", fake_serve)
-        arguments = parse("--host", "0.0.0.0", "--port", "1", "--idle-timeout", "90")
-        await run_service(Board(), arguments)
+    def test_the_listening_options_are_passed_on(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        seen = _intercept_serve(monkeypatch)
+        result = CliRunner().invoke(
+            _service(), ["serve", "--host", "0.0.0.0", "--port", "1", "--idle-timeout", "90"]
+        )
+        assert result.exit_code == 0
         assert seen["host"] == "0.0.0.0"
         assert seen["port"] == 1
         assert seen["idle_timeout"] == 90.0
 
-    async def test_zero_becomes_no_timeout_at_all(
-        self, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
-        #  `asyncio.wait_for` takes None to mean "wait", and zero seconds would
-        #  otherwise mean "drop the line immediately", which nobody wants.
-        seen: dict[str, Any] = {}
+    def test_zero_max_connections_becomes_no_ceiling(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        seen = _intercept_serve(monkeypatch)
+        CliRunner().invoke(_service(), ["serve", "--max-connections", "0"])
+        assert seen["max_connections"] is None
 
-        async def fake_serve(application: Sextile, **keywords: Any) -> _StoppedServer:
-            seen.update(keywords)
-            return _StoppedServer()
-
-        monkeypatch.setattr("sextile.cli.serve", fake_serve)
-        await run_service(Board(), parse("--idle-timeout", "0"))
-        assert seen["idle_timeout"] is None
-
-    async def test_the_application_is_started_and_stopped_around_it(
+    def test_the_application_is_started_and_stopped_around_it(
         self, monkeypatch: pytest.MonkeyPatch
     ) -> None:
         events: list[str] = []
@@ -124,8 +145,62 @@ class TestRunningAService:
             return _StoppedServer()
 
         monkeypatch.setattr("sextile.cli.serve", fake_serve)
-        await run_service(Recording(), parse())
+        result = CliRunner().invoke(_service(load=lambda context: Recording()), ["serve"])
+        assert result.exit_code == 0
         assert events == ["startup", "serving", "shutdown"]
+
+
+class TestTheIdleWarning:
+    def test_it_is_left_to_the_server_by_default(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        #  None asks for half the idle timeout, which only the server knows.
+        seen = _intercept_serve(monkeypatch)
+        CliRunner().invoke(_service(), ["serve"])
+        assert seen["warn_after"] is None
+
+    def test_a_time_can_be_given(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        seen = _intercept_serve(monkeypatch)
+        CliRunner().invoke(_service(), ["serve", "--warn-after", "30"])
+        assert seen["warn_after"] == 30.0
+
+    def test_zero_turns_it_off(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        seen = _intercept_serve(monkeypatch)
+        CliRunner().invoke(_service(), ["serve", "--warn-after", "0"])
+        assert seen["warn_after"] == 0.0
+
+
+class TestRenderingThroughTheCommand:
+    def test_render_draws_the_page(self) -> None:
+        result = CliRunner().invoke(_service(), ["render", "--page", "1"])
+        assert result.exit_code == 0
+        assert "Hello." in result.output
+
+    def test_render_without_a_page_is_refused_before_the_app_is_built(self) -> None:
+        built: list[bool] = []
+
+        def load(context: click.Context) -> Sextile:
+            built.append(True)
+            return _APP
+
+        result = CliRunner().invoke(_service(load=load), ["render"])
+        assert result.exit_code == 2
+        assert built == []
+
+    def test_the_form_options_reach_render(self) -> None:
+        result = CliRunner().invoke(_service(), ["render", "--page", "1", "--form", "bytes"])
+        assert result.exit_code == 0
+
+    def test_a_service_option_reaches_both_commands(self) -> None:
+        seen: dict[str, Any] = {}
+
+        def load(context: click.Context) -> Sextile:
+            seen["database"] = context.params["database"]
+            return _APP
+
+        option = click.option("--database", default="here")
+        cli = _service(load=load, options=[option])
+        result = CliRunner().invoke(cli, ["render", "--page", "1"])
+        assert result.exit_code == 0
+        assert seen["database"] == "here"
 
 
 class TestRenderingAFrame:
@@ -155,115 +230,40 @@ class TestLoadingAnApplication:
             load_application("exemplar:ITEMS")
 
 
-class TestTheIdleWarning:
-    def test_it_is_left_to_the_server_by_default(self) -> None:
-        #  None asks for half the idle timeout, which only the server knows.
-        assert parse().warn_after is None
-
-    def test_a_time_can_be_given(self) -> None:
-        assert parse("--warn-after", "30").warn_after == 30.0
-
-    def test_zero_turns_it_off(self) -> None:
-        assert parse("--warn-after", "0").warn_after == 0.0
-
-    async def test_it_is_passed_on(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        seen: dict[str, Any] = {}
-
-        async def fake_serve(application: Sextile, **keywords: Any) -> _StoppedServer:
-            seen.update(keywords)
-            return _StoppedServer()
-
-        monkeypatch.setattr("sextile.cli.serve", fake_serve)
-        await run_service(Board(), parse("--warn-after", "30"))
-        assert seen["warn_after"] == 30.0
-
-
-async def _greeting(request: PageRequest, **fields: object) -> Page:
-    return notice_page(request, "Hello.")
-
-
-_APP = Sextile(pages=[PageRoute("1", _greeting, name="hello", title="Hello")])
-
-
-def with_standard_subcommands(
-    *,
-    configure: Any = lambda parser: None,
-    page_example: str = "1",
-) -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser()
-    subcommands = parser.add_subparsers(dest="command")
-    add_standard_subcommands(subcommands, configure=configure, page_example=page_example)
-    return parser
-
-
-class TestStandardSubcommands:
-    """The `render` and `serve` a service's command line shares."""
-
-    def test_render_takes_the_form_arguments(self) -> None:
-        arguments = with_standard_subcommands().parse_args(["render", "--page", "1"])
-        assert arguments.command == "render"
-        assert arguments.page == "1"
-        assert arguments.form == "ansi"
-
-    def test_serve_takes_the_listening_arguments(self) -> None:
-        arguments = with_standard_subcommands().parse_args(["serve", "--port", "1"])
-        assert arguments.command == "serve"
-        assert arguments.port == 1
-
-    def test_configure_reaches_both_subcommands(self) -> None:
-        def configure(parser: argparse.ArgumentParser) -> None:
-            parser.add_argument("--database-filepath", default="here")
-
-        parser = with_standard_subcommands(configure=configure)
-        assert parser.parse_args(["render", "--page", "1"]).database_filepath == "here"
-        assert parser.parse_args(["serve"]).database_filepath == "here"
-
-
-class TestRunningAStandardCommand:
-    def test_an_unknown_command_is_left_to_the_caller(self) -> None:
-        arguments = argparse.Namespace(command="ingest")
-        assert run_standard(arguments, load=lambda _: _APP) is None
-
-    def test_render_without_a_page_is_refused_before_the_app_is_built(self) -> None:
-        loaded: list[bool] = []
-
-        def load(_: argparse.Namespace) -> Sextile:
-            loaded.append(True)
-            return _APP
-
-        arguments = with_standard_subcommands().parse_args(["render"])
-        assert run_standard(arguments, load=load) == 2
-        assert loaded == []
-
-    def test_render_draws_the_page(self) -> None:
-        arguments = with_standard_subcommands().parse_args(["render", "--page", "1"])
-        assert run_standard(arguments, load=lambda _: _APP) == 0
-
-    def test_serve_is_run(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        async def fake_serve(application: Sextile, **keywords: Any) -> _StoppedServer:
-            return _StoppedServer()
-
-        monkeypatch.setattr("sextile.cli.serve", fake_serve)
-        arguments = with_standard_subcommands().parse_args(["serve"])
-        assert run_standard(arguments, load=lambda _: _APP) == 0
-
-
 class TestTheHelpFormats:
-    #  Issue #1: argparse treats a help string as a printf template, so a literal
-    #  % in one (here from a `:.0%` percentage) makes formatting --help fail with
-    #  a ValueError before the help is ever shown.
+    #  Issue #1: argparse treated a help string as a printf template, so a literal
+    #  % in one crashed --help. Click does not, but the help must still format.
 
-    def test_the_listening_help_formats(self) -> None:
-        parser = argparse.ArgumentParser()
-        add_listening_arguments(parser)
-        assert "warn" in parser.format_help().lower()
+    def test_serve_help_is_shown(self) -> None:
+        result = CliRunner().invoke(_service(), ["serve", "--help"])
+        assert result.exit_code == 0
+        assert "warn" in result.output.lower()
 
-    def test_serve_help_is_shown_not_crashed(self) -> None:
-        from sextile.__main__ import build_parser
+    def test_render_help_is_shown(self) -> None:
+        result = CliRunner().invoke(_service(), ["render", "--help"])
+        assert result.exit_code == 0
+        assert "--page" in result.output
 
-        with pytest.raises(SystemExit):
-            build_parser().parse_args(["serve", "--help"])
 
-    def test_the_standard_serve_help_is_shown_not_crashed(self) -> None:
-        with pytest.raises(SystemExit):
-            with_standard_subcommands().parse_args(["serve", "--help"])
+class TestTheSextileCommandLine:
+    """The framework's own command line, over a module:name."""
+
+    def test_no_command_prints_help_and_succeeds(self) -> None:
+        from sextile.__main__ import main
+
+        result = CliRunner().invoke(main, [])
+        assert result.exit_code == 0
+        assert "serve" in result.output and "render" in result.output
+
+    def test_serve_help_formats(self) -> None:
+        from sextile.__main__ import main
+
+        result = CliRunner().invoke(main, ["serve", "--help"])
+        assert result.exit_code == 0
+        assert "--max-connections" in result.output
+
+    def test_render_needs_an_application(self) -> None:
+        from sextile.__main__ import main
+
+        result = CliRunner().invoke(main, ["render", "--page", "1"])
+        assert result.exit_code == 2

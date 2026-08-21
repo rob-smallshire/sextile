@@ -5,96 +5,41 @@ one:
 
     sextile serve your_service:app
     sextile render your_service:app --page 82489493
+
+The two commands are the framework's shared `render` and `serve`, over a
+`module:name` argument.
 """
 
-import argparse
-import asyncio
-import logging
-import sys
-from collections.abc import Sequence
+import click
 
 from sextile import __version__
-from sextile.cli import (
-    ApplicationSpecError,
-    add_form_arguments,
-    add_listening_arguments,
-    load_application,
-    render_page,
-    run_service,
-)
+from sextile.application import Sextile
+from sextile.cli import CONTEXT_SETTINGS, load_application, standard_commands
 
 
-def build_parser() -> argparse.ArgumentParser:
-    """The command line this service answers to, subcommands and all."""
-    parser = argparse.ArgumentParser(
-        prog="sextile", description="A framework for Viewdata services"
-    )
-    parser.add_argument("--version", action="version", version=f"sextile {__version__}")
-    subcommands = parser.add_subparsers(dest="command")
-
-    render = subcommands.add_parser("render", help="Show a frame without a BBC Micro")
-    render.add_argument(
-        "application",
-        nargs="?",
-        help="The application to draw, as module:name",
-    )
-    render.add_argument("--page", help="Render a page by its number, such as 1 or 82489493")
-    add_form_arguments(render)
-
-    serve_command = subcommands.add_parser("serve", help="Answer calls from terminals")
-    serve_command.add_argument("application", help="The application to serve, as module:name")
-    add_listening_arguments(serve_command)
-
-    return parser
+@click.group(context_settings=CONTEXT_SETTINGS, invoke_without_command=True)
+@click.version_option(__version__, "--version", prog_name="sextile", message="%(prog)s %(version)s")
+@click.pass_context
+def main(context: click.Context) -> None:
+    """A framework for Viewdata services."""
+    #  No subcommand prints the help and exits 0, the way the argparse command
+    #  did, rather than Click's default "missing command" error.
+    if context.invoked_subcommand is None:
+        click.echo(context.get_help())
 
 
-def main(argv: Sequence[str] | None = None) -> int:
-    """Run one command.
-
-    Args:
-        argv: The arguments after the program name, or None to take
-            them from `sys.argv`.
-
-    Returns:
-        The process exit status: nought where the command succeeded.
-    """
-    parser = build_parser()
-    arguments = parser.parse_args(argv)
-
-    match arguments.command:
-        case "render":
-            return _render(arguments)
-        case "serve":
-            return _serve(arguments)
-        case _:
-            parser.print_help()
-            return 0
+def _from_spec(context: click.Context) -> Sextile:
+    """Load the application the `module:name` argument names."""
+    return load_application(context.params["application"])
 
 
-def _render(arguments: argparse.Namespace) -> int:
-    if arguments.application is None or arguments.page is None:
-        print(
-            "Nothing to render: pass an application and --page <number>.",
-            file=sys.stderr,
-        )
-        return 2
-    try:
-        application = load_application(arguments.application)
-    except ApplicationSpecError as error:
-        print(error, file=sys.stderr)
-        return 2
-    return asyncio.run(render_page(application, arguments))
-
-
-def _serve(arguments: argparse.Namespace) -> int:
-    logging.basicConfig(level=logging.INFO, format="%(asctime)s  %(message)s")
-    try:
-        application = load_application(arguments.application)
-    except ApplicationSpecError as error:
-        print(error, file=sys.stderr)
-        return 2
-    return asyncio.run(run_service(application, arguments))
+for _command in standard_commands(
+    _from_spec,
+    options=[click.argument("application")],
+    page_example="1 or 82489493",
+):
+    main.add_command(_command)
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    main()

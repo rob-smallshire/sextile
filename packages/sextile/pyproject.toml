@@ -23,13 +23,17 @@ classifiers = [
     "Topic :: Terminals",
     "Topic :: Software Development :: Libraries",
 ]
-#  One. Everything a framework for talking to terminals over a socket needs is
-#  in the standard library, except this: reducing arbitrary Unicode to what a
-#  1974 character set can draw is a large and specialised subject, and a table
-#  written out by hand is a table that is wrong about somebody's alphabet.
-#  ISC licensed, no dependencies of its own. See docs/design.md.
+#  Two. Everything a framework for talking to terminals over a socket needs is
+#  in the standard library, except two things. anyascii reduces arbitrary
+#  Unicode to what a 1974 character set can draw -- a large, specialised subject,
+#  and a table written out by hand is a table that is wrong about somebody's
+#  alphabet; it is ISC licensed with no dependencies of its own. click is the
+#  command-line parser: a service's command line is the framework's plus its
+#  own, which composes as Click groups where argparse subparsers are mutated
+#  into a parser. See docs/design.md and the decision log.
 dependencies = [
     "anyascii>=0.3",
+    "click>=8.1",
 ]
 
 [project.scripts]

@@ -284,6 +284,20 @@ because two implementations of one thing diverge, which is a different reason.
 
 ## Packaging
 
+### Click, not argparse, for the command line
+
+Decision: the command line is built on `click`, the framework's second
+dependency, and a service extends it by adding the framework's `render` and
+`serve` commands to its own `click.Group`.
+Because: a service's command line is the framework's two commands plus its own,
+and Click composes groups and commands as values a service adds to, where
+argparse subparsers are assembled by mutating a parser through a `configure`
+callback run against each; argparse also expands a help string as a printf
+template, so a formatted percent sign in one crashed `serve --help` (issue #1).
+Rejected: staying on the standard library's argparse; it held the dependency
+count at one, but the service-extension seam and the help-string trap cost more
+than a second, small, widely-used dependency does.
+
 ### No mounting
 
 Decision: a service is one flat namespace; sub-application mounting was removed.

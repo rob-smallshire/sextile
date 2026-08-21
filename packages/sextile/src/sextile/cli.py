@@ -131,7 +131,10 @@ def add_listening_arguments(parser: argparse.ArgumentParser) -> None:
         metavar="SECONDS",
         help=(
             "Warn a silent caller after this long, with a bar that drains "
-            f"(default: {DEFAULT_WARN_FRACTION:.0%} of the idle timeout; 0 for no warning)"
+            #  "percent" spelled out, not "%": argparse formats a help string as
+            #  a printf template, so a literal % in one breaks --help (issue #1).
+            f"(default: {DEFAULT_WARN_FRACTION * 100:.0f} percent of the idle "
+            "timeout; 0 for no warning)"
         ),
     )
     parser.add_argument(

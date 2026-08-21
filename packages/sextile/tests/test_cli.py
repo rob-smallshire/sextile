@@ -246,3 +246,24 @@ class TestRunningAStandardCommand:
         monkeypatch.setattr("sextile.cli.serve", fake_serve)
         arguments = with_standard_subcommands().parse_args(["serve"])
         assert run_standard(arguments, load=lambda _: _APP) == 0
+
+
+class TestTheHelpFormats:
+    #  Issue #1: argparse treats a help string as a printf template, so a literal
+    #  % in one (here from a `:.0%` percentage) makes formatting --help fail with
+    #  a ValueError before the help is ever shown.
+
+    def test_the_listening_help_formats(self) -> None:
+        parser = argparse.ArgumentParser()
+        add_listening_arguments(parser)
+        assert "warn" in parser.format_help().lower()
+
+    def test_serve_help_is_shown_not_crashed(self) -> None:
+        from sextile.__main__ import build_parser
+
+        with pytest.raises(SystemExit):
+            build_parser().parse_args(["serve", "--help"])
+
+    def test_the_standard_serve_help_is_shown_not_crashed(self) -> None:
+        with pytest.raises(SystemExit):
+            with_standard_subcommands().parse_args(["serve", "--help"])
